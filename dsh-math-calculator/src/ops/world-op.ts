@@ -101,6 +101,18 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   lines.push(`  季节: ${profile.terrain.seasonStrength}`)
 
   lines.push('')
+  lines.push('【恒星结构与寿命】')
+  const st = profile.stellar
+  lines.push(`  ${st.massSun.toFixed(2)} M☉：L=${st.luminositySun.toFixed(3)} L☉，R=${st.radiusSun.toFixed(3)} R☉，有效温度 ${f(st.effectiveTempK, 0)} K`)
+  lines.push(
+    `  主序寿命 ${st.lifetimeGyr < 1 ? (st.lifetimeGyr * 1000).toFixed(0) + ' Myr' : st.lifetimeGyr.toFixed(1) + ' Gyr'}；` +
+      `宜居带 ${f(st.habitableZoneAU[0], 2)}–${f(st.habitableZoneAU[1], 2)} AU；紫外占 ${f(st.uvFraction * 100, 1)}%`,
+  )
+  for (const item of st.sensitivity) {
+    lines.push(`  · [${item.confidence === 'exact' ? '精确' : item.confidence === 'empirical' ? '经验' : item.confidence === 'order-of-magnitude' ? '量级' : '仅方向'}] ${item.direction}：${item.magnitude}`)
+  }
+
+  lines.push('')
   lines.push('【抬头看见什么】（地表观测者视角）')
   const sky = profile.sky
   lines.push(
@@ -227,6 +239,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       moons: profile.moons,
       moonSystem: profile.moonSystem,
       sky: profile.sky,
+      stellar: profile.stellar,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
@@ -257,6 +270,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       moons: profile.moons,
       moonSystem: profile.moonSystem,
       sky: profile.sky,
+      stellar: profile.stellar,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,

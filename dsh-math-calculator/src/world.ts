@@ -34,6 +34,7 @@ import {
 } from './star-catalog.js'
 import { analyzeMoonSystem, type MoonSpec, type MoonSystemReport } from './moons.js'
 import { observeSky, type SkyReport } from './sky.js'
+import { describeStarStructure, type StellarProfile } from './stellar.js'
 import { getActiveConstants } from './constants-graph.js'
 import { OUR_UNIVERSE, deriveScaleLadder, dimensionlessFromKnobs } from './constants-core.js'
 
@@ -226,6 +227,8 @@ export interface WorldProfile {
   moonSystem: MoonSystemReport
   /** 抬头能看见什么：恒星颜色、白天天空、夜晚星空。 */
   sky: SkyReport
+  /** 恒星结构与寿命（S3）：质光关系、主序寿命、宜居带、紫外占比、常数敏感度。 */
+  stellar: StellarProfile
   /** 历法推算。 */
   calendar: {
     /** 太阳日长度（小时）。恒星日 + 太阳日修正。 */
@@ -416,6 +419,19 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
 
   if (starTempK < 2400) warnings.push(`恒星表面温度 ${starTempK}K 低于红矮星下限，光谱以红外为主，光合作用可能无法进行。`)
   if (starTempK > 40000) warnings.push(`恒星表面温度 ${starTempK}K 属 O 型星，紫外辐射极强，生命需强屏蔽。`)
+
+  // ── 恒星结构与寿命（S3）──
+  //
+  // 由质量推光度、半径、有效温度、主序寿命与宜居带。
+  // 其中斯特藩-玻尔兹曼、维恩、辐射平衡是精确的；质光/质径/寿命是经验关系，
+  // α 的净效应只给方向（见 stellar.ts 的敏感度表）。
+  // 作者显式给了恒星半径/温度时，用实际值（否则同一份输出会出现两套半径）。
+  const explicitStar = params.starRadius !== undefined || params.starTemp !== undefined
+  const stellar = describeStarStructure(
+    starMassSun,
+    alpha,
+    explicitStar ? { luminositySun, radiusSun: starRadiusSun } : undefined,
+  )
 
   // ── 轨道 ──
   const orbitAU = num(params.orbitAU, 1)
@@ -844,6 +860,7 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     },
     moonSystem,
     sky,
+    stellar,
     calendar: {
       solarDayHours,
       siderealDayHours,
