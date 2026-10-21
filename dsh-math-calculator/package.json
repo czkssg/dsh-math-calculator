@@ -2,7 +2,7 @@
   "name": "dsh-math-calculator",
   "version": "2.0.0",
   "private": false,
-  "description": "DSH 原生高阶数学计算插件：BigNumber 高精度、符号代数与微积分、线性代数与特征值、统计与概率分布、线性/多项式回归。全部本地执行。",
+  "description": "DSH 原生数学与架空世界推演插件：BigNumber 高精度、符号微积分、线代（秩/零空间/奇异值）、统计概率、微分方程、270 条自然科学公式、物理常数推演、星球/天空/恒星/卫星/生命闸门推演。全部本地执行。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -58,7 +58,8 @@
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node test/run.mjs",
-    "test:all": "node run-all-tests.mjs"
+    "test:all": "node run-all-tests.mjs",
+    "preflight": "node scripts/preflight.mjs"
   },
   "keywords": [
     "dsh",
@@ -69,6 +70,9 @@
     "symbolic",
     "calculus",
     "linear-algebra",
-    "statistics"
+    "statistics",
+    "worldbuilding",
+    "astronomy",
+    "exoplanet"
   ]
 }

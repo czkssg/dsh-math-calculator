@@ -336,6 +336,17 @@ npm pack
 
 ## 开发与测试
 
+装机前先跑自检（会检查构建产物、入口契约、客户端席位、运行期依赖、package.json）：
+
+```bash
+npm run build
+npm run test:all      # 33 套 / 1380+ 项
+npm run preflight     # 一条命令判断「能不能装」
+```
+
+`preflight` 通过后再装；装的时候优先在隔离 profile 里试。
+
+
 ```powershell
 npm run build          # 主代码 + client 分别编译
 npm run typecheck

@@ -697,6 +697,51 @@ function solveSingleEquation(
         const numeric = coefficients as number[]
         while (numeric.length > 1 && Math.abs(numeric[numeric.length - 1]) < 1e-15) numeric.pop()
         if (numeric.length > 1) {
+          // 先试 Algebrite：它能给出**复数根**，而 mathjs 的 polynomialRoot 只给实根
+          // （这就是以前 x^3 - 1 = 0 只返回 x = 1 的原因）。
+          try {
+            const complexRoots = symbolicRootsWithComplex(replaced, solvedVariable)
+            const cleaned = complexRoots
+              .map((root) => ({
+                re: Math.abs(root.re - Math.round(root.re)) < 1e-9 ? Math.round(root.re) : Number(root.re.toFixed(12)),
+                im: Math.abs(root.im) < 1e-9 ? 0 : Number(root.im.toFixed(12)),
+              }))
+              .filter((root) => Number.isFinite(root.re) && Number.isFinite(root.im))
+            const unique: Array<{ re: number; im: number }> = []
+            for (const root of cleaned) {
+              if (!unique.some((x) => Math.abs(x.re - root.re) < 1e-9 && Math.abs(x.im - root.im) < 1e-9)) unique.push(root)
+            }
+            if (unique.length > 0) {
+              const realRoots = unique.filter((root) => root.im === 0).map((root) => root.re).sort((a, b) => a - b)
+              const complexPairs = unique
+                .filter((root) => root.im !== 0)
+                .sort((a, b) => a.re - b.re || a.im - b.im)
+              if (complexPairs.length === 0) {
+                // 纯实根：保持原有输出格式与 value 形状（既有调用方不受影响）
+                return {
+                  result: `多项式精确解：${realRoots.map((root) => `${solvedVariable} = ${trimNumber(root, precision)}`).join('，')}`,
+                  value: realRoots,
+                }
+              }
+              const render = (root: { re: number; im: number }): string => {
+                if (root.im === 0) return `${solvedVariable} = ${trimNumber(root.re, precision)}`
+                if (Math.abs(root.re) < 1e-12) {
+                  // 纯虚根不写成 "0 - 1i"，直接给 ±ki
+                  return `${solvedVariable} = ${root.im > 0 ? '' : '-'}${trimNumber(Math.abs(root.im), precision)}i`
+                }
+                const sign = root.im > 0 ? '+' : '-'
+                return `${solvedVariable} = ${trimNumber(root.re, precision)} ${sign} ${trimNumber(Math.abs(root.im), precision)}i`
+              }
+              const ordered = [...realRoots.map((re) => ({ re, im: 0 })), ...complexPairs]
+              return {
+                result: `多项式精确解（含复数根，共 ${ordered.length} 个）：${ordered.map(render).join('，')}`,
+                value: ordered,
+              }
+            }
+          } catch {
+            /* Algebrite 解不了就退回 mathjs 实根 */
+          }
+
           const raw = engine.polynomialRoot(...numeric) as any[]
           const roots = raw
             .map((value) => toFiniteNumber(value))
@@ -1512,8 +1557,14 @@ function opHelp(): Outcome {
       '  expand        符号展开',
       '  roots         多项式求根（含复数根）',
       '',
+      '【扩展函数】（可直接写在表达式里）',
+      '  rank(A)       矩阵的秩；nullspace(A) 零空间基；svd(A) 奇异值',
+      '  factorize(n)  整数质因数分解',
+      '  nsolve("表达式", 初值)  数值求根（牛顿法 + 二分兜底）',
+      '',
       '【线性代数】',
-      '  matrix        矩阵乘法/求逆/行列式/转置/迹',
+      '  matrix        矩阵乘法/求逆/行列式/转置/迹；只给 matrix 时输出完整画像',
+      '                （秩/行列式/迹/奇异值/零空间/逆）',
       '  eigen         特征值与特征向量',
       '',
       '【统计与概率】',
@@ -1533,13 +1584,15 @@ function opHelp(): Outcome {
       '  formula-table 管理工作区公式表：覆盖表达式/参数、自定义、停用、重置',
       '',
       '【世界观推演】',
-      '  world         输入星球参数 → 体感画像：重力/昼夜/季节/纬度气候/地形上限',
+      '  world         输入星球参数 → 体感画像：重力/昼夜/季节/纬度气候/地形上限 +',
+      '                天空配色/恒星结构与寿命/卫星系统/化学窗口/生命闸门/跨模块一致性检查',
       '  constants     改变物理常数，自动推导派生量并评估世界偏离度',
       '  quantities    看哪些物理量该跟着常数变、哪些不该（量纲分析 + 缩放指数）',
       '  impact        改常数后跑全部公式并与现实对比，算每条偏差',
       '',
       '【数据管理】',
       '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
+      '                侧栏「数学工作区」入口可图形化管理：工作区/常数表/公式表/设置',
       '                action2: list/show/create/switch/save/set/add-terrain/delete/reset',
       '                stats/cleanup 可查看存储与清理',
       '                不同工作区完全隔离',
