@@ -36,6 +36,14 @@ console.log('-- 1. 静态检查：不污染全局 --')
   assert('挂右侧页签', source.includes('sidebar.right.pane.tab'))
   assert('挂页签标题', source.includes('sidebar.right.pane.tab.title'))
   assert('有错误边界', source.includes('MathCalcBoundary'))
+  assert(
+    '面板分四个页签（配置与数据管理）',
+    ['工作区', '常数表', '公式表', '设置'].every((label) => source.includes(label)),
+  )
+  assert(
+    '调用配置类接口',
+    source.includes('/constants') && source.includes('/formula-table') && source.includes('/settings'),
+  )
 }
 
 console.log('-- 2. 模拟宿主加载 --')

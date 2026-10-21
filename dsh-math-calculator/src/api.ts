@@ -26,7 +26,9 @@ import {
   switchWorkspace,
   updateWorkspace,
 } from './workspace.js'
-import { setActiveConstants } from './constants-graph.js'
+import { CONSTANT_GRAPH, setActiveConstants } from './constants-graph.js'
+import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
+import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 
 /** 简单的 HTTP 请求/响应抽象（避免依赖具体宿主类型）。 */
 interface ApiRequest {
@@ -42,6 +44,9 @@ interface ApiRequest {
  * 不含 `workspaces/<name>` 这条动态详情路由——它只有 GET 一种形态。
  */
 const KNOWN_ROUTES = new Set([
+  'constants',
+  'formula-table',
+  'settings',
   'workspaces',
   'workspaces/stats',
   'workspaces/create',
@@ -121,12 +126,77 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok(data)
     }
 
+    // ── 设置（提示档位）──
+    if (method === 'GET' && route === 'settings') {
+      return ok({ promptMode: getPromptMode(), modes: ['off', 'brief', 'full'] })
+    }
+
+    // ── 当前工作区的常数表 ──
+    //
+    // UI 不自己维护常数清单，一律以后端为准：
+    //   base      —— 可调旋钮的现实标准值（含单位与说明）
+    //   overrides —— 当前工作区已改动的值
+    if (method === 'GET' && route === 'constants') {
+      const name = normalizeWorkspaceName(currentWorkspace())
+      const data = loadWorkspace(name)
+      const base = CONSTANT_GRAPH.filter((node) => node.fundamental).map((node) => ({
+        name: node.name,
+        standard: node.standard,
+        unit: node.unit,
+        meaning: node.meaning,
+      }))
+      return ok({ workspace: name, base, overrides: data.constants ?? {} })
+    }
+
+    // ── 当前工作区的公式表 ──
+    if (method === 'GET' && route === 'formula-table') {
+      const name = normalizeWorkspaceName(currentWorkspace())
+      const table = loadWorkspace(name).formulaTable ?? emptyFormulaTable()
+      return ok({ workspace: name, overrides: table.overrides, custom: table.custom })
+    }
+
     if (method !== 'POST') {
       // 路径认识、只是方法不对 → 405；路径本身不认识 → 404。
       // 原先一律回 405，会把「路径打错」误报成「方法不对」，面板排查时被这句话带偏。
       return KNOWN_ROUTES.has(route)
         ? fail(405, '不支持的请求方法')
         : fail(404, `未知路径: ${route}`)
+    }
+
+    // ── 设置：切换提示档位 ──
+    if (route === 'settings') {
+      const mode = field(body, 'promptMode')
+      if (mode !== 'off' && mode !== 'brief' && mode !== 'full') {
+        return fail(400, 'promptMode 只能是 off / brief / full')
+      }
+      setPromptMode(mode as PromptMode)
+      return ok({ promptMode: getPromptMode(), switched: true })
+    }
+
+    // ── 公式表：停用 / 启用 / 重置单条 ──
+    if (route === 'formula-table') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const action = field(body, 'action')
+      const formulaId = field(body, 'formulaId')
+      if (!formulaId) return fail(400, '缺少 formulaId')
+      if (action !== 'disable' && action !== 'enable' && action !== 'reset') {
+        return fail(400, 'action 只能是 disable / enable / reset')
+      }
+
+      let message = ''
+      const data = updateWorkspace(name, (current) => {
+        const table = current.formulaTable ?? emptyFormulaTable()
+        if (action === 'reset') {
+          const result = removeOverride(table, formulaId)
+          message = result.message
+          return { ...current, formulaTable: result.table }
+        }
+        const existing = table.overrides.find((item) => item.id === formulaId)
+        const result = upsertOverride(table, { ...(existing ?? {}), id: formulaId, disabled: action === 'disable' })
+        message = result.message
+        return { ...current, formulaTable: result.table }
+      })
+      return ok({ workspace: name, action, formulaId, message, overrides: data.formulaTable?.overrides ?? [] })
     }
 
     // ── 新建 ──
@@ -225,7 +295,11 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok(report)
     }
 
-    return fail(404, `未知路径: ${route}`)
+    // 走到这里说明：路径认识，但没有对应的 POST 处理 → 405 而不是 404。
+    // 否则 UI 会把「方法用错」误判成「接口不存在」，排查方向就歪了。
+    return KNOWN_ROUTES.has(route)
+      ? fail(405, '该路径不支持此请求方法')
+      : fail(404, `未知路径: ${route}`)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return fail(400, message)

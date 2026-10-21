@@ -145,7 +145,7 @@
       },
     }
 
-    return function WorkspacePanel() {
+    function WorkspaceSection() {
       const [state, setState] = useState({
         loading: true,
         error: null,
@@ -534,6 +534,300 @@
 
       return h('div', { style: styles.root }, children)
     }
+    return WorkspaceSection
+  }
+
+  /**
+   * 配置面板：工作区 / 常数表 / 公式表 / 设置 四个页签。
+   *
+   * 设计目的（用户明确）：面板不是给用户算数用的，而是**配置与数据管理**——
+   *   · 工作区：建/切/删、看常数与地点、清理存储
+   *   · 常数表：改当前工作区的物理常数（只影响这个世界观）
+   *   · 公式表：停用 / 恢复公式（只影响这个世界观）
+   *   · 设置：提示注入档位 off / brief / full
+   */
+  function createConfigPanel(react: any, WorkspaceSection: any) {
+    const h = react.createElement
+    const useState = react.useState
+    const useEffect = react.useEffect
+    const useCallback = react.useCallback
+
+    const btn = {
+      padding: '3px 8px',
+      borderRadius: 6,
+      border: '1px solid rgba(128,128,128,.4)',
+      background: 'transparent',
+      color: 'inherit',
+      cursor: 'pointer',
+      fontSize: 11,
+    }
+    const input = {
+      padding: '4px 8px',
+      borderRadius: 6,
+      border: '1px solid rgba(128,128,128,.4)',
+      background: 'transparent',
+      color: 'inherit',
+      fontSize: 12,
+      minWidth: 80,
+    }
+    const note = { fontSize: 11, opacity: 0.7 }
+    const errorStyle = { color: '#e06c75', fontSize: 12, padding: '4px 12px' }
+    const message = (error: any): string => (error && error.message ? error.message : String(error))
+
+    /** 常数表：只改当前工作区的旋钮。 */
+    function ConstantsSection() {
+      const [data, setData] = useState(null)
+      const [error, setError] = useState(null)
+      const [busy, setBusy] = useState(false)
+      const [draft, setDraft] = useState({})
+
+      const load = useCallback(async () => {
+        try {
+          setData(await callApi('/constants'))
+          setError(null)
+        } catch (error) {
+          setError(message(error))
+        }
+      }, [])
+      useEffect(() => {
+        load()
+      }, [load])
+
+      if (error) return h('div', { style: errorStyle }, '错误: ' + error)
+      if (!data) return h('div', { style: { padding: 12, ...note } }, '加载中…')
+
+      const save = async (name: string, value: string) => {
+        setBusy(true)
+        try {
+          await callApi('/workspaces/save-constant', {
+            name: data.workspace,
+            constantName: name,
+            value: Number(value),
+          })
+          setDraft((prev) => {
+            const next = { ...prev }
+            delete next[name]
+            return next
+          })
+          await load()
+        } catch (error) {
+          setError(message(error))
+        } finally {
+          setBusy(false)
+        }
+      }
+      const reset = async (name: string) => {
+        setBusy(true)
+        try {
+          await callApi('/workspaces/reset-constant', { name: data.workspace, constantName: name })
+          setDraft((prev) => {
+            const next = { ...prev }
+            delete next[name]
+            return next
+          })
+          await load()
+        } catch (error) {
+          setError(message(error))
+        } finally {
+          setBusy(false)
+        }
+      }
+
+      const rows = data.base.map((node: any) => {
+        const override = data.overrides[node.name]
+        const value = draft[node.name] !== undefined ? draft[node.name] : String(override !== undefined ? override : node.standard)
+        return h(
+          'div',
+          { key: node.name, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid rgba(128,128,128,.15)' } },
+          h('span', { style: { width: 88, fontSize: 12 }, title: node.meaning }, node.name),
+          h('span', { style: { width: 72, fontSize: 10, opacity: 0.65 } }, node.unit || ''),
+          h('input', {
+            style: { ...input, flex: 1 },
+            value,
+            onChange: (event: any) => setDraft((prev: any) => ({ ...prev, [node.name]: event.target.value })),
+          }),
+          h('button', { style: btn, disabled: busy, onClick: () => save(node.name, value) }, override !== undefined ? '保存' : '设为'),
+          h('button', { style: btn, disabled: busy || override === undefined, onClick: () => reset(node.name) }, '重置'),
+          override !== undefined ? h('span', { style: { fontSize: 10, opacity: 0.7 } }, '已改') : null,
+        )
+      })
+
+      return h(
+        'div',
+        { style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: 12 } },
+        [h('div', { key: 'h', style: note }, '当前工作区：' + data.workspace + '（改动只影响这个世界观）')].concat(rows),
+      )
+    }
+
+    /** 公式表：停用 / 恢复；自定义公式只读展示。 */
+    function FormulaSection() {
+      const [data, setData] = useState(null)
+      const [error, setError] = useState(null)
+      const [busy, setBusy] = useState(false)
+      const [target, setTarget] = useState('')
+
+      const load = useCallback(async () => {
+        try {
+          setData(await callApi('/formula-table'))
+          setError(null)
+        } catch (error) {
+          setError(message(error))
+        }
+      }, [])
+      useEffect(() => {
+        load()
+      }, [load])
+
+      if (error) return h('div', { style: errorStyle }, '错误: ' + error)
+      if (!data) return h('div', { style: { padding: 12, ...note } }, '加载中…')
+
+      const act = async (action: string, formulaId: string) => {
+        if (!formulaId) return
+        setBusy(true)
+        try {
+          await callApi('/formula-table', { name: data.workspace, action, formulaId })
+          await load()
+        } catch (error) {
+          setError(message(error))
+        } finally {
+          setBusy(false)
+        }
+      }
+
+      const rows = data.overrides.map((item: any) =>
+        h(
+          'div',
+          { key: item.id, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid rgba(128,128,128,.15)' } },
+          h('span', { style: { flex: 1, fontSize: 12 } }, item.id),
+          h('span', { style: { fontSize: 10, opacity: 0.7 } }, item.disabled ? '已停用' : '已覆盖'),
+          h('button', { style: btn, disabled: busy, onClick: () => act('reset', item.id) }, '恢复模板'),
+        ),
+      )
+
+      return h(
+        'div',
+        { style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: 12 } },
+        [
+          h('div', { key: 'h', style: note }, '当前工作区：' + data.workspace + '（只影响这个世界观）'),
+          h(
+            'div',
+            { key: 'add', style: { display: 'flex', gap: 6, margin: '8px 0' } },
+            h('input', {
+              style: { ...input, flex: 1 },
+              placeholder: '公式 id，例如 velocity_uniform',
+              value: target,
+              onChange: (event: any) => setTarget(event.target.value),
+            }),
+            h('button', { style: btn, disabled: busy || !target, onClick: () => act('disable', target.trim()) }, '停用'),
+            h('button', { style: btn, disabled: busy || !target, onClick: () => act('enable', target.trim()) }, '启用'),
+          ),
+        ]
+          .concat(rows.length > 0 ? rows : [h('div', { key: 'none', style: note }, '没有覆盖或停用项。')])
+          .concat([
+            h('div', { key: 'c', style: { marginTop: 8, ...note } }, '自定义公式 ' + data.custom.length + ' 条；新增/编辑请用 operation="formula-table"'),
+          ]),
+      )
+    }
+
+    /** 设置：提示注入档位。 */
+    function SettingsSection() {
+      const [data, setData] = useState(null)
+      const [error, setError] = useState(null)
+
+      const load = useCallback(async () => {
+        try {
+          setData(await callApi('/settings'))
+          setError(null)
+        } catch (error) {
+          setError(message(error))
+        }
+      }, [])
+      useEffect(() => {
+        load()
+      }, [load])
+
+      if (error) return h('div', { style: errorStyle }, '错误: ' + error)
+      if (!data) return h('div', { style: { padding: 12, ...note } }, '加载中…')
+
+      const setMode = async (mode: string) => {
+        try {
+          await callApi('/settings', { promptMode: mode })
+          await load()
+        } catch (error) {
+          setError(message(error))
+        }
+      }
+
+      const EXPLAIN = {
+        off: '完全不注入提示（最省 token）',
+        brief: '每轮注入简短提醒（推荐）',
+        full: '每轮注入完整能力清单（最费 token）',
+      }
+
+      const rows = data.modes.map((mode: string) =>
+        h(
+          'div',
+          { key: mode, style: { display: 'flex', gap: 8, alignItems: 'center', padding: '5px 0' } },
+          h('button', { style: { ...btn, background: data.promptMode === mode ? 'rgba(90,160,255,.18)' : 'transparent' }, onClick: () => setMode(mode) }, mode),
+          h('span', { style: { fontSize: 11, opacity: data.promptMode === mode ? 0.95 : 0.65 } }, EXPLAIN[mode] || ''),
+          data.promptMode === mode ? h('span', { style: { fontSize: 10, opacity: 0.7 } }, '使用中') : null,
+        ),
+      )
+
+      return h(
+        'div',
+        { style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: 12 } },
+        [h('div', { key: 'h', style: note }, '提示注入档位（影响模型每轮看到的提醒长度）')].concat(rows),
+      )
+    }
+
+    const TABS = [
+      { id: 'workspaces', label: '工作区' },
+      { id: 'constants', label: '常数表' },
+      { id: 'formula', label: '公式表' },
+      { id: 'settings', label: '设置' },
+    ]
+
+    return function ConfigPanel() {
+      const [tab, setTab] = useState('workspaces')
+      const tabBar = h(
+        'div',
+        { style: { display: 'flex', gap: 2, padding: '6px 8px 0', borderBottom: '1px solid rgba(128,128,128,.25)', flexShrink: 0 } },
+        TABS.map((item) =>
+          h(
+            'button',
+            {
+              key: item.id,
+              onClick: () => setTab(item.id),
+              style: {
+                padding: '4px 10px',
+                fontSize: 12,
+                cursor: 'pointer',
+                background: 'transparent',
+                color: 'inherit',
+                border: 'none',
+                borderBottom: tab === item.id ? '2px solid #5aa0ff' : '2px solid transparent',
+              },
+            },
+            item.label,
+          ),
+        ),
+      )
+      const body =
+        tab === 'constants'
+          ? h(ConstantsSection)
+          : tab === 'formula'
+            ? h(FormulaSection)
+            : tab === 'settings'
+              ? h(SettingsSection)
+              : h(WorkspaceSection)
+      return h(
+        'div',
+        { style: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' } },
+        tabBar,
+        h('div', { style: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }, body),
+      )
+    }
   }
 
   /** 侧栏页签标题（很小，只占一个 tab 的位置）。 */
@@ -565,7 +859,8 @@
       }
 
       // React 不可用时给空组件，绝不让宿主在渲染阶段崩掉
-      const WorkspacePanel = react ? createWorkspacePanel(react) : function EmptyPanel() { return null }
+      const WorkspaceSection = react ? createWorkspacePanel(react) : function EmptySection() { return null }
+      const ConfigPanel = react ? createConfigPanel(react, WorkspaceSection) : function EmptyPanel() { return null }
       const SidebarTitle = react ? createSidebarTitle(react) : function EmptyTitle() { return null }
 
       /**
@@ -625,7 +920,7 @@
             }
           }
 
-          mount('sidebar.right.pane.tab', WorkspacePanel)
+          mount('sidebar.right.pane.tab', ConfigPanel)
           mount('sidebar.right.pane.tab.title', SidebarTitle)
 
           return function disposeAll() {
