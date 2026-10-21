@@ -37,6 +37,7 @@ const SUITES = [
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
   { file: 'scale-world.mjs', expect: 17, label: '常数传导到星球模型（S2）' },
+  { file: 'provenance.mjs', expect: 17, label: '模型出处与可信度（S2.5）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },

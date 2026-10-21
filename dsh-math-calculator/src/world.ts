@@ -531,6 +531,7 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
   //   第 2 层 季节：轴倾角（主因）vs 偏心率（调制项），分别量化
   //   第 3 层 纬度：年均温 + 季节振幅，含极夜与反照率
   const layered = computeLayeredClimate({
+    alpha,
     luminosityW,
     semiMajorAxisM: orbitM,
     eccentricity,

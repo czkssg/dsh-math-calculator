@@ -45,6 +45,8 @@
 
 /** 分层的输入参数。 */
 export interface ClimateInput {
+  /** 精细结构常数（缺省现实值）。热容 ∝ α²，决定季节阻尼强度。 */
+  alpha?: number
   /** 恒星光度 W。 */
   luminosityW: number
   /** 轨道半长轴 m。 */
@@ -235,6 +237,7 @@ export function computeSeason(
   pressurePa: number,
   hasOcean: boolean,
   surfaceMeanK: number,
+  alpha: number = 7.2973525693e-3,
 ): SeasonLayer {
   // ── 轴倾角因子 ──
   // 地球 23.44° 定为 1.0。用 sin(倾角)/sin(23.44°) 标度：
@@ -253,7 +256,10 @@ export function computeSeason(
   let deltaT = deltaS / 4
   // c) 热惯性阻尼：海洋热容大，把年波动大幅削平
   //    无海洋（干燥岩石）阻尼弱，波动更接近理论值
-  const inertiaDamping = hasOcean ? 0.5 : 0.8
+  //    热容 ∝ 化学键能 ∝ α²（ADR-0001 S2.5）：α 越大，海水热容越大，
+  //    季节波动被削得越平。现实常数下倍率为 1，不改变原有标定值。
+  const heatCapacityScale = (7.2973525693e-3 / Math.max(1e-9, alpha)) ** 2
+  const inertiaDamping = (hasOcean ? 0.5 : 0.8) * heatCapacityScale
   //    厚大气增强输运，进一步削平
   const atmosphereDamping = 1 / (1 + Math.min(2, pressurePa / 101325) * 0.15)
   deltaT *= inertiaDamping * atmosphereDamping
@@ -519,6 +525,7 @@ export function computeLayeredClimate(input: ClimateInput): LayeredClimate {
     input.pressurePa,
     input.hasOcean,
     surfaceMeanK,
+    input.alpha ?? 7.2973525693e-3,
   )
 
   const pressureAtm = Math.max(0.001, input.pressurePa / 101325)

@@ -7,6 +7,7 @@
 import { toJsonValue, type JsonValue } from '../format.js'
 import { describeTerrain, type TerrainClimatology, type TerrainParams } from '../terrain.js'
 import { generateWorld, type WorldParams, type WorldProfile } from '../world.js'
+import { MODEL_CONSTANTS, describeProvenance, provenanceSummary } from '../provenance.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
 /**
@@ -130,6 +131,13 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
     lines.push('  无卫星——两条边界仍然成立，只是没有天体占据。')
   }
 
+  // ── 模型可信度（ADR-0001）──
+  //
+  // 这一段不是凑数：作者最需要知道的正是"哪个数字能当真"。
+  lines.push('')
+  lines.push('【模型可信度】（哪些是物理、哪些只是地球标定）')
+  for (const line of describeProvenance()) lines.push('  ' + line)
+
   if (profile.warnings.length > 0) {
     lines.push('')
     lines.push('⚠ 一致性警告（这些是设定上的硬伤，建议调整参数）')
@@ -222,6 +230,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
+      provenance: { summary: provenanceSummary(), constants: MODEL_CONSTANTS },
     }) as { [key: string]: JsonValue }
 
     return {
@@ -251,6 +260,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
+      provenance: { summary: provenanceSummary(), constants: MODEL_CONSTANTS },
     }),
   }
 }
