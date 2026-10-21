@@ -15,6 +15,84 @@ import {
   type ConstantRecalculation,
 } from '../constants-graph.js'
 import { toJsonValue } from '../format.js'
+import {
+  OUR_KNOBS,
+  OUR_UNIVERSE,
+  analyzeConstantChange,
+  contradictionsOf,
+  deriveScaleLadder,
+  dimensionlessFromKnobs,
+  type Knobs,
+} from '../constants-core.js'
+
+/** 从"常数表"里取出有量纲基础常数。 */
+function knobsFromValues(values: Record<string, number>): Knobs {
+  return {
+    c: values.c ?? OUR_KNOBS.c,
+    hbar: values.hbar ?? OUR_KNOBS.hbar,
+    e: values.e_charge ?? OUR_KNOBS.e,
+    epsilon0: values.epsilon0 ?? OUR_KNOBS.epsilon0,
+    me: values.me ?? OUR_KNOBS.me,
+    mp: values.mp ?? OUR_KNOBS.mp,
+    G: values.G ?? OUR_KNOBS.G,
+  }
+}
+
+/**
+ * 无量纲视角：真正决定物理的是 α、μ、α_G，而不是 c、G、h 这些有量纲数。
+ * 这一段专门回答"我改了 c，世界到底变没变"。
+ */
+function dimensionlessSection(values: Record<string, number>): { lines: string[]; data: Record<string, unknown> } {
+  const knobs = knobsFromValues(values)
+  const measured = dimensionlessFromKnobs(knobs)
+  const change = analyzeConstantChange(OUR_KNOBS, knobs)
+  const ds = { ...OUR_UNIVERSE, ...measured }
+  const ladder = deriveScaleLadder(ds)
+  const flags = contradictionsOf(ds)
+  const mark: Record<string, string> = { exact: '精确', scaling: '标度', 'order-of-magnitude': '量级' }
+
+  const lines: string[] = []
+  lines.push('')
+  lines.push('【无量纲视角】（真正决定物理的是这些，不是 c/G/h 本身）')
+  lines.push(`  α  = ${change.alphaAfter.toExponential(6)}（现实 ${OUR_UNIVERSE.alpha.toExponential(6)}，×${change.alphaRatio.toFixed(4)}）`)
+  lines.push(`  μ  = mₚ/mₑ = ${change.muAfter.toFixed(2)}（现实 ${OUR_UNIVERSE.mu.toFixed(2)}，×${change.muRatio.toFixed(4)}）`)
+  lines.push(
+    `  判定：${change.verdict === 'unit-only' ? '只是换单位（物理不变）' : '换了物理'} —— ${change.note}`,
+  )
+  lines.push('')
+  lines.push('  尺度阶梯（由 α、μ 推出，不再假设地球值）：')
+  for (const entry of ladder) {
+    lines.push(
+      `    ${entry.name.padEnd(22)} ${entry.value.toExponential(3).padStart(12)} ${entry.unit.padEnd(8)} [${mark[entry.confidence]}]`,
+    )
+  }
+  if (flags.length > 0) {
+    lines.push('')
+    lines.push('  ⚠ 与已知物理的张力（不拒绝回答，但请作者知情）')
+    for (const flag of flags) lines.push(`    · ${flag}`)
+  }
+
+  return {
+    lines,
+    data: {
+      dimensionless: {
+        alpha: measured.alpha,
+        mu: measured.mu,
+        alphaG: measured.alphaG,
+        verdict: change.verdict,
+        note: change.note,
+      },
+      scaleLadder: ladder.map((x) => ({
+        id: x.id,
+        value: x.value,
+        unit: x.unit,
+        confidence: x.confidence,
+        domain: x.domain,
+      })),
+      contradictions: flags,
+    },
+  }
+}
 import { currentWorkspace, updateWorkspace } from '../workspace.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
@@ -88,9 +166,11 @@ export function opConstants(args: MathArgs): Outcome {
     }
     lines.push('')
     lines.push(`改法：{"operation":"constants", "constants":{"c": 1.5e8}}`)
+    const base = dimensionlessSection(standardValues())
+    lines.push(...base.lines)
     return {
       result: lines.join('\n'),
-      value: toJsonValue({ values: standardValues(), fundamental: FUNDAMENTAL_NAMES }),
+      value: toJsonValue({ values: standardValues(), fundamental: FUNDAMENTAL_NAMES, ...base.data }),
     }
   }
 
@@ -184,6 +264,13 @@ export function opConstants(args: MathArgs): Outcome {
     }
   }
 
+  // ── 无量纲视角（ADR-0001）──
+  //
+  // 这一段回答的是最常见、也最根本的误解：
+  // 「我把光速改成 1.5e8，宇宙就不一样了」。实际上决定物理的是 α，不是 c。
+  const dim = dimensionlessSection(result.values)
+  lines.push(...dim.lines)
+
   // ── 引导 ──
   lines.push('')
   // 把推演结果设为「当前生效的常数」，后续 formula/world 都会用新值
@@ -229,6 +316,7 @@ export function opConstants(args: MathArgs): Outcome {
         ratio: c.ratio,
         description: c.description,
       })),
+      ...dim.data,
     }),
   }
 }

@@ -35,6 +35,7 @@ const SUITES = [
   { file: 'formulas-all.mjs', expect: 270, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
+  { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
