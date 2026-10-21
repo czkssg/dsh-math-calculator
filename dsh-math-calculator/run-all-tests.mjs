@@ -32,7 +32,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
-  { file: 'formulas-all.mjs', expect: 270, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 309, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -47,6 +47,7 @@ const SUITES = [
   { file: 'api.mjs', expect: 32, label: 'UI 后端 API（设置/常数/公式表）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
+  { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },

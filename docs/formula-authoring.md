@@ -87,6 +87,23 @@
 - `desc` 必须带单位，否则符号索引无法消歧；
 - 公式 `desc` 写清「这是什么」和「什么时候用」，这是给 AI 的调用依据。
 
+## 频次（frequency）
+
+每条公式可带 `frequency: "high" | "medium" | "low"`，表示**读者/主角在故事里遇到它的频率**。
+缺省按分类推断（`formulas.ts` 的 HIGH/LOW 分类表）。
+
+查询：
+
+```jsonc
+{"operation":"formulas","query":"freq:high"}
+```
+
+标注原则：
+
+- `high`：读者能直接看到/感受到（材料会不会断、船多快、风多冷、箭射多远、人一天喝多少水）；
+- `medium`：设定与推演常用，但不直接出现在场景里；
+- `low`：量子/核物理/相对论/金融——除非故事专门讲这些。
+
 ## 给别人维护的检查清单
 
 - [ ] `npm run build && npm run test:all` 全绿

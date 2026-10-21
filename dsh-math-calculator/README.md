@@ -12,7 +12,7 @@ DSH（DeepSeek Harness）原生数学计算与**架空世界观推演**插件。
 | 场景 | 传统方式 | 这个插件 |
 |---|---|---|
 | 高精度计算 | 心算 / bash 拼 | BigNumber 64 位，整数输出完整定点 |
-| 写公式 | 每次都重推 | 270 条公式库，参数全可覆盖 |
+| 写公式 | 每次都重推 | 309 条公式库，参数全可覆盖 |
 | 架空世界设定 | 凭感觉 | 输入星球参数 → 出重力/气候/地形上限 |
 | 改物理常数 | 无法验证 | 自动推导派生量 + 全公式偏差 + 设定校验 |
 | 多世界观 | 互相污染 | 工作区隔离，各持一套常数表与公式表 |
@@ -79,7 +79,7 @@ npm pack
 
 | operation | 说明 | 示例 |
 |---|---|---|
-| `formula` | 调用 270 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
+| `formula` | 调用 309 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
 | `formulas` | 检索公式库 | `{"query":"重力","operation":"formulas"}` |
 | `world` | 星球参数 → 体感画像 | `{"world":{"planetRadius":1.4,"rotationHours":40},"operation":"world"}` |
 | `terrain` | 局地气候（配合 world） | `{"world":{"planetMass":2},"terrain":{"kind":"coastal","latitudeDeg":58},"operation":"world"}` |
@@ -145,7 +145,7 @@ npm pack
 
 ### 公式库扩展（全局包 + 工作区临时）
 
-270 条内置公式不够时，不必改代码：
+309 条内置公式不够时，不必改代码：
 
 | 级别 | 存放 | 范围 | 用法 |
 |---|---|---|---|
@@ -163,6 +163,15 @@ npm pack
 {"operation":"formulas","query":"symbol:m@质量"}   // 只看质量
 {"operation":"formulas","query":"symbol:*"}        // 所有多义符号
 ```
+
+**按读者视角频次筛选**（第 4 批公式按「故事里会不会遇到」标的频次）：
+
+```jsonc
+{"operation":"formulas","query":"freq:high"}   // 高频：材料/天气/感知/交通/人体/战斗
+{"operation":"formulas","query":"freq:low"}    // 低频：量子/核物理/相对论/金融
+```
+
+当前分布：高频 94 / 中频 186 / 低频 29（共 309 条）。
 
 ### 基础运算扩展
 
@@ -277,7 +286,7 @@ npm pack
 {"operation":"quantities","constants":{"G":1.3e-10},"constantName":"G"}
 //    → 普朗克长度 ∝√G、玻尔半径与 G 无关、表面重力 ∝G
 
-// 4. 看全部 270 条公式相对现实的偏差
+// 4. 看全部 309 条公式相对现实的偏差
 {"operation":"impact","constants":{"c":1.5e8}}
 //    → 11 条受影响：质能 -75%、黑体辐射 +300%、维恩位移 -50%
 
@@ -384,7 +393,7 @@ node run-all-tests.mjs # 19 套测试，960 项
 src/
 ├── index.ts            插件入口 + 工具定义 + operation 分发（2032 行）
 ├── ops/                8 个较大的 operation 实现
-├── formula-library*.ts 270 条公式（3 个批次）
+├── formula-library*.ts 309 条公式（4 个批次，含读者视角高频批）
 ├── constants-graph.ts  34 个常数的依赖图
 ├── quantities.ts       量纲分析与缩放指数
 ├── feasibility.ts      11 条设定约束

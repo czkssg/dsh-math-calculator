@@ -75,6 +75,11 @@ export interface FormulaDef {
   /** 检索关键词（中英文）。 */
   keys?: string[]
   /**
+   * 读者视角使用频次（缺省按分类推断，见 formulas.ts）。
+   * high = 故事里高频出现；low = 几乎不会用到。
+   */
+  frequency?: 'high' | 'medium' | 'low'
+  /**
    * 用 JS 侧实现代替 mathjs 表达式。
    * 用于数组逐元素运算这类 mathjs 表达不好的场景。
    * 值与 formula-builtins.ts 里的实现一一对应。

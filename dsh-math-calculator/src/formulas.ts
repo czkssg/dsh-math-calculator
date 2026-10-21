@@ -19,6 +19,7 @@ import {
 } from './formula-library.js'
 import { EXT_FORMULAS } from './formula-library-ext.js'
 import { PERCEPTION_FORMULAS } from './formula-library-perception.js'
+import { STORY_FORMULAS } from './formula-library-story.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 
@@ -26,13 +27,19 @@ import { loadGlobalFormulas } from './formula-pack.js'
  * 全部公式 = 主批次 + 扩展批次 + 感知层批次。
  * 分批组织而不是单文件拼接，避免 formula-library.ts 无限膨胀。
  */
-export const FORMULAS: FormulaDef[] = [...BASE_FORMULAS, ...EXT_FORMULAS, ...PERCEPTION_FORMULAS]
+export const FORMULAS: FormulaDef[] = [
+  ...BASE_FORMULAS,
+  ...EXT_FORMULAS,
+  ...PERCEPTION_FORMULAS,
+  ...STORY_FORMULAS,
+]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
 export const FORMULA_INDEX: Map<string, FormulaDef> = new Map()
 for (const formula of BASE_INDEX.values()) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of EXT_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of PERCEPTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of STORY_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。
@@ -244,6 +251,57 @@ export function findFormulas(query: string, limit = 10): FormulaDef[] {
     .sort((left, right) => right.score - left.score || left.formula.id.localeCompare(right.formula.id))
     .slice(0, limit)
     .map((entry) => entry.formula)
+}
+
+// ── 读者视角频次 ──
+//
+// 270 条是「检索式广度」，但故事里真正高频的是另一批：
+// 材料会不会断、船多快、风多冷、露点多少、箭射多远、人一天要多少水。
+// 这里按分类给出默认频次，单条公式可以用 frequency 字段覆盖。
+
+/** 故事里高频出现的分类。 */
+const HIGH_FREQ_CATEGORIES = new Set([
+  // perception/* 这一批本来就是按「读者能感知」写的
+  'perception/weather',
+  'perception/senses',
+  'perception/travel',
+  'perception/agriculture',
+  'perception/architecture',
+  'perception/climate',
+  'perception/celestial',
+  'perception/horizon',
+  'perception/technology',
+  // 材料/结构：读者最常问「会不会断」
+  'materials/structures',
+  // 战斗与重力：故事高频
+  'military/combat',
+  'physics/gravity',
+])
+
+/** 几乎不会在故事里用到的分类。 */
+const LOW_FREQ_CATEGORIES = new Set([
+  'physics/quantum',
+  'physics/nuclear',
+  'physics/relativity',
+  'econ/finance',
+  'econ/macro',
+  'econ/io',
+  'econ/utility',
+  'social/information',
+  'social/inequality',
+])
+
+/** 某条公式的读者视角频次。 */
+export function formulaFrequency(formula: FormulaDef): 'high' | 'medium' | 'low' {
+  if (formula.frequency) return formula.frequency
+  if (HIGH_FREQ_CATEGORIES.has(formula.cat)) return 'high'
+  if (LOW_FREQ_CATEGORIES.has(formula.cat)) return 'low'
+  return 'medium'
+}
+
+/** 按频次筛选公式。 */
+export function listFormulasByFrequency(level: 'high' | 'medium' | 'low'): FormulaDef[] {
+  return FORMULAS.filter((formula) => formulaFrequency(formula) === level)
 }
 
 /** 按分类列出公式。 */

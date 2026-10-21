@@ -72,6 +72,8 @@ import {
   buildFormulaScope,
   describeFormula,
   findFormulas,
+  formulaFrequency,
+  listFormulasByFrequency,
   listFormulaCategories,
   resolveExpression,
   resolveParams,
@@ -1499,6 +1501,30 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 /** `formulas`：检索/浏览公式库。 */
 function opFormulas(args: MathArgs): Outcome {
   const query = (args.query ?? args.expression ?? '').trim()
+
+  // ── 频次查询：query="freq:high" / "频率:高" ──
+  //
+  // 用户视角：270 条是广度，但故事里高频的是材料/天气/感知/交通/人体这一层。
+  // 这里按频次筛，帮 AI 优先调用真正常用的公式。
+  const freqMatch = query.match(/^(?:freq|frequency|频率|频次)[:：]\s*(high|medium|low|高|中|低)$/i)
+  if (freqMatch) {
+    const alias: Record<string, 'high' | 'medium' | 'low'> = { 高: 'high', 中: 'medium', 低: 'low' }
+    const level = alias[freqMatch[1]] ?? (freqMatch[1].toLowerCase() as 'high' | 'medium' | 'low')
+    const list = listFormulasByFrequency(level)
+    const byCategory = new Map<string, number>()
+    for (const formula of list) byCategory.set(formula.cat, (byCategory.get(formula.cat) ?? 0) + 1)
+    const label = level === 'high' ? '高频（故事里常遇到）' : level === 'medium' ? '中频' : '低频（几乎用不到）'
+    const lines = [`${label}：${list.length} 条`]
+    lines.push('')
+    lines.push('按分类：')
+    for (const [cat, count] of [...byCategory.entries()].sort((a, b) => b[1] - a[1])) {
+      lines.push(`  ${cat}  (${count})`)
+    }
+    lines.push('')
+    lines.push('示例：' + list.slice(0, 12).map((f) => f.id).join(', '))
+    lines.push('用 operation="formulas" + query="关键词" 检索具体公式。')
+    return { result: lines.join('\n'), value: { level, total: list.length, categories: Object.fromEntries(byCategory) } }
+  }
 
   // ── 符号查询：query="symbol:m" / "符号:m@质量" / "symbol:*" ──
   //

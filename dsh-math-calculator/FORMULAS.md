@@ -1,6 +1,6 @@
 # 公式库完整清单
 
-> 共 **270** 条，**49** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
+> 共 **309** 条，**51** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
 
 调用方式：`{ "operation": "formula", "formula": "<id>", "overrides": {...} }`
 
@@ -9,7 +9,7 @@
 ## 目录
 
 - [biology/ecology](#biologyecology) — 6 条
-- [biology/physiology](#biologyphysiology) — 4 条
+- [biology/physiology](#biologyphysiology) — 9 条
 - [chemistry/acid](#chemistryacid) — 1 条
 - [chemistry/electro](#chemistryelectro) — 1 条
 - [chemistry/kinetics](#chemistrykinetics) — 2 条
@@ -23,19 +23,21 @@
 - [econ/micro](#econmicro) — 2 条
 - [econ/production](#econproduction) — 1 条
 - [econ/utility](#econutility) — 1 条
+- [materials/structures](#materialsstructures) — 11 条
 - [math/geometry](#mathgeometry) — 7 条
 - [math/growth](#mathgrowth) — 3 条
 - [math/scales](#mathscales) — 2 条
 - [math/series](#mathseries) — 2 条
 - [military/combat](#militarycombat) — 8 条
-- [perception/agriculture](#perceptionagriculture) — 5 条
+- [perception/agriculture](#perceptionagriculture) — 7 条
 - [perception/architecture](#perceptionarchitecture) — 7 条
 - [perception/celestial](#perceptioncelestial) — 15 条
 - [perception/climate](#perceptionclimate) — 5 条
 - [perception/horizon](#perceptionhorizon) — 5 条
-- [perception/senses](#perceptionsenses) — 6 条
+- [perception/senses](#perceptionsenses) — 14 条
 - [perception/technology](#perceptiontechnology) — 4 条
-- [perception/travel](#perceptiontravel) — 6 条
+- [perception/travel](#perceptiontravel) — 12 条
+- [perception/weather](#perceptionweather) — 7 条
 - [physics/astronomy](#physicsastronomy) — 12 条
 - [physics/em](#physicsem) — 22 条
 - [physics/fluid](#physicsfluid) — 4 条
@@ -186,6 +188,67 @@ L0 * (m / m0)^b
 可选：`b`=0.25 (标度指数)
 
 寿命 ∝ 质量^b。架空生物可改 b。
+
+### human_body_surface_area
+
+**人体表面积（Du Bois）** · 单位 m^2
+
+```
+0.007184 * W^0.425 * H^0.725
+```
+
+必填：`W` (体重 kg)、`H` (身高 cm)
+
+Du Bois 经验公式；用药剂量、散热、烫伤面积都按体表面积算。
+
+### basal_metabolic_rate
+
+**基础代谢率（Kleiber）** · 单位 kcal/日
+
+```
+70 * W^0.75
+```
+
+必填：`W` (体重 kg)
+
+Kleiber 经验式；生物代谢随体重 3/4 次幂缩放，跨物种都近似成立。
+
+### daily_water_need
+
+**每日需水量（经验）** · 单位 ml/日
+
+```
+35 * W
+```
+
+必填：`W` (体重 kg)
+
+经验值 35 ml/kg/日（含食物水分）；高温或重体力要上调。
+
+### widmark_bac
+
+**血液酒精浓度（Widmark）** · 单位 g/L
+
+```
+A * 100 / (W * r) - 0.015 * t
+```
+
+必填：`A` (摄入纯酒精质量 g)、`W` (体重 kg)、`t` (自饮酒起小时数 h)
+可选：`r`=0.68 (分布系数（男≈0.68，女≈0.55）)
+
+Widmark 经验公式；代谢项 0.015 g/L/h。只作量级参考，个体差异大。
+
+### allometric_dose_scale
+
+**跨物种剂量换算** · 单位 mg/kg
+
+```
+D_human * (W_human / W_animal)^0.75
+```
+
+必填：`D_human` (人体剂量 mg/kg)、`W_human` (人体质量 kg)、`W_animal` (动物质量 kg)
+
+异速缩放（经验）；兽药/毒理从人推到动物、或反向推的常用近似。
 
 ## chemistry/acid
 
@@ -532,6 +595,142 @@ c^(1 - gamma) / (1 - gamma)
 
 常数相对风险厌恶效用，γ=1 时退化为 ln c。
 
+## materials/structures
+
+### buckling_euler
+
+**欧拉屈曲临界载荷** · 单位 N
+
+```
+pi^2 * E * I / (K * L)^2
+```
+
+必填：`E` (弹性模量 Pa)、`I` (截面惯性矩 m^4)、`L` (柱长 m)
+可选：`K`=1 (长度系数（两端铰支=1，一端固定=0.7）)
+
+细长柱失稳的临界压力 P_cr = π²EI/(KL)²；超过它柱子会突然弯折，不是压碎。
+
+### hoop_stress
+
+**薄壁圆筒环向应力** · 单位 Pa
+
+```
+p * r / t
+```
+
+必填：`p` (内压 Pa)、`r` (半径 m)、`t` (壁厚 m)
+
+锅炉/管道/压力容器的环向应力 σ = pr/t；判断会不会炸开看它是否超过屈服强度。
+
+### thermal_stress
+
+**热应力** · 单位 Pa
+
+```
+E * alpha * dT
+```
+
+必填：`E` (弹性模量 Pa)、`alpha` (热膨胀系数 1/K)、`dT` (温差 K)
+
+约束状态下温度变化产生的应力 σ = EαΔT；玻璃杯骤冷骤裂就是这个。
+
+### beam_center_deflection
+
+**简支梁跨中挠度** · 单位 m
+
+```
+F * L^3 / (48 * E * I)
+```
+
+必填：`F` (集中载荷 N)、`L` (跨度 m)、`E` (弹性模量 Pa)、`I` (惯性矩 m^4)
+
+简支梁跨中集中力的下挠量；判断楼板/桥面「软不软」用它。
+
+### beam_center_moment
+
+**简支梁跨中弯矩** · 单位 N·m
+
+```
+F * L / 4
+```
+
+必填：`F` (集中载荷 N)、`L` (跨度 m)
+
+跨中集中力的最大弯矩；与截面模量配合可判断是否屈服。
+
+### wood_beam_moment_capacity
+
+**矩形木梁抗弯承载力** · 单位 N·m
+
+```
+sigma_b * b * h^2 / 6
+```
+
+必填：`sigma_b` (抗弯强度 Pa)、`b` (宽度 m)、`h` (高度 m)
+
+矩形截面可承受的最大弯矩；木材顺纹强度远高于横纹，取值时注意方向。
+
+### column_axial_capacity
+
+**短柱轴压承载力** · 单位 N
+
+```
+sigma_y * A
+```
+
+必填：`sigma_y` (屈服强度 Pa)、`A` (截面积 m^2)
+
+短粗柱的压溃载荷；细长柱要改用 buckling_euler（先屈曲不是先压碎）。
+
+### arch_thrust
+
+**三铰拱水平推力** · 单位 N
+
+```
+W * L / (8 * h)
+```
+
+必填：`W` (总竖向载荷 N)、`L` (跨度 m)、`h` (矢高 m)
+
+三铰拱在均布载荷下的水平推力；拱越扁推力越大，桥台要更厚。
+
+### hardness_to_yield
+
+**硬度估屈服强度** · 单位 Pa
+
+```
+3 * H * 9.80665e6
+```
+
+必填：`H` (布氏硬度 HB)
+
+经验关系 σy ≈ 3HB（量级估算，误差可达 30%）。
+
+### fatigue_life_basquin
+
+**疲劳寿命（Basquin）** · 单位 次
+
+```
+(sigma_f / sigma_a)^(1 / b)
+```
+
+必填：`sigma_f` (疲劳强度系数 Pa)、`sigma_a` (应力幅 Pa)
+可选：`b`=-0.1 (疲劳指数（-0.05~-0.15）)
+
+反复受力多久会断的 S-N 经验式；金属构件在交变载荷下的寿命量级估算。
+
+### corrosion_rate_weightloss
+
+**腐蚀速率（失重法）** · 单位 mm/yr
+
+```
+87.6 * W / (A * rho * t)
+```
+
+必填：`W` (失重 g)、`A` (暴露面积 cm^2)、`rho` (材料密度 g/cm^3)、`t` (暴露时间 h)
+
+由失重换算年腐蚀深度；经验公式，实际速率随环境大幅变化。
+
 ## math/geometry
 
 ### circle_area
@@ -875,6 +1074,30 @@ width * depth * velocity
 必填：`width` (河宽 m)、`depth` (水深 m)、`velocity` (流速 m/s)
 
 河有多大。航运能力、渡河难度、洪水规模。
+
+### growing_degree_days
+
+**生长度日** · 单位 °C·日
+
+```
+(Tmax + Tmin) / 2 - Tbase
+```
+
+必填：`Tmax` (日最高温 °C)、`Tmin` (日最低温 °C)、`Tbase` (作物基点温度 °C)
+
+积温的日值；累计到某个阈值作物才成熟，是农时推算的基础。
+
+### reference_evapotranspiration
+
+**参考蒸散量（简化）** · 单位 mm/日
+
+```
+0.408 * Rn + 0.9 * (900 / (T + 273)) * u2 * (es - ea)
+```
+
+必填：`Rn` (净辐射 MJ/(m^2·日))、`T` (平均气温 °C)、`u2` (2m 风速 m/s)、`es` (饱和水汽压 kPa)、`ea` (实际水汽压 kPa)
+
+FAO-56 的简化形式（经验），估算作物每天耗水；灌溉设计常用。
 
 ## perception/architecture
 
@@ -1362,6 +1585,104 @@ d / c
 
 不同程度黑暗下能看到多暗的星。星空描写的量化依据。
 
+### echo_distance
+
+**回声测距** · 单位 m
+
+```
+v * t / 2
+```
+
+必填：`t` (往返时间 s)
+可选：`v`=343 (声速 m/s)
+
+对着山崖喊一声听到回声，距离 = 声速×时间/2。
+
+### lightning_distance
+
+**闪电距离** · 单位 km
+
+```
+t * 343 / 1000
+```
+
+必填：`t` (看到闪电到听到雷声的秒数 s)
+
+声速约 343 m/s，3 秒 ≈ 1 km；故事里最常用的野外常识。
+
+### music_note_frequency
+
+**音符频率（十二平均律）** · 单位 Hz
+
+```
+440 * 2^((n - 69) / 12)
+```
+
+必填：`n` (MIDI 音高（A4=69）)
+
+十二平均律：A4=440Hz，每升高 12 个半音频率翻倍。
+
+### string_fundamental_frequency
+
+**弦的基频** · 单位 Hz
+
+```
+1 / (2 * L) * sqrt(T / mu)
+```
+
+必填：`L` (弦长 m)、`T` (张力 N)、`mu` (线密度 kg/m)
+
+琴弦越短、越紧、越细，音越高。
+
+### sound_attenuation_distance
+
+**点声源距离衰减** · 单位 dB
+
+```
+L0 - 20 * log10(r / r0)
+```
+
+必填：`L0` (参考距离处声压级 dB)、`r` (目标距离 m)
+可选：`r0`=1 (参考距离 m)
+
+自由场理论衰减：距离每翻倍降 6 dB；有遮挡/地面反射时实际更复杂。
+
+### lens_magnification
+
+**薄透镜放大率** · 单位 无量纲
+
+```
+-di / do
+```
+
+必填：`di` (像距 m)、`do` (物距 m)
+
+负号表示倒立实像；配合 1/f=1/do+1/di 用。
+
+### camera_exposure_ev
+
+**曝光值 EV** · 单位 EV
+
+```
+log2(N^2 / t)
+```
+
+必填：`N` (光圈 f 数)、`t` (快门时间 s)
+
+摄影曝光的统一标尺；EV 每 +1 少一半进光。
+
+### optical_resolving_power
+
+**望远镜分辨极限** · 单位 rad
+
+```
+1.22 * lambda / D
+```
+
+必填：`lambda` (波长 m)、`D` (口径 m)
+
+瑞利判据：口径越大看得越细；这是望远镜/显微镜的物理上限。
+
 ## perception/technology
 
 ### combustion_energy
@@ -1490,6 +1811,170 @@ width / boat_speed
 可选：`boat_speed`=1 (船速 m/s)
 
 渡河要多久。军事行动的窗口期。
+
+### hull_speed
+
+**船舶理论航速** · 单位 kn
+
+```
+1.34 * sqrt(L)
+```
+
+必填：`L` (水线长度 ft)
+
+排水型船的兴波极限速度（经验）；再快就得上滑行艇或水翼。
+
+### mach_number
+
+**马赫数** · 单位 无量纲
+
+```
+v / c
+```
+
+必填：`v` (速度 m/s)
+可选：`c`=343 (当地声速 m/s)
+
+速度与声速之比；>1 即超音速。高空声速更低，同速下马赫数更大。
+
+### projectile_range_vacuum
+
+**抛体射程（真空）** · 单位 m
+
+```
+v^2 * sin(2 * theta) / g
+```
+
+必填：`v` (初速度 m/s)、`theta` (发射角 rad)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+忽略空气阻力的射程；45° 最远。真实投石机/弓箭因阻力射程明显更短。
+
+### projectile_apex_height
+
+**抛体最高点** · 单位 m
+
+```
+(v * sin(theta))^2 / (2 * g)
+```
+
+必填：`v` (初速度 m/s)、`theta` (发射角 rad)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+真空抛体的最大高度；箭能射多高、石弹能砸多高。
+
+### stopping_distance
+
+**刹车距离** · 单位 m
+
+```
+v^2 / (2 * mu * g)
+```
+
+必填：`v` (初速度 m/s)、`mu` (摩擦系数（干沥青≈0.7，湿≈0.4）)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+与速度平方成正比：速度翻倍，刹车距离四倍。
+
+### impact_speed_freefall
+
+**自由落体落地速度** · 单位 m/s
+
+```
+sqrt(2 * g * h)
+```
+
+必填：`h` (下落高度 m)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+忽略空气阻力；10 米约 14 m/s，相当于 50 km/h 撞墙。
+
+## perception/weather
+
+### wind_chill
+
+**风寒指数** · 单位 °C
+
+```
+13.12 + 0.6215*T - 11.37*v^0.16 + 0.3965*T*v^0.16
+```
+
+必填：`T` (气温 °C)、`v` (风速 km/h)
+
+加拿大环境部经验公式（适用 T ≤ 10°C、v > 4.8 km/h）；「体感温度」的来源。
+
+### heat_index
+
+**酷热指数** · 单位 °C
+
+```
+-42.379 + 2.04901523*T + 10.14333127*R - 0.22475541*T*R - 0.00683783*T^2 - 0.05481717*R^2 + 0.00122874*T^2*R + 0.00085282*T*R^2 - 0.00000199*T^2*R^2
+```
+
+必填：`T` (气温 °C)、`R` (相对湿度 %)
+
+Rothfusz 回归（经验），高温高湿下的体感温度。
+
+### dew_point_magnus
+
+**露点温度（Magnus）** · 单位 °C
+
+```
+243.04*(log(RH/100) + 17.625*T/(243.04+T)) / (17.625 - log(RH/100) - 17.625*T/(243.04+T))
+```
+
+必填：`T` (气温 °C)、`RH` (相对湿度 %)
+
+Magnus 经验式；露点以下水汽凝结，是结露、起雾、下露的判据。
+
+### wind_power_density
+
+**风功率** · 单位 W
+
+```
+0.5 * rho * A * v^3 * Cp
+```
+
+必填：`A` (迎风面积 m^2)、`v` (风速 m/s)
+可选：`rho`=1.225 (空气密度 kg/m^3)、`Cp`=0.35 (风轮功率系数（理论上限 0.593）)
+
+风能可提取功率 P = ½ρAv³Cp；风速是三次方，所以风车对风速极敏感。
+
+### cooling_newton
+
+**牛顿冷却** · 单位 W
+
+```
+h * A * dT
+```
+
+必填：`h` (对流换热系数 W/(m^2·K))、`A` (表面积 m^2)、`dT` (温差 K)
+
+对流散热功率；自然对流 h≈5–25，强制风冷可达 100 以上。
+
+### heat_conduction_slab
+
+**一维导热** · 单位 W
+
+```
+k * A * dT / L
+```
+
+必填：`k` (导热系数 W/(m·K))、`A` (截面积 m^2)、`dT` (温差 K)、`L` (厚度 m)
+
+傅里叶定律；砌墙、做衣服、隔热层的核心公式。
+
+### thermal_time_constant
+
+**物体升降温时间** · 单位 s
+
+```
+m * c * dT / P
+```
+
+必填：`m` (质量 kg)、`c` (比热容 J/(kg·K))、`dT` (温差 K)、`P` (加热功率 W)
+
+烧开一壶水要多久、石头多久凉透，都用它估。
 
 ## physics/astronomy
 
