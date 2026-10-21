@@ -22,7 +22,9 @@
 ;(function () {
   'use strict'
 
-  const PANEL_ID = 'math-calc-workspaces'
+  // 用「包名.用途」做键，和社区插件一致（例如 dsh-my-guardian 用自己的包名作 TAB key），
+  // 这样即使以后有别的数学类插件，也不会撞 key。
+  const PANEL_ID = 'dsh-math-calculator.workspaces'
   const API_BASE = '/api/dsh-math-calculator'
 
   /** 请求后端。 */
