@@ -2,7 +2,8 @@
 
 DSH（DeepSeek Harness）原生数学计算与**架空世界观推演**插件。
 
-运行期只依赖 `mathjs` 与 `algebrite`，**不 import 任何 `@deepseek-ai/*` 包** —— 所以不会因为 `CallId` 这类导出被删除而崩在启动阶段。
+运行期依赖三样：`mathjs`、`algebrite`，以及官方 `@deepseek-ai/dsh-tools` 里的 **`defineTool` 一个导出**。
+宿主服务一律用 `ctx.get` 可选读取，**不碰 `CallId` 这类宿主内部导出** —— 旧版正是死在那个导出被删除上。
 
 ---
 

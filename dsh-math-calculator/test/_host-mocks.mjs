@@ -29,46 +29,61 @@
  *     插件当初挂掉的原因）
  *   - `ctx.get(name)` 是唯一免声明的读法，未提供时返回 `undefined`
  *   - `get/provide/on/emit/inject` 是混入的方法，可以随便用
- *   - `ctx.inject(names, cb)`：依赖不齐时**不调用**回调（返回一个空 fiber）；齐了才调
+ *   - `ctx.inject(names, cb)`：依赖不齐时**不调用**回调（返回一个空 fiber）；齐了才调，
+ *     回调拿到的是**多声明了这些服务的子 ctx**（父 ctx 读不到，这是真 cordis 的 fiber 语义）
  *
  * @param options - `{ inject: string[], services: Record<string, unknown> }`
  * @returns `{ ctx, hooks, store, injected }`
  */
 export function makeCordisCtx(options = {}) {
   const store = new Map(Object.entries(options.services ?? {}))
-  const declared = new Set(options.inject ?? [])
   const hooks = {}
   const injected = []
 
-  const base = {
-    get: (name) => store.get(name),
-    provide: (name, value) => {
-      store.set(name, value)
-      return () => store.delete(name)
-    },
-    on: (event, handler) => {
-      hooks[event] = handler
-      return () => {}
-    },
-    emit: () => {},
-    inject: (names, callback) => {
-      const missing = [...names].filter((name) => !store.has(name))
-      if (missing.length > 0) return { dispose() {} }
-      injected.push({ names: [...names], callback })
-      const result = callback(proxy, undefined)
-      return { dispose() {} , result }
-    },
-  }
+  /**
+   * 造一个 ctx 代理。
+   *
+   * `declared` 是这个 ctx 能「直接读」的服务集合：插件的 `export const inject`
+   * 决定根 ctx 能读什么；`ctx.inject(names, cb)` 的回调拿到的是**多声明了 names
+   * 的子 ctx**（真 cordis 的 fiber 语义）。
+   *
+   * 这一点必须复刻到位：曾把父 ctx 传给回调，于是回调里读 `webCtx.webServer`
+   * 被 Proxy 拦下抛错，插件自己的 try/catch 把异常吞掉 → 路由一条都没注册，
+   * 而测试以为「插件坏了」。实测真宿主行为是：回调拿到的子 ctx 能直接读该服务。
+   */
+  const makeProxy = (declared) =>
+    new Proxy(
+      {
+        get: (name) => store.get(name),
+        provide: (name, value) => {
+          store.set(name, value)
+          return () => store.delete(name)
+        },
+        on: (event, handler) => {
+          hooks[event] = handler
+          return () => {}
+        },
+        emit: () => {},
+        inject: (names, callback) => {
+          const missing = [...names].filter((name) => !store.has(name))
+          if (missing.length > 0) return { dispose() {} }
+          injected.push({ names: [...names], callback })
+          // 回调用子 ctx：真 cordis 的嵌套 inject 就是这样把依赖交给回调的
+          const result = callback(makeProxy(new Set([...declared, ...names])), undefined)
+          return { dispose() {}, result }
+        },
+      },
+      {
+        get(target, prop) {
+          if (typeof prop === 'symbol') return Reflect.get(target, prop)
+          if (Reflect.has(target, prop)) return Reflect.get(target, prop)
+          if (declared.has(prop)) return store.get(prop)
+          throw new Error(`cannot get property "${String(prop)}" without inject`)
+        },
+      },
+    )
 
-  const proxy = new Proxy(base, {
-    get(target, prop) {
-      if (typeof prop === 'symbol') return Reflect.get(target, prop)
-      if (Reflect.has(target, prop)) return Reflect.get(target, prop)
-      if (declared.has(prop)) return store.get(prop)
-      throw new Error(`cannot get property "${String(prop)}" without inject`)
-    },
-  })
-
+  const proxy = makeProxy(new Set(options.inject ?? []))
   return { ctx: proxy, hooks, store, injected }
 }
 

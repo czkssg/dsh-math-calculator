@@ -3,6 +3,12 @@
 > 这份文档记录的是 **Lead 直接在本机读到的证据**，不是推测。每一条都标了来源。
 > 结论直接写进了插件根目录的 `README.md` 第 2 节。
 
+> **2026-10-22 更正**：本文第 3 节与第 8 节的「运行期完全不 import `@deepseek-ai/*`」**已不成立**。
+> 插件后来改用官方 `defineTool`（`src/index.ts:23`），因此 `@deepseek-ai/dsh-tools` 是**运行期依赖**，
+> 必须留在 `devDependencies` 并列入 `peerDependencies`，运行时从插件自己的 `node_modules` 解析。
+> 换来的是 schema 编译 / 参数校验 / 错误包装不用自己维护。其余调研结论（CLI 转发 pnpm、
+> profile 无 `dsh-tools`、desktop 由 Electron 独占管理）仍然有效。
+
 ## 0. 本机事实
 
 | 项 | 值 | 证据 |

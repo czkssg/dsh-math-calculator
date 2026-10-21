@@ -17,7 +17,18 @@ import { fileURLToPath } from 'node:url'
 
 const root = dirname(fileURLToPath(import.meta.url))
 
-/** 测试清单：文件、期望的通过数（用于发现静默减少）、描述。 */
+/**
+ * 测试清单：文件、期望的通过数（用于发现静默减少）、描述。
+ *
+ * ⚠️ 新增真测试**必须**进这张表，否则「全绿」不代表覆盖 ——
+ * host-contract.mjs 就是这么漏掉的：它专门防「真宿主装不起来」，
+ * 却不在清单里，于是 1008 项全绿照样漏掉了两次真机事故。
+ *
+ * 以下三个**故意不进来**（不是漏了）：
+ *   formulas-list.mjs —— 生成 FORMULAS.md 的导出脚本，无断言
+ *   limits.mjs        —— 生成 LIMITS.md 的采集脚本，无断言
+ *   worldbuilding.mjs —— 手工压测探针，只打印结果
+ */
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
@@ -38,7 +49,10 @@ const SUITES = [
   { file: 'workspace.mjs', expect: 38, label: '工作区隔离' },
   { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
   { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
-  { file: 'integration.mjs', expect: 49, label: '整合验收（整体装配）' },
+  { file: 'integration.mjs', expect: 51, label: '整合验收（整体装配）' },
+  // 这一套专门防「插件在真宿主里装不起来」：桩忠实度 + 路由形状 + 派发行为。
+  // 它曾经不在清单里，于是 1008 项全绿也照样漏掉了两次真机事故。
+  { file: 'host-contract.mjs', expect: 32, label: '宿主契约回归（真机契约）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */
