@@ -32,6 +32,8 @@ import {
   describeStarClass,
   type StarClass,
 } from './star-catalog.js'
+import { analyzeMoonSystem, type MoonSpec, type MoonSystemReport } from './moons.js'
+import { observeSky, type SkyReport } from './sky.js'
 
 /** 世界参数（全部可选，默认地球）。 */
 export interface WorldParams {
@@ -87,6 +89,15 @@ export interface WorldParams {
   moonMass?: number
   /** 主卫星轨道半径，地球-月球距离为单位（384400 km）。默认 1。 */
   moonDistance?: number
+  /**
+   * 多卫星设定（v4）。给了就按逐颗参数推演，
+   * 并自动忽略 moonCount 的数量语义（数量以本数组长度为准）。
+   */
+  moons?: MoonSpec[]
+  /** 光污染 0-1（0 = 无人烟，1 = 特大城市），影响夜空亮度与可见星数。默认 0。 */
+  lightPollution?: number
+  /** 银河带亮度 0-1（设定值：星球是否位于星系盘内）。默认 0.6。 */
+  galaxyBand?: number
   // ── 历法 ──
   /** 一"天"定义的参考：'solar'（太阳日，默认）或 'sidereal'（恒星日）。 */
   dayDefinition?: string
@@ -209,6 +220,10 @@ export interface WorldProfile {
     /** 角直径（度），决定它在天上看起来多大。 */
     angularDiameterDeg: number
   }
+  /** 多卫星系统体检：希尔球、洛希极限、相邻间距、共振、每颗的观感。 */
+  moonSystem: MoonSystemReport
+  /** 抬头能看见什么：恒星颜色、白天天空、夜晚星空。 */
+  sky: SkyReport
   /** 历法推算。 */
   calendar: {
     /** 太阳日长度（小时）。恒星日 + 太阳日修正。 */
@@ -590,9 +605,14 @@ export function generateWorld(params: WorldParams): WorldProfile {
   // 地球的月球是个异常大的卫星（直径是地球的 27%），这是地球气候稳定的关键因素之一。
   const MOON_MASS = 7.342e22   // kg，月球质量
   const MOON_DIST = 3.844e8    // m，地月平均距离
-  const moonCount = Math.max(0, Math.round(num(params.moonCount, 1)))
-  const moonMassKg = num(params.moonMass, 1) * MOON_MASS
-  const moonDistanceM = num(params.moonDistance, 1) * MOON_DIST
+  // v4：允许多卫星——给了 moons 数组就以它为准（数量与主卫星都跟随）
+  const primarySpec = params.moons && params.moons.length > 0 ? params.moons[0] : undefined
+  const moonCount =
+    params.moons && params.moons.length > 0
+      ? params.moons.length
+      : Math.max(0, Math.round(num(params.moonCount, 1)))
+  const moonMassKg = (primarySpec ? num(primarySpec.massMoon, 1) : num(params.moonMass, 1)) * MOON_MASS
+  const moonDistanceM = (primarySpec ? num(primarySpec.distanceMoon, 1) : num(params.moonDistance, 1)) * MOON_DIST
 
   // 潮汐加速度：a_tidal = 2GM_moon·R_planet / d³
   const tidalAccel =
@@ -642,6 +662,46 @@ export function generateWorld(params: WorldParams): WorldProfile {
         '晨昏线附近是唯一宜居带，大气会在夜面凝结/冻结，形成剧烈的全球环流。',
     )
   }
+
+  // ── 多卫星系统体检（v4）──
+  //
+  // 与上面「主卫星」的区别：上面只回答"潮汐多大"，
+  // 这里回答"这套卫星配置在物理上成立吗"——希尔球、洛希极限、相邻间距、共振。
+  // 同时给出每颗卫星的观感（角直径、视星等、是否潮汐锁定）。
+  const moonSpecs: MoonSpec[] =
+    params.moons && params.moons.length > 0
+      ? params.moons
+      : moonCount > 0
+        ? [{ massMoon: num(params.moonMass, 1), distanceMoon: num(params.moonDistance, 1) }]
+        : []
+  const moonSystem = analyzeMoonSystem({
+    planetMassKg,
+    planetRadiusM,
+    planetDensityKgM3: densityKgM3,
+    starMassKg,
+    orbitM,
+    planetRotationHours: rotationHours,
+    moons: moonSpecs,
+  })
+  warnings.push(...moonSystem.warnings)
+  highlights.push(...moonSystem.highlights)
+
+  // ── 抬头看见什么（v4）──
+  //
+  // 从地表观测者的角度把"能感知"的东西算出来：
+  // 恒星颜色/谱型/视星等、白天天空配色、夜空亮度与可见星数、银河是否可见。
+  const sky = observeSky({
+    starTempK,
+    starRadiusM,
+    starLuminosityW: luminosityW,
+    orbitAU,
+    pressureAtm,
+    sunAltitudeDeg: 60,
+    moons: moonSystem.moons.map((m) => ({ name: m.name, fullMagnitude: m.fullMagnitude })),
+    lightPollution: num(params.lightPollution, 0),
+    galaxyBand: num(params.galaxyBand, 0.6),
+  })
+  highlights.push(...sky.summary)
 
   // ── 历法 ──
   //
@@ -747,6 +807,8 @@ export function generateWorld(params: WorldParams): WorldProfile {
       likelyTidallyLocked,
       angularDiameterDeg,
     },
+    moonSystem,
+    sky,
     calendar: {
       solarDayHours,
       siderealDayHours,

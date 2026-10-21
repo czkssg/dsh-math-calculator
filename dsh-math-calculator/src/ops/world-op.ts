@@ -99,6 +99,37 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   lines.push(`  地平线距离（1.7m 眼高）${f(profile.terrain.horizonKm, 2)} km`)
   lines.push(`  季节: ${profile.terrain.seasonStrength}`)
 
+  lines.push('')
+  lines.push('【抬头看见什么】（地表观测者视角）')
+  const sky = profile.sky
+  lines.push(
+    `  恒星: ${sky.star.colorName}（${sky.star.colorHex}），${sky.star.spectralClass} 型，辐射峰值 ${f(sky.star.peakWavelengthNm, 0)} nm`,
+  )
+  lines.push(
+    `  天上大小 ${f(sky.star.angularDiameterDeg, 2)}°（太阳 0.53°），视星等 ${f(sky.star.apparentMagnitude, 1)}`,
+  )
+  lines.push(`  谱线特征: ${sky.star.spectralLines}`)
+  lines.push(`  ${sky.day.description}`)
+  lines.push(`  ${sky.night.description}`)
+  lines.push(
+    `  夜空基色 ${sky.night.zenithColorHex}（无月夜空亮度 ${f(sky.night.darkSkyBrightness, 1)} mag/arcsec²）`,
+  )
+
+  lines.push('')
+  lines.push('【卫星系统】（希尔球 / 洛希极限 / 稳定性）')
+  const ms = profile.moonSystem
+  lines.push(
+    `  希尔球 ${f(ms.hillRadiusKm, 0)} km；洛希极限 ${f(ms.rocheLimitKm, 0)} km；` +
+      `稳定轨道 ${f(ms.stableInnerKm, 0)}–${f(ms.stableOuterKm, 0)} km`,
+  )
+  lines.push(`  容量估算 ${ms.maxMoonCount} 颗；系统判定 ${ms.stable ? '稳定' : '不稳定'}`)
+  if (ms.moons.length > 0) {
+    for (const moon of ms.moons) lines.push(`  · ${moon.name}: ${moon.impression}`)
+    if (ms.resonances.length > 0) lines.push(`  共振: ${ms.resonances.join('；')}`)
+  } else {
+    lines.push('  无卫星——两条边界仍然成立，只是没有天体占据。')
+  }
+
   if (profile.warnings.length > 0) {
     lines.push('')
     lines.push('⚠ 一致性警告（这些是设定上的硬伤，建议调整参数）')
@@ -186,6 +217,8 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       climate: profile.climate,
       starClass: profile.starClass,
       moons: profile.moons,
+      moonSystem: profile.moonSystem,
+      sky: profile.sky,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
@@ -213,6 +246,8 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       climate: profile.climate,
       starClass: profile.starClass,
       moons: profile.moons,
+      moonSystem: profile.moonSystem,
+      sky: profile.sky,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,

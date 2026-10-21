@@ -50,6 +50,8 @@ const SUITES = [
   { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
   { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
   { file: 'integration.mjs', expect: 51, label: '整合验收（整体装配）' },
+  { file: 'sky.mjs', expect: 43, label: '天空与星空（观测者视角）' },
+  { file: 'moons.mjs', expect: 32, label: '多卫星系统（稳定性/观感）' },
   // 这一套专门防「插件在真宿主里装不起来」：桩忠实度 + 路由形状 + 派发行为。
   // 它曾经不在清单里，于是 1008 项全绿也照样漏掉了两次真机事故。
   { file: 'host-contract.mjs', expect: 32, label: '宿主契约回归（真机契约）' },
