@@ -32,9 +32,9 @@ console.log('-- 1. 静态检查：不污染全局 --')
 {
   assert('使用宿主模块加载器格式', source.includes('__ModuleLoader__'))
   assert('不向 document.head 注入样式', !source.includes('document.head'))
-  assert('不注册 main 槽位（不动主界面）', !source.includes("'main'"))
-  assert('挂右侧页签', source.includes('sidebar.right.pane.tab'))
-  assert('挂页签标题', source.includes('sidebar.right.pane.tab.title'))
+  assert('主栏只注册自己的页面（同名 key）', source.includes("name: 'main'") && source.includes("key: PANEL_ID"))
+  assert('挂侧栏入口行', source.includes('sidebar.panellist'))
+  assert('挂主栏页面', source.includes("name: 'main'"))
   assert('有错误边界', source.includes('MathCalcBoundary'))
   assert(
     '面板分四个页签（配置与数据管理）',
@@ -83,7 +83,7 @@ const mod = captured.factory((name) => {
 assert('导出 apply', typeof mod.apply === 'function')
 assert('声明依赖 slots', Array.isArray(mod.inject) && mod.inject.includes('slots'), JSON.stringify(mod.inject))
 
-console.log('-- 3. 槽位注册：只挂两个侧栏槽位 --')
+console.log('-- 3. 入口 + 页面：官方席位 --')
 {
   const slots = []
   const metas = []
@@ -106,21 +106,27 @@ console.log('-- 3. 槽位注册：只挂两个侧栏槽位 --')
   }
   const disposeAll = mod.apply(ctx)
   assert('只注册 2 个槽位', slots.length === 2, slots.join(', '))
-  assert('第一个是页签', slots[0] === 'sidebar.right.pane.tab')
-  assert('第二个是页签标题', slots[1] === 'sidebar.right.pane.tab.title')
-  assert('meta.name 与槽位一致', metas.every((m, i) => m.name === slots[i]))
-  assert('meta.key 带包名命名空间', metas.every((m) => m.key === 'dsh-math-calculator.workspaces'), JSON.stringify(metas.map((m) => m.key)))
+  assert('先注册主栏页面', slots[0] === 'main')
+  assert('再注册侧栏入口', slots[1] === 'sidebar.panellist')
+
+  const page = metas.find((m) => m.name === 'main')
+  const row = metas.find((m) => m.name === 'sidebar.panellist')
+  assert('主栏用 key 寻址', page && page.key === 'dsh-math-calculator.workspaces', JSON.stringify(page))
+  assert('入口用同名 id 寻址', row && row.id === 'dsh-math-calculator.workspaces', JSON.stringify(row))
+  assert('入口带 order', row && typeof row.order === 'number', String(row && row.order))
+  assert('入口 label 可用', row && typeof row.label === 'function' && row.label() === '数学工作区', row && String(row.label()))
   assert('apply 返回卸载函数', typeof disposeAll === 'function')
   disposeAll()
   assert('卸载会 dispose 两个槽位', disposed.length === 2, String(disposed.length))
 }
 
-console.log('-- 4. 槽位缺失时只跳过，不抛异常 --')
+console.log('-- 4. 席位缺失时的防御 --')
 {
-  const slotsMissing = {
+  // 没有 main 席位：不应注册入口（否则点开是空页）
+  const noMain = {
     slots: {
       inject(name, callback) {
-        if (name.endsWith('.title')) throw new Error('slot missing')
+        if (name === 'main') throw new Error('no main')
         return callback()
       },
       register() {
@@ -128,8 +134,31 @@ console.log('-- 4. 槽位缺失时只跳过，不抛异常 --')
       },
     },
   }
-  const dispose = mod.apply(slotsMissing)
-  assert('一个槽位抛错不影响另一个', typeof dispose === 'function')
+  let threw = false
+  try {
+    mod.apply(noMain)
+  } catch {
+    threw = true
+  }
+  assert('没有 main 时不抛异常', threw === false)
+
+  // 有 main、没有入口：应把已注册的页面撤掉，不留孤儿
+  let pageDisposed = false
+  const noRow = {
+    slots: {
+      inject(name, callback) {
+        if (name === 'sidebar.panellist') throw new Error('no panellist')
+        return callback()
+      },
+      register() {
+        return () => {
+          pageDisposed = true
+        }
+      },
+    },
+  }
+  mod.apply(noRow)
+  assert('入口缺失时回滚页面', pageDisposed === true)
 }
 
 console.log('-- 5. 宿主没有 slots 服务时静默退出 --')

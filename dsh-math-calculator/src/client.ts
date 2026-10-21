@@ -909,19 +909,50 @@
           if (!ctx || !ctx.slots || typeof ctx.slots.inject !== 'function') return
 
           const disposers: Array<() => void> = []
-          const mount = function (slot: string, Component: any) {
-            try {
-              const dispose = ctx.slots.inject(slot, function () {
-                return ctx.slots.register({ name: slot, key: PANEL_ID }, withBoundary(Component))
-              })
-              if (typeof dispose === 'function') disposers.push(dispose)
-            } catch {
-              /* 宿主没有该槽位时跳过 */
-            }
+
+          // ① 主栏页面：用与入口相同的 id 寻址。
+          //    行盒子、选中态、折叠提示、无障碍名称全部由宿主的 layout 服务负责，
+          //    我们只画内容 —— 这是 DSH 官方席位，不会和原生界面抢空间。
+          let pageDispose: any = null
+          try {
+            pageDispose = ctx.slots.inject('main', function () {
+              return ctx.slots.register({ name: 'main', key: PANEL_ID }, withBoundary(ConfigPanel))
+            })
+            if (typeof pageDispose === 'function') disposers.push(pageDispose)
+          } catch {
+            pageDispose = null
           }
 
-          mount('sidebar.right.pane.tab', ConfigPanel)
-          mount('sidebar.right.pane.tab.title', SidebarTitle)
+          // 宿主没有主栏席位时不注册入口：避免「点得开、里面是空页」。
+          if (!pageDispose) return function () {}
+
+          // ② 侧栏入口行：与「插件市场 / 任务看板」同一排，只占一行。
+          //    宿主负责点击与选中态，我们只提供 icon 与 label。
+          try {
+            const rowDispose = ctx.slots.inject('sidebar.panellist', function () {
+              return ctx.slots.register(
+                {
+                  name: 'sidebar.panellist',
+                  id: PANEL_ID,
+                  order: 900,
+                  label: function () {
+                    return '数学工作区'
+                  },
+                },
+                withBoundary(SidebarTitle),
+              )
+            })
+            if (typeof rowDispose === 'function') disposers.push(rowDispose)
+          } catch {
+            // 入口注册失败时把页面也撤掉，避免出现「有页面没入口」的孤儿状态。
+            if (typeof pageDispose === 'function') {
+              try {
+                pageDispose()
+              } catch {
+                /* ignore */
+              }
+            }
+          }
 
           return function disposeAll() {
             for (const dispose of disposers) {
