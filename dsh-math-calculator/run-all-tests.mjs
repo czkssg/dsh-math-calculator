@@ -49,7 +49,7 @@ const SUITES = [
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
   { file: 'formula-story2.mjs', expect: 29, label: '读者视角高频公式（第 5 批：建筑/攻城/农业/医药）' },
-  { file: 'taxonomy.mjs', expect: 31, label: '公式三轴标签（层级/领域/频率）' },
+  { file: 'taxonomy.mjs', expect: 35, label: '公式三轴标签（层级/领域/频率）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },

@@ -1547,11 +1547,13 @@ function opFormulas(args: MathArgs): Outcome {
   // 这里把层级做成独立轴，与学科领域、主角感知频率互不替代。
   const LAYER_ALIASES: Record<string, (typeof LAYERS)[number]['id']> = {
     fundamental: 'fundamental',
+    mathematical: 'mathematical',
     derived: 'derived',
     phenomenological: 'phenomenological',
     engineering: 'engineering',
     conventional: 'conventional',
     基本: 'fundamental',
+    数学: 'mathematical',
     导出: 'derived',
     经验: 'phenomenological',
     工程: 'engineering',
@@ -1708,7 +1710,7 @@ function opHelp(): Outcome {
       '                任何参数可覆盖 —— 架空世界改造的关键',
       '  formulas      检索与分类：',
       '                query="关键词"       按名称/关键词',
-      '                query="layer:derived"  按规则层级（离底层规则远近：fundamental/derived/phenomenological/engineering/conventional）',
+      '                query="layer:derived"  按规则层级（fundamental=基本规则、mathematical=数学基础（与基本同级）、derived/phenomenological/engineering/conventional）',
       '                query="domain:物理"    按学科领域（多标签）',
       '                query="freq:high"      按主角感知频率',
       '                query="symbol:m"       按符号含义',

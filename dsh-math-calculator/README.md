@@ -168,7 +168,7 @@ npm pack
 
 | 轴 | 取值 | 例子 |
 |---|---|---|
-| `layer` 规则层级 | fundamental / derived / phenomenological / engineering / conventional | 洛伦兹因子→基本；环向应力→导出；风寒→经验；用砖量→工程 |
+| `layer` 规则层级 | fundamental / **mathematical**（与基本同级）/ derived / phenomenological / engineering / conventional | 洛伦兹因子→基本；圆面积→数学；环向应力→导出；风寒→经验；用砖量→工程 |
 | `domains` 学科领域（多标签） | physics / materials / medicine / agriculture / military… | 人体表面积 = 生物 + 医学 |
 | `frequency` 主角感知频率 | high / medium / low | 用砖量→高；洛伦兹因子→低 |
 

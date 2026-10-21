@@ -26,12 +26,14 @@ lines.push('')
 // 三轴标签概览
 lines.push('## 规则层级（离最底层规则的远近）')
 lines.push('')
-lines.push('| 层级 | 含义 | 条数 |')
-lines.push('|---|---|---|')
+lines.push('| 层级 | rank | 含义 | 条数 |')
+lines.push('|---|---|---|---|')
 for (const layer of LAYERS) {
   const count = layerCounts().find((item) => item.layer === layer.id)?.count ?? 0
-  lines.push(`| ${layer.name}（${layer.id}） | ${layer.desc} | ${count} |`)
+  lines.push(`| ${layer.name}（${layer.id}） | ${layer.rank} | ${layer.desc} | ${count} |`)
 }
+lines.push('')
+lines.push('> rank 相同表示同级：**数学基础与基本规则同属最底层**。')
 lines.push('')
 lines.push('## 学科领域（多标签）')
 lines.push('')

@@ -39,7 +39,8 @@ console.log('-- 1. 三轴必须齐全 --')
   assert('全部公式有标签', FORMULAS.every((f) => tagsOf(f).length > 0))
   assert('全部公式有主角频率', FORMULAS.every((f) => ['high', 'medium', 'low'].includes(formulaFrequency(f))))
   const counts = layerCounts()
-  assert('五个层级都有公式', counts.every((item) => item.count > 0), counts.map((i) => i.layer + '=' + i.count).join(', '))
+  assert('六个层级都有公式', counts.every((item) => item.count > 0), counts.map((i) => i.layer + '=' + i.count).join(', '))
+  assert('数学基础与基本规则同级（rank 1）', LAYERS.find((l) => l.id === 'mathematical').rank === 1 && LAYERS.find((l) => l.id === 'fundamental').rank === 1)
   assert('层级计数之和 = 总数', counts.reduce((sum, item) => sum + item.count, 0) === FORMULAS.length)
 }
 
@@ -50,6 +51,8 @@ console.log('-- 2. 层级按「离底层规则的远近」判定 --')
   assert('风寒指数 → 经验规律', layerOf(find('wind_chill')) === 'phenomenological', layerOf(find('wind_chill')))
   assert('用砖量 → 工程换算', layerOf(find('brick_count')) === 'engineering', layerOf(find('brick_count')))
   assert('楼梯舒适度 → 社会约定（经验规则）', layerOf(find('stair_comfort_rule')) === 'conventional', layerOf(find('stair_comfort_rule')))
+  const mathFormula = FORMULAS.find((f) => f.cat.startsWith('math/') && f.cat.includes('geometry'))
+  assert('纯数学公式 → 数学基础', mathFormula && layerOf(mathFormula) === 'mathematical', (mathFormula && mathFormula.id) + ':' + (mathFormula && layerOf(mathFormula)))
 }
 
 console.log('-- 3. 学科领域是多标签 --')
@@ -91,6 +94,11 @@ console.log('-- 5. 按层级/领域查询 --')
 
   const zh = run({ operation: 'formulas', query: '层级:经验' })
   assert('中文层级别名', String(zh.result).includes('经验规律'), String(zh.result).slice(0, 30))
+
+  const mathLayer = run({ operation: 'formulas', query: 'layer:mathematical' })
+  assert('layer:mathematical 可用', String(mathLayer.result).includes('数学基础'), String(mathLayer.result).slice(0, 30))
+  const zhMath = run({ operation: 'formulas', query: '层级:数学' })
+  assert('层级:数学 可用', String(zhMath.result).includes('数学基础'), String(zhMath.result).slice(0, 30))
 
   const domainQuery = run({ operation: 'formulas', query: 'domain:医学' })
   assert('domain 中文别名', String(domainQuery.result).includes('医学'), String(domainQuery.result).slice(0, 30))

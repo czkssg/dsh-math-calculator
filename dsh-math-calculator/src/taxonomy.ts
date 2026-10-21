@@ -29,15 +29,32 @@
 import { FORMULAS, type FormulaDef } from './formulas.js'
 
 /** 规则层级。 */
-export type FormulaLayer = 'fundamental' | 'derived' | 'phenomenological' | 'engineering' | 'conventional'
+export type FormulaLayer =
+  | 'fundamental'
+  | 'mathematical'
+  | 'derived'
+  | 'phenomenological'
+  | 'engineering'
+  | 'conventional'
 
 /** 层级定义（顺序 = 离底层从近到远）。 */
-export const LAYERS: Array<{ id: FormulaLayer; name: string; desc: string }> = [
-  { id: 'fundamental', name: '基本规则', desc: '守恒律、相对论、量子、热力学定律——自然律本身' },
-  { id: 'derived', name: '导出规律', desc: '由基本规则推出、有闭合形式的经典关系' },
-  { id: 'phenomenological', name: '经验规律', desc: '带实验拟合系数，量级可信、具体数字有误差' },
-  { id: 'engineering', name: '工程换算', desc: '几何、配比、剂量、补给——由定义与算术决定' },
-  { id: 'conventional', name: '社会约定', desc: '货币、制度、统计口径——由人类约定而非自然律' },
+export const LAYERS: Array<{ id: FormulaLayer; name: string; desc: string; rank: number }> = [
+  {
+    id: 'fundamental',
+    name: '基本规则',
+    desc: '守恒律、相对论、量子、热力学定律——自然律本身',
+    rank: 1,
+  },
+  {
+    id: 'mathematical',
+    name: '数学基础',
+    desc: '公理、定义与纯数学定律（几何、级数、增长）——与基本规则同属最底层',
+    rank: 1,
+  },
+  { id: 'derived', name: '导出规律', desc: '由基本规则推出、有闭合形式的经典关系', rank: 2 },
+  { id: 'phenomenological', name: '经验规律', desc: '带实验拟合系数，量级可信、具体数字有误差', rank: 3 },
+  { id: 'engineering', name: '工程换算', desc: '几何、配比、剂量、补给——由定义与算术决定', rank: 4 },
+  { id: 'conventional', name: '社会约定', desc: '货币、制度、统计口径——由人类约定而非自然律', rank: 5 },
 ]
 
 /** 学科领域。 */
@@ -98,7 +115,7 @@ const CAT_LAYER: Array<[string, FormulaLayer]> = [
   ['perception/', 'engineering'],
   ['military/', 'engineering'],
   ['biology/', 'phenomenological'],
-  ['math/', 'fundamental'],
+  ['math/', 'mathematical'],
   ['econ/', 'conventional'],
   ['social/', 'conventional'],
 ]

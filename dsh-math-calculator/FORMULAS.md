@@ -8,13 +8,16 @@
 
 ## 规则层级（离最底层规则的远近）
 
-| 层级 | 含义 | 条数 |
-|---|---|---|
-| 基本规则（fundamental） | 守恒律、相对论、量子、热力学定律——自然律本身 | 26 |
-| 导出规律（derived） | 由基本规则推出、有闭合形式的经典关系 | 156 |
-| 经验规律（phenomenological） | 带实验拟合系数，量级可信、具体数字有误差 | 41 |
-| 工程换算（engineering） | 几何、配比、剂量、补给——由定义与算术决定 | 82 |
-| 社会约定（conventional） | 货币、制度、统计口径——由人类约定而非自然律 | 37 |
+| 层级 | rank | 含义 | 条数 |
+|---|---|---|---|
+| 基本规则（fundamental） | 1 | 守恒律、相对论、量子、热力学定律——自然律本身 | 12 |
+| 数学基础（mathematical） | 1 | 公理、定义与纯数学定律（几何、级数、增长）——与基本规则同属最底层 | 14 |
+| 导出规律（derived） | 2 | 由基本规则推出、有闭合形式的经典关系 | 156 |
+| 经验规律（phenomenological） | 3 | 带实验拟合系数，量级可信、具体数字有误差 | 41 |
+| 工程换算（engineering） | 4 | 几何、配比、剂量、补给——由定义与算术决定 | 82 |
+| 社会约定（conventional） | 5 | 货币、制度、统计口径——由人类约定而非自然律 | 37 |
+
+> rank 相同表示同级：**数学基础与基本规则同属最底层**。
 
 ## 学科领域（多标签）
 
@@ -874,7 +877,7 @@ W * L / (8 * h)
 
 ### circle_area
 
-**圆面积** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**圆面积** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2
@@ -886,7 +889,7 @@ S = πr²。
 
 ### sphere_volume
 
-**球体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**球体积** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 4 / 3 * pi * r^3
@@ -898,7 +901,7 @@ V = 4πr³/3。
 
 ### sphere_area
 
-**球表面积** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**球表面积** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 4 * pi * r^2
@@ -910,7 +913,7 @@ S = 4πr²。
 
 ### cylinder_volume
 
-**圆柱体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**圆柱体积** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2 * h
@@ -922,7 +925,7 @@ V = πr²h。
 
 ### cone_volume
 
-**圆锥体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**圆锥体积** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2 * h / 3
@@ -934,7 +937,7 @@ V = πr²h/3。
 
 ### heron_area
 
-**海伦公式（三角形面积）** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**海伦公式（三角形面积）** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 sqrt(p * (p - a) * (p - b) * (p - c))
@@ -946,7 +949,7 @@ S = √(p(p-a)(p-b)(p-c))。
 
 ### pythagoras
 
-**勾股定理（求斜边）** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**勾股定理（求斜边）** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 sqrt(a^2 + b^2)
@@ -960,7 +963,7 @@ c = √(a²+b²)。
 
 ### exponential_growth
 
-**指数增长** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**指数增长** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 N0 * exp(r * t)
@@ -972,7 +975,7 @@ N = N₀e^(rt)。
 
 ### doubling_time
 
-**倍增时间** · 层级 fundamental · 领域 数学 · 主角频率 medium · 单位 时间
+**倍增时间** · 层级 mathematical · 领域 数学 · 主角频率 medium · 单位 时间
 
 ```
 log(2) / r
@@ -984,7 +987,7 @@ t = ln2/r（即 70/百分比 的精确版）。
 
 ### logistic_growth
 
-**逻辑斯蒂增长（t 时刻）** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**逻辑斯蒂增长（t 时刻）** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 K / (1 + ((K - N0) / N0) * exp(-r * t))
@@ -998,7 +1001,7 @@ N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。
 
 ### richter
 
-**里氏震级（能量比）** · 层级 fundamental · 领域 数学 · 主角频率 medium · 单位 倍数
+**里氏震级（能量比）** · 层级 mathematical · 领域 数学 · 主角频率 medium · 单位 倍数
 
 ```
 10^(1.5 * dM)
@@ -1010,7 +1013,7 @@ N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。
 
 ### ph
 
-**pH 值** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**pH 值** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 -log(H) / log(10)
@@ -1024,7 +1027,7 @@ pH = -log₁₀[H⁺]。
 
 ### arithmetic_sum
 
-**等差数列求和** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**等差数列求和** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 n * (a1 + an) / 2
@@ -1036,7 +1039,7 @@ S = n(a₁+aₙ)/2。
 
 ### geometric_sum
 
-**等比数列求和** · 层级 fundamental · 领域 数学 · 主角频率 medium
+**等比数列求和** · 层级 mathematical · 领域 数学 · 主角频率 medium
 
 ```
 a1 * (1 - r^n) / (1 - r)
