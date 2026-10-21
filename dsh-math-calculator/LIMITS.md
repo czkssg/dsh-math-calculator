@@ -13,10 +13,12 @@
 | pinv 伪逆 | 支持 | mathjs 内置 |
 | qr / lup 分解 | 支持 | mathjs 内置 |
 | kron 克罗内克积 | 支持 | mathjs 内置 |
-| SVD 奇异值分解 | 不支持 | mathjs 无 svd 函数 |
-| 秩 rank | 不支持 | mathjs 无 rank；可用 eigs 非零值个数代替 |
-| 零空间 nullSpace | 不支持 | mathjs 无 |
+| SVD 奇异值 | **支持（2026-10-22 起）** | `svd(A)` 返回奇异值；由 AᵀA 的 Jacobi 特征值实现 |
+| 秩 rank | **支持（2026-10-22 起）** | `rank(A)`；RREF 主元计数 |
+| 零空间 nullspace | **支持（2026-10-22 起）** | `nullspace(A)` 返回一组基 |
+| 矩阵画像 | **支持（2026-10-22 起）** | `operation:"matrix"` 只给 matrix 时输出 秩/行列式/迹/奇异值/零空间/逆 |
 | LU 分解（显式） | 不支持 | 只有 lup，无单独 lu |
+| 完整 SVD（U/Σ/Vᵀ） | 不支持 | 只给奇异值；要向量需另实现 |
 
 ## 微分方程
 

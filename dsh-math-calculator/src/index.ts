@@ -23,6 +23,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 
+import { nullspaceOf, rankOf, singularValuesOf } from './numeric.js'
 import {
   containsNonFinite,
   formatValue,
@@ -833,7 +834,53 @@ function opMatrix(expression: string, engine: any, precision: number, args: Math
         value: values,
       }
     }
-    throw new CalcError('invalid_argument', '给了 matrix 但缺少 vector', '解线性系统需要同时给 matrix 与 vector。')
+    // 只给矩阵：输出矩阵画像（秩 / 行列式 / 迹 / 奇异值 / 零空间 / 逆）
+    //
+    // 这是原来的一个真实缺陷：determinant 与 inverse 这类操作只给 matrix 时报
+    // "缺少 vector"，而它们根本不需要 vector。
+    const rows = matrix.length
+    const cols = rows === 0 ? 0 : matrix[0].length
+    const square = rows === cols
+    const rank = rankOf(matrix)
+    const trace = square ? matrix.reduce((sum, row, index) => sum + row[index], 0) : undefined
+
+    let determinant: number | undefined
+    if (square) {
+      try {
+        determinant = toFiniteNumber(engine.det(matrix))
+      } catch {
+        /* 非常规矩阵，留空 */
+      }
+    }
+
+    let inverse: number[][] | undefined
+    if (square && rank === rows) {
+      try {
+        const rawInverse = engine.inv(matrix)
+        const array = rawInverse?.toArray?.() ?? rawInverse
+        if (Array.isArray(array)) inverse = array.map((row: any) => row.map((cell: any) => Number(cell)))
+      } catch {
+        /* 数值上不可逆 */
+      }
+    }
+
+    const basis = nullspaceOf(matrix)
+    const singularValues = singularValuesOf(matrix)
+
+    const summary: string[] = []
+    summary.push(`矩阵 ${rows}×${cols}，秩 ${rank}（满秩为 ${Math.min(rows, cols)}）`)
+    if (square) {
+      summary.push(`行列式 ${determinant === undefined ? '无法计算' : trimNumber(determinant, precision)}；迹 ${trimNumber(trace ?? 0, precision)}`)
+      if (determinant !== undefined && Math.abs(determinant) < 1e-12) summary.push('矩阵奇异：逆不存在')
+    }
+    summary.push(`奇异值：${singularValues.map((value) => trimNumber(value, precision)).join(', ')}`)
+    summary.push(basis.length === 0 ? '零空间只有零向量' : `零空间维数 ${basis.length}`)
+    if (inverse) summary.push('逆矩阵见 value.inverse')
+
+    return {
+      result: summary.join('\n'),
+      value: toJsonValue({ rows, cols, rank, determinant, trace, inverse, nullspace: basis, singularValues }),
+    }
   }
 
   if (text === '') {

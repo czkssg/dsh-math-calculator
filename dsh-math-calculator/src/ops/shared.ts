@@ -173,6 +173,8 @@ export class CalcError extends Error {
  * 关闭 `import` / `createUnit`：这两个允许注入任意 JS 函数或改写单位表。
  * **不能**删 `typed` / `parse` / `evaluate` —— derivative、simplify 依赖它们。
  */
+import { factorizeInt, makeNsolve, nullspaceOf, rankOf, singularValuesOf } from '../numeric.js'
+
 export function buildMath(numberMode: 'BigNumber' | 'number', precision: number): any {
   const instance: any = create(all as any, {
     number: numberMode,
@@ -180,6 +182,24 @@ export function buildMath(numberMode: 'BigNumber' | 'number', precision: number)
     matrix: 'Matrix',
     randomSeed: '42',
   })
+  // ── 注册扩展函数（纯 JS，不引入新依赖）──
+  //
+  // 注意：mathjs 的 create() 只认它自己的 factory 集合，普通函数必须走 import()。
+  // 所以顺序是「先 import 扩展，再删除 import 方法」——安全边界不变：
+  // 表达式求值时 import 已经不存在，用户无法往引擎里注入任意 JS。
+  try {
+    instance.import({
+      rank: (matrix: any) => rankOf(matrix),
+      nullspace: (matrix: any) => nullspaceOf(matrix),
+      svd: (matrix: any) => singularValuesOf(matrix),
+      singularvalues: (matrix: any) => singularValuesOf(matrix),
+      factorize: (value: any) => factorizeInt(Number(value)),
+      nsolve: makeNsolve((text: string) => instance.parse(text)),
+    })
+  } catch {
+    /* 注册失败不影响核心运算 */
+  }
+
   for (const key of ['import', 'createUnit']) {
     try {
       delete instance[key]
