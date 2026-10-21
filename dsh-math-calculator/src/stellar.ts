@@ -44,8 +44,14 @@ export interface StellarProfile {
   luminositySun: number
   /** 有效温度 K（斯特藩-玻尔兹曼反解）。 */
   effectiveTempK: number
-  /** 主序寿命 Gyr。 */
+  /** 主序寿命 Gyr（现实 α）。 */
   lifetimeGyr: number
+  /** 按 α 修正后的寿命 Gyr（量级，见 lifetimeAlphaExponent）。 */
+  lifetimeAlphaGyr: number
+  /** 寿命对 α 的幂指数（量级估计）：低质量 2、中等 0.5、大质量 0。 */
+  lifetimeAlphaExponent: number
+  /** 氢燃烧的最小质量 M☉（点火温度 ∝ α²）。 */
+  minIgnitionMassSun: number
   /** 宜居带内外边界 AU（辐射平衡，精确）。 */
   habitableZoneAU: [number, number]
   /** 辐射峰值波长 nm（维恩，精确）。 */
@@ -135,6 +141,22 @@ export function describeStarStructure(
   const uvFraction = uvFractionOf(effectiveTempK)
 
   const alphaRatio = alpha / OUR_UNIVERSE.alpha
+
+  // ── α 对寿命的净效应（量级）──
+  //
+  // 推导链（只保证量级，不假装是恒星演化）：
+  //   低质量星（< 2 M☉）：主序由 Kramers/汤姆孙不透明度控制，L ∝ 1/κ，而 κ ∝ α²。
+  //     于是 L ∝ α⁻²，寿命 τ ∝ M/L ∝ α²。
+  //   大质量星（> 20 M☉）：辐射压主导（Eddington），L ∝ M³ 与不透明度基本无关，
+  //     于是 τ 对 α 的一阶依赖消失。
+  //   中间质量：取 0.5 作过渡。
+  //
+  // 这与"点火温度 ∝ α²"是两条独立的效应：前者改燃烧速率，后者改能不能点火。
+  const lifetimeAlphaExponent = m < 2 ? 2 : m < 20 ? 0.5 : 0
+  const lifetimeAlphaGyr = lifetimeGyr * alphaRatio ** lifetimeAlphaExponent
+  // 点火温度 ∝ α²，所以能烧氢的最小质量也 ∝ α²（基线 0.08 M☉）。
+  const minIgnitionMassSun = 0.08 * alphaRatio ** 2
+
   const sensitivity: SensitivityEntry[] = [
     {
       id: 'ignition-temperature',
@@ -154,11 +176,19 @@ export function describeStarStructure(
     },
     {
       id: 'main-sequence-lifetime',
-      direction: alphaRatio > 1 ? '同质量恒星倾向更长寿命（燃烧更慢）' : alphaRatio < 1 ? '同质量恒星倾向更短寿命' : '与现实中相同',
-      magnitude: '只给方向，不给倍数',
-      confidence: 'direction-only',
-      domain: '仅定性；本模型不把 α 折算进恒星演化',
-      note: '净效应取决于「质量-光度关系如何随 α 移动」，需要完整恒星结构计算',
+      direction: alphaRatio > 1 ? '同质量恒星寿命变长（不透明度升高、燃烧更慢）' : alphaRatio < 1 ? '同质量恒星寿命变短' : '与现实中相同',
+      magnitude: `×${(alphaRatio ** lifetimeAlphaExponent).toFixed(3)}（低质量 τ∝α²，大质量 τ∝α⁰）`,
+      confidence: 'order-of-magnitude',
+      domain: 'α 偏离现实 < 10%；跨质量区间只保证量级',
+      note: '推导链：κ∝α² → L∝1/κ → τ∝M/L。大质量星受爱丁顿极限保护，一阶依赖消失',
+    },
+    {
+      id: 'ignition-mass',
+      direction: alphaRatio > 1 ? '可烧氢的最小质量升高' : '可烧氢的最小质量降低',
+      magnitude: `×${(alphaRatio ** 2).toFixed(3)}（0.08 M☉ → ${minIgnitionMassSun.toFixed(3)} M☉）`,
+      confidence: 'order-of-magnitude',
+      domain: 'α 偏离现实 < 20%',
+      note: '点火温度 ∝ 库仑势垒 ∝ α²；低于此质量的星只能烧氘',
     },
     {
       id: 'habitable-zone',
@@ -185,6 +215,9 @@ export function describeStarStructure(
     luminositySun,
     effectiveTempK,
     lifetimeGyr,
+    lifetimeAlphaGyr,
+    lifetimeAlphaExponent,
+    minIgnitionMassSun,
     habitableZoneAU,
     peakWavelengthNm,
     uvFraction,

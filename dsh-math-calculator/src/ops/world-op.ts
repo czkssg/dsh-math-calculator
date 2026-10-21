@@ -104,8 +104,10 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   lines.push('【恒星结构与寿命】')
   const st = profile.stellar
   lines.push(`  ${st.massSun.toFixed(2)} M☉：L=${st.luminositySun.toFixed(3)} L☉，R=${st.radiusSun.toFixed(3)} R☉，有效温度 ${f(st.effectiveTempK, 0)} K`)
+  const fmtTau = (gyr: number): string => (gyr < 1 ? (gyr * 1000).toFixed(0) + ' Myr' : gyr.toFixed(1) + ' Gyr')
+  const alphaShifted = Math.abs(st.lifetimeAlphaGyr / st.lifetimeGyr - 1) > 1e-6
   lines.push(
-    `  主序寿命 ${st.lifetimeGyr < 1 ? (st.lifetimeGyr * 1000).toFixed(0) + ' Myr' : st.lifetimeGyr.toFixed(1) + ' Gyr'}；` +
+    `  主序寿命 ${fmtTau(st.lifetimeGyr)}${alphaShifted ? `（按 α 修正后 ${fmtTau(st.lifetimeAlphaGyr)}）` : ''}；` +
       `宜居带 ${f(st.habitableZoneAU[0], 2)}–${f(st.habitableZoneAU[1], 2)} AU；紫外占 ${f(st.uvFraction * 100, 1)}%`,
   )
   for (const item of st.sensitivity) {
@@ -146,6 +148,21 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   // ── 模型可信度（ADR-0001）──
   //
   // 这一段不是凑数：作者最需要知道的正是"哪个数字能当真"。
+  lines.push('')
+  lines.push('【生命出现的硬否决】（只判绝对不行，其余交给叙事）')
+  lines.push(`  化学窗口：${profile.life.chemistry.note}`)
+  const gate = profile.life.gate
+  if (gate.blockers.length === 0) {
+    lines.push('  未发现硬否决项。')
+  } else {
+    for (const blocker of gate.blockers) {
+      lines.push(`  · [${blocker.kind === 'hard' ? '硬否决' : '强约束'}] ${blocker.reason}（${blocker.evidence}）`)
+    }
+  }
+  lines.push(`  判定：${gate.verdict === 'excluded' ? '排除' : gate.verdict === 'constrained' ? '受约束' : '开放'} —— ${gate.note}`)
+  lines.push('  交给作者/AI 判断：')
+  for (const question of gate.openQuestions) lines.push(`    · ${question}`)
+
   lines.push('')
   lines.push('【模型可信度】（哪些是物理、哪些只是地球标定）')
   for (const line of describeProvenance()) lines.push('  ' + line)
@@ -240,6 +257,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       moonSystem: profile.moonSystem,
       sky: profile.sky,
       stellar: profile.stellar,
+      life: profile.life,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
@@ -271,6 +289,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       moonSystem: profile.moonSystem,
       sky: profile.sky,
       stellar: profile.stellar,
+      life: profile.life,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,

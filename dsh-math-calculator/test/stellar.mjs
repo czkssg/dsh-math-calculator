@@ -72,14 +72,14 @@ console.log('-- 3. 宜居带是精确关系（∝ √L）--')
 
 console.log('-- 4. 常数敏感度：分层标注 --')
 {
-  assert('敏感度有 4 条', sun.sensitivity.length === 4, String(sun.sensitivity.length))
+  assert('敏感度有 5 条', sun.sensitivity.length === 5, String(sun.sensitivity.length))
   assert('每条都有置信度与适用域', sun.sensitivity.every((x) => x.confidence && x.domain))
   const opacity = sun.sensitivity.find((x) => x.id === 'thomson-opacity')
   assert('汤姆孙不透明度标为精确', opacity.confidence === 'exact')
   const ignition = sun.sensitivity.find((x) => x.id === 'ignition-temperature')
   assert('点火温度标为量级', ignition.confidence === 'order-of-magnitude')
   const lifetime = sun.sensitivity.find((x) => x.id === 'main-sequence-lifetime')
-  assert('寿命净效应只给方向', lifetime.confidence === 'direction-only')
+  assert('寿命净效应已给出量级（不再仅方向）', lifetime.confidence === 'order-of-magnitude', lifetime.confidence)
 
   const hot = describeStarStructure(1, 7.2973525693e-3 * 1.1)
   const hotOpacity = hot.sensitivity.find((x) => x.id === 'thomson-opacity')
@@ -87,6 +87,25 @@ console.log('-- 4. 常数敏感度：分层标注 --')
   const hotIgnition = hot.sensitivity.find((x) => x.id === 'ignition-temperature')
   assert('α×1.1 → 点火温度 ×1.21', hotIgnition.magnitude.includes('1.210'), hotIgnition.magnitude)
   assert('α 变大时方向描述变化', hotIgnition.direction.includes('升高'), hotIgnition.direction)
+}
+
+console.log('-- 5. α 对寿命的净效应（量级，不再只给方向）--')
+{
+  const A = 7.2973525693e-3
+  const sunHot = describeStarStructure(1, A * 1.1)
+  assert('1 M☉：τ ∝ α² → 寿命 ×1.21', Math.abs(sunHot.lifetimeAlphaGyr / sun.lifetimeGyr - 1.21) < 1e-9, sunHot.lifetimeAlphaGyr.toFixed(2))
+  assert('1 M☉：指数为 2', sunHot.lifetimeAlphaExponent === 2)
+
+  const big = describeStarStructure(10, A * 1.1)
+  assert('10 M☉：受爱丁顿极限保护，指数 0.5', big.lifetimeAlphaExponent === 0.5)
+  assert('10 M☉：寿命 ×1.049', Math.abs(big.lifetimeAlphaGyr / big.lifetimeGyr - Math.sqrt(1.1)) < 1e-9, big.lifetimeAlphaGyr.toFixed(4))
+
+  assert('最小点火质量 ×1.21', Math.abs(sunHot.minIgnitionMassSun / 0.08 - 1.21) < 1e-9, sunHot.minIgnitionMassSun.toFixed(4))
+
+  const sens = sunHot.sensitivity.find((x) => x.id === 'main-sequence-lifetime')
+  assert('寿命敏感度已升级为量级', sens.confidence === 'order-of-magnitude', sens.confidence)
+  assert('敏感度里给出倍数', sens.magnitude.includes('1.210'), sens.magnitude)
+  assert('新增点火质量条目', sunHot.sensitivity.some((x) => x.id === 'ignition-mass'))
 }
 
 console.log('')

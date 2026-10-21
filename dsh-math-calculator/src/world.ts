@@ -35,6 +35,7 @@ import {
 import { analyzeMoonSystem, type MoonSpec, type MoonSystemReport } from './moons.js'
 import { observeSky, type SkyReport } from './sky.js'
 import { describeStarStructure, type StellarProfile } from './stellar.js'
+import { assessLife, chemistryWindow, type ChemistryWindow, type LifeGate } from './life.js'
 import { getActiveConstants } from './constants-graph.js'
 import { OUR_UNIVERSE, deriveScaleLadder, dimensionlessFromKnobs } from './constants-core.js'
 
@@ -229,6 +230,8 @@ export interface WorldProfile {
   sky: SkyReport
   /** 恒星结构与寿命（S3）：质光关系、主序寿命、宜居带、紫外占比、常数敏感度。 */
   stellar: StellarProfile
+  /** 化学窗口与生命硬否决：只判断"绝对不行"，其余交给作者。 */
+  life: { chemistry: ChemistryWindow; gate: LifeGate }
   /** 历法推算。 */
   calendar: {
     /** 太阳日长度（小时）。恒星日 + 太阳日修正。 */
@@ -713,6 +716,28 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     )
   }
 
+  // ── 化学窗口与生命硬否决（v5）──
+  //
+  // 只回答"绝对不可能"的那部分：没有液态溶剂、分子无法稳定、时间不够。
+  // 其余（板块运动、细胞、文明）明确交给作者。
+  const lifeChemistry = chemistryWindow(alpha, surfaceMeanK)
+  const lifeGate = assessLife(
+    {
+      surfaceMeanK,
+      warmestBandK: Math.max(...latitudeBands.map((b) => b.warmSeasonC + 273.15)),
+      coldestBandK: Math.min(...latitudeBands.map((b) => b.coldSeasonC + 273.15)),
+      pressurePa,
+      boilingPointK,
+      stellarLifetimeGyr: stellar.lifetimeAlphaGyr,
+      uvFraction: stellar.uvFraction,
+      tidallyLocked: likelyTidallyLocked,
+    },
+    alpha,
+  )
+  if (lifeGate.verdict === 'excluded') {
+    warnings.push('生命闸门判定为"排除"：' + lifeGate.blockers.filter((b) => b.kind === 'hard').map((b) => b.reason).join('；'))
+  }
+
   // ── 多卫星系统体检（v4）──
   //
   // 与上面「主卫星」的区别：上面只回答"潮汐多大"，
@@ -861,6 +886,7 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     moonSystem,
     sky,
     stellar,
+    life: { chemistry: lifeChemistry, gate: lifeGate },
     calendar: {
       solarDayHours,
       siderealDayHours,
