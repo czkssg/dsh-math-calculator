@@ -20,6 +20,7 @@ import {
 import { EXT_FORMULAS } from './formula-library-ext.js'
 import { PERCEPTION_FORMULAS } from './formula-library-perception.js'
 import { getActiveConstants } from './constants-graph.js'
+import { loadGlobalFormulas } from './formula-pack.js'
 
 /**
  * 全部公式 = 主批次 + 扩展批次 + 感知层批次。
@@ -32,6 +33,31 @@ export const FORMULA_INDEX: Map<string, FormulaDef> = new Map()
 for (const formula of BASE_INDEX.values()) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of EXT_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of PERCEPTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+
+/**
+ * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。
+ *
+ * 为什么在模块加载时就合并：formula / formulas / impact / formula-table
+ * 全都从 FORMULAS 读，晚合并会让不同入口看到不同的公式集。
+ *
+ * @returns 本次新增的数量。
+ */
+export function mergePackedFormulas(): number {
+  let added = 0
+  try {
+    for (const packed of loadGlobalFormulas()) {
+      if (FORMULA_INDEX.has(packed.id)) continue
+      FORMULAS.push(packed)
+      FORMULA_INDEX.set(packed.id, packed)
+      added += 1
+    }
+  } catch {
+    /* 包文件损坏时不让内置公式也跟着挂掉 */
+  }
+  return added
+}
+
+mergePackedFormulas()
 
 export { CONSTANTS, type FormulaDef }
 

@@ -16,7 +16,8 @@ import {
   type FormulaOverride,
   type WorkspaceFormulaTable,
 } from '../formula-table.js'
-import { FORMULAS } from '../formulas.js'
+import { FORMULAS, FORMULA_INDEX, mergePackedFormulas } from '../formulas.js'
+import { addGlobalFormula, listGlobalFormulas, removeGlobalFormula } from '../formula-pack.js'
 import { toJsonValue } from '../format.js'
 import { currentWorkspace, loadWorkspace, normalizeWorkspaceName, updateWorkspace } from '../workspace.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
@@ -56,6 +57,51 @@ export function opFormulaTable(args: MathArgs, engine: any): Outcome {
   }
 
   switch (action) {
+    // ── 全局公式包（所有工作区共享；与工作区临时公式是两回事）──
+    case 'global-list': {
+      const items = listGlobalFormulas()
+      return {
+        result:
+          items.length === 0
+            ? '全局公式包为空。可用 tableAction="global-add" + customFormula 添加。'
+            : `全局公式包共 ${items.length} 条：\n` +
+              items.map((item) => `  · ${item.id}（${item.name}）  ${item.expr}`).join('\n'),
+        value: toJsonValue({ total: items.length, formulas: items }),
+      }
+    }
+    case 'global-add': {
+      const reserved = new Set(FORMULA_INDEX.keys())
+      const validation = addGlobalFormula(args.customFormula, reserved)
+      if (!validation.ok) {
+        throw new CalcError(
+          'invalid_argument',
+          '全局公式校验失败：' + validation.errors.join('；'),
+          '检查 id/expr/params 后重试；字段说明见 docs/formula-authoring.md。',
+        )
+      }
+      mergePackedFormulas()
+      return {
+        result:
+          `已加入全局公式包：${validation.formula!.id}（${validation.formula!.name}）\n` +
+          `  表达式：${validation.formula!.expr}\n` +
+          `  全局包现有 ${validation.total} 条；所有工作区都可调用。`,
+        value: toJsonValue({ added: validation.formula, total: validation.total }),
+      }
+    }
+    case 'global-remove': {
+      const id = String(args.formulaId ?? '').trim()
+      if (!id) throw new CalcError('invalid_argument', '缺少 formulaId')
+      const removed = removeGlobalFormula(id)
+      if (removed) {
+        const position = FORMULAS.findIndex((item) => item.id === id)
+        if (position >= 0) FORMULAS.splice(position, 1)
+        FORMULA_INDEX.delete(id)
+      }
+      return {
+        result: removed ? `已从全局公式包移除 "${id}"（立即生效）。` : `全局包里没有 "${id}"。`,
+        value: toJsonValue({ removed, id }),
+      }
+    }
     case 'show':
     case 'list': {
       const materialized = materializeFormulas(table, workspace.constants)

@@ -46,6 +46,7 @@ const SUITES = [
   { file: 'client-ui.mjs', expect: 24, label: '前端挂载安全（入口/隔离）' },
   { file: 'api.mjs', expect: 32, label: 'UI 后端 API（设置/常数/公式表）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
+  { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },

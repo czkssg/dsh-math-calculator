@@ -24,6 +24,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 
 import { nullspaceOf, rankOf, singularValuesOf } from './numeric.js'
+import { ambiguousSymbols, explainSymbol, symbolMeanings } from './symbols.js'
 import {
   containsNonFinite,
   formatValue,
@@ -1499,6 +1500,31 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 function opFormulas(args: MathArgs): Outcome {
   const query = (args.query ?? args.expression ?? '').trim()
 
+  // ── 符号查询：query="symbol:m" / "符号:m@质量" / "symbol:*" ──
+  //
+  // 为什么需要：同一个字母在不同公式里含义不同（m 可以是质量、米、分钟）。
+  // 让 AI/人先查符号、再调公式，能避免"看起来对、物理意义错"的调用。
+  const symbolMatch = query.match(/^(?:symbol|符号)[:：]\s*([A-Za-z_][A-Za-z0-9_]*|\*)(?:@(.+))?$/i)
+  if (symbolMatch) {
+    const symbol = symbolMatch[1]
+    const hint = symbolMatch[2]
+    if (symbol === '*') {
+      const list = ambiguousSymbols()
+      const lines = [`多义符号共 ${list.length} 个（同一字母在不同公式里含义不同）：`]
+      for (const item of list) {
+        lines.push(`  · ${item.symbol}  ${item.count} 处：${item.concepts.join(' / ')}` + (item.note ? `\n      ${item.note}` : ''))
+      }
+      lines.push('')
+      lines.push('查单个符号：query="symbol:m"，或加语境：query="symbol:m@质量"。')
+      return { result: lines.join('\n'), value: { ambiguous: list } }
+    }
+    const lines = explainSymbol(symbol, hint)
+    return {
+      result: lines.join('\n'),
+      value: toJsonValue({ symbol, hint: hint ?? null, meanings: symbolMeanings(symbol) }),
+    }
+  }
+
   if (query === '' || query === '*') {
     const categories = listFormulaCategories()
     const total = categories.reduce((sum, entry) => sum + entry.count, 0)
@@ -1580,8 +1606,10 @@ function opHelp(): Outcome {
       '  formula       调用已收录的 ' + FORMULAS.length + ' 条自然科学公式',
       '                例：formula="escape_velocity", overrides={M,r}',
       '                任何参数可覆盖 —— 架空世界改造的关键',
-      '  formulas      按关键词检索公式库',
-      '  formula-table 管理工作区公式表：覆盖表达式/参数、自定义、停用、重置',
+      '  formulas      按关键词检索；query="symbol:m" 查符号含义，query="symbol:*" 列多义符号',
+      '  formula-table 两级扩展：工作区临时公式（覆盖/自定义/停用）+ 全局公式包',
+      '                （tableAction: global-list / global-add / global-remove）',
+      '                字段与校验规则见 docs/formula-authoring.md',
       '',
       '【世界观推演】',
       '  world         输入星球参数 → 体感画像：重力/昼夜/季节/纬度气候/地形上限 +',

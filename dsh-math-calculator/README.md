@@ -143,6 +143,27 @@ npm pack
 输出里的 `[精确]/[标度]/[量级]/[仅方向]`、`【跨模块一致性】✓/⚠/✗`、`【模型可信度】`
 既是给人看的，也是给 AI 判断"这条能信几分"的。
 
+### 公式库扩展（全局包 + 工作区临时）
+
+270 条内置公式不够时，不必改代码：
+
+| 级别 | 存放 | 范围 | 用法 |
+|---|---|---|---|
+| 全局公式包 | `$DSH_HOME/math-calc/formula-packs/global.json` | 所有工作区 | `tableAction:"global-add"` |
+| 工作区临时公式 | 工作区 JSON | 单个世界观 | `tableAction:"add"` |
+
+新增时校验器会挡住：非法 id、坏表达式、**表达式里未在 params/CONSTANTS 定义的符号**、参数缺描述。
+字段说明与检查清单见 [docs/formula-authoring.md](../docs/formula-authoring.md)。
+
+**符号消歧**：同一个字母在不同公式里含义不同（`m` = 质量/米）。
+符号索引从公式参数自动生成，查询方式：
+
+```jsonc
+{"operation":"formulas","query":"symbol:m"}       // m 的全部含义
+{"operation":"formulas","query":"symbol:m@质量"}   // 只看质量
+{"operation":"formulas","query":"symbol:*"}        // 所有多义符号
+```
+
 ### 基础运算扩展
 
 除了 mathjs 自带的能力，引擎里额外注册了这些（表达式里可直接用）：
