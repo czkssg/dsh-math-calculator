@@ -67,8 +67,25 @@
 - 新增能力（天空/恒星/生命/一致性）必须同时进入描述与 brief，否则模型不知道；
 - 前端仍未接入（用户明确"前端再说"），但 `value` 字段已稳定，前端只做展示。
 
+## 客户端挂载（2026-10-22 修正）
+
+审计发现原实现挂的是 `sidebar.panellist` 与 `main` —— **社区插件不用这两个槽位**
+（dsh-my-guardian 用 `sidebar.right.pane.tab` + `.title`），面板很可能永远不出现，
+而挂 `main` 还有覆盖原生主界面的风险。已改为：
+
+| 项 | 改后 |
+|---|---|
+| 挂载点 | 只挂 `sidebar.right.pane.tab` 与 `sidebar.right.pane.tab.title` |
+| 面板 id | `math-calc-workspaces`（唯一 key） |
+| 样式 | 全部 inline style，**不向 document.head 注入 CSS** |
+| 故障隔离 | 每个槽位独立 try/catch + React 错误边界 |
+| 卸载 | apply 返回 disposeAll，逐个释放 |
+| 依赖声明 | `dsh.client.inject` 补 `@deepseek-ai/dsh-client-ui-slots` |
+
+安全测试见 `test/client-ui.mjs`（19 项）：静态检查不污染全局、模拟宿主加载、
+槽位缺失只跳过、无 slots 服务时静默退出。
+
 ## 未决
 
-- 客户端 `dsh.client.inject` 目前只写 `@deepseek-ai/dsh-client-runtime`；
-  前端真正接入时需按 dsh-question-note 的做法补齐 `dsh-client-ui-slots` 等 UI 包。
+- 面板尚未在真机（Electron）验证——本轮只做了模拟宿主与静态检查；
 - 是否需要把 `agent/pre-step` 的提醒频率做成用户可配置项。

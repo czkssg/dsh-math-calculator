@@ -534,10 +534,14 @@
     }
   }
 
-  /** 侧栏图标。 */
-  function createSidebarIcon(react: any) {
-    return function SidebarIcon() {
-      return react.createElement('span', { title: '数学工作区', style: { fontSize: 16 } }, '∑')
+  /** 侧栏页签标题（很小，只占一个 tab 的位置）。 */
+  function createSidebarTitle(react: any) {
+    return function SidebarTitle() {
+      return react.createElement(
+        'span',
+        { title: '数学工作区', style: { fontSize: 12, whiteSpace: 'nowrap' } },
+        '∑ 数学',
+      )
     }
   }
 
@@ -558,55 +562,78 @@
         react = null
       }
 
-      const WorkspacePanel = createWorkspacePanel(react)
-      const SidebarIcon = createSidebarIcon(react)
+      // React 不可用时给空组件，绝不让宿主在渲染阶段崩掉
+      const WorkspacePanel = react ? createWorkspacePanel(react) : function EmptyPanel() { return null }
+      const SidebarTitle = react ? createSidebarTitle(react) : function EmptyTitle() { return null }
+
+      /**
+       * 错误边界：面板内部异常只影响本面板，不会传染给原生界面。
+       * 社区插件（dsh-my-guardian 等）也把面板当成独立故障域。
+       */
+      function withBoundary(Component: any) {
+        if (!react) return Component
+        return class MathCalcBoundary extends react.Component {
+          constructor(props: any) {
+            super(props)
+            this.state = { error: null }
+          }
+          static getDerivedStateFromError(error: any) {
+            return { error }
+          }
+          componentDidCatch() {
+            /* 静默：不把错误抛给宿主 */
+          }
+          render() {
+            if (this.state.error) {
+              return react.createElement(
+                'div',
+                { style: { padding: 12, fontSize: 12, opacity: 0.75 } },
+                '数学面板出错了，已被隔离，不影响其它界面。',
+              )
+            }
+            return react.createElement(Component, this.props)
+          }
+        }
+      }
 
       return {
         /** 依赖的客户端服务。 */
         inject: ['slots'],
 
         /**
-         * 插件入口。
-         * 基于官方槽位 API：ctx.slots.inject(name, cb) + ctx.slots.register(meta, Component)。
+         * 插件入口：只挂右侧边栏页签，不动主界面。
+         *
+         * 槽位名对齐社区插件的做法（dsh-my-guardian / dsh-question-note）：
+         *   sidebar.right.pane.tab        —— 页签内容
+         *   sidebar.right.pane.tab.title  —— 页签标题
+         * 每个槽位单独 try/catch：某个槽位不存在只跳过，不影响其它槽位。
          */
         apply: function (ctx) {
           if (!ctx || !ctx.slots || typeof ctx.slots.inject !== 'function') return
 
-          // 主面板
-          try {
-            ctx.slots.inject('main', function () {
-              return ctx.slots.register(
-                {
-                  name: 'main',
-                  key: PANEL_ID,
-                  inject: function () {
-                    return { label: '工作区' }
-                  },
-                },
-                WorkspacePanel,
-              )
-            })
-          } catch {
-            /* 宿主没有 main 槽位时跳过 */
+          const disposers: Array<() => void> = []
+          const mount = function (slot: string, Component: any) {
+            try {
+              const dispose = ctx.slots.inject(slot, function () {
+                return ctx.slots.register({ name: slot, key: PANEL_ID }, withBoundary(Component))
+              })
+              if (typeof dispose === 'function') disposers.push(dispose)
+            } catch {
+              /* 宿主没有该槽位时跳过 */
+            }
           }
 
-          // 侧栏列表入口
-          try {
-            ctx.slots.inject('sidebar.panellist', function () {
-              return ctx.slots.register(
-                {
-                  name: 'sidebar.panellist',
-                  id: PANEL_ID,
-                  order: 900,
-                  label: function () {
-                    return '数学工作区'
-                  },
-                },
-                SidebarIcon,
-              )
-            })
-          } catch {
-            /* 无此槽位时跳过 */
+          mount('sidebar.right.pane.tab', WorkspacePanel)
+          mount('sidebar.right.pane.tab.title', SidebarTitle)
+
+          return function disposeAll() {
+            for (const dispose of disposers) {
+              try {
+                dispose()
+              } catch {
+                /* 卸载失败忽略 */
+              }
+            }
           }
         },
       }
