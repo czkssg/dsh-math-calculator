@@ -39,6 +39,7 @@ const SUITES = [
   { file: 'scale-world.mjs', expect: 17, label: '常数传导到星球模型（S2）' },
   { file: 'provenance.mjs', expect: 17, label: '模型出处与可信度（S2.5）' },
   { file: 'stellar.mjs', expect: 29, label: '恒星结构与常数敏感度（S3）' },
+  { file: 'determinism.mjs', expect: 18, label: '确定性（同输入同输出）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
