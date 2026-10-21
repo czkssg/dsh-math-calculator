@@ -1,0 +1,156 @@
+/**
+ * 统一测试入口：一次跑完全部测试套件。
+ *
+ * 为什么需要这个：
+ *   之前是逐个 `node test/xxx.mjs`，容易漏掉、也不好判断整体状态。
+ *   这个脚本给出一张总表，任何一套失败就非零退出。
+ *
+ * 每套测试用**独立的临时目录**（DSH_MATH_CALC_HOME），
+ * 避免工作区数据在测试之间串味 —— 这是之前踩过的坑：
+ * constants 测试曾经因为 formula-table 测试留下的覆盖而失败。
+ */
+import { spawn } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = dirname(fileURLToPath(import.meta.url))
+
+/** 测试清单：文件、期望的通过数（用于发现静默减少）、描述。 */
+const SUITES = [
+  { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
+  { file: 'formulas.mjs', expect: 35, label: '公式库' },
+  { file: 'formulas-all.mjs', expect: 270, label: '全部公式可求值' },
+  { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
+  { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
+  { file: 'consequences.mjs', expect: 61, label: '长链后果' },
+  { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
+  { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
+  { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
+  { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
+  { file: 'awareness.mjs', expect: 29, label: '模型感知（提示注入）' },
+  { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
+  { file: 'hook.mjs', expect: 20, label: 'agent/pre-step 钩子' },
+  { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
+  { file: 'world.mjs', expect: 32, label: '星球体貌画像' },
+  { file: 'ode.mjs', expect: 34, label: '微分方程求解' },
+  { file: 'workspace.mjs', expect: 38, label: '工作区隔离' },
+  { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
+  { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
+  { file: 'integration.mjs', expect: 49, label: '整合验收（整体装配）' },
+]
+
+/** 跑一个测试文件，返回 stdout 与退出码。 */
+function runSuite(file) {
+  return new Promise((resolve) => {
+    // 每个套件独立临时目录，避免数据串味
+    const home = mkdtempSync(join(tmpdir(), 'dsh-test-'))
+    const child = spawn(process.execPath, [join(root, 'test', file)], {
+      cwd: root,
+      env: { ...process.env, DSH_MATH_CALC_HOME: home },
+    })
+
+    let output = ''
+    child.stdout.on('data', (chunk) => {
+      output += chunk.toString()
+    })
+    child.stderr.on('data', (chunk) => {
+      output += chunk.toString()
+    })
+    child.on('close', (code) => {
+      try {
+        rmSync(home, { recursive: true, force: true })
+      } catch {
+        /* 忽略清理失败 */
+      }
+      resolve({ code: code ?? 0, output })
+    })
+  })
+}
+
+/** 从输出里提取通过数。 */
+function parsePassCount(output) {
+  // 「全部通过：66 项」或「通过 39，失败 1」或「✅ 可求值: 270/270」
+  let match = output.match(/全部通过：(\d+)\s*项/)
+  if (match) return Number(match[1])
+  match = output.match(/通过\s+(\d+)，失败\s+(\d+)/)
+  if (match) return Number(match[1])
+  match = output.match(/可求值:\s*(\d+)\/(\d+)/)
+  if (match) return Number(match[1])
+  return null
+}
+
+/** 从输出里提取失败数。 */
+function parseFailCount(output) {
+  const match = output.match(/通过\s+(\d+)，失败\s+(\d+)/)
+  if (match) return Number(match[2])
+  if (/FAIL/.test(output)) return 1
+  return 0
+}
+
+async function main() {
+  console.log('══════════════════════════════════════════════════════════')
+  console.log('  dsh-math-calculator 全量测试')
+  console.log('══════════════════════════════════════════════════════════')
+  console.log('')
+
+  const results = []
+  let totalPass = 0
+  let totalFail = 0
+  let anyFailed = false
+  let anyCountMismatch = false
+
+  for (const suite of SUITES) {
+    process.stdout.write('  ' + suite.label.padEnd(30) + ' ')
+    const result = await runSuite(suite.file)
+    const passCount = parsePassCount(result.output)
+    const failCount = parseFailCount(result.output)
+
+    const okExit = result.code === 0
+    const okCount = passCount === null || passCount === suite.expect
+
+    if (passCount !== null) totalPass += passCount
+    totalFail += failCount
+
+    if (okExit && okCount) {
+      console.log('✓ ' + (passCount !== null ? passCount + ' 项' : '通过'))
+    } else {
+      anyFailed = anyFailed || !okExit
+      anyCountMismatch = anyCountMismatch || !okCount
+      console.log('✗ 失败')
+      if (!okExit) {
+        console.log('    退出码: ' + result.code)
+        // 只打印失败的断言，避免刷屏
+        const failLines = result.output
+          .split('\n')
+          .filter((line) => /FAIL|Error|错误/.test(line))
+          .slice(0, 8)
+        for (const line of failLines) console.log('    ' + line.trim())
+      }
+      if (!okCount && passCount !== null) {
+        console.log('    通过数不符: 实际 ' + passCount + '，期望 ' + suite.expect)
+      }
+    }
+  }
+
+  console.log('')
+  console.log('──────────────────────────────────────────────────────────')
+  console.log('  合计: ' + totalPass + ' 项通过' + (totalFail > 0 ? '，' + totalFail + ' 项失败' : ''))
+  console.log('  测试套件: ' + SUITES.length + ' 套')
+  if (anyCountMismatch) {
+    console.log('  ⚠ 有套件的通过数与基线不一致（可能新增或丢失了用例）')
+  }
+  console.log('──────────────────────────────────────────────────────────')
+
+  if (anyFailed) {
+    console.log('')
+    console.log('✗ 存在失败项')
+    process.exitCode = 1
+  } else {
+    console.log('')
+    console.log('✓ 全部通过')
+  }
+}
+
+await main()

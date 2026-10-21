@@ -1,0 +1,7 @@
+# dsh-math-calculator bundle patch: mounts the math calculator tool plugin into
+# the profile's loader tree. The entry `name` is the plugin package itself,
+# resolved from the profile's node_modules (or from the local directory the
+# package was installed from).
+- insert:
+    - id: math-calc
+      name: 'dsh-math-calculator'

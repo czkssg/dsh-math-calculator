@@ -1,0 +1,3507 @@
+# 公式库完整清单
+
+> 共 **270** 条，**49** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
+
+调用方式：`{ "operation": "formula", "formula": "<id>", "overrides": {...} }`
+
+**所有参数都可被 `overrides` 覆盖**，这是架空世界改造的基础。
+
+## 目录
+
+- [biology/ecology](#biologyecology) — 6 条
+- [biology/physiology](#biologyphysiology) — 4 条
+- [chemistry/acid](#chemistryacid) — 1 条
+- [chemistry/electro](#chemistryelectro) — 1 条
+- [chemistry/kinetics](#chemistrykinetics) — 2 条
+- [chemistry/mole](#chemistrymole) — 2 条
+- [chemistry/solution](#chemistrysolution) — 3 条
+- [chemistry/thermo](#chemistrythermo) — 1 条
+- [econ/finance](#econfinance) — 7 条
+- [econ/growth](#econgrowth) — 2 条
+- [econ/io](#econio) — 1 条
+- [econ/macro](#econmacro) — 2 条
+- [econ/micro](#econmicro) — 2 条
+- [econ/production](#econproduction) — 1 条
+- [econ/utility](#econutility) — 1 条
+- [math/geometry](#mathgeometry) — 7 条
+- [math/growth](#mathgrowth) — 3 条
+- [math/scales](#mathscales) — 2 条
+- [math/series](#mathseries) — 2 条
+- [military/combat](#militarycombat) — 8 条
+- [perception/agriculture](#perceptionagriculture) — 5 条
+- [perception/architecture](#perceptionarchitecture) — 7 条
+- [perception/celestial](#perceptioncelestial) — 15 条
+- [perception/climate](#perceptionclimate) — 5 条
+- [perception/horizon](#perceptionhorizon) — 5 条
+- [perception/senses](#perceptionsenses) — 6 条
+- [perception/technology](#perceptiontechnology) — 4 条
+- [perception/travel](#perceptiontravel) — 6 条
+- [physics/astronomy](#physicsastronomy) — 12 条
+- [physics/em](#physicsem) — 22 条
+- [physics/fluid](#physicsfluid) — 4 条
+- [physics/gravity](#physicsgravity) — 8 条
+- [physics/mechanics](#physicsmechanics) — 45 条
+- [physics/nuclear](#physicsnuclear) — 4 条
+- [physics/optics](#physicsoptics) — 7 条
+- [physics/quantum](#physicsquantum) — 3 条
+- [physics/relativity](#physicsrelativity) — 5 条
+- [physics/scaling](#physicsscaling) — 5 条
+- [physics/thermo](#physicsthermo) — 16 条
+- [physics/waves](#physicswaves) — 8 条
+- [social/demography](#socialdemography) — 2 条
+- [social/development](#socialdevelopment) — 1 条
+- [social/ecology](#socialecology) — 2 条
+- [social/economics](#socialeconomics) — 1 条
+- [social/epidemiology](#socialepidemiology) — 3 条
+- [social/inequality](#socialinequality) — 3 条
+- [social/information](#socialinformation) — 2 条
+- [social/politics](#socialpolitics) — 5 条
+- [social/urban](#socialurban) — 1 条
+
+## biology/ecology
+
+### population_growth_rate
+
+**内禀增长率** · 单位 1/年
+
+```
+birth - death
+```
+
+必填：`birth` (出生率 1/年)、`death` (死亡率 1/年)
+
+r = b - d。
+
+### generation_time
+
+**倍增时间（由增长率）** · 单位 年
+
+```
+ln2 / r
+```
+
+必填：`r` (增长率 1/年)
+可选：`ln2`=0.6931471805599453 (ln2)
+
+种群翻倍所需时间。
+
+### carrying_capacity_time
+
+**逻辑斯蒂达 90% 容量所需时间** · 单位 时间
+
+```
+log(9 * (K / N0 - 1)) / r
+```
+
+必填：`K` (环境容量)、`N0` (初始种群)、`r` (增长率)
+
+解 N(t)=0.9K 得 t。文明扩张推演。
+
+### predator_prey_ratio
+
+**捕食者-猎物平衡比**
+
+```
+alpha / beta
+```
+
+必填：`alpha` (捕食者死亡率)、`beta` (捕食效率)
+
+平衡时猎物/捕食者数量比。
+
+### photosynthesis_rate
+
+**光合作用效率上限** · 单位 W/m²
+
+```
+P_in * efficiency
+```
+
+必填：`P_in` (入射光功率 W/m²)
+可选：`efficiency`=0.1 (转化效率 0-1)
+
+生态系统的能量输入。
+
+### trophic_energy
+
+**营养级能量传递**
+
+```
+E0 * efficiency^level
+```
+
+必填：`E0` (初级生产量)、`level` (营养级 n)
+可选：`efficiency`=0.1 (传递效率)
+
+每升一级损失约 90%。支撑食物链长度的估算。
+
+## biology/physiology
+
+### bmr_mifflin
+
+**基础代谢率（Mifflin-St Jeor，男性）** · 单位 kcal/day
+
+```
+10 * m + 6.25 * h - 5 * age + 5
+```
+
+必填：`m` (体重 kg)、`h` (身高 cm)、`age` (年龄 岁)
+
+经验公式。异星生物的系数可全部覆盖。
+
+### body_surface_area
+
+**体表面积（Du Bois）** · 单位 m²
+
+```
+0.007184 * m^0.425 * h^0.725
+```
+
+必填：`m` (体重 kg)、`h` (身高 cm)
+
+BSA，用于散热/给药推演。
+
+### heat_dissipation
+
+**代谢产热（与散热的平衡点）** · 单位 W
+
+```
+sigma * emissivity * A * T^4
+```
+
+必填：`A` (体表面积 m²)、`T` (体温 K)
+可选：`sigma`=5.670374419e-8 (斯特藩常数)、`emissivity`=0.98 (皮肤发射率)
+
+辐射散热。巨兽能否散热的关键。
+
+### lifespan_scaling
+
+**寿命异速生长** · 单位 年
+
+```
+L0 * (m / m0)^b
+```
+
+必填：`L0` (基准寿命 年)、`m0` (基准质量 kg)、`m` (目标质量 kg)
+可选：`b`=0.25 (标度指数)
+
+寿命 ∝ 质量^b。架空生物可改 b。
+
+## chemistry/acid
+
+### ph_from_pka
+
+**缓冲液 pH（Henderson-Hasselbalch）**
+
+```
+pKa + log(base / acid, 10)
+```
+
+必填：`pKa` (pKa)、`base` (共轭碱浓度)、`acid` (酸浓度)
+
+pH = pKa + log([A⁻]/[HA])。
+
+## chemistry/electro
+
+### nernst
+
+**能斯特方程** · 单位 V
+
+```
+E0 - R * T / (n * F) * log(Q, 10)
+```
+
+必填：`E0` (标准电势 V)、`n` (电子数)、`Q` (反应商)
+可选：`T`=298.15 (温度 K)、`R`=8.314462618 (气体常数)、`F`=96485.33212 (法拉第常数)
+
+E = E₀ - (RT/nF)lnQ。
+
+## chemistry/kinetics
+
+### arrhenius
+
+**阿伦尼乌斯速率常数** · 单位 1/s
+
+```
+A * exp(-Ea / (R * T))
+```
+
+必填：`A` (指前因子)、`Ea` (活化能 J/mol)、`T` (温度 K)
+可选：`R`=8.314462618 (气体常数)
+
+k = Ae^(-Ea/RT)。反应速率对温度的敏感性。
+
+### half_life_first_order
+
+**一级反应半衰期** · 单位 s
+
+```
+ln2 / k
+```
+
+必填：`k` (速率常数 1/s)
+可选：`ln2`=0.6931471805599453 (ln2)
+
+t½ = ln2/k。与初始浓度无关。
+
+## chemistry/mole
+
+### avogadro_molecules
+
+**分子数** · 单位 个
+
+```
+n * NA
+```
+
+必填：`n` (物质的量 mol)
+可选：`NA`=6.02214076e+23 (阿伏伽德罗常数)
+
+N = nN_A。
+
+### molar_mass_density
+
+**由密度算摩尔体积** · 单位 cm³/mol
+
+```
+M / rho
+```
+
+必填：`M` (摩尔质量 g/mol)、`rho` (密度 g/cm³)
+
+V_m = M/ρ。
+
+## chemistry/solution
+
+### molarity
+
+**摩尔浓度** · 单位 mol/L
+
+```
+n / V
+```
+
+必填：`n` (物质的量 mol)、`V` (体积 L)
+
+c = n/V。
+
+### dilution
+
+**稀释公式** · 单位 L
+
+```
+C1 * V1 / C2
+```
+
+必填：`C1` (原浓度)、`V1` (原体积)、`C2` (目标浓度)
+
+C₁V₁ = C₂V₂，求所需体积。
+
+### ideal_solution_vapor
+
+**拉乌尔定律（蒸气压）** · 单位 Pa
+
+```
+x_solvent * P0
+```
+
+必填：`x_solvent` (溶剂摩尔分数)、`P0` (纯溶剂蒸气压 Pa)
+
+P = x·P₀。
+
+## chemistry/thermo
+
+### gibbs_free_energy
+
+**吉布斯自由能变** · 单位 J
+
+```
+dH - T * dS
+```
+
+必填：`dH` (焓变 J)、`T` (温度 K)、`dS` (熵变 J/K)
+
+ΔG = ΔH - TΔS。ΔG<0 反应自发。
+
+## econ/finance
+
+### compound_interest
+
+**复利终值**
+
+```
+P * (1 + r / n)^(n * t)
+```
+
+必填：`P` (本金)、`r` (年利率)、`t` (年数)
+可选：`n`=1 (每年计息次数)
+
+A = P(1+r/n)^(nt)。n=1 为年复利，n=12 为月复利。
+
+### continuous_compounding
+
+**连续复利终值**
+
+```
+P * exp(r * t)
+```
+
+必填：`P` (本金)、`r` (年利率)、`t` (年数)
+
+A = Pe^(rt)。
+
+### present_value
+
+**现值**
+
+```
+FV / (1 + r)^t
+```
+
+必填：`FV` (未来值)、`r` (贴现率)、`t` (年数)
+
+PV = FV/(1+r)^t。
+
+### annuity_pv
+
+**年金现值**
+
+```
+PMT * (1 - (1 + r)^(-t)) / r
+```
+
+必填：`PMT` (每期支付)、`r` (每期利率)、`t` (期数)
+
+PV = PMT·(1-(1+r)^-t)/r。
+
+### cagr
+
+**复合年均增长率 CAGR**
+
+```
+(finalValue / startValue)^(1 / t) - 1
+```
+
+必填：`startValue` (起始值)、`finalValue` (终值)、`t` (年数)
+
+CAGR = (终/始)^(1/t) - 1。
+
+### inflation_adjust
+
+**通胀换算（实际购买力）**
+
+```
+amount / (1 + rate)^t
+```
+
+必填：`amount` (名义金额)、`rate` (年通胀率)、`t` (年数)
+
+未来同等购买力折算到今天的金额。
+
+### roi
+
+**投资回报率**
+
+```
+(gain - cost) / cost
+```
+
+必填：`gain` (收益)、`cost` (成本)
+
+ROI = (收益-成本)/成本。
+
+## econ/growth
+
+### solow_steady_state
+
+**索洛模型稳态资本**
+
+```
+(s * A / (delta + n + gx))^(1 / (1 - alpha))
+```
+
+必填：`s` (储蓄率)、`A` (技术水平)、`delta` (折旧率)、`n` (人口增长率)
+可选：`gx`=0 (技术进步率)、`alpha`=0.3 (资本份额 α)
+
+稳态人均资本 k* = (sA/(δ+n+g))^(1/(1-α))。
+
+### harrod_domar
+
+**哈罗德-多马增长率**
+
+```
+s / v
+```
+
+必填：`s` (储蓄率)、`v` (资本产出比)
+
+g = s/v。
+
+## econ/io
+
+### leontief_inverse
+
+**列昂惕夫逆矩阵（完全消耗）**
+
+```
+inv([[1 - A11, -A12], [-A21, 1 - A22]])
+```
+
+可选：`A11`=0.2 (部门1→1 直接消耗系数)、`A12`=0.1 (部门1→2)、`A21`=0.15 (部门2→1)、`A22`=0.25 (部门2→2)
+
+(I-A)⁻¹ 的两部门形式。多部门请用 operation="matrix" 直接写表达式。
+
+## econ/macro
+
+### money_multiplier
+
+**货币乘数**
+
+```
+1 / reserve
+```
+
+必填：`reserve` (准备金率)
+
+基础货币扩张倍数。
+
+### gdp_growth
+
+**GDP 增长率**
+
+```
+(gdp1 - gdp0) / gdp0
+```
+
+必填：`gdp0` (基期 GDP)、`gdp1` (报告期 GDP)
+
+(新-旧)/旧。
+
+## econ/micro
+
+### break_even
+
+**盈亏平衡产量**
+
+```
+FC / (price - VC)
+```
+
+必填：`FC` (固定成本)、`price` (单价)、`VC` (单位变动成本)
+
+Q = FC/(P-VC)。
+
+### price_elasticity
+
+**需求价格弹性（点弹性）**
+
+```
+(dQ / Q) / (dP / P)
+```
+
+必填：`dQ` (需求量变化)、`Q` (原需求量)、`dP` (价格变化)、`P` (原价格)
+
+|E|>1 富有弹性。
+
+## econ/production
+
+### cobb_douglas
+
+**柯布-道格拉斯生产函数**
+
+```
+A * K^alpha * L^beta
+```
+
+必填：`K` (资本)、`L` (劳动)
+可选：`A`=1 (全要素生产率)、`alpha`=0.3 (资本弹性 α)、`beta`=0.7 (劳动弹性 β)
+
+Y = A·Kᵅ·Lᵝ。α+β=1 为规模报酬不变。
+
+## econ/utility
+
+### utility_crra
+
+**CRRA 效用函数**
+
+```
+c^(1 - gamma) / (1 - gamma)
+```
+
+必填：`c` (消费)、`gamma` (相对风险厌恶系数 γ ≠ 1)
+
+常数相对风险厌恶效用，γ=1 时退化为 ln c。
+
+## math/geometry
+
+### circle_area
+
+**圆面积**
+
+```
+pi * r^2
+```
+
+必填：`r` (半径)
+
+S = πr²。
+
+### sphere_volume
+
+**球体积**
+
+```
+4 / 3 * pi * r^3
+```
+
+必填：`r` (半径)
+
+V = 4πr³/3。
+
+### sphere_area
+
+**球表面积**
+
+```
+4 * pi * r^2
+```
+
+必填：`r` (半径)
+
+S = 4πr²。
+
+### cylinder_volume
+
+**圆柱体积**
+
+```
+pi * r^2 * h
+```
+
+必填：`r` (半径)、`h` (高)
+
+V = πr²h。
+
+### cone_volume
+
+**圆锥体积**
+
+```
+pi * r^2 * h / 3
+```
+
+必填：`r` (半径)、`h` (高)
+
+V = πr²h/3。
+
+### heron_area
+
+**海伦公式（三角形面积）**
+
+```
+sqrt(p * (p - a) * (p - b) * (p - c))
+```
+
+必填：`a` (边 a)、`b` (边 b)、`c` (边 c)、`p` (半周长 (a+b+c)/2)
+
+S = √(p(p-a)(p-b)(p-c))。
+
+### pythagoras
+
+**勾股定理（求斜边）**
+
+```
+sqrt(a^2 + b^2)
+```
+
+必填：`a` (直角边 a)、`b` (直角边 b)
+
+c = √(a²+b²)。
+
+## math/growth
+
+### exponential_growth
+
+**指数增长**
+
+```
+N0 * exp(r * t)
+```
+
+必填：`N0` (初始量)、`r` (增长率 1/时间)、`t` (时间)
+
+N = N₀e^(rt)。
+
+### doubling_time
+
+**倍增时间** · 单位 时间
+
+```
+log(2) / r
+```
+
+必填：`r` (增长率 1/时间)
+
+t = ln2/r（即 70/百分比 的精确版）。
+
+### logistic_growth
+
+**逻辑斯蒂增长（t 时刻）**
+
+```
+K / (1 + ((K - N0) / N0) * exp(-r * t))
+```
+
+必填：`K` (环境容量 K)、`N0` (初始量)、`r` (内禀增长率)、`t` (时间)
+
+N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。
+
+## math/scales
+
+### richter
+
+**里氏震级（能量比）** · 单位 倍数
+
+```
+10^(1.5 * dM)
+```
+
+必填：`dM` (震级差)
+
+震级每增 1，能量约增 31.6 倍。
+
+### ph
+
+**pH 值**
+
+```
+-log(H) / log(10)
+```
+
+必填：`H` (氢离子浓度 mol/L)
+
+pH = -log₁₀[H⁺]。
+
+## math/series
+
+### arithmetic_sum
+
+**等差数列求和**
+
+```
+n * (a1 + an) / 2
+```
+
+必填：`n` (项数)、`a1` (首项)、`an` (末项)
+
+S = n(a₁+aₙ)/2。
+
+### geometric_sum
+
+**等比数列求和**
+
+```
+a1 * (1 - r^n) / (1 - r)
+```
+
+必填：`a1` (首项)、`r` (公比)、`n` (项数)
+
+S = a₁(1-rⁿ)/(1-r)。
+
+## military/combat
+
+### lanchester_linear
+
+**兰彻斯特线性律（古战/近战）**
+
+```
+sqrt(N0^2 - (b / a) * M0^2)
+```
+
+必填：`N0` (我方初始兵力)、`M0` (敌方初始兵力)
+可选：`a`=1 (我方效率)、`b`=1 (敌方效率)
+
+逐个交战模型，优势线性累积。结果为我方剩余兵力。
+
+### lanchester_square
+
+**兰彻斯特平方律（远程火力）**
+
+```
+sqrt(N0^2 - (b / a) * M0^2)
+```
+
+必填：`N0` (我方初始兵力)、`M0` (敌方初始兵力)
+可选：`a`=1 (我方效率)、`b`=1 (敌方效率)
+
+集中火力模型，平方优势。兵力比 2:1 时损失约 1:4。
+
+### force_ratio_required
+
+**进攻所需兵力比（3:1 法则）**
+
+```
+defender * ratio
+```
+
+必填：`defender` (防御方兵力)
+可选：`ratio`=3 (所需倍数（经典 3:1）)
+
+进攻方需要的兵力优势。架空战术可改 ratio。
+
+### attrition_rate
+
+**累计损耗率**
+
+```
+1 - (1 - per_round)^rounds
+```
+
+必填：`per_round` (每轮损耗率)、`rounds` (轮数)
+
+累计损耗。后勤/消耗战推演。
+
+### projectile_energy
+
+**弹丸动能** · 单位 J
+
+```
+0.5 * m * v^2
+```
+
+必填：`m` (弹丸质量 kg)、`v` (初速度 m/s)
+
+动能，与穿甲能力相关。
+
+### penetration_estimate
+
+**穿深估算（简化）** · 单位 m
+
+```
+E / (k * A)
+```
+
+必填：`E` (弹丸动能 J)、`A` (着弹面积 m²)
+可选：`k`=1000000000 (材料阻力系数)
+
+极简模型，仅用于相对比较。
+
+### blast_radius
+
+**爆炸冲击波半径（立方根律）** · 单位 m
+
+```
+k * E^(1/3)
+```
+
+必填：`E` (爆炸能量 J)
+可选：`k`=0.1 (经验系数)
+
+R ∝ E^(1/3)。当量翻倍半径只增 26%。
+
+### oxygen_depletion
+
+**密闭空间耗氧时间** · 单位 min
+
+```
+V * 0.21 / (n * consumption)
+```
+
+必填：`V` (空间体积 m³)、`n` (人数)
+可选：`consumption`=0.0003 (人均耗氧 m³/min)
+
+围城/密闭推演。
+
+## perception/agriculture
+
+### crop_yield_area
+
+**所需耕地面积** · 单位 m²
+
+```
+people * kcal_per_day * 365 / (yield_per_m2 * kcal_per_kg)
+```
+
+必填：`people` (供养人口)、`yield_per_m2` (每平方米年产量 kg)
+可选：`kcal_per_day`=2200 (每人每日热量 kcal)、`kcal_per_kg`=3500 (每公斤热量 kcal)
+
+养活一座城需要多大农田。农业文明的承载上限。
+
+### food_surplus_ratio
+
+**农业剩余率（供养非农人口）**
+
+```
+(yield - consumed) / yield
+```
+
+必填：`yield` (总产量)、`consumed` (农民自身消耗)
+
+剩余率决定能养多少工匠/士兵/祭司。这是城市化的基本原理。
+
+### population_density_limit
+
+**土地承载力** · 单位 人
+
+```
+area * yield_per_m2 / (kcal_per_day * 365)
+```
+
+必填：`area` (面积 m²)、`yield_per_m2` (每平方米年产 kg)
+可选：`kcal_per_day`=2200 (人均日热量)
+
+一块地最多养活多少人。
+
+### irrigation_water_need
+
+**灌溉需水量** · 单位 m³
+
+```
+area * depth
+```
+
+必填：`area` (灌溉面积 m²)、`depth` (灌溉深度 m（水稻约 0.1）)
+
+农业用水。河流改道、水利工程的动机。
+
+### river_discharge
+
+**河流流量** · 单位 m³/s
+
+```
+width * depth * velocity
+```
+
+必填：`width` (河宽 m)、`depth` (水深 m)、`velocity` (流速 m/s)
+
+河有多大。航运能力、渡河难度、洪水规模。
+
+## perception/architecture
+
+### building_height_limit
+
+**建筑高度上限（材料强度）** · 单位 m
+
+```
+strength / (rho * g)
+```
+
+必填：`strength` (材料抗压强度 Pa)、`rho` (材料密度 kg/m³)
+可选：`g`=9.80665 (重力加速度)
+
+材料能撑起的最大高度（等截面）。花岗岩约 2km，钢约 30km。高重力世界建筑更矮。
+
+### tower_footprint
+
+**高塔底部所需占地面积** · 单位 m²
+
+```
+W / (sigma_allow * 0.5)
+```
+
+必填：`W` (总重量 N)、`sigma_allow` (容许应力 Pa)
+
+塔越高底部越粗。粗野主义巨构的城市轮廓依据。
+
+### wall_thickness
+
+**城墙厚度（抗冲击）** · 单位 m
+
+```
+F / (sigma * h)
+```
+
+必填：`F` (冲击力 N)、`sigma` (材料强度 Pa)、`h` (墙高 m)
+
+城墙要多厚才能挡得住攻城锤。
+
+### city_population_area
+
+**城市人口与面积** · 单位 m²
+
+```
+population * area_per_person
+```
+
+必填：`population` (人口)
+可选：`area_per_person`=200 (人均占地 m²（古代城市约 100-300）)
+
+城市铺多大。城墙周长、街市规模的估算。
+
+### city_wall_perimeter
+
+**城墙周长（圆形城市）** · 单位 m
+
+```
+2 * pi * sqrt(area / pi)
+```
+
+必填：`area` (城市面积 m²)
+
+围一圈城墙要修多长。防御成本。
+
+### beacon_chain
+
+**烽火传递时间** · 单位 s
+
+```
+(distance / spacing) * relay_time
+```
+
+必填：`distance` (总距离 m)、`spacing` (烽火台间距 m)
+可选：`relay_time`=60 (每站响应秒数)
+
+消息传递多快。信息传播速度决定政治版图大小——这是历史铁律。
+
+### messenger_network_time
+
+**驿站传信时间** · 单位 小时
+
+```
+distance / (speed * 3600) + stops * rest_hours
+```
+
+必填：`distance` (距离 km)、`stops` (换马次数)
+可选：`speed`=15 (马速 km/h)、`rest_hours`=0.2 (每次换马耗时 小时)
+
+帝国通信的实际延迟。版图上限由此决定。
+
+## perception/celestial
+
+### day_length
+
+**自转周期（昼夜长短）** · 单位 s
+
+```
+2 * pi / omega
+```
+
+必填：`omega` (自转角速度 rad/s)
+
+一天多长。地球 ω=7.29e-5 rad/s → 86164s（23h56m）。
+
+### day_length_from_radius
+
+**由赤道线速度求一天长度** · 单位 s
+
+```
+2 * pi * R / v_equator
+```
+
+必填：`R` (星球半径 m)、`v_equator` (赤道线速度 m/s)
+
+另一种写法：赤道有人以 v 运动，一天就是绕一圈的时间。
+
+### centrifugal_ratio
+
+**赤道离心/重力比**
+
+```
+omega^2 * R / g
+```
+
+必填：`omega` (自转角速度 rad/s)、`R` (星球半径 m)
+可选：`g`=9.80665 (表面重力 m/s²)
+
+这个比值接近 1 时星球会解体。决定"最大自转速度"，进而决定最短的一天。
+
+### solar_declination
+
+**太阳赤纬（季节位移）** · 单位 rad
+
+```
+obliquity * sin(2 * pi * day_of_year / year_length)
+```
+
+必填：`day_of_year` (一年中的第几天)
+可选：`obliquity`=0.409105 (轴倾角 rad（地球 23.44°）)、`year_length`=365.25 (一年天数)
+
+太阳直射点纬度。倾角为 0 则无季节，倾角大则季节极端。
+
+### solar_elevation
+
+**正午太阳高度角** · 单位 rad
+
+```
+pi / 2 - abs(latitude - declination)
+```
+
+必填：`latitude` (纬度 rad)、`declination` (太阳赤纬 rad)
+
+正午影子的长短由此决定。极昼极夜的界线也在这里。
+
+### shadow_length
+
+**影子长度** · 单位 m
+
+```
+h / tan(elevation)
+```
+
+必填：`h` (物体高度 m)、`elevation` (太阳高度角 rad)
+
+正午影长。高纬度冬季影子极长，这是读者能直接感受到的季节信号。
+
+### solar_day_length
+
+**昼长（小时）** · 单位 小时
+
+```
+24 / pi * acos(max(-1, min(1, -tan(latitude) * tan(declination))))
+```
+
+必填：`latitude` (纬度 rad)
+可选：`declination`=0 (太阳赤纬 rad（0=春分）)
+
+日照时长。返回 24 表示极昼、0 表示极夜（已夹边界，不会报错）。故事节奏的关键参数。
+
+### year_length
+
+**公转周期（一年多长）** · 单位 s
+
+```
+2 * pi * sqrt(a^3 / (G * M))
+```
+
+必填：`a` (轨道半长轴 m)、`M` (恒星质量 kg)
+可选：`G`=6.6743e-11 (引力常数)
+
+一年多长。轨道远或恒星轻则一年漫长。
+
+### tidal_period
+
+**潮汐周期（双潮）** · 单位 s
+
+```
+2 * pi / (2 * (omega_planet - omega_moon) + 1e-30)
+```
+
+可选：`omega_planet`=0.00007292 (行星自转角速度 rad/s（地球值）)、`omega_moon`=0.000002662 (卫星公转角速度 rad/s（地球月亮值）)
+
+两次高潮之间的间隔。地球约 12h25m。两者同步时无相对潮汐。
+
+### tidal_force_ratio
+
+**卫星潮汐力（相对地球月亮）** · 单位 kg/m³
+
+```
+m_moon / d^3
+```
+
+必填：`m_moon` (卫星质量 kg)、`d` (轨道距离 m)
+
+与 7.35e22/(3.84e8)³ 比较，判断潮汐比地球强多少。多卫星世界的潮汐叠加。
+
+### eclipse_angular
+
+**日食条件（视角重合）** · 单位 rad
+
+```
+r_sun / d_sun - r_moon / d_moon
+```
+
+必填：`r_sun` (恒星半径 m)、`d_sun` (恒星距离 m)、`r_moon` (卫星半径 m)、`d_moon` (卫星距离 m)
+
+接近 0 说明卫星恰好能遮住恒星——日全食奇观。地球这对数字极其巧合。
+
+### sky_color_wavelength
+
+**大气散射强度（瑞利）** · 单位 1/m⁴
+
+```
+1 / lambda^4
+```
+
+必填：`lambda` (波长 m)
+
+短波散射强 → 天空偏蓝。大气成分/厚度不同的世界，天空颜色会变。
+
+### atmospheric_scale_height
+
+**大气标高（稀薄程度）** · 单位 m
+
+```
+R * T / (M * g)
+```
+
+必填：`T` (地表温度 K)、`M` (摩尔质量 kg/mol)
+可选：`R`=8.314462618 (气体常数)、`g`=9.80665 (重力 m/s²)
+
+气压降到 1/e 的高度。地球约 8.5km。决定"高原反应"和"天空尽头"。
+
+### pressure_at_altitude
+
+**高原气压** · 单位 Pa
+
+```
+P0 * exp(-h / H)
+```
+
+必填：`h` (海拔 m)
+可选：`P0`=101325 (海平面气压 Pa)、`H`=8500 (大气标高 m)
+
+越高空气越稀薄。登山、飞行、高原文明的能量基础。
+
+### twilight_duration
+
+**黄昏时长（近似）** · 单位 小时
+
+```
+18 * pi / 180 / (pi / 2) * (24 / pi)
+```
+
+必填：`latitude` (纬度 rad)
+
+太阳从地平线落到 -18° 的耗时。高纬度夏季有长黄昏。
+
+## perception/climate
+
+### wind_power
+
+**风功率密度** · 单位 W
+
+```
+0.5 * rho * A * v^3
+```
+
+必填：`A` (迎风面积 m²)、`v` (风速 m/s)
+可选：`rho`=1.225 (空气密度 kg/m³)
+
+风力随速度三次方增长。风帆、风车、风暴破坏力。
+
+### rainfall_runoff
+
+**降水径流总量** · 单位 m³
+
+```
+catchment * rainfall * runoff_coefficient
+```
+
+必填：`catchment` (流域面积 m²)、`rainfall` (降水量 m/年)
+可选：`runoff_coefficient`=0.4 (径流系数 0-1)
+
+一条河的年流量来源。绿洲/荒漠分界的定量判断。
+
+### evaporation_rate
+
+**蒸发速率（简化）** · 单位 kg/(m²·s)
+
+```
+k * (es - ea)
+```
+
+必填：`k` (传质系数)、`es` (饱和水汽压 Pa)、`ea` (实际水汽压 Pa)
+
+干旱程度的物理基础。
+
+### lapse_rate_temp
+
+**海拔降温** · 单位 K
+
+```
+T0 - lapse * h
+```
+
+必填：`T0` (海平面温度 K)、`h` (海拔 m)
+可选：`lapse`=0.0065 (递减率 K/m)
+
+每升高 1km 降约 6.5℃。雪线、高山苔原的依据。
+
+### snow_line
+
+**雪线高度** · 单位 m
+
+```
+(T_summer - 273.15) / lapse
+```
+
+必填：`T_summer` (夏季海平面温度 K)
+可选：`lapse`=0.0065 (递减率 K/m)
+
+常年积雪的起始高度。山脉的巨大感来源。
+
+## perception/horizon
+
+### horizon_distance
+
+**地平线距离（平视）** · 单位 m
+
+```
+sqrt(2 * R * h + h^2)
+```
+
+必填：`h` (观察者/塔楼高度 m)
+可选：`R`=6371000 (星球半径 m)
+
+站在高度 h 处能看到多远。地球 1.7m 眼高约 4.7km。星球更小则地平线更近——这是"世界大小"最直观的暗示。
+
+### horizon_tower_visibility
+
+**两座塔互相可见的最大距离** · 单位 m
+
+```
+sqrt(2 * R * h1 + h1^2) + sqrt(2 * R * h2 + h2^2)
+```
+
+必填：`h1` (塔1 高度 m)、`h2` (塔2 高度 m)
+可选：`R`=6371000 (星球半径 m)
+
+两座高塔上的人能否互相望见。古代烽火台间距的直接依据。
+
+### curvature_drop
+
+**地球曲率下沉量** · 单位 m
+
+```
+d^2 / (2 * R)
+```
+
+必填：`d` (水平距离 m)
+可选：`R`=6371000 (星球半径 m)
+
+走过 d 后，远处物体相对视线"沉下去"多少。船桅消失、远山隐没的物理原因。
+
+### apparent_size
+
+**天体视直径（张角）** · 单位 rad
+
+```
+2 * atan(r / d)
+```
+
+必填：`r` (天体半径 m)、`d` (距离 m)
+
+月亮/太阳在天空占多大。地球上看月亮约 0.52°。双月世界的标志性参数。
+
+### angular_diameter_from_sizes
+
+**给定视直径反推天体大小** · 单位 m
+
+```
+d * tan(angle / 2)
+```
+
+必填：`d` (距离 m)、`angle` (目标视直径 rad)
+
+要让"月亮"看起来是地球月亮的 3 倍大，它得多大/多近。
+
+## perception/senses
+
+### sound_speed_air
+
+**空气中的声速** · 单位 m/s
+
+```
+331.3 * sqrt(T / 273.15)
+```
+
+必填：`T` (温度 K)
+
+声音多快。天气/气体成分不同会变。轻重大气让喊话传得更远或更近。
+
+### sound_speed_gas
+
+**气体声速（通用）** · 单位 m/s
+
+```
+sqrt(gamma * R * T / M)
+```
+
+必填：`T` (温度 K)、`M` (摩尔质量 kg/mol)
+可选：`gamma`=1.4 (绝热指数)、`R`=8.314462618 (气体常数)
+
+不同大气成分的声速。氙气大气里声音慢得多，对话会有"低沉"感。
+
+### echo_delay
+
+**回声延迟** · 单位 s
+
+```
+2 * d / v
+```
+
+必填：`d` (障碍物距离 m)
+可选：`v`=343 (声速 m/s)
+
+喊一声多久听到回声。山谷/洞穴描写的依据。
+
+### sound_attenuation
+
+**声强随距离衰减** · 单位 W/m²
+
+```
+I0 / d^2
+```
+
+必填：`I0` (参考距离处声强 W/m²)、`d` (距离 m)
+
+平方反比。远处的人能不能听见呼喊。
+
+### light_travel_time
+
+**光行时间** · 单位 s
+
+```
+d / c
+```
+
+必填：`d` (距离 m)
+可选：`c`=299792458 (光速 m/s)
+
+看到的是多久以前的景象。极远天体=看到过去（观测宇宙学的文学素材）。
+
+### light_pollution_limit
+
+**肉眼可见星等极限（近似）** · 单位 星等
+
+```
+2.5 * log(brightness, 10) + 6
+```
+
+必填：`brightness` (相对亮度（以肉眼阈值为 1）)
+
+不同程度黑暗下能看到多暗的星。星空描写的量化依据。
+
+## perception/technology
+
+### combustion_energy
+
+**燃料燃烧热量** · 单位 J
+
+```
+mass * energy_density
+```
+
+必填：`mass` (燃料质量 kg)、`energy_density` (能量密度 J/kg（木材 1.6e7，煤 2.4e7，油 4.4e7）)
+
+燃料决定文明能做什么。木材 vs 煤 vs 油的代差。
+
+### smelting_temperature
+
+**熔炼所需能量** · 单位 J
+
+```
+mass * (cp * (T_melt - T0) + latent)
+```
+
+必填：`mass` (质量 kg)、`cp` (比热 J/(kg·K))、`T_melt` (熔点 K)、`latent` (熔化潜热 J/kg)
+可选：`T0`=293 (环境温度 K)
+
+炼铁/炼铜的能量门槛。这决定了技术树能走到哪一步。
+
+### energy_per_capita
+
+**人均能量消耗** · 单位 J/人·年
+
+```
+total_energy / population
+```
+
+必填：`total_energy` (总能耗 J/年)、`population` (人口)
+
+文明的能量级别。采集社会约 1e10，工业社会约 1e12。
+
+### carrying_kcal_per_hectare
+
+**耕地能量产出密度** · 单位 J/m²·年
+
+```
+kg_per_hectare * kcal_per_kg * 4184 / 1e4
+```
+
+必填：`kg_per_hectare` (每公顷产量 kg)
+可选：`kcal_per_kg`=3500 (每公斤热量 kcal)
+
+一平方米土地每年产出多少能量。对比人均能耗就知道能养多少人。
+
+## perception/travel
+
+### travel_time
+
+**旅行耗时** · 单位 s
+
+```
+distance / speed
+```
+
+必填：`distance` (距离 m)、`speed` (速度 m/s)
+
+走多远要多久。马 5.5m/s、船 3m/s、驼队 1.4m/s。
+
+### travel_time_hours
+
+**旅行耗时（小时）** · 单位 小时
+
+```
+distance / (speed * 3.6)
+```
+
+必填：`distance` (距离 km)、`speed` (速度 km/h)
+
+步行 5km/h、行军 4km/h、骑兵 20km/h。情节节奏的直接依据。
+
+### march_supply
+
+**行军补给需求** · 单位 kg
+
+```
+n * days * per_day
+```
+
+必填：`n` (人数)、`days` (天数)
+可选：`per_day`=3 (每人每日补给 kg)
+
+军队能走多远、补给车队多大。战争推演的基础。
+
+### drayage_range
+
+**人力/畜力运输经济半径**
+
+```
+value / (cost_per_km * distance)
+```
+
+必填：`value` (货物单位价值)、`cost_per_km` (每公里运输成本)、`distance` (距离 km)
+
+比值 <1 说明运过去的成本超过了货值——贸易半径的硬边界。
+
+### walking_range_human
+
+**人的日常活动半径** · 单位 m
+
+```
+speed * hours
+```
+
+必填：`hours` (可活动小时数)
+可选：`speed`=1.4 (步行速度 m/s)
+
+一天能走多远。聚落规模与市场范围。
+
+### river_crossing_time
+
+**渡河耗时** · 单位 s
+
+```
+width / boat_speed
+```
+
+必填：`width` (河宽 m)
+可选：`boat_speed`=1 (船速 m/s)
+
+渡河要多久。军事行动的窗口期。
+
+## physics/astronomy
+
+### stellar_luminosity
+
+**恒星光度** · 单位 W
+
+```
+4 * pi * R^2 * sigma * T^4
+```
+
+必填：`R` (恒星半径 m)、`T` (表面温度 K)
+可选：`sigma`=5.670374419e-8 (斯特藩常数)
+
+L = 4πR²σT⁴。
+
+### equilibrium_temp
+
+**行星平衡温度** · 单位 K
+
+```
+Tstar * sqrt(Rstar / (2 * d)) * (1 - albedo)^0.25
+```
+
+必填：`Tstar` (恒星表面温度 K)、`Rstar` (恒星半径 m)、`d` (轨道距离 m)
+可选：`albedo`=0.3 (反照率 0-1)
+
+简化模型，用于估算宜居带温度。
+
+### schwarzschild_radius
+
+**史瓦西半径（黑洞视界）** · 单位 m
+
+```
+2 * G * M / c^2
+```
+
+必填：`M` (质量 kg)
+可选：`G`=6.6743e-11 (引力常数)、`c`=299792458 (光速)
+
+r_s = 2GM/c²。质量多大才能形成黑洞。
+
+### orbital_altitude_period
+
+**圆轨道周期（给高度）** · 单位 s
+
+```
+2 * pi * sqrt((R + h)^3 / (G * M))
+```
+
+必填：`R` (天体半径 m)、`h` (轨道高度 m)、`M` (天体质量 kg)
+可选：`G`=6.6743e-11 (引力常数)
+
+T = 2π√((R+h)³/GM)。卫星/空间站周期。
+
+### synchronous_altitude
+
+**同步轨道高度** · 单位 m
+
+```
+(G * M * T^2 / (4 * pi^2))^(1/3) - R
+```
+
+必填：`M` (天体质量 kg)、`T` (自转周期 s)、`R` (天体半径 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+静止卫星轨道高度。
+
+### hubble_velocity
+
+**哈勃定律退行速度** · 单位 m/s
+
+```
+H0 * d
+```
+
+必填：`d` (距离 m)
+可选：`H0`=2.27e-18 (哈勃常数 1/s)
+
+v = H₀d。宇宙膨胀推演。
+
+### hubble_time
+
+**哈勃时间（宇宙年龄尺度）** · 单位 s
+
+```
+1 / H0
+```
+
+可选：`H0`=2.27e-18 (哈勃常数 1/s)
+
+t_H = 1/H₀ ≈ 139 亿年。
+
+### redshift_distance
+
+**红移→距离（低红移近似）** · 单位 m
+
+```
+c * z / H0
+```
+
+必填：`z` (红移 z)
+可选：`c`=299792458 (光速)、`H0`=2.27e-18 (哈勃常数)
+
+d ≈ cz/H₀（z≪1）。
+
+### habitable_zone
+
+**宜居带内边界（简化）** · 单位 AU
+
+```
+sqrt(L / 1.1)
+```
+
+必填：`L` (恒星相对光度 L/Lsun)
+
+经验近似，用于快速判断行星位置。
+
+### tidal_locking_time
+
+**潮汐锁定时间尺度（比例）**
+
+```
+Q * a^6 * M / (m * R^3)
+```
+
+必填：`Q` (耗散因子)、`a` (轨道半径 m)、`M` (主星质量 kg)、`m` (卫星质量 kg)、`R` (卫星半径 m)
+
+相对量级，用于比较不同天体的锁定快慢。
+
+### stefan_radius
+
+**由光度与温度反推恒星半径** · 单位 m
+
+```
+sqrt(L / (4 * pi * sigma * T^4))
+```
+
+必填：`L` (光度 W)、`T` (表面温度 K)
+可选：`sigma`=5.670374419e-8 (斯特藩常数)
+
+R = √(L/(4πσT⁴))。
+
+### kepler_mass
+
+**由轨道反推中心天体质量** · 单位 kg
+
+```
+4 * pi^2 * r^3 / (G * T^2)
+```
+
+必填：`r` (轨道半径 m)、`T` (周期 s)
+可选：`G`=6.6743e-11 (引力常数)
+
+M = 4π²r³/(GT²)。
+
+## physics/em
+
+### ohm
+
+**欧姆定律** · 单位 V
+
+```
+I * R
+```
+
+必填：`I` (电流 A)、`R` (电阻 Ω)
+
+V = IR。
+
+### electric_power
+
+**电功率** · 单位 W
+
+```
+V * I
+```
+
+必填：`V` (电压 V)、`I` (电流 A)
+
+P = VI。
+
+### joule_heating
+
+**焦耳热** · 单位 J
+
+```
+I^2 * R * t
+```
+
+必填：`I` (电流 A)、`R` (电阻 Ω)、`t` (时间 s)
+
+Q = I²Rt。
+
+### coulomb
+
+**库仑定律** · 单位 N
+
+```
+k * q1 * q2 / r^2
+```
+
+必填：`q1` (电荷1 C)、`q2` (电荷2 C)、`r` (距离 m)
+可选：`k`=8987551792.3 (库仑常数)
+
+F = kq₁q₂/r²。
+
+### capacitor_energy
+
+**电容储能** · 单位 J
+
+```
+0.5 * C * V^2
+```
+
+必填：`C` (电容 F)、`V` (电压 V)
+
+E = ½CV²。
+
+### rc_time
+
+**RC 时间常数** · 单位 s
+
+```
+R * C
+```
+
+必填：`R` (电阻 Ω)、`C` (电容 F)
+
+τ = RC。
+
+### inductor_energy
+
+**电感储能** · 单位 J
+
+```
+0.5 * L * I^2
+```
+
+必填：`L` (电感 H)、`I` (电流 A)
+
+E = ½LI²。
+
+### lc_resonance
+
+**LC 谐振频率** · 单位 Hz
+
+```
+1 / (2 * pi * sqrt(L * C))
+```
+
+必填：`L` (电感 H)、`C` (电容 F)
+
+f = 1/(2π√(LC))。
+
+### lorentz_force
+
+**洛伦兹力（磁场分量）** · 单位 N
+
+```
+q * v * B * sin(theta)
+```
+
+必填：`q` (电荷 C)、`v` (速度 m/s)、`B` (磁感应强度 T)
+可选：`theta`=1.5707963267948966 (夹角 rad)
+
+F = qvB·sinθ。
+
+### resistors_series
+
+**串联电阻** · 单位 Ω
+
+```
+r1 + r2
+```
+
+必填：`r1` (电阻1 Ω)、`r2` (电阻2 Ω)
+
+R = R₁ + R₂。
+
+### resistors_parallel
+
+**并联电阻** · 单位 Ω
+
+```
+r1 * r2 / (r1 + r2)
+```
+
+必填：`r1` (电阻1 Ω)、`r2` (电阻2 Ω)
+
+R = R₁R₂/(R₁+R₂)。
+
+### electric_field
+
+**均匀电场强度** · 单位 V/m
+
+```
+V / d
+```
+
+必填：`V` (电压 V)、`d` (距离 m)
+
+E = V/d。
+
+### magnetic_force_wire
+
+**通电导线磁力** · 单位 N
+
+```
+I * L * B * sin(theta)
+```
+
+必填：`I` (电流 A)、`L` (长度 m)、`B` (磁感应强度 T)
+可选：`theta`=1.5707963267948966 (夹角 rad)
+
+F = ILB·sinθ。
+
+### magnetic_flux
+
+**磁通量** · 单位 Wb
+
+```
+B * A * cos(theta)
+```
+
+必填：`B` (磁感应强度 T)、`A` (面积 m²)
+可选：`theta`=0 (夹角 rad)
+
+Φ = BA·cosθ。
+
+### faraday_emf
+
+**法拉第感应电动势** · 单位 V
+
+```
+N * dPhi / dt
+```
+
+必填：`dPhi` (磁通变化 Wb)、`dt` (时间 s)
+可选：`N`=1 (匝数)
+
+ε = NΔΦ/Δt。
+
+### transformer
+
+**变压器电压比** · 单位 V
+
+```
+V1 * N2 / N1
+```
+
+必填：`V1` (初级电压 V)、`N1` (初级匝数)、`N2` (次级匝数)
+
+V₂ = V₁N₂/N₁。
+
+### parallel_plate_capacitance
+
+**平行板电容** · 单位 F
+
+```
+epsilon0 * A / d
+```
+
+必填：`A` (极板面积 m²)、`d` (间距 m)
+可选：`epsilon0`=8.8541878128e-12 (真空介电常数)
+
+C = ε₀A/d。
+
+### capacitor_charge
+
+**电容电荷量** · 单位 C
+
+```
+C * V
+```
+
+必填：`C` (电容 F)、`V` (电压 V)
+
+Q = CV。
+
+### rc_charge_voltage
+
+**RC 充电电压（t 时刻）** · 单位 V
+
+```
+V0 * (1 - exp(-t / (R * C)))
+```
+
+必填：`V0` (电源电压 V)、`R` (电阻 Ω)、`C` (电容 F)、`t` (时间 s)
+
+V(t) = V₀(1-e^(-t/RC))。
+
+### rc_discharge_voltage
+
+**RC 放电电压（t 时刻）** · 单位 V
+
+```
+V0 * exp(-t / (R * C))
+```
+
+必填：`V0` (初电压 V)、`R` (电阻 Ω)、`C` (电容 F)、`t` (时间 s)
+
+V(t) = V₀e^(-t/RC)。
+
+### drift_velocity
+
+**电子漂移速度** · 单位 m/s
+
+```
+I / (n * e_charge * A)
+```
+
+必填：`I` (电流 A)、`n` (载流子密度 1/m³)、`A` (截面积 m²)
+可选：`e_charge`=1.602176634e-19 (元电荷)
+
+v = I/(neA)。
+
+### joule_power
+
+**电阻发热功率** · 单位 W
+
+```
+I^2 * R
+```
+
+必填：`I` (电流 A)、`R` (电阻 Ω)
+
+P = I²R。
+
+## physics/fluid
+
+### pressure_depth
+
+**液体压强（含大气）** · 单位 Pa
+
+```
+P0 + rho * g * h
+```
+
+必填：`rho` (密度 kg/m³)、`h` (深度 m)
+可选：`P0`=101325 (表面压强 Pa)、`g`=9.80665 (重力加速度)
+
+P = P₀ + ρgh。深海世界推演常用。
+
+### buoyancy
+
+**浮力（阿基米德）** · 单位 N
+
+```
+rho * V * g
+```
+
+必填：`rho` (流体密度 kg/m³)、`V` (排开体积 m³)
+可选：`g`=9.80665 (重力加速度)
+
+F = ρVg。
+
+### flow_rate
+
+**体积流量** · 单位 m³/s
+
+```
+A * v
+```
+
+必填：`A` (截面积 m²)、`v` (流速 m/s)
+
+Q = Av。
+
+### reynolds
+
+**雷诺数**
+
+```
+rho * v * D / mu
+```
+
+必填：`rho` (密度 kg/m³)、`v` (流速 m/s)、`D` (特征长度 m)、`mu` (动力粘度 Pa·s)
+
+Re > 4000 通常为湍流。
+
+## physics/gravity
+
+### gravitation
+
+**万有引力** · 单位 N
+
+```
+G * m1 * m2 / r^2
+```
+
+必填：`m1` (质量1 kg)、`m2` (质量2 kg)、`r` (距离 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+F = Gm₁m₂/r²。
+
+### surface_gravity
+
+**星球表面重力** · 单位 m/s^2
+
+```
+G * M / R^2
+```
+
+必填：`M` (星球质量 kg)、`R` (星球半径 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+g = GM/R²。造星球时直接算表面重力。
+
+### orbital_velocity
+
+**环绕速度** · 单位 m/s
+
+```
+sqrt(G * M / r)
+```
+
+必填：`M` (中心天体质量 kg)、`r` (轨道半径 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+v = √(GM/r)。
+
+### escape_velocity
+
+**逃逸速度** · 单位 m/s
+
+```
+sqrt(2 * G * M / r)
+```
+
+必填：`M` (天体质量 kg)、`r` (半径 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+v = √(2GM/r)。
+
+### orbital_period
+
+**轨道周期（开普勒第三定律）** · 单位 s
+
+```
+2 * pi * sqrt(r^3 / (G * M))
+```
+
+必填：`M` (中心天体质量 kg)、`r` (轨道半径 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+T = 2π√(r³/GM)。
+
+### hill_sphere
+
+**希尔球半径** · 单位 m
+
+```
+a * (m / (3 * M))^(1/3)
+```
+
+必填：`a` (轨道半长轴 m)、`m` (小天体质量 kg)、`M` (主星质量 kg)
+
+卫星能稳定绕行的最大范围。
+
+### roche_limit
+
+**洛希极限（流体卫星）** · 单位 m
+
+```
+2.44 * R * (rhoM / rhom)^(1/3)
+```
+
+必填：`R` (主星半径 m)、`rhoM` (主星密度 kg/m^3)、`rhom` (卫星密度 kg/m^3)
+
+小于此距离卫星会被潮汐力撕碎。
+
+### tidal_accel
+
+**潮汐加速度差** · 单位 m/s^2
+
+```
+2 * G * M * d / r^3
+```
+
+必填：`M` (主星质量 kg)、`r` (距离 m)、`d` (天体尺度 m)
+可选：`G`=6.6743e-11 (引力常数)
+
+≈ 2GMd/r³，衡量潮汐力强弱。
+
+## physics/mechanics
+
+### velocity_uniform
+
+**匀速速度** · 单位 m/s
+
+```
+s / t
+```
+
+必填：`s` (位移 m)、`t` (时间 s)
+
+匀速直线运动的速度。
+
+### acceleration
+
+**加速度** · 单位 m/s^2
+
+```
+(v - v0) / t
+```
+
+必填：`v` (末速度 m/s)、`t` (时间 s)
+可选：`v0`=0 (初速度 m/s)
+
+匀变速运动的加速度。
+
+### kinematics_v
+
+**速度公式（无位移）** · 单位 m/s
+
+```
+v0 + a * t
+```
+
+必填：`a` (加速度 m/s^2)、`t` (时间 s)
+可选：`v0`=0 (初速度 m/s)
+
+v = v0 + at。
+
+### kinematics_s
+
+**位移公式（无末速）** · 单位 m
+
+```
+v0 * t + 0.5 * a * t^2
+```
+
+必填：`a` (加速度 m/s^2)、`t` (时间 s)
+可选：`v0`=0 (初速度 m/s)
+
+s = v0·t + ½at²。
+
+### kinematics_v2
+
+**速度-位移关系** · 单位 m/s
+
+```
+sqrt(v0^2 + 2 * a * s)
+```
+
+必填：`a` (加速度 m/s^2)、`s` (位移 m)
+可选：`v0`=0 (初速度 m/s)
+
+v² = v0² + 2as（不含时间）。
+
+### newton_second
+
+**牛顿第二定律** · 单位 N
+
+```
+m * a
+```
+
+必填：`m` (质量 kg)、`a` (加速度 m/s^2)
+
+F = ma。
+
+### weight
+
+**重力（重量）** · 单位 N
+
+```
+m * g
+```
+
+必填：`m` (质量 kg)
+可选：`g`=9.80665 (重力加速度 m/s^2（架空世界可改）)
+
+W = mg。改 g 即可模拟高重力/低重力世界。
+
+### friction
+
+**滑动摩擦力** · 单位 N
+
+```
+mu * N
+```
+
+必填：`mu` (摩擦系数 μ)、`N` (正压力 N)
+
+f = μN。
+
+### kinetic_energy
+
+**动能** · 单位 J
+
+```
+0.5 * m * v^2
+```
+
+必填：`m` (质量 kg)、`v` (速度 m/s)
+
+Ek = ½mv²。
+
+### potential_energy
+
+**重力势能** · 单位 J
+
+```
+m * g * h
+```
+
+必填：`m` (质量 kg)、`h` (高度 m)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+Ep = mgh。
+
+### momentum
+
+**动量** · 单位 kg·m/s
+
+```
+m * v
+```
+
+必填：`m` (质量 kg)、`v` (速度 m/s)
+
+p = mv。
+
+### impulse
+
+**冲量** · 单位 N·s
+
+```
+F * t
+```
+
+必填：`F` (力 N)、`t` (时间 s)
+
+J = F·t = Δp。
+
+### work
+
+**功** · 单位 J
+
+```
+F * s * cos(theta)
+```
+
+必填：`F` (力 N)、`s` (位移 m)
+可选：`theta`=0 (力与位移夹角 rad)
+
+W = F·s·cosθ。
+
+### power
+
+**功率** · 单位 W
+
+```
+W / t
+```
+
+必填：`W` (功 J)、`t` (时间 s)
+
+P = W/t。
+
+### centripetal_accel
+
+**向心加速度** · 单位 m/s^2
+
+```
+v^2 / r
+```
+
+必填：`v` (线速度 m/s)、`r` (半径 m)
+
+a = v²/r。
+
+### circular_period
+
+**圆周运动周期** · 单位 s
+
+```
+2 * pi * r / v
+```
+
+必填：`r` (半径 m)、`v` (线速度 m/s)
+
+T = 2πr/v。
+
+### spring_force
+
+**弹簧力（胡克定律）** · 单位 N
+
+```
+k * x
+```
+
+必填：`k` (劲度系数 N/m)、`x` (形变 m)
+
+F = kx。
+
+### spring_energy
+
+**弹簧势能** · 单位 J
+
+```
+0.5 * k * x^2
+```
+
+必填：`k` (劲度系数 N/m)、`x` (形变 m)
+
+E = ½kx²。
+
+### pendulum_period
+
+**单摆周期（小角）** · 单位 s
+
+```
+2 * pi * sqrt(L / g)
+```
+
+必填：`L` (摆长 m)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+T = 2π√(L/g)。改 g 可推演异星钟摆。
+
+### projectile_range
+
+**抛射射程（平地）** · 单位 m
+
+```
+v^2 * sin(2 * theta) / g
+```
+
+必填：`v` (初速度 m/s)、`theta` (发射角 rad)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+R = v²sin2θ/g。
+
+### projectile_height
+
+**抛射最大高度** · 单位 m
+
+```
+(v * sin(theta))^2 / (2 * g)
+```
+
+必填：`v` (初速度 m/s)、`theta` (发射角 rad)
+可选：`g`=9.80665 (重力加速度 m/s^2)
+
+H = (v·sinθ)²/(2g)。
+
+### torque
+
+**力矩** · 单位 N·m
+
+```
+r * F * sin(theta)
+```
+
+必填：`r` (力臂 m)、`F` (力 N)
+可选：`theta`=1.5707963267948966 (夹角 rad)
+
+τ = rF·sinθ。
+
+### moment_inertia_rod
+
+**细杆转动惯量（过中心）** · 单位 kg·m^2
+
+```
+m * L^2 / 12
+```
+
+必填：`m` (质量 kg)、`L` (长度 m)
+
+I = mL²/12。
+
+### kinematics_avg_velocity
+
+**平均速度** · 单位 m/s
+
+```
+(v0 + v) / 2
+```
+
+必填：`v0` (初速度 m/s)、`v` (末速度 m/s)
+
+匀变速运动的平均速度。
+
+### free_fall_time
+
+**自由落体时间** · 单位 s
+
+```
+sqrt(2 * h / g)
+```
+
+必填：`h` (高度 m)
+可选：`g`=9.80665 (重力加速度 m/s²)
+
+从高度 h 自由落体所需时间。改 g 可算异星坠落时间。
+
+### free_fall_velocity
+
+**自由落体末速度** · 单位 m/s
+
+```
+sqrt(2 * g * h)
+```
+
+必填：`h` (高度 m)
+可选：`g`=9.80665 (重力加速度 m/s²)
+
+落地速度（忽略空气阻力）。
+
+### terminal_velocity
+
+**终端速度** · 单位 m/s
+
+```
+sqrt(2 * m * g / (rho * Cd * A))
+```
+
+必填：`m` (质量 kg)、`A` (迎风面积 m²)
+可选：`g`=9.80665 (重力加速度)、`rho`=1.225 (空气密度 kg/m³)、`Cd`=0.47 (阻力系数（球 0.47，人 1.0）)
+
+流体中下落达到的极限速度。高重力世界的落体速度上限。
+
+### reduced_mass
+
+**约化质量** · 单位 kg
+
+```
+m1 * m2 / (m1 + m2)
+```
+
+必填：`m1` (质量1 kg)、`m2` (质量2 kg)
+
+双体问题的有效质量。
+
+### elastic_collision_v1
+
+**弹性碰撞后速度（1 号球）** · 单位 m/s
+
+```
+(m1 - m2) / (m1 + m2) * u1 + 2 * m2 / (m1 + m2) * u2
+```
+
+必填：`m1` (质量1)、`u1` (初速度1)、`m2` (质量2)
+可选：`u2`=0 (初速度2)
+
+一维弹性碰撞后的速度。
+
+### inelastic_collision_v
+
+**完全非弹性碰撞后共同速度** · 单位 m/s
+
+```
+(m1 * u1 + m2 * u2) / (m1 + m2)
+```
+
+必填：`m1` (质量1)、`u1` (初速度1)、`m2` (质量2)
+可选：`u2`=0 (初速度2)
+
+动量守恒，碰撞后粘在一起。
+
+### moment_inertia_sphere
+
+**实心球转动惯量** · 单位 kg·m²
+
+```
+2 / 5 * m * r^2
+```
+
+必填：`m` (质量 kg)、`r` (半径 m)
+
+I = 2mr²/5。
+
+### moment_inertia_cylinder
+
+**实心圆柱转动惯量** · 单位 kg·m²
+
+```
+1 / 2 * m * r^2
+```
+
+必填：`m` (质量 kg)、`r` (半径 m)
+
+I = mr²/2。
+
+### angular_momentum
+
+**角动量** · 单位 kg·m²/s
+
+```
+I * omega
+```
+
+必填：`I` (转动惯量 kg·m²)、`omega` (角速度 rad/s)
+
+L = Iω。
+
+### rotational_ke
+
+**转动动能** · 单位 J
+
+```
+0.5 * I * omega^2
+```
+
+必填：`I` (转动惯量 kg·m²)、`omega` (角速度 rad/s)
+
+Ek = ½Iω²。
+
+### simple_harmonic_omega
+
+**简谐振动角频率** · 单位 rad/s
+
+```
+sqrt(k / m)
+```
+
+必填：`k` (劲度系数 N/m)、`m` (质量 kg)
+
+ω = √(k/m)。
+
+### simple_harmonic_period
+
+**简谐振动周期** · 单位 s
+
+```
+2 * pi * sqrt(m / k)
+```
+
+必填：`m` (质量 kg)、`k` (劲度系数 N/m)
+
+T = 2π√(m/k)。
+
+### damped_frequency
+
+**阻尼振动频率** · 单位 rad/s
+
+```
+sqrt(k / m - (b / (2 * m))^2)
+```
+
+必填：`k` (劲度系数)、`m` (质量)、`b` (阻尼系数)
+
+ω_d = √(ω₀² - γ²)。为虚数说明过阻尼。
+
+### damping_ratio
+
+**阻尼比**
+
+```
+b / (2 * sqrt(k * m))
+```
+
+必填：`b` (阻尼系数)、`k` (劲度系数)、`m` (质量)
+
+ζ<1 欠阻尼，=1 临界，>1 过阻尼。
+
+### pressure_force
+
+**压力（压强×面积）** · 单位 N
+
+```
+P * A
+```
+
+必填：`P` (压强 Pa)、`A` (面积 m²)
+
+F = PA。
+
+### stress
+
+**应力** · 单位 Pa
+
+```
+F / A
+```
+
+必填：`F` (力 N)、`A` (截面积 m²)
+
+σ = F/A。材料强度推演。
+
+### strain
+
+**应变**
+
+```
+dL / L0
+```
+
+必填：`dL` (形变 m)、`L0` (原长 m)
+
+ε = ΔL/L₀。
+
+### young_modulus
+
+**杨氏模量** · 单位 Pa
+
+```
+stress / strain
+```
+
+必填：`stress` (应力 Pa)、`strain` (应变)
+
+E = σ/ε。判断材料刚度。
+
+### beam_deflection
+
+**简支梁中点挠度** · 单位 m
+
+```
+F * L^3 / (48 * E * I)
+```
+
+必填：`F` (集中载荷 N)、`L` (跨度 m)、`E` (杨氏模量 Pa)、`I` (截面惯性矩 m⁴)
+
+δ = FL³/(48EI)。建筑/巨构推演用。
+
+### buckling_load
+
+**欧拉屈曲临界载荷** · 单位 N
+
+```
+pi^2 * E * I / L^2
+```
+
+必填：`E` (杨氏模量 Pa)、`I` (截面惯性矩 m⁴)、`L` (柱长 m)
+
+P_cr = π²EI/L²。超高建筑/巨兽骨骼的塌缩点。
+
+### hydrostatic_pressure
+
+**静水压（相对）** · 单位 Pa
+
+```
+rho * g * h
+```
+
+必填：`h` (深度 m)
+可选：`rho`=1025 (液体密度 kg/m³)、`g`=9.80665 (重力加速度)
+
+ρgh，不含大气压。深海世界的结构强度需求。
+
+## physics/nuclear
+
+### decay_constant
+
+**衰变常数** · 单位 1/s
+
+```
+log(2) / T
+```
+
+必填：`T` (半衰期 s)
+
+λ = ln2/T。
+
+### radioactive_decay
+
+**放射性剩余量**
+
+```
+N0 * 0.5^(t / T)
+```
+
+必填：`N0` (初始量)、`T` (半衰期 s)、`t` (经过时间 s)
+
+N = N₀·(½)^(t/T)。架空世界的"高辐射区"设定常用。
+
+### decay_power
+
+**指数衰减（连续形式）**
+
+```
+N0 * exp(-lambda * t)
+```
+
+必填：`N0` (初始量)、`lambda` (衰变常数 1/s)、`t` (时间 s)
+
+N = N₀e^(-λt)。
+
+### mass_defect_energy
+
+**质量亏损能量** · 单位 J
+
+```
+dm * c^2
+```
+
+必填：`dm` (质量亏损 kg)
+可选：`c`=299792458 (光速 m/s)
+
+E = Δmc²，核反应能量来源。
+
+## physics/optics
+
+### snell
+
+**折射定律（求折射角）** · 单位 rad
+
+```
+asin(n1 * sin(theta1) / n2)
+```
+
+必填：`n2` (介质2折射率)、`theta1` (入射角 rad)
+可选：`n1`=1 (介质1折射率)
+
+n₁sinθ₁ = n₂sinθ₂。
+
+### thin_lens
+
+**薄透镜像距** · 单位 m
+
+```
+1 / (1/f - 1/u)
+```
+
+可选：`f`=0.1 (焦距 m)、`u`=0.3 (物距 m（等于焦距时无有限像）)
+
+1/f = 1/u + 1/v。
+
+### magnification
+
+**横向放大率**
+
+```
+-v / u
+```
+
+必填：`v` (像距 m)、`u` (物距 m)
+
+m = -v/u。
+
+### diffraction_grating
+
+**光栅衍射角** · 单位 rad
+
+```
+asin(n * lambda / d)
+```
+
+必填：`lambda` (波长 m)、`d` (栅距 m)
+可选：`n`=1 (衍射级次)
+
+d·sinθ = nλ。
+
+### critical_angle
+
+**全反射临界角** · 单位 rad
+
+```
+asin(n2 / n1)
+```
+
+必填：`n1` (光密介质折射率)
+可选：`n2`=1 (光疏介质折射率)
+
+sinθc = n₂/n₁。
+
+### optical_power
+
+**透镜光焦度** · 单位 D
+
+```
+1 / f
+```
+
+必填：`f` (焦距 m)
+
+P = 1/f（屈光度）。
+
+### lens_equation
+
+**透镜成像公式（求像距）** · 单位 m
+
+```
+1 / (1 / f - 1 / u)
+```
+
+可选：`f`=0.1 (焦距 m)、`u`=0.3 (物距 m（等于焦距时像在无穷远）)
+
+1/v = 1/f - 1/u。u=f 时无有限像距，属正常物理情况。
+
+## physics/quantum
+
+### photon_energy
+
+**光子能量** · 单位 J
+
+```
+h * f
+```
+
+必填：`f` (频率 Hz)
+可选：`h`=6.62607015e-34 (普朗克常数)
+
+E = hf。
+
+### de_broglie
+
+**德布罗意波长** · 单位 m
+
+```
+h / p
+```
+
+必填：`p` (动量 kg·m/s)
+可选：`h`=6.62607015e-34 (普朗克常数)
+
+λ = h/p。
+
+### hydrogen_levels
+
+**氢原子能级** · 单位 eV
+
+```
+-13.6 / n^2
+```
+
+必填：`n` (主量子数 n)
+
+Eₙ = -13.6/n² eV。
+
+## physics/relativity
+
+### lorentz_factor
+
+**洛伦兹因子**
+
+```
+1 / sqrt(1 - (v / c)^2)
+```
+
+必填：`v` (速度 m/s)
+可选：`c`=299792458 (光速 m/s（架空世界可改）)
+
+γ = 1/√(1-β²)。
+
+### time_dilation
+
+**时间膨胀** · 单位 s
+
+```
+dt0 / sqrt(1 - (v / c)^2)
+```
+
+必填：`dt0` (固有时间 s)、`v` (速度 m/s)
+可选：`c`=299792458 (光速 m/s)
+
+Δt = γΔt₀。
+
+### length_contraction
+
+**长度收缩** · 单位 m
+
+```
+L0 * sqrt(1 - (v / c)^2)
+```
+
+必填：`L0` (固有长度 m)、`v` (速度 m/s)
+可选：`c`=299792458 (光速 m/s)
+
+L = L₀/γ。
+
+### mass_energy
+
+**质能方程** · 单位 J
+
+```
+m * c^2
+```
+
+必填：`m` (质量 kg)
+可选：`c`=299792458 (光速 m/s)
+
+E = mc²。
+
+### relativistic_energy
+
+**相对论总能量** · 单位 J
+
+```
+m * c^2 / sqrt(1 - (v / c)^2)
+```
+
+必填：`m` (静止质量 kg)、`v` (速度 m/s)
+可选：`c`=299792458 (光速 m/s)
+
+E = γmc²。
+
+## physics/scaling
+
+### square_cube_law
+
+**平方-立方定律** · 单位 倍数
+
+```
+(s^3) / (s^2)
+```
+
+必填：`s` (线性缩放倍数)
+
+体积按 s³ 增长、截面积按 s² 增长，故单位面积承重按 s 增长。巨兽悖论的根源。
+
+### mass_scaling
+
+**质量缩放** · 单位 kg
+
+```
+m0 * s^3
+```
+
+必填：`m0` (基准质量 kg)、`s` (线性缩放倍数)
+
+几何相似时质量正比于长度的三次方。
+
+### strength_scaling
+
+**承重能力缩放** · 单位 N
+
+```
+F0 * s^2
+```
+
+必填：`F0` (基准承重 N)、`s` (线性缩放倍数)
+
+承重正比于截面积 s²。
+
+### kleiber
+
+**克莱伯定律（代谢率）** · 单位 W
+
+```
+B0 * (m / m0)^0.75
+```
+
+必填：`B0` (基准代谢率 W)、`m0` (基准质量 kg)、`m` (目标质量 kg)
+
+代谢率 ∝ 质量^¾。架空生物若无此约束，把指数当参数另算。
+
+### allometric
+
+**通用异速生长律**
+
+```
+Y0 * (m / m0)^b
+```
+
+必填：`Y0` (基准量)、`m0` (基准质量 kg)、`m` (目标质量 kg)、`b` (标度指数)
+
+Y = Y₀(m/m₀)^b。b 可任意改，用于架空生物设定。
+
+## physics/thermo
+
+### ideal_gas
+
+**理想气体状态方程** · 单位 m^3
+
+```
+n * R * T / P
+```
+
+必填：`n` (物质的量 mol)、`T` (温度 K)
+可选：`R`=8.314462618 (气体常数)、`P`=101325 (压强 Pa)
+
+V = nRT/P。
+
+### heat_capacity
+
+**显热** · 单位 J
+
+```
+m * c * dT
+```
+
+必填：`m` (质量 kg)、`c` (比热容 J/(kg·K))、`dT` (温差 K)
+
+Q = mcΔT。
+
+### latent_heat
+
+**潜热** · 单位 J
+
+```
+m * L
+```
+
+必填：`m` (质量 kg)、`L` (潜热 J/kg)
+
+Q = mL（相变不升温）。
+
+### mix_temperature
+
+**混合终温** · 单位 K
+
+```
+(m1 * c1 * T1 + m2 * c2 * T2) / (m1 * c1 + m2 * c2)
+```
+
+必填：`m1` (质量1 kg)、`c1` (比热1)、`T1` (初温1 K)、`m2` (质量2 kg)、`c2` (比热2)、`T2` (初温2 K)
+
+能量守恒下的热平衡温度。
+
+### thermal_expansion
+
+**线膨胀** · 单位 m
+
+```
+alpha * L * dT
+```
+
+必填：`alpha` (线膨胀系数 1/K)、`L` (原长 m)、`dT` (温差 K)
+
+ΔL = αLΔT。
+
+### stefan_boltzmann
+
+**黑体辐射功率** · 单位 W
+
+```
+sigma * A * T^4
+```
+
+必填：`A` (表面积 m²)、`T` (温度 K)
+可选：`sigma`=5.670374419e-8 (斯特藩常数)
+
+P = σAT⁴。
+
+### wien_displacement
+
+**维恩位移峰值波长** · 单位 m
+
+```
+bWien / T
+```
+
+必填：`T` (温度 K)
+可选：`bWien`=0.002897771955 (维恩常数)
+
+λmax = b/T。
+
+### carnot_efficiency
+
+**卡诺效率**
+
+```
+1 - Tc / Th
+```
+
+必填：`Tc` (低温热源 K)、`Th` (高温热源 K)
+
+任何热机的理论上限。
+
+### thermal_conductivity
+
+**热传导速率** · 单位 W
+
+```
+k * A * dT / d
+```
+
+必填：`k` (导热系数 W/(m·K))、`A` (面积 m²)、`dT` (温差 K)、`d` (厚度 m)
+
+Q/t = kAΔT/d。房屋/盔甲保温推演。
+
+### convection
+
+**对流散热** · 单位 W
+
+```
+h * A * dT
+```
+
+必填：`h` (对流系数 W/(m²·K))、`A` (面积 m²)、`dT` (温差 K)
+
+Q/t = hAΔT。
+
+### entropy_change
+
+**熵变（可逆过程）** · 单位 J/K
+
+```
+Q / T
+```
+
+必填：`Q` (热量 J)、`T` (温度 K)
+
+ΔS = Q/T。热力学第二定律推演。
+
+### carnot_cop
+
+**卡诺制冷系数**
+
+```
+Tc / (Th - Tc)
+```
+
+必填：`Tc` (低温 K)、`Th` (高温 K)
+
+制冷机的理论极限 COP。
+
+### mean_free_path
+
+**分子平均自由程** · 单位 m
+
+```
+kB * T / (sqrt(2) * pi * d^2 * P)
+```
+
+必填：`T` (温度 K)、`d` (分子直径 m)、`P` (压强 Pa)
+可选：`kB`=1.380649e-23 (玻尔兹曼常数)
+
+稀薄气体/高空环境用。
+
+### rms_speed
+
+**方均根速率** · 单位 m/s
+
+```
+sqrt(3 * R * T / M)
+```
+
+必填：`T` (温度 K)、`M` (摩尔质量 kg/mol)
+可选：`R`=8.314462618 (气体常数)
+
+v_rms = √(3RT/M)。
+
+### most_probable_speed
+
+**最概然速率** · 单位 m/s
+
+```
+sqrt(2 * R * T / M)
+```
+
+必填：`T` (温度 K)、`M` (摩尔质量 kg/mol)
+可选：`R`=8.314462618 (气体常数)
+
+麦克斯韦速率分布峰值。
+
+### thermal_voltage
+
+**热电压** · 单位 V
+
+```
+kB * T / e_charge
+```
+
+可选：`T`=300 (温度 K)、`kB`=1.380649e-23 (玻尔兹曼常数)、`e_charge`=1.602176634e-19 (元电荷)
+
+V_T = kT/e ≈ 25.85mV @ 300K。
+
+## physics/waves
+
+### wave_speed
+
+**波速** · 单位 m/s
+
+```
+f * lambda
+```
+
+必填：`f` (频率 Hz)、`lambda` (波长 m)
+
+v = fλ。
+
+### decibel
+
+**声压级（分贝）** · 单位 dB
+
+```
+10 * log(I / I0) / log(10)
+```
+
+必填：`I` (声强 W/m²)
+可选：`I0`=1e-12 (基准声强 W/m²)
+
+dB = 10·log₁₀(I/I₀)。
+
+### doppler
+
+**多普勒频移（源移动）** · 单位 Hz
+
+```
+f0 * vs / (vs - v)
+```
+
+必填：`f0` (原频率 Hz)、`v` (源速 m/s（靠近为正）)
+可选：`vs`=343 (声速 m/s)
+
+f = f₀·vs/(vs-v)。
+
+### string_frequency
+
+**弦振动基频** · 单位 Hz
+
+```
+sqrt(T / mu) / (2 * L)
+```
+
+必填：`T` (张力 N)、`mu` (线密度 kg/m)、`L` (弦长 m)
+
+f = √(T/μ)/(2L)。乐器/建筑共振推演。
+
+### pipe_frequency
+
+**管中驻波基频（两端开口）** · 单位 Hz
+
+```
+vs / (2 * L)
+```
+
+必填：`L` (管长 m)
+可选：`vs`=343 (声速 m/s)
+
+f = v/(2L)。
+
+### sound_intensity
+
+**球面声强** · 单位 W/m²
+
+```
+P / (4 * pi * r^2)
+```
+
+必填：`P` (声功率 W)、`r` (距离 m)
+
+I = P/(4πr²)。
+
+### beat_frequency
+
+**拍频** · 单位 Hz
+
+```
+abs(f1 - f2)
+```
+
+必填：`f1` (频率1 Hz)、`f2` (频率2 Hz)
+
+|f₁-f₂|。
+
+### standing_wave_wavelength
+
+**驻波波长（第 n 谐波）** · 单位 m
+
+```
+2 * L / n
+```
+
+必填：`L` (弦/管长 m)、`n` (谐波次数)
+
+λ = 2L/n。
+
+## social/demography
+
+### population_exponential
+
+**马尔萨斯人口增长** · 单位 人
+
+```
+N0 * exp(r * t)
+```
+
+必填：`N0` (初始人口)、`r` (增长率 1/年)、`t` (年数)
+
+无约束指数增长。
+
+### population_logistic
+
+**逻辑斯蒂人口（t 时刻）** · 单位 人
+
+```
+K / (1 + ((K - N0) / N0) * exp(-r * t))
+```
+
+必填：`K` (环境容量)、`N0` (初始人口)、`r` (内禀增长率)、`t` (年数)
+
+有上限的人口演化。架空世界承载力设定必用。
+
+## social/development
+
+### literacy_proxy
+
+**人力资本指数（教育年限代理）**
+
+```
+years / max_years
+```
+
+必填：`years` (平均受教育年限)
+可选：`max_years`=18 (理论上限)
+
+0-1 归一化的人力资本。
+
+## social/ecology
+
+### simpson_diversity
+
+**辛普森多样性指数** · JS 内置实现
+
+```
+D = 1 - Σ pᵢ²
+```
+
+必填：`p` (各物种相对丰度数组)
+
+D = 1 - Σp²。生态/语言多样性。
+
+### lotka_volterra_equilibrium
+
+**洛特卡-沃尔泰拉平衡点**
+
+```
+d / beta
+```
+
+必填：`d` (捕食者死亡率)、`beta` (捕食效率)
+
+猎物平衡量 x* = d/β。完整轨迹需要数值积分。
+
+## social/economics
+
+### gravity_trade
+
+**引力模型（贸易/迁徙）**
+
+```
+G * M1 * M2 / D^beta
+```
+
+必填：`M1` (规模1（人口/GDP）)、`M2` (规模2)、`D` (距离)
+可选：`G`=1 (耦合常数)、`beta`=2 (距离衰减指数)
+
+T = G·M₁M₂/D^β。城市间互动、贸易流。
+
+## social/epidemiology
+
+### r0_basic
+
+**基本传染数 R₀**
+
+```
+beta / gamma
+```
+
+必填：`beta` (传播率 1/时间)、`gamma` (康复率 1/时间)
+
+R₀ = β/γ。R₀>1 疫情扩散。
+
+### herd_immunity
+
+**群体免疫阈值**
+
+```
+1 - 1 / R0
+```
+
+必填：`R0` (基本传染数)
+
+需免疫的人口比例。
+
+### sir_equilibrium
+
+**SIR 最终感染比例（隐式解近似）**
+
+```
+1 - exp(-R0 * x)
+```
+
+必填：`R0` (基本传染数)、`x` (最终感染比例猜测值（迭代求解用）)
+
+S∞ 满足 1-S∞ = exp(-R₀(1-S∞))。传入猜测值做不动点迭代。
+
+## social/inequality
+
+### gini
+
+**基尼系数（分组近似）** · JS 内置实现
+
+```
+G = 1 - Σ (yᵢ + yᵢ₋₁)·(1/n)
+```
+
+必填：`y` (按收入升序排列的收入份额数组)
+
+分组数据的梯形法近似。小样本建议直接用 operation="stats" 取分位数后手工积分。
+
+### hhi
+
+**赫芬达尔-赫希曼指数** · JS 内置实现
+
+```
+HHI = Σ sᵢ²
+```
+
+必填：`s` (各主体份额数组（小数，如 [0.4,0.3,0.3]）)
+
+市场集中度。HHI>0.25 视为高度集中。
+
+### power_law
+
+**幂律分布（齐夫定律）**
+
+```
+C * rank^(-alpha)
+```
+
+必填：`C` (归一化常数)、`rank` (排名)、`alpha` (幂指数 α)
+
+y = C·r^(-α)。城市规模、财富、词频通用。
+
+## social/information
+
+### shannon_entropy
+
+**香农熵** · 单位 bit · JS 内置实现
+
+```
+H = -Σ pᵢ·log_base(pᵢ)
+```
+
+必填：`p` (概率分布数组（各分量和为 1）)
+可选：`base`=2 (对数底，2=比特)
+
+H = -Σp·log_base(p)。信息量/多样性度量。
+
+### information_propagation
+
+**信息传播（单源扩散）**
+
+```
+N * (1 - exp(-k * t))
+```
+
+必填：`N` (总人口)、`k` (传播速率)、`t` (时间)
+
+知识/谣言波及人数。
+
+## social/politics
+
+### duverger_index
+
+**有效政党数（拉阿克指数）** · JS 内置实现
+
+```
+1 / sum(s^2)
+```
+
+必填：`s` (各党得票份额数组)
+
+N = 1/Σp²。衡量政党体系碎片化程度。
+
+### banzhaf_power
+
+**班茨哈夫权力指数（简化）**
+
+```
+1 / n
+```
+
+必填：`n` (投票者数量)
+
+等权情形的基线。加权情形需枚举联盟，不在此公式范围。
+
+### popitz_law
+
+**波皮茨定律（财富幂律指数）**
+
+```
+1 / (1 - a)
+```
+
+必填：`a` (帕累托指数 α（越大越平等）)
+
+财富分布的幂律关系。
+
+### cost_of_corruption
+
+**腐败成本占 GDP 比例**
+
+```
+gdp * rate
+```
+
+必填：`gdp` (GDP)、`rate` (腐败损耗率)
+
+制度效率损失的粗略估算。
+
+### tragedy_commons
+
+**公地可持续开采量**
+
+```
+R * regeneration
+```
+
+必填：`R` (资源存量)、`regeneration` (再生率 1/时间)
+
+可持续采伐上限。超出即资源崩溃。
+
+## social/urban
+
+### urban_scaling
+
+**城市规模标度律**
+
+```
+Y0 * (P / P0)^b
+```
+
+必填：`Y0` (基准产出)、`P0` (基准人口)、`P` (目标人口)
+可选：`b`=1.15 (超线性指数)
+
+城市创新/产出随人口超线性增长（b≈1.15）。基础设施是亚线性（b≈0.85）。

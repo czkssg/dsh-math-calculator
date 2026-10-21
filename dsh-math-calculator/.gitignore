@@ -1,0 +1,15 @@
+# 依赖
+node_modules/
+
+# 构建产物（可用 `npm run build` 重新生成）
+lib/
+
+# 临时文件
+*.tmp
+*.cjs
+*.part.ts
+.cache/
+
+# 测试/调试遗留
+test-*.log
+probe*.mjs

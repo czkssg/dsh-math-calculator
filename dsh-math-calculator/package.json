@@ -1,0 +1,73 @@
+{
+  "name": "dsh-math-calculator",
+  "version": "2.0.0",
+  "private": false,
+  "description": "DSH 原生高阶数学计算插件：BigNumber 高精度、符号代数与微积分、线性代数与特征值、统计与概率分布、线性/多项式回归。全部本地执行。",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.1-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ],
+      "platform": "web"
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dependencies": {
+    "algebrite": "^1.4.0",
+    "mathjs": "^15.2.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": ">=0.1.0 <0.3.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-tools": "^0.1.7-rc.2",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node test/run.mjs",
+    "test:all": "node run-all-tests.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "math",
+    "bigdecimal",
+    "symbolic",
+    "calculus",
+    "linear-algebra",
+    "statistics"
+  ]
+}
