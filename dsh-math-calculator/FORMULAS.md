@@ -1,6 +1,6 @@
 # 公式库完整清单
 
-> 共 **309** 条，**51** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
+> 共 **342** 条，**51** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
 
 调用方式：`{ "operation": "formula", "formula": "<id>", "overrides": {...} }`
 
@@ -9,7 +9,7 @@
 ## 目录
 
 - [biology/ecology](#biologyecology) — 6 条
-- [biology/physiology](#biologyphysiology) — 9 条
+- [biology/physiology](#biologyphysiology) — 18 条
 - [chemistry/acid](#chemistryacid) — 1 条
 - [chemistry/electro](#chemistryelectro) — 1 条
 - [chemistry/kinetics](#chemistrykinetics) — 2 条
@@ -28,9 +28,9 @@
 - [math/growth](#mathgrowth) — 3 条
 - [math/scales](#mathscales) — 2 条
 - [math/series](#mathseries) — 2 条
-- [military/combat](#militarycombat) — 8 条
-- [perception/agriculture](#perceptionagriculture) — 7 条
-- [perception/architecture](#perceptionarchitecture) — 7 条
+- [military/combat](#militarycombat) — 14 条
+- [perception/agriculture](#perceptionagriculture) — 16 条
+- [perception/architecture](#perceptionarchitecture) — 16 条
 - [perception/celestial](#perceptioncelestial) — 15 条
 - [perception/climate](#perceptionclimate) — 5 条
 - [perception/horizon](#perceptionhorizon) — 5 条
@@ -249,6 +249,114 @@ D_human * (W_human / W_animal)^0.75
 必填：`D_human` (人体剂量 mg/kg)、`W_human` (人体质量 kg)、`W_animal` (动物质量 kg)
 
 异速缩放（经验）；兽药/毒理从人推到动物、或反向推的常用近似。
+
+### drug_dose_by_weight
+
+**按体重给药** · 单位 mg
+
+```
+dose_per_kg * weight
+```
+
+必填：`dose_per_kg` (每公斤剂量 mg/kg)、`weight` (体重 kg)
+
+最常用的给药换算；儿童、瘦弱者必须按体重而不是按成人剂量照搬。
+
+### clark_child_dose
+
+**儿童剂量（Clark 法则）** · 单位 mg
+
+```
+adult_dose * weight / 70
+```
+
+必填：`adult_dose` (成人剂量 mg)、`weight` (儿童体重 kg)
+
+Clark 经验法则；比按体重线性换算更保守，但仍有争议，量级参考。
+
+### blood_volume_estimate
+
+**血量估算** · 单位 ml
+
+```
+70 * weight
+```
+
+必填：`weight` (体重 kg)
+
+成人约 70 ml/kg；失血超过 30% 即有生命危险，这是"伤员能撑多久"的算术。
+
+### fluid_deficit
+
+**脱水缺口** · 单位 ml
+
+```
+weight * deficit_percent / 100 * 1000
+```
+
+必填：`weight` (体重 kg)、`deficit_percent` (脱水占体重百分比 %)
+
+体重每降 1% 约失水 10 ml/kg；5% 已明显虚弱，10% 危及生命。
+
+### infusion_rate
+
+**输液速率** · 单位 ml/h
+
+```
+volume_ml / hours
+```
+
+必填：`volume_ml` (液体总量 ml)、`hours` (计划输完小时数)
+
+输液泵/滴速换算的基准；成人常用 20 滴/ml 的输液器。
+
+### max_heart_rate
+
+**最大心率（估算）** · 单位 bpm
+
+```
+220 - age
+```
+
+必填：`age` (年龄 岁)
+
+Fox 经验公式；个体差异可达 ±10–12 bpm，只作量级参考。
+
+### pregnancy_days_remaining
+
+**孕期剩余天数（Naegele）** · 单位 天
+
+```
+280 - days_since_lmp
+```
+
+必填：`days_since_lmp` (末次月经至今的天数)
+
+Naegele 法则：280 天（40 周）为预产期；只是估算，实际波动 ±2 周。
+
+### fever_energy_cost
+
+**发热额外耗能** · 单位 kcal/日
+
+```
+base_kcal * 0.13 * fever_delta
+```
+
+必填：`base_kcal` (基础代谢 kcal/日)、`fever_delta` (体温升高 °C)
+
+经验：体温每升 1°C，代谢率约增 13%；持续高热会迅速耗尽体力。
+
+### ld50_dose
+
+**半数致死剂量** · 单位 mg
+
+```
+ld50_per_kg * weight
+```
+
+必填：`ld50_per_kg` (LD50 mg/kg)、`weight` (体重 kg)
+
+把 LD50 换算成具体体重下的剂量；毒理量级判断用，个体差异很大。
 
 ## chemistry/acid
 
@@ -1011,6 +1119,79 @@ V * 0.21 / (n * consumption)
 
 围城/密闭推演。
 
+### ram_momentum
+
+**撞锤动量** · 单位 N·s
+
+```
+m * v
+```
+
+必填：`m` (撞锤质量 kg)、`v` (撞击速度 m/s)
+
+破门看的是动量与冲量；同样的能量，重而慢比轻而快更容易把门撞开。
+
+### trebuchet_range_estimate
+
+**配重投石机射程（估算）** · 单位 m
+
+```
+2 * eff * E / (m * g)
+```
+
+必填：`E` (配重势能 J)、`m` (弹丸质量 kg)
+可选：`eff`=0.5 (能量转化效率（经验 0.3–0.6）)、`g`=9.80665 (重力加速度 m/s^2)
+
+由能量守恒估算的 45° 射程；经验效率修正，实际受结构强度与空气阻力限制。
+
+### wall_breach_energy
+
+**破墙所需能量** · 单位 J
+
+```
+toughness * area * thickness
+```
+
+必填：`toughness` (墙体破坏能密度 J/m^3（经验）)、`area` (破口面积 m^2)、`thickness` (墙厚 m)
+
+把墙打穿所需的最小能量；toughness 只能按经验取值，量级判断用。
+
+### formation_frontage
+
+**阵型正面宽度** · 单位 m
+
+```
+troops * spacing / ranks
+```
+
+必填：`troops` (总人数)、`spacing` (士兵间距 m)、`ranks` (排数)
+
+阵线有多宽；正面太宽两翼薄弱，太窄容易被包抄。
+
+### army_supply_days
+
+**军队补给可支撑天数** · 单位 日
+
+```
+stores / (troops * daily_ration)
+```
+
+必填：`stores` (存粮 kg)、`troops` (人数)、`daily_ration` (人均日耗 kg)
+
+古代军队每天人均 1–2 kg 粮；这是"粮尽而退"的算术。
+
+### march_days
+
+**行军天数** · 单位 日
+
+```
+distance / (speed * hours_per_day)
+```
+
+必填：`distance` (距离 km)、`speed` (行军速度 km/h)、`hours_per_day` (每日行军小时)
+
+步兵常行军约 4 km/h、每日 8 小时；骑兵可翻倍但马匹需要休整。
+
 ## perception/agriculture
 
 ### crop_yield_area
@@ -1098,6 +1279,115 @@ width * depth * velocity
 必填：`Rn` (净辐射 MJ/(m^2·日))、`T` (平均气温 °C)、`u2` (2m 风速 m/s)、`es` (饱和水汽压 kPa)、`ea` (实际水汽压 kPa)
 
 FAO-56 的简化形式（经验），估算作物每天耗水；灌溉设计常用。
+
+### crop_total_yield
+
+**作物总产量** · 单位 kg
+
+```
+area_ha * yield_per_ha
+```
+
+必填：`area_ha` (面积 公顷)、`yield_per_ha` (单产 kg/公顷)
+
+总产 = 面积 × 单产；古代谷物单产约 500–1500 kg/公顷，现代农业可达 6000+。
+
+### food_energy_supply
+
+**食物总能量** · 单位 J
+
+```
+mass_kg * kcal_per_kg * 4184
+```
+
+必填：`mass_kg` (食物质量 kg)、`kcal_per_kg` (热量密度 kcal/kg（谷物≈3500）)
+
+食物热量换算成焦耳；1 kcal = 4184 J。
+
+### population_fed
+
+**能养活多少人·日** · 单位 人·日
+
+```
+food_kcal / daily_kcal_per_person
+```
+
+必填：`food_kcal` (食物总热量 kcal)
+可选：`daily_kcal_per_person`=2500 (人均日需 kcal)
+
+这批粮食能支撑多少人吃一天；除以人口就是可支撑天数。
+
+### seed_rate
+
+**播种量估算** · 单位 kg
+
+```
+area_m2 * plants_per_m2 / germination / seeds_per_gram / 1000
+```
+
+必填：`area_m2` (播种面积 m^2)、`plants_per_m2` (目标株数 /m^2)、`germination` (发芽率 0–1)、`seeds_per_gram` (每克种子数)
+
+按目标株数与发芽率反推播种量；留 10–20% 余量更稳。
+
+### fertilizer_need
+
+**施肥总量** · 单位 kg
+
+```
+area_ha * rate_kg_per_ha
+```
+
+必填：`area_ha` (面积 公顷)、`rate_kg_per_ha` (施肥量 kg/公顷)
+
+总施肥量 = 面积 × 单位面积用量；过量会烧苗并污染水源。
+
+### irrigation_volume
+
+**灌溉水量** · 单位 m^3
+
+```
+area_m2 * depth_mm / 1000
+```
+
+必填：`area_m2` (灌溉面积 m^2)、`depth_mm` (灌水深度 mm)
+
+1 mm 水深 = 每平方米 1 升；这是水渠与蓄水池设计的基准。
+
+### livestock_feed_need
+
+**牲畜饲料需求** · 单位 kg
+
+```
+heads * daily_feed_kg * days
+```
+
+必填：`heads` (头数)、`daily_feed_kg` (每头每日 kg)、`days` (天数)
+
+牛每日干草 10–15 kg，羊 2–3 kg；过冬要按最长冬季算。
+
+### pasture_carrying_capacity
+
+**草场载畜量** · 单位 头
+
+```
+area_ha * productivity_kg_per_ha / (intake_kg_per_day * days)
+```
+
+必填：`area_ha` (草场面积 公顷)、`productivity_kg_per_ha` (年产草量 kg/公顷)、`intake_kg_per_day` (每头日食量 kg)、`days` (放牧天数)
+
+草场能养多少牲畜；经验值，超载会导致草场退化。
+
+### harvest_labor_days
+
+**收割所需工日** · 单位 人·日
+
+```
+area_ha * labor_days_per_ha
+```
+
+必填：`area_ha` (面积 公顷)、`labor_days_per_ha` (每公顷需工日（人工收割约 10–20）)
+
+抢收窗口很短（雨季前），劳力量决定能收多少——这是古代农业的核心约束。
 
 ## perception/architecture
 
@@ -1188,6 +1478,117 @@ distance / (speed * 3600) + stops * rest_hours
 可选：`speed`=15 (马速 km/h)、`rest_hours`=0.2 (每次换马耗时 小时)
 
 帝国通信的实际延迟。版图上限由此决定。
+
+### floor_area_ratio
+
+**容积率（ FAR ）** · 单位 无量纲
+
+```
+total_floor_area / site_area
+```
+
+必填：`total_floor_area` (总建筑面积 m^2)、`site_area` (用地面积 m^2)
+
+容积率 = 总建筑面积 / 用地面积；城市密度最常用的单一指标。
+
+### brick_count
+
+**砖墙用砖量** · 单位 块
+
+```
+area * thickness * mortar_factor / (brick_l * brick_w * brick_h)
+```
+
+必填：`area` (墙面面积 m^2)、`thickness` (墙厚 m)
+可选：`brick_l`=0.24 (砖长 m)、`brick_w`=0.115 (砖宽 m)、`brick_h`=0.053 (砖高 m)、`mortar_factor`=1.15 (含砂浆损耗系数（经验 1.1–1.2）)
+
+按体积估算用砖量；砂浆占体积约 10–20%，用 mortar_factor 修正（经验）。
+
+### roof_load
+
+**屋顶总载荷** · 单位 N
+
+```
+area * load_per_area
+```
+
+必填：`area` (屋顶面积 m^2)、`load_per_area` (面载荷 N/m^2（含雪载/瓦重）)
+
+屋顶承受的总竖向载荷；木梁/柱子按它选截面。
+
+### stair_comfort_rule
+
+**楼梯舒适度（2R+G）** · 单位 m
+
+```
+2 * rise + run
+```
+
+必填：`rise` (踏步高 m)、`run` (踏步宽 m)
+
+经验规则 2R+G ≈ 0.60–0.65 m 最省力；太小费劲，太大容易绊倒。
+
+### water_tower_pressure
+
+**水塔静水压** · 单位 Pa
+
+```
+rho * g * h
+```
+
+必填：`h` (水头高度 m)
+可选：`rho`=1000 (水的密度 kg/m^3)、`g`=9.80665 (重力加速度 m/s^2)
+
+水塔每高 10 m 约 1 个大气压；供水能否上楼由它决定。
+
+### window_heat_loss
+
+**窗户热损失** · 单位 W
+
+```
+U * A * dT
+```
+
+必填：`U` (传热系数 W/(m^2·K)（单层玻璃≈5.8）)、`A` (窗面积 m^2)、`dT` (室内外温差 K)
+
+冬季取暖负荷的主要来源；双层玻璃 U≈2.8，三层≈1.8。
+
+### lighting_lumen_need
+
+**照明光通量需求** · 单位 lm
+
+```
+area * lux
+```
+
+必填：`area` (面积 m^2)、`lux` (照度 lx（居住≈100，阅读≈300）)
+
+房间需要多少流明；蜡烛约 12 lm/W，油灯更低。
+
+### chimney_draft
+
+**烟囱抽力** · 单位 Pa
+
+```
+rho_out * g * h * (1 - T_out / T_in)
+```
+
+必填：`h` (烟囱高度 m)、`T_out` (室外温度 K)、`T_in` (烟道温度 K)
+可选：`rho_out`=1.2 (室外空气密度 kg/m^3)、`g`=9.80665 (重力加速度 m/s^2)
+
+热空气比冷空气轻形成的压差；烟囱越高、温差越大抽力越强，这是炉火不呛人的物理原因。
+
+### city_wall_perimeter
+
+**方形城墙周长** · 单位 m
+
+```
+4 * sqrt(area)
+```
+
+必填：`area` (城内面积 m^2)
+
+正方式估算；城墙越长，守军越难铺满，这是攻城方的基本算术。
 
 ## perception/celestial
 
