@@ -4,7 +4,8 @@
 import { writeFileSync } from 'node:fs'
 // 从 formulas.js 读，它已合并主批次 + 扩展批次（217 条）。
 // 直接读 formula-library.js 只会拿到主批次的 119 条。
-import { FORMULAS } from '../lib/formulas.js'
+import { FORMULAS, formulaFrequency } from '../lib/formulas.js'
+import { LAYERS, DOMAIN_NAMES, layerCounts, domainCounts, layerOf, domainsOf } from '../lib/taxonomy.js'
 
 const byCategory = new Map()
 for (const f of FORMULAS) {
@@ -22,7 +23,25 @@ lines.push('')
 lines.push('**所有参数都可被 `overrides` 覆盖**，这是架空世界改造的基础。')
 lines.push('')
 
-// 目录
+// 三轴标签概览
+lines.push('## 规则层级（离最底层规则的远近）')
+lines.push('')
+lines.push('| 层级 | 含义 | 条数 |')
+lines.push('|---|---|---|')
+for (const layer of LAYERS) {
+  const count = layerCounts().find((item) => item.layer === layer.id)?.count ?? 0
+  lines.push(`| ${layer.name}（${layer.id}） | ${layer.desc} | ${count} |`)
+}
+lines.push('')
+lines.push('## 学科领域（多标签）')
+lines.push('')
+lines.push('| 领域 | 条数 |')
+lines.push('|---|---|')
+for (const domain of domainCounts()) lines.push(`| ${domain.name}（${domain.domain}） | ${domain.count} |`)
+lines.push('')
+lines.push('> 注意：`cat` 只是旧的路径字段；分类请用「规则层级 + 学科领域」。')
+lines.push('> `frequency` 指**主角视角**感知频率，不是世界观推导常用度。')
+lines.push('')
 lines.push('## 目录')
 lines.push('')
 for (const [cat, items] of [...byCategory.entries()].sort()) {
@@ -39,7 +58,15 @@ for (const [cat, items] of [...byCategory.entries()].sort()) {
     const optional = Object.entries(f.params).filter(([, s]) => s.value !== null)
     lines.push(`### ${f.id}`)
     lines.push('')
-    lines.push(`**${f.name}**${f.unit ? ` · 单位 ${f.unit}` : ''}${f.builtin ? ' · JS 内置实现' : ''}`)
+    const domains = domainsOf(f).map((domain) => DOMAIN_NAMES[domain] ?? domain)
+    lines.push(
+      `**${f.name}**` +
+        ` · 层级 ${layerOf(f)}` +
+        ` · 领域 ${domains.join('、') || '—'}` +
+        ` · 主角频率 ${formulaFrequency(f)}` +
+        (f.unit ? ` · 单位 ${f.unit}` : '') +
+        (f.builtin ? ' · JS 内置实现' : ''),
+    )
     lines.push('')
     lines.push('```')
     lines.push(f.expr)

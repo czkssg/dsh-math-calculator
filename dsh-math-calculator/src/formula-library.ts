@@ -79,6 +79,12 @@ export interface FormulaDef {
    * high = 故事里高频出现；low = 几乎不会用到。
    */
   frequency?: 'high' | 'medium' | 'low'
+  /** 规则层级（离最底层规则的远近）；缺省由 taxonomy 推断。 */
+  layer?: 'fundamental' | 'derived' | 'phenomenological' | 'engineering' | 'conventional'
+  /** 学科领域（多标签）：physics / chemistry / materials / medicine …；缺省由 taxonomy 推断。 */
+  domains?: string[]
+  /** 细标签（自由扩展）。 */
+  tags?: string[]
   /**
    * 用 JS 侧实现代替 mathjs 表达式。
    * 用于数组逐元素运算这类 mathjs 表达不好的场景。

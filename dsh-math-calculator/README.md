@@ -164,7 +164,21 @@ npm pack
 {"operation":"formulas","query":"symbol:*"}        // 所有多义符号
 ```
 
-**按读者视角频次筛选**（第 4 批公式按「故事里会不会遇到」标的频次）：
+**三轴标签**（分类不是学科，是「离底层规则的远近」）：
+
+| 轴 | 取值 | 例子 |
+|---|---|---|
+| `layer` 规则层级 | fundamental / derived / phenomenological / engineering / conventional | 洛伦兹因子→基本；环向应力→导出；风寒→经验；用砖量→工程 |
+| `domains` 学科领域（多标签） | physics / materials / medicine / agriculture / military… | 人体表面积 = 生物 + 医学 |
+| `frequency` 主角感知频率 | high / medium / low | 用砖量→高；洛伦兹因子→低 |
+
+```jsonc
+{"operation":"formulas","query":"layer:derived"}
+{"operation":"formulas","query":"domain:物理"}
+{"operation":"formulas","query":"freq:high"}
+```
+
+**按主角感知频率筛选**（不是世界观推导常用度，而是读者在故事里会不会感知到）：
 
 ```jsonc
 {"operation":"formulas","query":"freq:high"}   // 高频：材料/天气/感知/交通/人体/战斗

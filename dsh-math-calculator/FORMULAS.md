@@ -6,6 +6,37 @@
 
 **所有参数都可被 `overrides` 覆盖**，这是架空世界改造的基础。
 
+## 规则层级（离最底层规则的远近）
+
+| 层级 | 含义 | 条数 |
+|---|---|---|
+| 基本规则（fundamental） | 守恒律、相对论、量子、热力学定律——自然律本身 | 26 |
+| 导出规律（derived） | 由基本规则推出、有闭合形式的经典关系 | 156 |
+| 经验规律（phenomenological） | 带实验拟合系数，量级可信、具体数字有误差 | 41 |
+| 工程换算（engineering） | 几何、配比、剂量、补给——由定义与算术决定 | 82 |
+| 社会约定（conventional） | 货币、制度、统计口径——由人类约定而非自然律 | 37 |
+
+## 学科领域（多标签）
+
+| 领域 | 条数 |
+|---|---|
+| 物理（physics） | 191 |
+| 化学（chemistry） | 10 |
+| 生物（biology） | 54 |
+| 材料（materials） | 27 |
+| 地球（earth） | 12 |
+| 天文（astronomy） | 27 |
+| 工程（engineering） | 48 |
+| 军事（military） | 14 |
+| 农业（agriculture） | 16 |
+| 医学（medicine） | 18 |
+| 经济（economics） | 16 |
+| 社会（social） | 20 |
+| 数学（math） | 14 |
+
+> 注意：`cat` 只是旧的路径字段；分类请用「规则层级 + 学科领域」。
+> `frequency` 指**主角视角**感知频率，不是世界观推导常用度。
+
 ## 目录
 
 - [biology/ecology](#biologyecology) — 6 条
@@ -64,7 +95,7 @@
 
 ### population_growth_rate
 
-**内禀增长率** · 单位 1/年
+**内禀增长率** · 层级 phenomenological · 领域 生物 · 主角频率 medium · 单位 1/年
 
 ```
 birth - death
@@ -76,7 +107,7 @@ r = b - d。
 
 ### generation_time
 
-**倍增时间（由增长率）** · 单位 年
+**倍增时间（由增长率）** · 层级 phenomenological · 领域 生物 · 主角频率 medium · 单位 年
 
 ```
 ln2 / r
@@ -89,7 +120,7 @@ ln2 / r
 
 ### carrying_capacity_time
 
-**逻辑斯蒂达 90% 容量所需时间** · 单位 时间
+**逻辑斯蒂达 90% 容量所需时间** · 层级 phenomenological · 领域 生物 · 主角频率 medium · 单位 时间
 
 ```
 log(9 * (K / N0 - 1)) / r
@@ -101,7 +132,7 @@ log(9 * (K / N0 - 1)) / r
 
 ### predator_prey_ratio
 
-**捕食者-猎物平衡比**
+**捕食者-猎物平衡比** · 层级 phenomenological · 领域 生物 · 主角频率 medium
 
 ```
 alpha / beta
@@ -113,7 +144,7 @@ alpha / beta
 
 ### photosynthesis_rate
 
-**光合作用效率上限** · 单位 W/m²
+**光合作用效率上限** · 层级 phenomenological · 领域 生物 · 主角频率 medium · 单位 W/m²
 
 ```
 P_in * efficiency
@@ -126,7 +157,7 @@ P_in * efficiency
 
 ### trophic_energy
 
-**营养级能量传递**
+**营养级能量传递** · 层级 phenomenological · 领域 生物 · 主角频率 medium
 
 ```
 E0 * efficiency^level
@@ -141,7 +172,7 @@ E0 * efficiency^level
 
 ### bmr_mifflin
 
-**基础代谢率（Mifflin-St Jeor，男性）** · 单位 kcal/day
+**基础代谢率（Mifflin-St Jeor，男性）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 kcal/day
 
 ```
 10 * m + 6.25 * h - 5 * age + 5
@@ -153,7 +184,7 @@ E0 * efficiency^level
 
 ### body_surface_area
 
-**体表面积（Du Bois）** · 单位 m²
+**体表面积（Du Bois）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 m²
 
 ```
 0.007184 * m^0.425 * h^0.725
@@ -165,7 +196,7 @@ BSA，用于散热/给药推演。
 
 ### heat_dissipation
 
-**代谢产热（与散热的平衡点）** · 单位 W
+**代谢产热（与散热的平衡点）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 W
 
 ```
 sigma * emissivity * A * T^4
@@ -178,7 +209,7 @@ sigma * emissivity * A * T^4
 
 ### lifespan_scaling
 
-**寿命异速生长** · 单位 年
+**寿命异速生长** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 年
 
 ```
 L0 * (m / m0)^b
@@ -191,7 +222,7 @@ L0 * (m / m0)^b
 
 ### human_body_surface_area
 
-**人体表面积（Du Bois）** · 单位 m^2
+**人体表面积（Du Bois）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 high · 单位 m^2
 
 ```
 0.007184 * W^0.425 * H^0.725
@@ -203,7 +234,7 @@ Du Bois 经验公式；用药剂量、散热、烫伤面积都按体表面积算
 
 ### basal_metabolic_rate
 
-**基础代谢率（Kleiber）** · 单位 kcal/日
+**基础代谢率（Kleiber）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 high · 单位 kcal/日
 
 ```
 70 * W^0.75
@@ -215,7 +246,7 @@ Kleiber 经验式；生物代谢随体重 3/4 次幂缩放，跨物种都近似�
 
 ### daily_water_need
 
-**每日需水量（经验）** · 单位 ml/日
+**每日需水量（经验）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 high · 单位 ml/日
 
 ```
 35 * W
@@ -227,7 +258,7 @@ Kleiber 经验式；生物代谢随体重 3/4 次幂缩放，跨物种都近似�
 
 ### widmark_bac
 
-**血液酒精浓度（Widmark）** · 单位 g/L
+**血液酒精浓度（Widmark）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 g/L
 
 ```
 A * 100 / (W * r) - 0.015 * t
@@ -240,7 +271,7 @@ Widmark 经验公式；代谢项 0.015 g/L/h。只作量级参考，个体差异
 
 ### allometric_dose_scale
 
-**跨物种剂量换算** · 单位 mg/kg
+**跨物种剂量换算** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 mg/kg
 
 ```
 D_human * (W_human / W_animal)^0.75
@@ -252,7 +283,7 @@ D_human * (W_human / W_animal)^0.75
 
 ### drug_dose_by_weight
 
-**按体重给药** · 单位 mg
+**按体重给药** · 层级 engineering · 领域 生物、医学 · 主角频率 high · 单位 mg
 
 ```
 dose_per_kg * weight
@@ -264,7 +295,7 @@ dose_per_kg * weight
 
 ### clark_child_dose
 
-**儿童剂量（Clark 法则）** · 单位 mg
+**儿童剂量（Clark 法则）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 mg
 
 ```
 adult_dose * weight / 70
@@ -276,7 +307,7 @@ Clark 经验法则；比按体重线性换算更保守，但仍有争议，量�
 
 ### blood_volume_estimate
 
-**血量估算** · 单位 ml
+**血量估算** · 层级 phenomenological · 领域 生物、医学 · 主角频率 high · 单位 ml
 
 ```
 70 * weight
@@ -288,7 +319,7 @@ Clark 经验法则；比按体重线性换算更保守，但仍有争议，量�
 
 ### fluid_deficit
 
-**脱水缺口** · 单位 ml
+**脱水缺口** · 层级 engineering · 领域 生物、医学 · 主角频率 high · 单位 ml
 
 ```
 weight * deficit_percent / 100 * 1000
@@ -300,7 +331,7 @@ weight * deficit_percent / 100 * 1000
 
 ### infusion_rate
 
-**输液速率** · 单位 ml/h
+**输液速率** · 层级 engineering · 领域 生物、医学 · 主角频率 medium · 单位 ml/h
 
 ```
 volume_ml / hours
@@ -312,7 +343,7 @@ volume_ml / hours
 
 ### max_heart_rate
 
-**最大心率（估算）** · 单位 bpm
+**最大心率（估算）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 bpm
 
 ```
 220 - age
@@ -324,7 +355,7 @@ Fox 经验公式；个体差异可达 ±10–12 bpm，只作量级参考。
 
 ### pregnancy_days_remaining
 
-**孕期剩余天数（Naegele）** · 单位 天
+**孕期剩余天数（Naegele）** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 天
 
 ```
 280 - days_since_lmp
@@ -336,7 +367,7 @@ Naegele 法则：280 天（40 周）为预产期；只是估算，实际波动 �
 
 ### fever_energy_cost
 
-**发热额外耗能** · 单位 kcal/日
+**发热额外耗能** · 层级 phenomenological · 领域 生物、医学 · 主角频率 medium · 单位 kcal/日
 
 ```
 base_kcal * 0.13 * fever_delta
@@ -348,7 +379,7 @@ base_kcal * 0.13 * fever_delta
 
 ### ld50_dose
 
-**半数致死剂量** · 单位 mg
+**半数致死剂量** · 层级 engineering · 领域 生物、医学 · 主角频率 low · 单位 mg
 
 ```
 ld50_per_kg * weight
@@ -362,7 +393,7 @@ ld50_per_kg * weight
 
 ### ph_from_pka
 
-**缓冲液 pH（Henderson-Hasselbalch）**
+**缓冲液 pH（Henderson-Hasselbalch）** · 层级 phenomenological · 领域 化学 · 主角频率 medium
 
 ```
 pKa + log(base / acid, 10)
@@ -376,7 +407,7 @@ pH = pKa + log([A⁻]/[HA])。
 
 ### nernst
 
-**能斯特方程** · 单位 V
+**能斯特方程** · 层级 phenomenological · 领域 化学 · 主角频率 medium · 单位 V
 
 ```
 E0 - R * T / (n * F) * log(Q, 10)
@@ -391,7 +422,7 @@ E = E₀ - (RT/nF)lnQ。
 
 ### arrhenius
 
-**阿伦尼乌斯速率常数** · 单位 1/s
+**阿伦尼乌斯速率常数** · 层级 phenomenological · 领域 化学 · 主角频率 medium · 单位 1/s
 
 ```
 A * exp(-Ea / (R * T))
@@ -404,7 +435,7 @@ k = Ae^(-Ea/RT)。反应速率对温度的敏感性。
 
 ### half_life_first_order
 
-**一级反应半衰期** · 单位 s
+**一级反应半衰期** · 层级 phenomenological · 领域 化学 · 主角频率 medium · 单位 s
 
 ```
 ln2 / k
@@ -419,7 +450,7 @@ t½ = ln2/k。与初始浓度无关。
 
 ### avogadro_molecules
 
-**分子数** · 单位 个
+**分子数** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 个
 
 ```
 n * NA
@@ -432,7 +463,7 @@ N = nN_A。
 
 ### molar_mass_density
 
-**由密度算摩尔体积** · 单位 cm³/mol
+**由密度算摩尔体积** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 cm³/mol
 
 ```
 M / rho
@@ -446,7 +477,7 @@ V_m = M/ρ。
 
 ### molarity
 
-**摩尔浓度** · 单位 mol/L
+**摩尔浓度** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 mol/L
 
 ```
 n / V
@@ -458,7 +489,7 @@ c = n/V。
 
 ### dilution
 
-**稀释公式** · 单位 L
+**稀释公式** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 L
 
 ```
 C1 * V1 / C2
@@ -470,7 +501,7 @@ C₁V₁ = C₂V₂，求所需体积。
 
 ### ideal_solution_vapor
 
-**拉乌尔定律（蒸气压）** · 单位 Pa
+**拉乌尔定律（蒸气压）** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 Pa
 
 ```
 x_solvent * P0
@@ -484,7 +515,7 @@ P = x·P₀。
 
 ### gibbs_free_energy
 
-**吉布斯自由能变** · 单位 J
+**吉布斯自由能变** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 J
 
 ```
 dH - T * dS
@@ -498,7 +529,7 @@ dH - T * dS
 
 ### compound_interest
 
-**复利终值**
+**复利终值** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 P * (1 + r / n)^(n * t)
@@ -511,7 +542,7 @@ A = P(1+r/n)^(nt)。n=1 为年复利，n=12 为月复利。
 
 ### continuous_compounding
 
-**连续复利终值**
+**连续复利终值** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 P * exp(r * t)
@@ -523,7 +554,7 @@ A = Pe^(rt)。
 
 ### present_value
 
-**现值**
+**现值** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 FV / (1 + r)^t
@@ -535,7 +566,7 @@ PV = FV/(1+r)^t。
 
 ### annuity_pv
 
-**年金现值**
+**年金现值** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 PMT * (1 - (1 + r)^(-t)) / r
@@ -547,7 +578,7 @@ PV = PMT·(1-(1+r)^-t)/r。
 
 ### cagr
 
-**复合年均增长率 CAGR**
+**复合年均增长率 CAGR** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 (finalValue / startValue)^(1 / t) - 1
@@ -559,7 +590,7 @@ CAGR = (终/始)^(1/t) - 1。
 
 ### inflation_adjust
 
-**通胀换算（实际购买力）**
+**通胀换算（实际购买力）** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 amount / (1 + rate)^t
@@ -571,7 +602,7 @@ amount / (1 + rate)^t
 
 ### roi
 
-**投资回报率**
+**投资回报率** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 (gain - cost) / cost
@@ -585,7 +616,7 @@ ROI = (收益-成本)/成本。
 
 ### solow_steady_state
 
-**索洛模型稳态资本**
+**索洛模型稳态资本** · 层级 conventional · 领域 经济 · 主角频率 medium
 
 ```
 (s * A / (delta + n + gx))^(1 / (1 - alpha))
@@ -598,7 +629,7 @@ ROI = (收益-成本)/成本。
 
 ### harrod_domar
 
-**哈罗德-多马增长率**
+**哈罗德-多马增长率** · 层级 conventional · 领域 经济 · 主角频率 medium
 
 ```
 s / v
@@ -612,7 +643,7 @@ g = s/v。
 
 ### leontief_inverse
 
-**列昂惕夫逆矩阵（完全消耗）**
+**列昂惕夫逆矩阵（完全消耗）** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 inv([[1 - A11, -A12], [-A21, 1 - A22]])
@@ -626,7 +657,7 @@ inv([[1 - A11, -A12], [-A21, 1 - A22]])
 
 ### money_multiplier
 
-**货币乘数**
+**货币乘数** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 1 / reserve
@@ -638,7 +669,7 @@ inv([[1 - A11, -A12], [-A21, 1 - A22]])
 
 ### gdp_growth
 
-**GDP 增长率**
+**GDP 增长率** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 (gdp1 - gdp0) / gdp0
@@ -652,7 +683,7 @@ inv([[1 - A11, -A12], [-A21, 1 - A22]])
 
 ### break_even
 
-**盈亏平衡产量**
+**盈亏平衡产量** · 层级 conventional · 领域 经济 · 主角频率 medium
 
 ```
 FC / (price - VC)
@@ -664,7 +695,7 @@ Q = FC/(P-VC)。
 
 ### price_elasticity
 
-**需求价格弹性（点弹性）**
+**需求价格弹性（点弹性）** · 层级 conventional · 领域 经济 · 主角频率 medium
 
 ```
 (dQ / Q) / (dP / P)
@@ -678,7 +709,7 @@ Q = FC/(P-VC)。
 
 ### cobb_douglas
 
-**柯布-道格拉斯生产函数**
+**柯布-道格拉斯生产函数** · 层级 conventional · 领域 经济 · 主角频率 medium
 
 ```
 A * K^alpha * L^beta
@@ -693,7 +724,7 @@ Y = A·Kᵅ·Lᵝ。α+β=1 为规模报酬不变。
 
 ### utility_crra
 
-**CRRA 效用函数**
+**CRRA 效用函数** · 层级 conventional · 领域 经济 · 主角频率 low
 
 ```
 c^(1 - gamma) / (1 - gamma)
@@ -707,7 +738,7 @@ c^(1 - gamma) / (1 - gamma)
 
 ### buckling_euler
 
-**欧拉屈曲临界载荷** · 单位 N
+**欧拉屈曲临界载荷** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 N
 
 ```
 pi^2 * E * I / (K * L)^2
@@ -720,7 +751,7 @@ pi^2 * E * I / (K * L)^2
 
 ### hoop_stress
 
-**薄壁圆筒环向应力** · 单位 Pa
+**薄壁圆筒环向应力** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 Pa
 
 ```
 p * r / t
@@ -732,7 +763,7 @@ p * r / t
 
 ### thermal_stress
 
-**热应力** · 单位 Pa
+**热应力** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 Pa
 
 ```
 E * alpha * dT
@@ -744,7 +775,7 @@ E * alpha * dT
 
 ### beam_center_deflection
 
-**简支梁跨中挠度** · 单位 m
+**简支梁跨中挠度** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 m
 
 ```
 F * L^3 / (48 * E * I)
@@ -756,7 +787,7 @@ F * L^3 / (48 * E * I)
 
 ### beam_center_moment
 
-**简支梁跨中弯矩** · 单位 N·m
+**简支梁跨中弯矩** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 N·m
 
 ```
 F * L / 4
@@ -768,7 +799,7 @@ F * L / 4
 
 ### wood_beam_moment_capacity
 
-**矩形木梁抗弯承载力** · 单位 N·m
+**矩形木梁抗弯承载力** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 N·m
 
 ```
 sigma_b * b * h^2 / 6
@@ -780,7 +811,7 @@ sigma_b * b * h^2 / 6
 
 ### column_axial_capacity
 
-**短柱轴压承载力** · 单位 N
+**短柱轴压承载力** · 层级 derived · 领域 材料、工程 · 主角频率 high · 单位 N
 
 ```
 sigma_y * A
@@ -792,7 +823,7 @@ sigma_y * A
 
 ### arch_thrust
 
-**三铰拱水平推力** · 单位 N
+**三铰拱水平推力** · 层级 derived · 领域 材料、工程 · 主角频率 medium · 单位 N
 
 ```
 W * L / (8 * h)
@@ -804,7 +835,7 @@ W * L / (8 * h)
 
 ### hardness_to_yield
 
-**硬度估屈服强度** · 单位 Pa
+**硬度估屈服强度** · 层级 phenomenological · 领域 材料、工程 · 主角频率 medium · 单位 Pa
 
 ```
 3 * H * 9.80665e6
@@ -816,7 +847,7 @@ W * L / (8 * h)
 
 ### fatigue_life_basquin
 
-**疲劳寿命（Basquin）** · 单位 次
+**疲劳寿命（Basquin）** · 层级 phenomenological · 领域 材料、工程 · 主角频率 medium · 单位 次
 
 ```
 (sigma_f / sigma_a)^(1 / b)
@@ -829,7 +860,7 @@ W * L / (8 * h)
 
 ### corrosion_rate_weightloss
 
-**腐蚀速率（失重法）** · 单位 mm/yr
+**腐蚀速率（失重法）** · 层级 phenomenological · 领域 材料、工程 · 主角频率 medium · 单位 mm/yr
 
 ```
 87.6 * W / (A * rho * t)
@@ -843,7 +874,7 @@ W * L / (8 * h)
 
 ### circle_area
 
-**圆面积**
+**圆面积** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2
@@ -855,7 +886,7 @@ S = πr²。
 
 ### sphere_volume
 
-**球体积**
+**球体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 4 / 3 * pi * r^3
@@ -867,7 +898,7 @@ V = 4πr³/3。
 
 ### sphere_area
 
-**球表面积**
+**球表面积** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 4 * pi * r^2
@@ -879,7 +910,7 @@ S = 4πr²。
 
 ### cylinder_volume
 
-**圆柱体积**
+**圆柱体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2 * h
@@ -891,7 +922,7 @@ V = πr²h。
 
 ### cone_volume
 
-**圆锥体积**
+**圆锥体积** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 pi * r^2 * h / 3
@@ -903,7 +934,7 @@ V = πr²h/3。
 
 ### heron_area
 
-**海伦公式（三角形面积）**
+**海伦公式（三角形面积）** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 sqrt(p * (p - a) * (p - b) * (p - c))
@@ -915,7 +946,7 @@ S = √(p(p-a)(p-b)(p-c))。
 
 ### pythagoras
 
-**勾股定理（求斜边）**
+**勾股定理（求斜边）** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 sqrt(a^2 + b^2)
@@ -929,7 +960,7 @@ c = √(a²+b²)。
 
 ### exponential_growth
 
-**指数增长**
+**指数增长** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 N0 * exp(r * t)
@@ -941,7 +972,7 @@ N = N₀e^(rt)。
 
 ### doubling_time
 
-**倍增时间** · 单位 时间
+**倍增时间** · 层级 fundamental · 领域 数学 · 主角频率 medium · 单位 时间
 
 ```
 log(2) / r
@@ -953,7 +984,7 @@ t = ln2/r（即 70/百分比 的精确版）。
 
 ### logistic_growth
 
-**逻辑斯蒂增长（t 时刻）**
+**逻辑斯蒂增长（t 时刻）** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 K / (1 + ((K - N0) / N0) * exp(-r * t))
@@ -967,7 +998,7 @@ N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。
 
 ### richter
 
-**里氏震级（能量比）** · 单位 倍数
+**里氏震级（能量比）** · 层级 fundamental · 领域 数学 · 主角频率 medium · 单位 倍数
 
 ```
 10^(1.5 * dM)
@@ -979,7 +1010,7 @@ N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。
 
 ### ph
 
-**pH 值**
+**pH 值** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 -log(H) / log(10)
@@ -993,7 +1024,7 @@ pH = -log₁₀[H⁺]。
 
 ### arithmetic_sum
 
-**等差数列求和**
+**等差数列求和** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 n * (a1 + an) / 2
@@ -1005,7 +1036,7 @@ S = n(a₁+aₙ)/2。
 
 ### geometric_sum
 
-**等比数列求和**
+**等比数列求和** · 层级 fundamental · 领域 数学 · 主角频率 medium
 
 ```
 a1 * (1 - r^n) / (1 - r)
@@ -1019,7 +1050,7 @@ S = a₁(1-rⁿ)/(1-r)。
 
 ### lanchester_linear
 
-**兰彻斯特线性律（古战/近战）**
+**兰彻斯特线性律（古战/近战）** · 层级 engineering · 领域 军事、物理 · 主角频率 high
 
 ```
 sqrt(N0^2 - (b / a) * M0^2)
@@ -1032,7 +1063,7 @@ sqrt(N0^2 - (b / a) * M0^2)
 
 ### lanchester_square
 
-**兰彻斯特平方律（远程火力）**
+**兰彻斯特平方律（远程火力）** · 层级 engineering · 领域 军事、物理 · 主角频率 high
 
 ```
 sqrt(N0^2 - (b / a) * M0^2)
@@ -1045,7 +1076,7 @@ sqrt(N0^2 - (b / a) * M0^2)
 
 ### force_ratio_required
 
-**进攻所需兵力比（3:1 法则）**
+**进攻所需兵力比（3:1 法则）** · 层级 engineering · 领域 军事、物理 · 主角频率 high
 
 ```
 defender * ratio
@@ -1058,7 +1089,7 @@ defender * ratio
 
 ### attrition_rate
 
-**累计损耗率**
+**累计损耗率** · 层级 engineering · 领域 军事、物理 · 主角频率 high
 
 ```
 1 - (1 - per_round)^rounds
@@ -1070,7 +1101,7 @@ defender * ratio
 
 ### projectile_energy
 
-**弹丸动能** · 单位 J
+**弹丸动能** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 J
 
 ```
 0.5 * m * v^2
@@ -1082,7 +1113,7 @@ defender * ratio
 
 ### penetration_estimate
 
-**穿深估算（简化）** · 单位 m
+**穿深估算（简化）** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 m
 
 ```
 E / (k * A)
@@ -1095,7 +1126,7 @@ E / (k * A)
 
 ### blast_radius
 
-**爆炸冲击波半径（立方根律）** · 单位 m
+**爆炸冲击波半径（立方根律）** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 m
 
 ```
 k * E^(1/3)
@@ -1108,7 +1139,7 @@ R ∝ E^(1/3)。当量翻倍半径只增 26%。
 
 ### oxygen_depletion
 
-**密闭空间耗氧时间** · 单位 min
+**密闭空间耗氧时间** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 min
 
 ```
 V * 0.21 / (n * consumption)
@@ -1121,7 +1152,7 @@ V * 0.21 / (n * consumption)
 
 ### ram_momentum
 
-**撞锤动量** · 单位 N·s
+**撞锤动量** · 层级 derived · 领域 军事、物理 · 主角频率 high · 单位 N·s
 
 ```
 m * v
@@ -1133,7 +1164,7 @@ m * v
 
 ### trebuchet_range_estimate
 
-**配重投石机射程（估算）** · 单位 m
+**配重投石机射程（估算）** · 层级 phenomenological · 领域 军事、物理 · 主角频率 high · 单位 m
 
 ```
 2 * eff * E / (m * g)
@@ -1146,7 +1177,7 @@ m * v
 
 ### wall_breach_energy
 
-**破墙所需能量** · 单位 J
+**破墙所需能量** · 层级 phenomenological · 领域 军事、物理 · 主角频率 medium · 单位 J
 
 ```
 toughness * area * thickness
@@ -1158,7 +1189,7 @@ toughness * area * thickness
 
 ### formation_frontage
 
-**阵型正面宽度** · 单位 m
+**阵型正面宽度** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 m
 
 ```
 troops * spacing / ranks
@@ -1170,7 +1201,7 @@ troops * spacing / ranks
 
 ### army_supply_days
 
-**军队补给可支撑天数** · 单位 日
+**军队补给可支撑天数** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 日
 
 ```
 stores / (troops * daily_ration)
@@ -1182,7 +1213,7 @@ stores / (troops * daily_ration)
 
 ### march_days
 
-**行军天数** · 单位 日
+**行军天数** · 层级 engineering · 领域 军事、物理 · 主角频率 high · 单位 日
 
 ```
 distance / (speed * hours_per_day)
@@ -1196,7 +1227,7 @@ distance / (speed * hours_per_day)
 
 ### crop_yield_area
 
-**所需耕地面积** · 单位 m²
+**所需耕地面积** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 m²
 
 ```
 people * kcal_per_day * 365 / (yield_per_m2 * kcal_per_kg)
@@ -1209,7 +1240,7 @@ people * kcal_per_day * 365 / (yield_per_m2 * kcal_per_kg)
 
 ### food_surplus_ratio
 
-**农业剩余率（供养非农人口）**
+**农业剩余率（供养非农人口）** · 层级 engineering · 领域 农业、生物 · 主角频率 high
 
 ```
 (yield - consumed) / yield
@@ -1221,7 +1252,7 @@ people * kcal_per_day * 365 / (yield_per_m2 * kcal_per_kg)
 
 ### population_density_limit
 
-**土地承载力** · 单位 人
+**土地承载力** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 人
 
 ```
 area * yield_per_m2 / (kcal_per_day * 365)
@@ -1234,7 +1265,7 @@ area * yield_per_m2 / (kcal_per_day * 365)
 
 ### irrigation_water_need
 
-**灌溉需水量** · 单位 m³
+**灌溉需水量** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 m³
 
 ```
 area * depth
@@ -1246,7 +1277,7 @@ area * depth
 
 ### river_discharge
 
-**河流流量** · 单位 m³/s
+**河流流量** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 m³/s
 
 ```
 width * depth * velocity
@@ -1258,7 +1289,7 @@ width * depth * velocity
 
 ### growing_degree_days
 
-**生长度日** · 单位 °C·日
+**生长度日** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 °C·日
 
 ```
 (Tmax + Tmin) / 2 - Tbase
@@ -1270,7 +1301,7 @@ width * depth * velocity
 
 ### reference_evapotranspiration
 
-**参考蒸散量（简化）** · 单位 mm/日
+**参考蒸散量（简化）** · 层级 phenomenological · 领域 农业、生物 · 主角频率 medium · 单位 mm/日
 
 ```
 0.408 * Rn + 0.9 * (900 / (T + 273)) * u2 * (es - ea)
@@ -1282,7 +1313,7 @@ FAO-56 的简化形式（经验），估算作物每天耗水；灌溉设计常�
 
 ### crop_total_yield
 
-**作物总产量** · 单位 kg
+**作物总产量** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 kg
 
 ```
 area_ha * yield_per_ha
@@ -1294,7 +1325,7 @@ area_ha * yield_per_ha
 
 ### food_energy_supply
 
-**食物总能量** · 单位 J
+**食物总能量** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 J
 
 ```
 mass_kg * kcal_per_kg * 4184
@@ -1306,7 +1337,7 @@ mass_kg * kcal_per_kg * 4184
 
 ### population_fed
 
-**能养活多少人·日** · 单位 人·日
+**能养活多少人·日** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 人·日
 
 ```
 food_kcal / daily_kcal_per_person
@@ -1319,7 +1350,7 @@ food_kcal / daily_kcal_per_person
 
 ### seed_rate
 
-**播种量估算** · 单位 kg
+**播种量估算** · 层级 engineering · 领域 农业、生物 · 主角频率 medium · 单位 kg
 
 ```
 area_m2 * plants_per_m2 / germination / seeds_per_gram / 1000
@@ -1331,7 +1362,7 @@ area_m2 * plants_per_m2 / germination / seeds_per_gram / 1000
 
 ### fertilizer_need
 
-**施肥总量** · 单位 kg
+**施肥总量** · 层级 engineering · 领域 农业、生物 · 主角频率 medium · 单位 kg
 
 ```
 area_ha * rate_kg_per_ha
@@ -1343,7 +1374,7 @@ area_ha * rate_kg_per_ha
 
 ### irrigation_volume
 
-**灌溉水量** · 单位 m^3
+**灌溉水量** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 m^3
 
 ```
 area_m2 * depth_mm / 1000
@@ -1355,7 +1386,7 @@ area_m2 * depth_mm / 1000
 
 ### livestock_feed_need
 
-**牲畜饲料需求** · 单位 kg
+**牲畜饲料需求** · 层级 engineering · 领域 农业、生物 · 主角频率 high · 单位 kg
 
 ```
 heads * daily_feed_kg * days
@@ -1367,7 +1398,7 @@ heads * daily_feed_kg * days
 
 ### pasture_carrying_capacity
 
-**草场载畜量** · 单位 头
+**草场载畜量** · 层级 phenomenological · 领域 农业、生物 · 主角频率 medium · 单位 头
 
 ```
 area_ha * productivity_kg_per_ha / (intake_kg_per_day * days)
@@ -1379,7 +1410,7 @@ area_ha * productivity_kg_per_ha / (intake_kg_per_day * days)
 
 ### harvest_labor_days
 
-**收割所需工日** · 单位 人·日
+**收割所需工日** · 层级 phenomenological · 领域 农业、生物 · 主角频率 high · 单位 人·日
 
 ```
 area_ha * labor_days_per_ha
@@ -1393,7 +1424,7 @@ area_ha * labor_days_per_ha
 
 ### building_height_limit
 
-**建筑高度上限（材料强度）** · 单位 m
+**建筑高度上限（材料强度）** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 m
 
 ```
 strength / (rho * g)
@@ -1406,7 +1437,7 @@ strength / (rho * g)
 
 ### tower_footprint
 
-**高塔底部所需占地面积** · 单位 m²
+**高塔底部所需占地面积** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 m²
 
 ```
 W / (sigma_allow * 0.5)
@@ -1418,7 +1449,7 @@ W / (sigma_allow * 0.5)
 
 ### wall_thickness
 
-**城墙厚度（抗冲击）** · 单位 m
+**城墙厚度（抗冲击）** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 m
 
 ```
 F / (sigma * h)
@@ -1430,7 +1461,7 @@ F / (sigma * h)
 
 ### city_population_area
 
-**城市人口与面积** · 单位 m²
+**城市人口与面积** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 m²
 
 ```
 population * area_per_person
@@ -1443,7 +1474,7 @@ population * area_per_person
 
 ### city_wall_perimeter
 
-**城墙周长（圆形城市）** · 单位 m
+**城墙周长（圆形城市）** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 m
 
 ```
 2 * pi * sqrt(area / pi)
@@ -1455,7 +1486,7 @@ population * area_per_person
 
 ### beacon_chain
 
-**烽火传递时间** · 单位 s
+**烽火传递时间** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 s
 
 ```
 (distance / spacing) * relay_time
@@ -1468,7 +1499,7 @@ population * area_per_person
 
 ### messenger_network_time
 
-**驿站传信时间** · 单位 小时
+**驿站传信时间** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 小时
 
 ```
 distance / (speed * 3600) + stops * rest_hours
@@ -1481,7 +1512,7 @@ distance / (speed * 3600) + stops * rest_hours
 
 ### floor_area_ratio
 
-**容积率（ FAR ）** · 单位 无量纲
+**容积率（ FAR ）** · 层级 engineering · 领域 工程、材料 · 主角频率 medium · 单位 无量纲
 
 ```
 total_floor_area / site_area
@@ -1493,7 +1524,7 @@ total_floor_area / site_area
 
 ### brick_count
 
-**砖墙用砖量** · 单位 块
+**砖墙用砖量** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 块
 
 ```
 area * thickness * mortar_factor / (brick_l * brick_w * brick_h)
@@ -1506,7 +1537,7 @@ area * thickness * mortar_factor / (brick_l * brick_w * brick_h)
 
 ### roof_load
 
-**屋顶总载荷** · 单位 N
+**屋顶总载荷** · 层级 engineering · 领域 工程、材料 · 主角频率 high · 单位 N
 
 ```
 area * load_per_area
@@ -1518,7 +1549,7 @@ area * load_per_area
 
 ### stair_comfort_rule
 
-**楼梯舒适度（2R+G）** · 单位 m
+**楼梯舒适度（2R+G）** · 层级 conventional · 领域 工程、材料 · 主角频率 medium · 单位 m
 
 ```
 2 * rise + run
@@ -1530,7 +1561,7 @@ area * load_per_area
 
 ### water_tower_pressure
 
-**水塔静水压** · 单位 Pa
+**水塔静水压** · 层级 derived · 领域 工程、材料 · 主角频率 high · 单位 Pa
 
 ```
 rho * g * h
@@ -1543,7 +1574,7 @@ rho * g * h
 
 ### window_heat_loss
 
-**窗户热损失** · 单位 W
+**窗户热损失** · 层级 derived · 领域 工程、材料 · 主角频率 high · 单位 W
 
 ```
 U * A * dT
@@ -1555,7 +1586,7 @@ U * A * dT
 
 ### lighting_lumen_need
 
-**照明光通量需求** · 单位 lm
+**照明光通量需求** · 层级 engineering · 领域 工程、材料 · 主角频率 medium · 单位 lm
 
 ```
 area * lux
@@ -1567,7 +1598,7 @@ area * lux
 
 ### chimney_draft
 
-**烟囱抽力** · 单位 Pa
+**烟囱抽力** · 层级 derived · 领域 工程、材料 · 主角频率 high · 单位 Pa
 
 ```
 rho_out * g * h * (1 - T_out / T_in)
@@ -1580,7 +1611,7 @@ rho_out * g * h * (1 - T_out / T_in)
 
 ### city_wall_perimeter
 
-**方形城墙周长** · 单位 m
+**方形城墙周长** · 层级 engineering · 领域 工程、材料 · 主角频率 medium · 单位 m
 
 ```
 4 * sqrt(area)
@@ -1594,7 +1625,7 @@ rho_out * g * h * (1 - T_out / T_in)
 
 ### day_length
 
-**自转周期（昼夜长短）** · 单位 s
+**自转周期（昼夜长短）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 s
 
 ```
 2 * pi / omega
@@ -1606,7 +1637,7 @@ rho_out * g * h * (1 - T_out / T_in)
 
 ### day_length_from_radius
 
-**由赤道线速度求一天长度** · 单位 s
+**由赤道线速度求一天长度** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 s
 
 ```
 2 * pi * R / v_equator
@@ -1618,7 +1649,7 @@ rho_out * g * h * (1 - T_out / T_in)
 
 ### centrifugal_ratio
 
-**赤道离心/重力比**
+**赤道离心/重力比** · 层级 engineering · 领域 天文 · 主角频率 high
 
 ```
 omega^2 * R / g
@@ -1631,7 +1662,7 @@ omega^2 * R / g
 
 ### solar_declination
 
-**太阳赤纬（季节位移）** · 单位 rad
+**太阳赤纬（季节位移）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 rad
 
 ```
 obliquity * sin(2 * pi * day_of_year / year_length)
@@ -1644,7 +1675,7 @@ obliquity * sin(2 * pi * day_of_year / year_length)
 
 ### solar_elevation
 
-**正午太阳高度角** · 单位 rad
+**正午太阳高度角** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 rad
 
 ```
 pi / 2 - abs(latitude - declination)
@@ -1656,7 +1687,7 @@ pi / 2 - abs(latitude - declination)
 
 ### shadow_length
 
-**影子长度** · 单位 m
+**影子长度** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 m
 
 ```
 h / tan(elevation)
@@ -1668,7 +1699,7 @@ h / tan(elevation)
 
 ### solar_day_length
 
-**昼长（小时）** · 单位 小时
+**昼长（小时）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 小时
 
 ```
 24 / pi * acos(max(-1, min(1, -tan(latitude) * tan(declination))))
@@ -1681,7 +1712,7 @@ h / tan(elevation)
 
 ### year_length
 
-**公转周期（一年多长）** · 单位 s
+**公转周期（一年多长）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 s
 
 ```
 2 * pi * sqrt(a^3 / (G * M))
@@ -1694,7 +1725,7 @@ h / tan(elevation)
 
 ### tidal_period
 
-**潮汐周期（双潮）** · 单位 s
+**潮汐周期（双潮）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 s
 
 ```
 2 * pi / (2 * (omega_planet - omega_moon) + 1e-30)
@@ -1706,7 +1737,7 @@ h / tan(elevation)
 
 ### tidal_force_ratio
 
-**卫星潮汐力（相对地球月亮）** · 单位 kg/m³
+**卫星潮汐力（相对地球月亮）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 kg/m³
 
 ```
 m_moon / d^3
@@ -1718,7 +1749,7 @@ m_moon / d^3
 
 ### eclipse_angular
 
-**日食条件（视角重合）** · 单位 rad
+**日食条件（视角重合）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 rad
 
 ```
 r_sun / d_sun - r_moon / d_moon
@@ -1730,7 +1761,7 @@ r_sun / d_sun - r_moon / d_moon
 
 ### sky_color_wavelength
 
-**大气散射强度（瑞利）** · 单位 1/m⁴
+**大气散射强度（瑞利）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 1/m⁴
 
 ```
 1 / lambda^4
@@ -1742,7 +1773,7 @@ r_sun / d_sun - r_moon / d_moon
 
 ### atmospheric_scale_height
 
-**大气标高（稀薄程度）** · 单位 m
+**大气标高（稀薄程度）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 m
 
 ```
 R * T / (M * g)
@@ -1755,7 +1786,7 @@ R * T / (M * g)
 
 ### pressure_at_altitude
 
-**高原气压** · 单位 Pa
+**高原气压** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 Pa
 
 ```
 P0 * exp(-h / H)
@@ -1768,7 +1799,7 @@ P0 * exp(-h / H)
 
 ### twilight_duration
 
-**黄昏时长（近似）** · 单位 小时
+**黄昏时长（近似）** · 层级 engineering · 领域 天文 · 主角频率 high · 单位 小时
 
 ```
 18 * pi / 180 / (pi / 2) * (24 / pi)
@@ -1782,7 +1813,7 @@ P0 * exp(-h / H)
 
 ### wind_power
 
-**风功率密度** · 单位 W
+**风功率密度** · 层级 engineering · 领域 地球、物理 · 主角频率 high · 单位 W
 
 ```
 0.5 * rho * A * v^3
@@ -1795,7 +1826,7 @@ P0 * exp(-h / H)
 
 ### rainfall_runoff
 
-**降水径流总量** · 单位 m³
+**降水径流总量** · 层级 engineering · 领域 地球、物理 · 主角频率 high · 单位 m³
 
 ```
 catchment * rainfall * runoff_coefficient
@@ -1808,7 +1839,7 @@ catchment * rainfall * runoff_coefficient
 
 ### evaporation_rate
 
-**蒸发速率（简化）** · 单位 kg/(m²·s)
+**蒸发速率（简化）** · 层级 engineering · 领域 地球、物理 · 主角频率 high · 单位 kg/(m²·s)
 
 ```
 k * (es - ea)
@@ -1820,7 +1851,7 @@ k * (es - ea)
 
 ### lapse_rate_temp
 
-**海拔降温** · 单位 K
+**海拔降温** · 层级 engineering · 领域 地球、物理 · 主角频率 high · 单位 K
 
 ```
 T0 - lapse * h
@@ -1833,7 +1864,7 @@ T0 - lapse * h
 
 ### snow_line
 
-**雪线高度** · 单位 m
+**雪线高度** · 层级 engineering · 领域 地球、物理 · 主角频率 high · 单位 m
 
 ```
 (T_summer - 273.15) / lapse
@@ -1848,7 +1879,7 @@ T0 - lapse * h
 
 ### horizon_distance
 
-**地平线距离（平视）** · 单位 m
+**地平线距离（平视）** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 m
 
 ```
 sqrt(2 * R * h + h^2)
@@ -1861,7 +1892,7 @@ sqrt(2 * R * h + h^2)
 
 ### horizon_tower_visibility
 
-**两座塔互相可见的最大距离** · 单位 m
+**两座塔互相可见的最大距离** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 m
 
 ```
 sqrt(2 * R * h1 + h1^2) + sqrt(2 * R * h2 + h2^2)
@@ -1874,7 +1905,7 @@ sqrt(2 * R * h1 + h1^2) + sqrt(2 * R * h2 + h2^2)
 
 ### curvature_drop
 
-**地球曲率下沉量** · 单位 m
+**地球曲率下沉量** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 m
 
 ```
 d^2 / (2 * R)
@@ -1887,7 +1918,7 @@ d^2 / (2 * R)
 
 ### apparent_size
 
-**天体视直径（张角）** · 单位 rad
+**天体视直径（张角）** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 rad
 
 ```
 2 * atan(r / d)
@@ -1899,7 +1930,7 @@ d^2 / (2 * R)
 
 ### angular_diameter_from_sizes
 
-**给定视直径反推天体大小** · 单位 m
+**给定视直径反推天体大小** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 m
 
 ```
 d * tan(angle / 2)
@@ -1913,7 +1944,7 @@ d * tan(angle / 2)
 
 ### sound_speed_air
 
-**空气中的声速** · 单位 m/s
+**空气中的声速** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 m/s
 
 ```
 331.3 * sqrt(T / 273.15)
@@ -1925,7 +1956,7 @@ d * tan(angle / 2)
 
 ### sound_speed_gas
 
-**气体声速（通用）** · 单位 m/s
+**气体声速（通用）** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 m/s
 
 ```
 sqrt(gamma * R * T / M)
@@ -1938,7 +1969,7 @@ sqrt(gamma * R * T / M)
 
 ### echo_delay
 
-**回声延迟** · 单位 s
+**回声延迟** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 s
 
 ```
 2 * d / v
@@ -1951,7 +1982,7 @@ sqrt(gamma * R * T / M)
 
 ### sound_attenuation
 
-**声强随距离衰减** · 单位 W/m²
+**声强随距离衰减** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 W/m²
 
 ```
 I0 / d^2
@@ -1963,7 +1994,7 @@ I0 / d^2
 
 ### light_travel_time
 
-**光行时间** · 单位 s
+**光行时间** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 s
 
 ```
 d / c
@@ -1976,7 +2007,7 @@ d / c
 
 ### light_pollution_limit
 
-**肉眼可见星等极限（近似）** · 单位 星等
+**肉眼可见星等极限（近似）** · 层级 engineering · 领域 物理、生物 · 主角频率 high · 单位 星等
 
 ```
 2.5 * log(brightness, 10) + 6
@@ -1988,7 +2019,7 @@ d / c
 
 ### echo_distance
 
-**回声测距** · 单位 m
+**回声测距** · 层级 derived · 领域 物理、生物 · 主角频率 high · 单位 m
 
 ```
 v * t / 2
@@ -2001,7 +2032,7 @@ v * t / 2
 
 ### lightning_distance
 
-**闪电距离** · 单位 km
+**闪电距离** · 层级 derived · 领域 物理、生物 · 主角频率 high · 单位 km
 
 ```
 t * 343 / 1000
@@ -2013,7 +2044,7 @@ t * 343 / 1000
 
 ### music_note_frequency
 
-**音符频率（十二平均律）** · 单位 Hz
+**音符频率（十二平均律）** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 Hz
 
 ```
 440 * 2^((n - 69) / 12)
@@ -2025,7 +2056,7 @@ t * 343 / 1000
 
 ### string_fundamental_frequency
 
-**弦的基频** · 单位 Hz
+**弦的基频** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 Hz
 
 ```
 1 / (2 * L) * sqrt(T / mu)
@@ -2037,7 +2068,7 @@ t * 343 / 1000
 
 ### sound_attenuation_distance
 
-**点声源距离衰减** · 单位 dB
+**点声源距离衰减** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 dB
 
 ```
 L0 - 20 * log10(r / r0)
@@ -2050,7 +2081,7 @@ L0 - 20 * log10(r / r0)
 
 ### lens_magnification
 
-**薄透镜放大率** · 单位 无量纲
+**薄透镜放大率** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 无量纲
 
 ```
 -di / do
@@ -2062,7 +2093,7 @@ L0 - 20 * log10(r / r0)
 
 ### camera_exposure_ev
 
-**曝光值 EV** · 单位 EV
+**曝光值 EV** · 层级 engineering · 领域 物理、生物 · 主角频率 low · 单位 EV
 
 ```
 log2(N^2 / t)
@@ -2074,7 +2105,7 @@ log2(N^2 / t)
 
 ### optical_resolving_power
 
-**望远镜分辨极限** · 单位 rad
+**望远镜分辨极限** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 rad
 
 ```
 1.22 * lambda / D
@@ -2088,7 +2119,7 @@ log2(N^2 / t)
 
 ### combustion_energy
 
-**燃料燃烧热量** · 单位 J
+**燃料燃烧热量** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 J
 
 ```
 mass * energy_density
@@ -2100,7 +2131,7 @@ mass * energy_density
 
 ### smelting_temperature
 
-**熔炼所需能量** · 单位 J
+**熔炼所需能量** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 J
 
 ```
 mass * (cp * (T_melt - T0) + latent)
@@ -2113,7 +2144,7 @@ mass * (cp * (T_melt - T0) + latent)
 
 ### energy_per_capita
 
-**人均能量消耗** · 单位 J/人·年
+**人均能量消耗** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 J/人·年
 
 ```
 total_energy / population
@@ -2125,7 +2156,7 @@ total_energy / population
 
 ### carrying_kcal_per_hectare
 
-**耕地能量产出密度** · 单位 J/m²·年
+**耕地能量产出密度** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 J/m²·年
 
 ```
 kg_per_hectare * kcal_per_kg * 4184 / 1e4
@@ -2140,7 +2171,7 @@ kg_per_hectare * kcal_per_kg * 4184 / 1e4
 
 ### travel_time
 
-**旅行耗时** · 单位 s
+**旅行耗时** · 层级 engineering · 领域 工程、物理 · 主角频率 high · 单位 s
 
 ```
 distance / speed
@@ -2152,7 +2183,7 @@ distance / speed
 
 ### travel_time_hours
 
-**旅行耗时（小时）** · 单位 小时
+**旅行耗时（小时）** · 层级 engineering · 领域 工程、物理 · 主角频率 high · 单位 小时
 
 ```
 distance / (speed * 3.6)
@@ -2164,7 +2195,7 @@ distance / (speed * 3.6)
 
 ### march_supply
 
-**行军补给需求** · 单位 kg
+**行军补给需求** · 层级 engineering · 领域 工程、物理 · 主角频率 high · 单位 kg
 
 ```
 n * days * per_day
@@ -2177,7 +2208,7 @@ n * days * per_day
 
 ### drayage_range
 
-**人力/畜力运输经济半径**
+**人力/畜力运输经济半径** · 层级 engineering · 领域 工程、物理 · 主角频率 high
 
 ```
 value / (cost_per_km * distance)
@@ -2189,7 +2220,7 @@ value / (cost_per_km * distance)
 
 ### walking_range_human
 
-**人的日常活动半径** · 单位 m
+**人的日常活动半径** · 层级 engineering · 领域 工程、物理 · 主角频率 high · 单位 m
 
 ```
 speed * hours
@@ -2202,7 +2233,7 @@ speed * hours
 
 ### river_crossing_time
 
-**渡河耗时** · 单位 s
+**渡河耗时** · 层级 engineering · 领域 工程、物理 · 主角频率 high · 单位 s
 
 ```
 width / boat_speed
@@ -2215,7 +2246,7 @@ width / boat_speed
 
 ### hull_speed
 
-**船舶理论航速** · 单位 kn
+**船舶理论航速** · 层级 phenomenological · 领域 工程、物理 · 主角频率 high · 单位 kn
 
 ```
 1.34 * sqrt(L)
@@ -2227,7 +2258,7 @@ width / boat_speed
 
 ### mach_number
 
-**马赫数** · 单位 无量纲
+**马赫数** · 层级 derived · 领域 工程、物理 · 主角频率 high · 单位 无量纲
 
 ```
 v / c
@@ -2240,7 +2271,7 @@ v / c
 
 ### projectile_range_vacuum
 
-**抛体射程（真空）** · 单位 m
+**抛体射程（真空）** · 层级 derived · 领域 工程、物理 · 主角频率 high · 单位 m
 
 ```
 v^2 * sin(2 * theta) / g
@@ -2253,7 +2284,7 @@ v^2 * sin(2 * theta) / g
 
 ### projectile_apex_height
 
-**抛体最高点** · 单位 m
+**抛体最高点** · 层级 derived · 领域 工程、物理 · 主角频率 high · 单位 m
 
 ```
 (v * sin(theta))^2 / (2 * g)
@@ -2266,7 +2297,7 @@ v^2 * sin(2 * theta) / g
 
 ### stopping_distance
 
-**刹车距离** · 单位 m
+**刹车距离** · 层级 derived · 领域 工程、物理 · 主角频率 high · 单位 m
 
 ```
 v^2 / (2 * mu * g)
@@ -2279,7 +2310,7 @@ v^2 / (2 * mu * g)
 
 ### impact_speed_freefall
 
-**自由落体落地速度** · 单位 m/s
+**自由落体落地速度** · 层级 derived · 领域 工程、物理 · 主角频率 high · 单位 m/s
 
 ```
 sqrt(2 * g * h)
@@ -2294,7 +2325,7 @@ sqrt(2 * g * h)
 
 ### wind_chill
 
-**风寒指数** · 单位 °C
+**风寒指数** · 层级 phenomenological · 领域 地球、物理 · 主角频率 high · 单位 °C
 
 ```
 13.12 + 0.6215*T - 11.37*v^0.16 + 0.3965*T*v^0.16
@@ -2306,7 +2337,7 @@ sqrt(2 * g * h)
 
 ### heat_index
 
-**酷热指数** · 单位 °C
+**酷热指数** · 层级 phenomenological · 领域 地球、物理 · 主角频率 high · 单位 °C
 
 ```
 -42.379 + 2.04901523*T + 10.14333127*R - 0.22475541*T*R - 0.00683783*T^2 - 0.05481717*R^2 + 0.00122874*T^2*R + 0.00085282*T*R^2 - 0.00000199*T^2*R^2
@@ -2318,7 +2349,7 @@ Rothfusz 回归（经验），高温高湿下的体感温度。
 
 ### dew_point_magnus
 
-**露点温度（Magnus）** · 单位 °C
+**露点温度（Magnus）** · 层级 phenomenological · 领域 地球、物理 · 主角频率 high · 单位 °C
 
 ```
 243.04*(log(RH/100) + 17.625*T/(243.04+T)) / (17.625 - log(RH/100) - 17.625*T/(243.04+T))
@@ -2330,7 +2361,7 @@ Magnus 经验式；露点以下水汽凝结，是结露、起雾、下露的判�
 
 ### wind_power_density
 
-**风功率** · 单位 W
+**风功率** · 层级 derived · 领域 地球、物理 · 主角频率 medium · 单位 W
 
 ```
 0.5 * rho * A * v^3 * Cp
@@ -2343,7 +2374,7 @@ Magnus 经验式；露点以下水汽凝结，是结露、起雾、下露的判�
 
 ### cooling_newton
 
-**牛顿冷却** · 单位 W
+**牛顿冷却** · 层级 derived · 领域 地球、物理 · 主角频率 high · 单位 W
 
 ```
 h * A * dT
@@ -2355,7 +2386,7 @@ h * A * dT
 
 ### heat_conduction_slab
 
-**一维导热** · 单位 W
+**一维导热** · 层级 derived · 领域 地球、物理 · 主角频率 high · 单位 W
 
 ```
 k * A * dT / L
@@ -2367,7 +2398,7 @@ k * A * dT / L
 
 ### thermal_time_constant
 
-**物体升降温时间** · 单位 s
+**物体升降温时间** · 层级 derived · 领域 地球、物理 · 主角频率 high · 单位 s
 
 ```
 m * c * dT / P
@@ -2381,7 +2412,7 @@ m * c * dT / P
 
 ### stellar_luminosity
 
-**恒星光度** · 单位 W
+**恒星光度** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 W
 
 ```
 4 * pi * R^2 * sigma * T^4
@@ -2394,7 +2425,7 @@ L = 4πR²σT⁴。
 
 ### equilibrium_temp
 
-**行星平衡温度** · 单位 K
+**行星平衡温度** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 K
 
 ```
 Tstar * sqrt(Rstar / (2 * d)) * (1 - albedo)^0.25
@@ -2407,7 +2438,7 @@ Tstar * sqrt(Rstar / (2 * d)) * (1 - albedo)^0.25
 
 ### schwarzschild_radius
 
-**史瓦西半径（黑洞视界）** · 单位 m
+**史瓦西半径（黑洞视界）** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 m
 
 ```
 2 * G * M / c^2
@@ -2420,7 +2451,7 @@ r_s = 2GM/c²。质量多大才能形成黑洞。
 
 ### orbital_altitude_period
 
-**圆轨道周期（给高度）** · 单位 s
+**圆轨道周期（给高度）** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 s
 
 ```
 2 * pi * sqrt((R + h)^3 / (G * M))
@@ -2433,7 +2464,7 @@ T = 2π√((R+h)³/GM)。卫星/空间站周期。
 
 ### synchronous_altitude
 
-**同步轨道高度** · 单位 m
+**同步轨道高度** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 m
 
 ```
 (G * M * T^2 / (4 * pi^2))^(1/3) - R
@@ -2446,7 +2477,7 @@ T = 2π√((R+h)³/GM)。卫星/空间站周期。
 
 ### hubble_velocity
 
-**哈勃定律退行速度** · 单位 m/s
+**哈勃定律退行速度** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 m/s
 
 ```
 H0 * d
@@ -2459,7 +2490,7 @@ v = H₀d。宇宙膨胀推演。
 
 ### hubble_time
 
-**哈勃时间（宇宙年龄尺度）** · 单位 s
+**哈勃时间（宇宙年龄尺度）** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 s
 
 ```
 1 / H0
@@ -2471,7 +2502,7 @@ t_H = 1/H₀ ≈ 139 亿年。
 
 ### redshift_distance
 
-**红移→距离（低红移近似）** · 单位 m
+**红移→距离（低红移近似）** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 m
 
 ```
 c * z / H0
@@ -2484,7 +2515,7 @@ d ≈ cz/H₀（z≪1）。
 
 ### habitable_zone
 
-**宜居带内边界（简化）** · 单位 AU
+**宜居带内边界（简化）** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 AU
 
 ```
 sqrt(L / 1.1)
@@ -2496,7 +2527,7 @@ sqrt(L / 1.1)
 
 ### tidal_locking_time
 
-**潮汐锁定时间尺度（比例）**
+**潮汐锁定时间尺度（比例）** · 层级 derived · 领域 物理、天文 · 主角频率 medium
 
 ```
 Q * a^6 * M / (m * R^3)
@@ -2508,7 +2539,7 @@ Q * a^6 * M / (m * R^3)
 
 ### stefan_radius
 
-**由光度与温度反推恒星半径** · 单位 m
+**由光度与温度反推恒星半径** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 m
 
 ```
 sqrt(L / (4 * pi * sigma * T^4))
@@ -2521,7 +2552,7 @@ R = √(L/(4πσT⁴))。
 
 ### kepler_mass
 
-**由轨道反推中心天体质量** · 单位 kg
+**由轨道反推中心天体质量** · 层级 derived · 领域 物理、天文 · 主角频率 medium · 单位 kg
 
 ```
 4 * pi^2 * r^3 / (G * T^2)
@@ -2536,7 +2567,7 @@ M = 4π²r³/(GT²)。
 
 ### ohm
 
-**欧姆定律** · 单位 V
+**欧姆定律** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 I * R
@@ -2548,7 +2579,7 @@ V = IR。
 
 ### electric_power
 
-**电功率** · 单位 W
+**电功率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 V * I
@@ -2560,7 +2591,7 @@ P = VI。
 
 ### joule_heating
 
-**焦耳热** · 单位 J
+**焦耳热** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 I^2 * R * t
@@ -2572,7 +2603,7 @@ Q = I²Rt。
 
 ### coulomb
 
-**库仑定律** · 单位 N
+**库仑定律** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 k * q1 * q2 / r^2
@@ -2585,7 +2616,7 @@ F = kq₁q₂/r²。
 
 ### capacitor_energy
 
-**电容储能** · 单位 J
+**电容储能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 0.5 * C * V^2
@@ -2597,7 +2628,7 @@ E = ½CV²。
 
 ### rc_time
 
-**RC 时间常数** · 单位 s
+**RC 时间常数** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 s
 
 ```
 R * C
@@ -2609,7 +2640,7 @@ R * C
 
 ### inductor_energy
 
-**电感储能** · 单位 J
+**电感储能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 0.5 * L * I^2
@@ -2621,7 +2652,7 @@ E = ½LI²。
 
 ### lc_resonance
 
-**LC 谐振频率** · 单位 Hz
+**LC 谐振频率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
 
 ```
 1 / (2 * pi * sqrt(L * C))
@@ -2633,7 +2664,7 @@ f = 1/(2π√(LC))。
 
 ### lorentz_force
 
-**洛伦兹力（磁场分量）** · 单位 N
+**洛伦兹力（磁场分量）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 q * v * B * sin(theta)
@@ -2646,7 +2677,7 @@ F = qvB·sinθ。
 
 ### resistors_series
 
-**串联电阻** · 单位 Ω
+**串联电阻** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Ω
 
 ```
 r1 + r2
@@ -2658,7 +2689,7 @@ R = R₁ + R₂。
 
 ### resistors_parallel
 
-**并联电阻** · 单位 Ω
+**并联电阻** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Ω
 
 ```
 r1 * r2 / (r1 + r2)
@@ -2670,7 +2701,7 @@ R = R₁R₂/(R₁+R₂)。
 
 ### electric_field
 
-**均匀电场强度** · 单位 V/m
+**均匀电场强度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V/m
 
 ```
 V / d
@@ -2682,7 +2713,7 @@ E = V/d。
 
 ### magnetic_force_wire
 
-**通电导线磁力** · 单位 N
+**通电导线磁力** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 I * L * B * sin(theta)
@@ -2695,7 +2726,7 @@ F = ILB·sinθ。
 
 ### magnetic_flux
 
-**磁通量** · 单位 Wb
+**磁通量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Wb
 
 ```
 B * A * cos(theta)
@@ -2708,7 +2739,7 @@ B * A * cos(theta)
 
 ### faraday_emf
 
-**法拉第感应电动势** · 单位 V
+**法拉第感应电动势** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 N * dPhi / dt
@@ -2721,7 +2752,7 @@ N * dPhi / dt
 
 ### transformer
 
-**变压器电压比** · 单位 V
+**变压器电压比** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 V1 * N2 / N1
@@ -2733,7 +2764,7 @@ V₂ = V₁N₂/N₁。
 
 ### parallel_plate_capacitance
 
-**平行板电容** · 单位 F
+**平行板电容** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 F
 
 ```
 epsilon0 * A / d
@@ -2746,7 +2777,7 @@ C = ε₀A/d。
 
 ### capacitor_charge
 
-**电容电荷量** · 单位 C
+**电容电荷量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 C
 
 ```
 C * V
@@ -2758,7 +2789,7 @@ Q = CV。
 
 ### rc_charge_voltage
 
-**RC 充电电压（t 时刻）** · 单位 V
+**RC 充电电压（t 时刻）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 V0 * (1 - exp(-t / (R * C)))
@@ -2770,7 +2801,7 @@ V(t) = V₀(1-e^(-t/RC))。
 
 ### rc_discharge_voltage
 
-**RC 放电电压（t 时刻）** · 单位 V
+**RC 放电电压（t 时刻）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 V0 * exp(-t / (R * C))
@@ -2782,7 +2813,7 @@ V(t) = V₀e^(-t/RC)。
 
 ### drift_velocity
 
-**电子漂移速度** · 单位 m/s
+**电子漂移速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 I / (n * e_charge * A)
@@ -2795,7 +2826,7 @@ v = I/(neA)。
 
 ### joule_power
 
-**电阻发热功率** · 单位 W
+**电阻发热功率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 I^2 * R
@@ -2809,7 +2840,7 @@ P = I²R。
 
 ### pressure_depth
 
-**液体压强（含大气）** · 单位 Pa
+**液体压强（含大气）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Pa
 
 ```
 P0 + rho * g * h
@@ -2822,7 +2853,7 @@ P = P₀ + ρgh。深海世界推演常用。
 
 ### buoyancy
 
-**浮力（阿基米德）** · 单位 N
+**浮力（阿基米德）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 rho * V * g
@@ -2835,7 +2866,7 @@ F = ρVg。
 
 ### flow_rate
 
-**体积流量** · 单位 m³/s
+**体积流量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m³/s
 
 ```
 A * v
@@ -2847,7 +2878,7 @@ Q = Av。
 
 ### reynolds
 
-**雷诺数**
+**雷诺数** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 rho * v * D / mu
@@ -2861,7 +2892,7 @@ Re > 4000 通常为湍流。
 
 ### gravitation
 
-**万有引力** · 单位 N
+**万有引力** · 层级 derived · 领域 物理 · 主角频率 high · 单位 N
 
 ```
 G * m1 * m2 / r^2
@@ -2874,7 +2905,7 @@ F = Gm₁m₂/r²。
 
 ### surface_gravity
 
-**星球表面重力** · 单位 m/s^2
+**星球表面重力** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m/s^2
 
 ```
 G * M / R^2
@@ -2887,7 +2918,7 @@ g = GM/R²。造星球时直接算表面重力。
 
 ### orbital_velocity
 
-**环绕速度** · 单位 m/s
+**环绕速度** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m/s
 
 ```
 sqrt(G * M / r)
@@ -2900,7 +2931,7 @@ v = √(GM/r)。
 
 ### escape_velocity
 
-**逃逸速度** · 单位 m/s
+**逃逸速度** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m/s
 
 ```
 sqrt(2 * G * M / r)
@@ -2913,7 +2944,7 @@ v = √(2GM/r)。
 
 ### orbital_period
 
-**轨道周期（开普勒第三定律）** · 单位 s
+**轨道周期（开普勒第三定律）** · 层级 derived · 领域 物理 · 主角频率 high · 单位 s
 
 ```
 2 * pi * sqrt(r^3 / (G * M))
@@ -2926,7 +2957,7 @@ T = 2π√(r³/GM)。
 
 ### hill_sphere
 
-**希尔球半径** · 单位 m
+**希尔球半径** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m
 
 ```
 a * (m / (3 * M))^(1/3)
@@ -2938,7 +2969,7 @@ a * (m / (3 * M))^(1/3)
 
 ### roche_limit
 
-**洛希极限（流体卫星）** · 单位 m
+**洛希极限（流体卫星）** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m
 
 ```
 2.44 * R * (rhoM / rhom)^(1/3)
@@ -2950,7 +2981,7 @@ a * (m / (3 * M))^(1/3)
 
 ### tidal_accel
 
-**潮汐加速度差** · 单位 m/s^2
+**潮汐加速度差** · 层级 derived · 领域 物理 · 主角频率 high · 单位 m/s^2
 
 ```
 2 * G * M * d / r^3
@@ -2965,7 +2996,7 @@ a * (m / (3 * M))^(1/3)
 
 ### velocity_uniform
 
-**匀速速度** · 单位 m/s
+**匀速速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 s / t
@@ -2977,7 +3008,7 @@ s / t
 
 ### acceleration
 
-**加速度** · 单位 m/s^2
+**加速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s^2
 
 ```
 (v - v0) / t
@@ -2990,7 +3021,7 @@ s / t
 
 ### kinematics_v
 
-**速度公式（无位移）** · 单位 m/s
+**速度公式（无位移）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 v0 + a * t
@@ -3003,7 +3034,7 @@ v = v0 + at。
 
 ### kinematics_s
 
-**位移公式（无末速）** · 单位 m
+**位移公式（无末速）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 v0 * t + 0.5 * a * t^2
@@ -3016,7 +3047,7 @@ s = v0·t + ½at²。
 
 ### kinematics_v2
 
-**速度-位移关系** · 单位 m/s
+**速度-位移关系** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 sqrt(v0^2 + 2 * a * s)
@@ -3029,7 +3060,7 @@ v² = v0² + 2as（不含时间）。
 
 ### newton_second
 
-**牛顿第二定律** · 单位 N
+**牛顿第二定律** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 m * a
@@ -3041,7 +3072,7 @@ F = ma。
 
 ### weight
 
-**重力（重量）** · 单位 N
+**重力（重量）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 m * g
@@ -3054,7 +3085,7 @@ W = mg。改 g 即可模拟高重力/低重力世界。
 
 ### friction
 
-**滑动摩擦力** · 单位 N
+**滑动摩擦力** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 mu * N
@@ -3066,7 +3097,7 @@ f = μN。
 
 ### kinetic_energy
 
-**动能** · 单位 J
+**动能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 0.5 * m * v^2
@@ -3078,7 +3109,7 @@ Ek = ½mv²。
 
 ### potential_energy
 
-**重力势能** · 单位 J
+**重力势能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 m * g * h
@@ -3091,7 +3122,7 @@ Ep = mgh。
 
 ### momentum
 
-**动量** · 单位 kg·m/s
+**动量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg·m/s
 
 ```
 m * v
@@ -3103,7 +3134,7 @@ p = mv。
 
 ### impulse
 
-**冲量** · 单位 N·s
+**冲量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N·s
 
 ```
 F * t
@@ -3115,7 +3146,7 @@ J = F·t = Δp。
 
 ### work
 
-**功** · 单位 J
+**功** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 F * s * cos(theta)
@@ -3128,7 +3159,7 @@ W = F·s·cosθ。
 
 ### power
 
-**功率** · 单位 W
+**功率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 W / t
@@ -3140,7 +3171,7 @@ P = W/t。
 
 ### centripetal_accel
 
-**向心加速度** · 单位 m/s^2
+**向心加速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s^2
 
 ```
 v^2 / r
@@ -3152,7 +3183,7 @@ a = v²/r。
 
 ### circular_period
 
-**圆周运动周期** · 单位 s
+**圆周运动周期** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 s
 
 ```
 2 * pi * r / v
@@ -3164,7 +3195,7 @@ T = 2πr/v。
 
 ### spring_force
 
-**弹簧力（胡克定律）** · 单位 N
+**弹簧力（胡克定律）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 k * x
@@ -3176,7 +3207,7 @@ F = kx。
 
 ### spring_energy
 
-**弹簧势能** · 单位 J
+**弹簧势能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 0.5 * k * x^2
@@ -3188,7 +3219,7 @@ E = ½kx²。
 
 ### pendulum_period
 
-**单摆周期（小角）** · 单位 s
+**单摆周期（小角）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 s
 
 ```
 2 * pi * sqrt(L / g)
@@ -3201,7 +3232,7 @@ T = 2π√(L/g)。改 g 可推演异星钟摆。
 
 ### projectile_range
 
-**抛射射程（平地）** · 单位 m
+**抛射射程（平地）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 v^2 * sin(2 * theta) / g
@@ -3214,7 +3245,7 @@ R = v²sin2θ/g。
 
 ### projectile_height
 
-**抛射最大高度** · 单位 m
+**抛射最大高度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 (v * sin(theta))^2 / (2 * g)
@@ -3227,7 +3258,7 @@ H = (v·sinθ)²/(2g)。
 
 ### torque
 
-**力矩** · 单位 N·m
+**力矩** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N·m
 
 ```
 r * F * sin(theta)
@@ -3240,7 +3271,7 @@ r * F * sin(theta)
 
 ### moment_inertia_rod
 
-**细杆转动惯量（过中心）** · 单位 kg·m^2
+**细杆转动惯量（过中心）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg·m^2
 
 ```
 m * L^2 / 12
@@ -3252,7 +3283,7 @@ I = mL²/12。
 
 ### kinematics_avg_velocity
 
-**平均速度** · 单位 m/s
+**平均速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 (v0 + v) / 2
@@ -3264,7 +3295,7 @@ I = mL²/12。
 
 ### free_fall_time
 
-**自由落体时间** · 单位 s
+**自由落体时间** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 s
 
 ```
 sqrt(2 * h / g)
@@ -3277,7 +3308,7 @@ sqrt(2 * h / g)
 
 ### free_fall_velocity
 
-**自由落体末速度** · 单位 m/s
+**自由落体末速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 sqrt(2 * g * h)
@@ -3290,7 +3321,7 @@ sqrt(2 * g * h)
 
 ### terminal_velocity
 
-**终端速度** · 单位 m/s
+**终端速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 sqrt(2 * m * g / (rho * Cd * A))
@@ -3303,7 +3334,7 @@ sqrt(2 * m * g / (rho * Cd * A))
 
 ### reduced_mass
 
-**约化质量** · 单位 kg
+**约化质量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg
 
 ```
 m1 * m2 / (m1 + m2)
@@ -3315,7 +3346,7 @@ m1 * m2 / (m1 + m2)
 
 ### elastic_collision_v1
 
-**弹性碰撞后速度（1 号球）** · 单位 m/s
+**弹性碰撞后速度（1 号球）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 (m1 - m2) / (m1 + m2) * u1 + 2 * m2 / (m1 + m2) * u2
@@ -3328,7 +3359,7 @@ m1 * m2 / (m1 + m2)
 
 ### inelastic_collision_v
 
-**完全非弹性碰撞后共同速度** · 单位 m/s
+**完全非弹性碰撞后共同速度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 (m1 * u1 + m2 * u2) / (m1 + m2)
@@ -3341,7 +3372,7 @@ m1 * m2 / (m1 + m2)
 
 ### moment_inertia_sphere
 
-**实心球转动惯量** · 单位 kg·m²
+**实心球转动惯量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg·m²
 
 ```
 2 / 5 * m * r^2
@@ -3353,7 +3384,7 @@ I = 2mr²/5。
 
 ### moment_inertia_cylinder
 
-**实心圆柱转动惯量** · 单位 kg·m²
+**实心圆柱转动惯量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg·m²
 
 ```
 1 / 2 * m * r^2
@@ -3365,7 +3396,7 @@ I = mr²/2。
 
 ### angular_momentum
 
-**角动量** · 单位 kg·m²/s
+**角动量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 kg·m²/s
 
 ```
 I * omega
@@ -3377,7 +3408,7 @@ L = Iω。
 
 ### rotational_ke
 
-**转动动能** · 单位 J
+**转动动能** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 0.5 * I * omega^2
@@ -3389,7 +3420,7 @@ Ek = ½Iω²。
 
 ### simple_harmonic_omega
 
-**简谐振动角频率** · 单位 rad/s
+**简谐振动角频率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 rad/s
 
 ```
 sqrt(k / m)
@@ -3401,7 +3432,7 @@ sqrt(k / m)
 
 ### simple_harmonic_period
 
-**简谐振动周期** · 单位 s
+**简谐振动周期** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 s
 
 ```
 2 * pi * sqrt(m / k)
@@ -3413,7 +3444,7 @@ T = 2π√(m/k)。
 
 ### damped_frequency
 
-**阻尼振动频率** · 单位 rad/s
+**阻尼振动频率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 rad/s
 
 ```
 sqrt(k / m - (b / (2 * m))^2)
@@ -3425,7 +3456,7 @@ sqrt(k / m - (b / (2 * m))^2)
 
 ### damping_ratio
 
-**阻尼比**
+**阻尼比** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 b / (2 * sqrt(k * m))
@@ -3437,7 +3468,7 @@ b / (2 * sqrt(k * m))
 
 ### pressure_force
 
-**压力（压强×面积）** · 单位 N
+**压力（压强×面积）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 P * A
@@ -3449,7 +3480,7 @@ F = PA。
 
 ### stress
 
-**应力** · 单位 Pa
+**应力** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Pa
 
 ```
 F / A
@@ -3461,7 +3492,7 @@ F / A
 
 ### strain
 
-**应变**
+**应变** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 dL / L0
@@ -3473,7 +3504,7 @@ dL / L0
 
 ### young_modulus
 
-**杨氏模量** · 单位 Pa
+**杨氏模量** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Pa
 
 ```
 stress / strain
@@ -3485,7 +3516,7 @@ E = σ/ε。判断材料刚度。
 
 ### beam_deflection
 
-**简支梁中点挠度** · 单位 m
+**简支梁中点挠度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 F * L^3 / (48 * E * I)
@@ -3497,7 +3528,7 @@ F * L^3 / (48 * E * I)
 
 ### buckling_load
 
-**欧拉屈曲临界载荷** · 单位 N
+**欧拉屈曲临界载荷** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 pi^2 * E * I / L^2
@@ -3509,7 +3540,7 @@ P_cr = π²EI/L²。超高建筑/巨兽骨骼的塌缩点。
 
 ### hydrostatic_pressure
 
-**静水压（相对）** · 单位 Pa
+**静水压（相对）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Pa
 
 ```
 rho * g * h
@@ -3524,7 +3555,7 @@ rho * g * h
 
 ### decay_constant
 
-**衰变常数** · 单位 1/s
+**衰变常数** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 1/s
 
 ```
 log(2) / T
@@ -3536,7 +3567,7 @@ log(2) / T
 
 ### radioactive_decay
 
-**放射性剩余量**
+**放射性剩余量** · 层级 fundamental · 领域 物理 · 主角频率 low
 
 ```
 N0 * 0.5^(t / T)
@@ -3548,7 +3579,7 @@ N = N₀·(½)^(t/T)。架空世界的"高辐射区"设定常用。
 
 ### decay_power
 
-**指数衰减（连续形式）**
+**指数衰减（连续形式）** · 层级 fundamental · 领域 物理 · 主角频率 low
 
 ```
 N0 * exp(-lambda * t)
@@ -3560,7 +3591,7 @@ N = N₀e^(-λt)。
 
 ### mass_defect_energy
 
-**质量亏损能量** · 单位 J
+**质量亏损能量** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 J
 
 ```
 dm * c^2
@@ -3575,7 +3606,7 @@ E = Δmc²，核反应能量来源。
 
 ### snell
 
-**折射定律（求折射角）** · 单位 rad
+**折射定律（求折射角）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 rad
 
 ```
 asin(n1 * sin(theta1) / n2)
@@ -3588,7 +3619,7 @@ n₁sinθ₁ = n₂sinθ₂。
 
 ### thin_lens
 
-**薄透镜像距** · 单位 m
+**薄透镜像距** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 1 / (1/f - 1/u)
@@ -3600,7 +3631,7 @@ n₁sinθ₁ = n₂sinθ₂。
 
 ### magnification
 
-**横向放大率**
+**横向放大率** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 -v / u
@@ -3612,7 +3643,7 @@ m = -v/u。
 
 ### diffraction_grating
 
-**光栅衍射角** · 单位 rad
+**光栅衍射角** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 rad
 
 ```
 asin(n * lambda / d)
@@ -3625,7 +3656,7 @@ d·sinθ = nλ。
 
 ### critical_angle
 
-**全反射临界角** · 单位 rad
+**全反射临界角** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 rad
 
 ```
 asin(n2 / n1)
@@ -3638,7 +3669,7 @@ sinθc = n₂/n₁。
 
 ### optical_power
 
-**透镜光焦度** · 单位 D
+**透镜光焦度** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 D
 
 ```
 1 / f
@@ -3650,7 +3681,7 @@ P = 1/f（屈光度）。
 
 ### lens_equation
 
-**透镜成像公式（求像距）** · 单位 m
+**透镜成像公式（求像距）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 1 / (1 / f - 1 / u)
@@ -3664,7 +3695,7 @@ P = 1/f（屈光度）。
 
 ### photon_energy
 
-**光子能量** · 单位 J
+**光子能量** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 J
 
 ```
 h * f
@@ -3677,7 +3708,7 @@ E = hf。
 
 ### de_broglie
 
-**德布罗意波长** · 单位 m
+**德布罗意波长** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 m
 
 ```
 h / p
@@ -3690,7 +3721,7 @@ h / p
 
 ### hydrogen_levels
 
-**氢原子能级** · 单位 eV
+**氢原子能级** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 eV
 
 ```
 -13.6 / n^2
@@ -3704,7 +3735,7 @@ Eₙ = -13.6/n² eV。
 
 ### lorentz_factor
 
-**洛伦兹因子**
+**洛伦兹因子** · 层级 fundamental · 领域 物理 · 主角频率 low
 
 ```
 1 / sqrt(1 - (v / c)^2)
@@ -3717,7 +3748,7 @@ Eₙ = -13.6/n² eV。
 
 ### time_dilation
 
-**时间膨胀** · 单位 s
+**时间膨胀** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 s
 
 ```
 dt0 / sqrt(1 - (v / c)^2)
@@ -3730,7 +3761,7 @@ dt0 / sqrt(1 - (v / c)^2)
 
 ### length_contraction
 
-**长度收缩** · 单位 m
+**长度收缩** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 m
 
 ```
 L0 * sqrt(1 - (v / c)^2)
@@ -3743,7 +3774,7 @@ L = L₀/γ。
 
 ### mass_energy
 
-**质能方程** · 单位 J
+**质能方程** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 J
 
 ```
 m * c^2
@@ -3756,7 +3787,7 @@ E = mc²。
 
 ### relativistic_energy
 
-**相对论总能量** · 单位 J
+**相对论总能量** · 层级 fundamental · 领域 物理 · 主角频率 low · 单位 J
 
 ```
 m * c^2 / sqrt(1 - (v / c)^2)
@@ -3771,7 +3802,7 @@ E = γmc²。
 
 ### square_cube_law
 
-**平方-立方定律** · 单位 倍数
+**平方-立方定律** · 层级 phenomenological · 领域 物理 · 主角频率 medium · 单位 倍数
 
 ```
 (s^3) / (s^2)
@@ -3783,7 +3814,7 @@ E = γmc²。
 
 ### mass_scaling
 
-**质量缩放** · 单位 kg
+**质量缩放** · 层级 phenomenological · 领域 物理 · 主角频率 medium · 单位 kg
 
 ```
 m0 * s^3
@@ -3795,7 +3826,7 @@ m0 * s^3
 
 ### strength_scaling
 
-**承重能力缩放** · 单位 N
+**承重能力缩放** · 层级 phenomenological · 领域 物理 · 主角频率 medium · 单位 N
 
 ```
 F0 * s^2
@@ -3807,7 +3838,7 @@ F0 * s^2
 
 ### kleiber
 
-**克莱伯定律（代谢率）** · 单位 W
+**克莱伯定律（代谢率）** · 层级 phenomenological · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 B0 * (m / m0)^0.75
@@ -3819,7 +3850,7 @@ B0 * (m / m0)^0.75
 
 ### allometric
 
-**通用异速生长律**
+**通用异速生长律** · 层级 phenomenological · 领域 物理 · 主角频率 medium
 
 ```
 Y0 * (m / m0)^b
@@ -3833,7 +3864,7 @@ Y = Y₀(m/m₀)^b。b 可任意改，用于架空生物设定。
 
 ### ideal_gas
 
-**理想气体状态方程** · 单位 m^3
+**理想气体状态方程** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m^3
 
 ```
 n * R * T / P
@@ -3846,7 +3877,7 @@ V = nRT/P。
 
 ### heat_capacity
 
-**显热** · 单位 J
+**显热** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 m * c * dT
@@ -3858,7 +3889,7 @@ Q = mcΔT。
 
 ### latent_heat
 
-**潜热** · 单位 J
+**潜热** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J
 
 ```
 m * L
@@ -3870,7 +3901,7 @@ Q = mL（相变不升温）。
 
 ### mix_temperature
 
-**混合终温** · 单位 K
+**混合终温** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 K
 
 ```
 (m1 * c1 * T1 + m2 * c2 * T2) / (m1 * c1 + m2 * c2)
@@ -3882,7 +3913,7 @@ Q = mL（相变不升温）。
 
 ### thermal_expansion
 
-**线膨胀** · 单位 m
+**线膨胀** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 alpha * L * dT
@@ -3894,7 +3925,7 @@ alpha * L * dT
 
 ### stefan_boltzmann
 
-**黑体辐射功率** · 单位 W
+**黑体辐射功率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 sigma * A * T^4
@@ -3907,7 +3938,7 @@ P = σAT⁴。
 
 ### wien_displacement
 
-**维恩位移峰值波长** · 单位 m
+**维恩位移峰值波长** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 bWien / T
@@ -3920,7 +3951,7 @@ bWien / T
 
 ### carnot_efficiency
 
-**卡诺效率**
+**卡诺效率** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 1 - Tc / Th
@@ -3932,7 +3963,7 @@ bWien / T
 
 ### thermal_conductivity
 
-**热传导速率** · 单位 W
+**热传导速率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 k * A * dT / d
@@ -3944,7 +3975,7 @@ Q/t = kAΔT/d。房屋/盔甲保温推演。
 
 ### convection
 
-**对流散热** · 单位 W
+**对流散热** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W
 
 ```
 h * A * dT
@@ -3956,7 +3987,7 @@ Q/t = hAΔT。
 
 ### entropy_change
 
-**熵变（可逆过程）** · 单位 J/K
+**熵变（可逆过程）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 J/K
 
 ```
 Q / T
@@ -3968,7 +3999,7 @@ Q / T
 
 ### carnot_cop
 
-**卡诺制冷系数**
+**卡诺制冷系数** · 层级 derived · 领域 物理 · 主角频率 medium
 
 ```
 Tc / (Th - Tc)
@@ -3980,7 +4011,7 @@ Tc / (Th - Tc)
 
 ### mean_free_path
 
-**分子平均自由程** · 单位 m
+**分子平均自由程** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 kB * T / (sqrt(2) * pi * d^2 * P)
@@ -3993,7 +4024,7 @@ kB * T / (sqrt(2) * pi * d^2 * P)
 
 ### rms_speed
 
-**方均根速率** · 单位 m/s
+**方均根速率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 sqrt(3 * R * T / M)
@@ -4006,7 +4037,7 @@ v_rms = √(3RT/M)。
 
 ### most_probable_speed
 
-**最概然速率** · 单位 m/s
+**最概然速率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 sqrt(2 * R * T / M)
@@ -4019,7 +4050,7 @@ sqrt(2 * R * T / M)
 
 ### thermal_voltage
 
-**热电压** · 单位 V
+**热电压** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
 
 ```
 kB * T / e_charge
@@ -4033,7 +4064,7 @@ V_T = kT/e ≈ 25.85mV @ 300K。
 
 ### wave_speed
 
-**波速** · 单位 m/s
+**波速** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m/s
 
 ```
 f * lambda
@@ -4045,7 +4076,7 @@ v = fλ。
 
 ### decibel
 
-**声压级（分贝）** · 单位 dB
+**声压级（分贝）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 dB
 
 ```
 10 * log(I / I0) / log(10)
@@ -4058,7 +4089,7 @@ dB = 10·log₁₀(I/I₀)。
 
 ### doppler
 
-**多普勒频移（源移动）** · 单位 Hz
+**多普勒频移（源移动）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
 
 ```
 f0 * vs / (vs - v)
@@ -4071,7 +4102,7 @@ f = f₀·vs/(vs-v)。
 
 ### string_frequency
 
-**弦振动基频** · 单位 Hz
+**弦振动基频** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
 
 ```
 sqrt(T / mu) / (2 * L)
@@ -4083,7 +4114,7 @@ f = √(T/μ)/(2L)。乐器/建筑共振推演。
 
 ### pipe_frequency
 
-**管中驻波基频（两端开口）** · 单位 Hz
+**管中驻波基频（两端开口）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
 
 ```
 vs / (2 * L)
@@ -4096,7 +4127,7 @@ f = v/(2L)。
 
 ### sound_intensity
 
-**球面声强** · 单位 W/m²
+**球面声强** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 W/m²
 
 ```
 P / (4 * pi * r^2)
@@ -4108,7 +4139,7 @@ I = P/(4πr²)。
 
 ### beat_frequency
 
-**拍频** · 单位 Hz
+**拍频** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
 
 ```
 abs(f1 - f2)
@@ -4120,7 +4151,7 @@ abs(f1 - f2)
 
 ### standing_wave_wavelength
 
-**驻波波长（第 n 谐波）** · 单位 m
+**驻波波长（第 n 谐波）** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 m
 
 ```
 2 * L / n
@@ -4134,7 +4165,7 @@ abs(f1 - f2)
 
 ### population_exponential
 
-**马尔萨斯人口增长** · 单位 人
+**马尔萨斯人口增长** · 层级 conventional · 领域 社会 · 主角频率 medium · 单位 人
 
 ```
 N0 * exp(r * t)
@@ -4146,7 +4177,7 @@ N0 * exp(r * t)
 
 ### population_logistic
 
-**逻辑斯蒂人口（t 时刻）** · 单位 人
+**逻辑斯蒂人口（t 时刻）** · 层级 conventional · 领域 社会 · 主角频率 medium · 单位 人
 
 ```
 K / (1 + ((K - N0) / N0) * exp(-r * t))
@@ -4160,7 +4191,7 @@ K / (1 + ((K - N0) / N0) * exp(-r * t))
 
 ### literacy_proxy
 
-**人力资本指数（教育年限代理）**
+**人力资本指数（教育年限代理）** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 years / max_years
@@ -4175,7 +4206,7 @@ years / max_years
 
 ### simpson_diversity
 
-**辛普森多样性指数** · JS 内置实现
+**辛普森多样性指数** · 层级 conventional · 领域 社会 · 主角频率 medium · JS 内置实现
 
 ```
 D = 1 - Σ pᵢ²
@@ -4187,7 +4218,7 @@ D = 1 - Σp²。生态/语言多样性。
 
 ### lotka_volterra_equilibrium
 
-**洛特卡-沃尔泰拉平衡点**
+**洛特卡-沃尔泰拉平衡点** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 d / beta
@@ -4201,7 +4232,7 @@ d / beta
 
 ### gravity_trade
 
-**引力模型（贸易/迁徙）**
+**引力模型（贸易/迁徙）** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 G * M1 * M2 / D^beta
@@ -4216,7 +4247,7 @@ T = G·M₁M₂/D^β。城市间互动、贸易流。
 
 ### r0_basic
 
-**基本传染数 R₀**
+**基本传染数 R₀** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 beta / gamma
@@ -4228,7 +4259,7 @@ R₀ = β/γ。R₀>1 疫情扩散。
 
 ### herd_immunity
 
-**群体免疫阈值**
+**群体免疫阈值** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 1 - 1 / R0
@@ -4240,7 +4271,7 @@ R₀ = β/γ。R₀>1 疫情扩散。
 
 ### sir_equilibrium
 
-**SIR 最终感染比例（隐式解近似）**
+**SIR 最终感染比例（隐式解近似）** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 1 - exp(-R0 * x)
@@ -4254,7 +4285,7 @@ S∞ 满足 1-S∞ = exp(-R₀(1-S∞))。传入猜测值做不动点迭代。
 
 ### gini
 
-**基尼系数（分组近似）** · JS 内置实现
+**基尼系数（分组近似）** · 层级 conventional · 领域 社会 · 主角频率 low · JS 内置实现
 
 ```
 G = 1 - Σ (yᵢ + yᵢ₋₁)·(1/n)
@@ -4266,7 +4297,7 @@ G = 1 - Σ (yᵢ + yᵢ₋₁)·(1/n)
 
 ### hhi
 
-**赫芬达尔-赫希曼指数** · JS 内置实现
+**赫芬达尔-赫希曼指数** · 层级 conventional · 领域 社会 · 主角频率 low · JS 内置实现
 
 ```
 HHI = Σ sᵢ²
@@ -4278,7 +4309,7 @@ HHI = Σ sᵢ²
 
 ### power_law
 
-**幂律分布（齐夫定律）**
+**幂律分布（齐夫定律）** · 层级 conventional · 领域 社会 · 主角频率 low
 
 ```
 C * rank^(-alpha)
@@ -4292,7 +4323,7 @@ y = C·r^(-α)。城市规模、财富、词频通用。
 
 ### shannon_entropy
 
-**香农熵** · 单位 bit · JS 内置实现
+**香农熵** · 层级 conventional · 领域 社会 · 主角频率 low · 单位 bit · JS 内置实现
 
 ```
 H = -Σ pᵢ·log_base(pᵢ)
@@ -4305,7 +4336,7 @@ H = -Σp·log_base(p)。信息量/多样性度量。
 
 ### information_propagation
 
-**信息传播（单源扩散）**
+**信息传播（单源扩散）** · 层级 conventional · 领域 社会 · 主角频率 low
 
 ```
 N * (1 - exp(-k * t))
@@ -4319,7 +4350,7 @@ N * (1 - exp(-k * t))
 
 ### duverger_index
 
-**有效政党数（拉阿克指数）** · JS 内置实现
+**有效政党数（拉阿克指数）** · 层级 conventional · 领域 社会 · 主角频率 medium · JS 内置实现
 
 ```
 1 / sum(s^2)
@@ -4331,7 +4362,7 @@ N = 1/Σp²。衡量政党体系碎片化程度。
 
 ### banzhaf_power
 
-**班茨哈夫权力指数（简化）**
+**班茨哈夫权力指数（简化）** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 1 / n
@@ -4343,7 +4374,7 @@ N = 1/Σp²。衡量政党体系碎片化程度。
 
 ### popitz_law
 
-**波皮茨定律（财富幂律指数）**
+**波皮茨定律（财富幂律指数）** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 1 / (1 - a)
@@ -4355,7 +4386,7 @@ N = 1/Σp²。衡量政党体系碎片化程度。
 
 ### cost_of_corruption
 
-**腐败成本占 GDP 比例**
+**腐败成本占 GDP 比例** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 gdp * rate
@@ -4367,7 +4398,7 @@ gdp * rate
 
 ### tragedy_commons
 
-**公地可持续开采量**
+**公地可持续开采量** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 R * regeneration
@@ -4381,7 +4412,7 @@ R * regeneration
 
 ### urban_scaling
 
-**城市规模标度律**
+**城市规模标度律** · 层级 conventional · 领域 社会 · 主角频率 medium
 
 ```
 Y0 * (P / P0)^b

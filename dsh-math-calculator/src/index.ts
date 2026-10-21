@@ -26,6 +26,17 @@ import type { Context } from '@deepseek-ai/cordis'
 import { nullspaceOf, rankOf, singularValuesOf } from './numeric.js'
 import { ambiguousSymbols, explainSymbol, symbolMeanings } from './symbols.js'
 import {
+  DOMAINS,
+  DOMAIN_NAMES,
+  LAYERS,
+  domainCounts,
+  domainsOf,
+  formulasByDomain,
+  formulasByLayer,
+  layerCounts,
+  layerOf,
+} from './taxonomy.js'
+import {
   containsNonFinite,
   formatValue,
   isIntegerLike,
@@ -1530,6 +1541,59 @@ function opFormulas(args: MathArgs): Outcome {
   //
   // 为什么需要：同一个字母在不同公式里含义不同（m 可以是质量、米、分钟）。
   // 让 AI/人先查符号、再调公式，能避免"看起来对、物理意义错"的调用。
+  // ── 规则层级查询：query="layer:derived" / "层级:经验" ──
+  //
+  // 用户纠正：分类不该按学科，而该按「离最底层规则的远近」。
+  // 这里把层级做成独立轴，与学科领域、主角感知频率互不替代。
+  const LAYER_ALIASES: Record<string, (typeof LAYERS)[number]['id']> = {
+    fundamental: 'fundamental',
+    derived: 'derived',
+    phenomenological: 'phenomenological',
+    engineering: 'engineering',
+    conventional: 'conventional',
+    基本: 'fundamental',
+    导出: 'derived',
+    经验: 'phenomenological',
+    工程: 'engineering',
+    约定: 'conventional',
+  }
+  const layerMatch = query.match(/^(?:layer|层级|规则)[:：]\s*([A-Za-z\u4e00-\u9fa5]+)$/i)
+  if (layerMatch) {
+    const key = layerMatch[1].toLowerCase()
+    const layer = LAYER_ALIASES[key] ?? LAYER_ALIASES[layerMatch[1]]
+    if (!layer) return { result: `不认识的层级 "${layerMatch[1]}"。可用：${LAYERS.map((l) => l.id).join(' / ')}`, value: { error: 'unknown-layer' } }
+    const list = formulasByLayer(layer)
+    const definition = LAYERS.find((l) => l.id === layer)!
+    const lines = [`${definition.name}（${definition.id}）：${list.length} 条 —— ${definition.desc}`]
+    lines.push('')
+    lines.push('示例：' + list.slice(0, 15).map((f) => f.id).join(', '))
+    lines.push('完整清单用 query="*" 查看，或按领域筛选：query="domain:物理"。')
+    return {
+      result: lines.join('\n'),
+      value: { layer, total: list.length, examples: list.slice(0, 15).map((f) => ({ id: f.id, name: f.name, domains: domainsOf(f) })) },
+    }
+  }
+
+  // ── 学科领域查询：query="domain:physics" / "领域:医学" ──
+  const DOMAIN_ALIASES: Record<string, string> = Object.fromEntries(
+    Object.entries(DOMAIN_NAMES).flatMap(([id, name]) => [[id, id], [name, id]]),
+  )
+  const domainMatch = query.match(/^(?:domain|领域|学科)[:：]\s*([A-Za-z\u4e00-\u9fa5]+)$/i)
+  if (domainMatch) {
+    const domain = DOMAIN_ALIASES[domainMatch[1].toLowerCase()] ?? DOMAIN_ALIASES[domainMatch[1]]
+    if (!domain || !(DOMAINS as readonly string[]).includes(domain)) {
+      return { result: `不认识的领域 "${domainMatch[1]}"。可用：${DOMAINS.join(' / ')}`, value: { error: 'unknown-domain' } }
+    }
+    const list = formulasByDomain(domain)
+    const lines = [`领域 ${DOMAIN_NAMES[domain] ?? domain}（${domain}）：${list.length} 条`]
+    lines.push('')
+    for (const formula of list.slice(0, 20)) {
+      lines.push(`  · ${formula.id}（${formula.name}）  [${layerOf(formula)}]`)
+    }
+    if (list.length > 20) lines.push(`  …还有 ${list.length - 20} 条`)
+    return { result: lines.join('\n'), value: { domain, total: list.length } }
+  }
+
   const symbolMatch = query.match(/^(?:symbol|符号)[:：]\s*([A-Za-z_][A-Za-z0-9_]*|\*)(?:@(.+))?$/i)
   if (symbolMatch) {
     const symbol = symbolMatch[1]
@@ -1557,8 +1621,18 @@ function opFormulas(args: MathArgs): Outcome {
     const lines = [`公式库共 ${total} 条，按分类：`]
     for (const entry of categories) lines.push(`  ${entry.category}  (${entry.count})`)
     lines.push('')
-    lines.push('用 operation="formulas" + query="重力" 检索；用 operation="formula" + formula="escape_velocity" 调用。')
-    return { result: lines.join('\n'), value: { total, categories } }
+    lines.push('按规则层级（离最底层规则的远近）：')
+    for (const layer of layerCounts()) lines.push(`  ${layer.name}（${layer.layer}）  (${layer.count})`)
+    lines.push('')
+    lines.push('按学科领域（多标签）：')
+    for (const domain of domainCounts()) lines.push(`  ${domain.name}（${domain.domain}）  (${domain.count})`)
+    lines.push('')
+    lines.push('检索：query="关键词" / "layer:derived" / "domain:物理" / "freq:high" / "symbol:m"；')
+    lines.push('调用：operation="formula" + formula="escape_velocity"。')
+    return {
+      result: lines.join('\n'),
+      value: { total, categories, layers: layerCounts(), domains: domainCounts() },
+    }
   }
 
   const matches = findInCurrentWorkspace(query, 20)
@@ -1632,7 +1706,12 @@ function opHelp(): Outcome {
       '  formula       调用已收录的 ' + FORMULAS.length + ' 条自然科学公式',
       '                例：formula="escape_velocity", overrides={M,r}',
       '                任何参数可覆盖 —— 架空世界改造的关键',
-      '  formulas      按关键词检索；query="symbol:m" 查符号含义，query="symbol:*" 列多义符号',
+      '  formulas      检索与分类：',
+      '                query="关键词"       按名称/关键词',
+      '                query="layer:derived"  按规则层级（离底层规则远近：fundamental/derived/phenomenological/engineering/conventional）',
+      '                query="domain:物理"    按学科领域（多标签）',
+      '                query="freq:high"      按主角感知频率',
+      '                query="symbol:m"       按符号含义',
       '  formula-table 两级扩展：工作区临时公式（覆盖/自定义/停用）+ 全局公式包',
       '                （tableAction: global-list / global-add / global-remove）',
       '                字段与校验规则见 docs/formula-authoring.md',

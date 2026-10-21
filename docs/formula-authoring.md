@@ -87,22 +87,45 @@
 - `desc` 必须带单位，否则符号索引无法消歧；
 - 公式 `desc` 写清「这是什么」和「什么时候用」，这是给 AI 的调用依据。
 
-## 频次（frequency）
+## 三轴标签（重要：分类不是学科）
 
-每条公式可带 `frequency: "high" | "medium" | "low"`，表示**读者/主角在故事里遇到它的频率**。
-缺省按分类推断（`formulas.ts` 的 HIGH/LOW 分类表）。
+一条公式同时带三条**互相独立**的标签，另加自由细标签：
 
-查询：
+### 1) layer：离最底层规则的远近
 
-```jsonc
-{"operation":"formulas","query":"freq:high"}
-```
+| 层级 | 含义 | 例子 |
+|---|---|---|
+| `fundamental` 基本规则 | 守恒律、相对论、量子、热力学定律 | 洛伦兹因子、光电效应 |
+| `derived` 导出规律 | 由基本规则推出、有闭合式 | 牛顿第二定律、环向应力、回声测距 |
+| `phenomenological` 经验规律 | 带实验拟合系数，量级可信 | 风寒指数、疲劳寿命、Kleiber 代谢 |
+| `engineering` 工程换算 | 几何、配比、剂量、补给 | 用砖量、灌溉水量、按体重给药 |
+| `conventional` 社会约定 | 货币、制度、统计口径、经验规则 | 楼梯舒适度、经济指标 |
 
-标注原则：
+> 旧字段 `cat`（physics/mechanics 之类）只是路径，**不再作为分类依据**。
 
-- `high`：读者能直接看到/感受到（材料会不会断、船多快、风多冷、箭射多远、人一天喝多少水）；
+### 2) domains：学科领域（多标签）
+
+`physics / chemistry / biology / materials / earth / astronomy / engineering /
+military / agriculture / medicine / economics / social / math`，一条公式可同时属于多个。
+例：环向应力 = `materials` + `engineering`；人体表面积 = `biology` + `medicine`。
+
+### 3) frequency：主角感知频率
+
+**不是"世界观推导常用度"，而是"以主角为视角，读者在故事里感知到它的频率"。**
+
+- `high`：主角会直接看到/摸到/被影响（砖墙会不会塌、船多快、风多冷、箭射多远、人一天喝多少水）；
 - `medium`：设定与推演常用，但不直接出现在场景里；
 - `low`：量子/核物理/相对论/金融——除非故事专门讲这些。
+
+频率与层级**独立**：用砖量是「工程 + 高频」，洛伦兹因子是「基本规则 + 低频」。
+
+### 查询
+
+```jsonc
+{"operation":"formulas","query":"layer:derived"}   // 按层级（中文：层级:经验）
+{"operation":"formulas","query":"domain:物理"}      // 按领域（多标签）
+{"operation":"formulas","query":"freq:high"}        // 按主角感知频率
+```
 
 ## 给别人维护的检查清单
 
