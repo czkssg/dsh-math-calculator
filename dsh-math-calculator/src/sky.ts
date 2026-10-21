@@ -20,6 +20,8 @@
  * @module dsh-math-calculator/sky
  */
 
+import { OUR_UNIVERSE } from './constants-core.js'
+
 /** 维恩位移常数 m·K。 */
 const WIEN = 2.897771955e-3
 /** 太阳视星等（1 AU 处）。 */
@@ -31,6 +33,8 @@ const DARK_SKY_MAG = 22
 
 /** 观测输入。 */
 export interface SkyInput {
+  /** 精细结构常数（缺省用现实值）。瑞利散射截面 ∝ α²。 */
+  alpha?: number
   starTempK: number
   starRadiusM: number
   /** 恒星光度 W。 */
@@ -310,8 +314,16 @@ export function spectrumToHex(spectral: (lambdaNm: number) => number): string {
  * @param sunAltitudeDeg - 太阳高度角（度）。
  * @param pressureAtm - 大气压（atm）。
  */
-function skySpectrum(sunTempK: number, sunAltitudeDeg: number, pressureAtm: number): (lambdaNm: number) => number {
-  const tau550 = 0.10 * clamp(pressureAtm, 0.05, 5)
+function skySpectrum(
+  sunTempK: number,
+  sunAltitudeDeg: number,
+  pressureAtm: number,
+  alpha: number,
+): (lambdaNm: number) => number {
+  // 瑞利光学厚度 ∝ 分子数密度 × 散射截面，而截面 ∝ α²（汤姆孙/瑞利同一量纲）。
+  // 现实常数下 (α/α₀)² = 1，退化为原来的 0.10 —— 不改变现有输出，只让它随 α 走。
+  const alphaScale = (alpha / OUR_UNIVERSE.alpha) ** 2
+  const tau550 = 0.10 * clamp(pressureAtm, 0.05, 5) * alphaScale
   const altitude = clamp(sunAltitudeDeg, 0.1, 90)
   const airmassSun = 1 / Math.sin((altitude * Math.PI) / 180)
   const airmassScatter = 1
@@ -326,10 +338,11 @@ export function daySky(input: SkyInput): DaySky {
   const altitude = clamp(input.sunAltitudeDeg ?? 60, 0.1, 90)
   const pressureAtm = clamp(input.pressureAtm, 0.05, 5)
 
+  const alpha = input.alpha ?? OUR_UNIVERSE.alpha
   // 天顶：散射路径最短（m=1）
-  const zenithHex = spectrumToHex(skySpectrum(input.starTempK, 90, pressureAtm))
+  const zenithHex = spectrumToHex(skySpectrum(input.starTempK, 90, pressureAtm, alpha))
   // 地平线：光路最长（m 大），蓝光被抽走 → 偏红
-  const horizonHex = spectrumToHex(skySpectrum(input.starTempK, altitude, pressureAtm))
+  const horizonHex = spectrumToHex(skySpectrum(input.starTempK, altitude, pressureAtm, alpha))
 
   // 天顶到底是"蓝"还是"橙"，取决于恒星温度——红矮星的白昼是橙金色，
   // 这里不能写死"蓝"，否则红矮星世界会输出自相矛盾的描述。

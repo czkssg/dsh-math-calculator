@@ -34,6 +34,8 @@ import {
 } from './star-catalog.js'
 import { analyzeMoonSystem, type MoonSpec, type MoonSystemReport } from './moons.js'
 import { observeSky, type SkyReport } from './sky.js'
+import { getActiveConstants } from './constants-graph.js'
+import { OUR_UNIVERSE, deriveScaleLadder, dimensionlessFromKnobs } from './constants-core.js'
 
 /** 世界参数（全部可选，默认地球）。 */
 export interface WorldParams {
@@ -352,9 +354,31 @@ function climateZone(latitudeDeg: number, tempC: number, hasLiquid: boolean): st
  * @param params - 世界参数（全部可选）
  * @returns 结构化画像 + 警告
  */
-export function generateWorld(params: WorldParams): WorldProfile {
+export interface WorldOptions {
+  /**
+   * 生效的物理常数（缺省读 getActiveConstants()）。
+   * 这是 S2 的关键：以前 world 用 CONSTANTS 快照，用户改了常数也不生效。
+   */
+  constants?: Record<string, number>
+}
+
+export function generateWorld(params: WorldParams, options: WorldOptions = {}): WorldProfile {
   const warnings: string[] = []
   const highlights: string[] = []
+
+  // 生效常数 = 现实基准 ⊕ 当前工作区/会话的覆盖。
+  // 所有物理推导都从这一份走，改 c/G/α 才会真的传导到星球模型。
+  const K: Record<string, number> = { ...CONSTANTS, ...(options.constants ?? getActiveConstants()) }
+  const knobs = {
+    c: K.c,
+    hbar: K.hbar,
+    e: K.e_charge,
+    epsilon0: K.epsilon0,
+    me: K.me,
+    mp: K.mp,
+    G: K.G,
+  }
+  const alpha = dimensionlessFromKnobs(knobs).alpha
 
   // ── 恒星 ──
   // 支持两种给法：
@@ -385,10 +409,10 @@ export function generateWorld(params: WorldParams): WorldProfile {
   const starMassSun = num(params.starMass, baseStar.massSun)
   const starRadiusSun = num(params.starRadius, baseStar.radiusSun)
   const starTempK = num(params.starTemp, baseStar.tempK)
-  const starMassKg = starMassSun * CONSTANTS.Msun
-  const starRadiusM = starRadiusSun * CONSTANTS.Rsun
-  const luminosityW = 4 * Math.PI * starRadiusM ** 2 * CONSTANTS.sigma * starTempK ** 4
-  const luminositySun = luminosityW / CONSTANTS.Lsun
+  const starMassKg = starMassSun * K.Msun
+  const starRadiusM = starRadiusSun * K.Rsun
+  const luminosityW = 4 * Math.PI * starRadiusM ** 2 * K.sigma * starTempK ** 4
+  const luminositySun = luminosityW / K.Lsun
 
   if (starTempK < 2400) warnings.push(`恒星表面温度 ${starTempK}K 低于红矮星下限，光谱以红外为主，光合作用可能无法进行。`)
   if (starTempK > 40000) warnings.push(`恒星表面温度 ${starTempK}K 属 O 型星，紫外辐射极强，生命需强屏蔽。`)
@@ -396,10 +420,10 @@ export function generateWorld(params: WorldParams): WorldProfile {
   // ── 轨道 ──
   const orbitAU = num(params.orbitAU, 1)
   const eccentricity = Math.min(0.95, Math.max(0, num(params.eccentricity, 0.0167)))
-  const orbitM = orbitAU * CONSTANTS.AU
-  const yearSeconds = 2 * Math.PI * Math.sqrt(orbitM ** 3 / (CONSTANTS.G * starMassKg))
+  const orbitM = orbitAU * K.AU
+  const yearSeconds = 2 * Math.PI * Math.sqrt(orbitM ** 3 / (K.G * starMassKg))
   const yearDays = yearSeconds / 86400
-  const orbitalVelocity = Math.sqrt((CONSTANTS.G * starMassKg) / orbitM)
+  const orbitalVelocity = Math.sqrt((K.G * starMassKg) / orbitM)
 
   // 偏心率造成的温度季差（近似：距离比 (1+e)/(1-e) 的四次方根）
   const perihelionTempDeltaPercent = ((1 + eccentricity) / (1 - eccentricity)) ** 0.5 - 1
@@ -413,9 +437,9 @@ export function generateWorld(params: WorldParams): WorldProfile {
   const planetMassKg = planetMassEarth * EARTH.mass
   const planetRadiusM = planetRadiusEarth * EARTH.radius
   const densityKgM3 = planetMassKg / ((4 / 3) * Math.PI * planetRadiusM ** 3)
-  const surfaceGravity = (CONSTANTS.G * planetMassKg) / planetRadiusM ** 2
+  const surfaceGravity = (K.G * planetMassKg) / planetRadiusM ** 2
   const surfaceGravityEarth = surfaceGravity / EARTH.g
-  const escapeVelocity = Math.sqrt((2 * CONSTANTS.G * planetMassKg) / planetRadiusM)
+  const escapeVelocity = Math.sqrt((2 * K.G * planetMassKg) / planetRadiusM)
 
   // ── 自转与一天 ──
   const obliquityDeg = Math.min(90, Math.max(0, num(params.obliquityDeg, 23.44)))
@@ -438,7 +462,7 @@ export function generateWorld(params: WorldParams): WorldProfile {
 
   // ── 温度 ──
   const albedo = Math.min(0.95, Math.max(0, num(params.albedo, 0.306)))
-  const equilibriumK = (luminosityW * (1 - albedo) / (16 * Math.PI * CONSTANTS.sigma * orbitM ** 2)) ** 0.25
+  const equilibriumK = (luminosityW * (1 - albedo) / (16 * Math.PI * K.sigma * orbitM ** 2)) ** 0.25
   const greenhouseK = Math.max(0, num(params.greenhouse, 33))
   const surfaceMeanK = equilibriumK + greenhouseK
   const surfaceMeanC = surfaceMeanK - 273.15
@@ -447,7 +471,7 @@ export function generateWorld(params: WorldParams): WorldProfile {
   const pressurePa = Math.max(1, num(params.pressure, 101325))
   const pressureAtm = pressurePa / 101325
   const latentHeatVap = 40650 // J/mol
-  const boilingPointK = 1 / (1 / 373.15 - (CONSTANTS.R * Math.log(pressurePa / 101325)) / latentHeatVap)
+  const boilingPointK = 1 / (1 / 373.15 - (K.R * Math.log(pressurePa / 101325)) / latentHeatVap)
   const boilingPointC = boilingPointK - 273.15
   const freezingPointK = 273.15
   const hasLiquid = params.hasLiquid ?? true
@@ -475,10 +499,10 @@ export function generateWorld(params: WorldParams): WorldProfile {
   // ── 大气 ──
   const molarMass = Math.max(0.002, num(params.molarMass, 0.02896))
   const gamma = Math.max(1.01, num(params.gamma, 1.4))
-  const scaleHeightM = (CONSTANTS.R * surfaceMeanK) / (molarMass * surfaceGravity)
+  const scaleHeightM = (K.R * surfaceMeanK) / (molarMass * surfaceGravity)
   const altitudeHalfPressure = scaleHeightM * Math.log(2)
   const altitudeTenthPressure = scaleHeightM * Math.log(10)
-  const earthScaleHeight = (CONSTANTS.R * 288.15) / (0.02896 * EARTH.g)
+  const earthScaleHeight = (K.R * 288.15) / (0.02896 * EARTH.g)
   const relativeToEarth = scaleHeightM / earthScaleHeight
 
   if (scaleHeightM < 3000) {
@@ -486,7 +510,7 @@ export function generateWorld(params: WorldParams): WorldProfile {
   }
 
   // 逃逸速度 vs 分子速率：能否保住大气
-  const thermalSpeed = Math.sqrt((3 * CONSTANTS.R * surfaceMeanK) / molarMass)
+  const thermalSpeed = Math.sqrt((3 * K.R * surfaceMeanK) / molarMass)
   const escapeRatio = escapeVelocity / thermalSpeed
   if (escapeRatio < 6) {
     warnings.push(
@@ -536,13 +560,22 @@ export function generateWorld(params: WorldParams): WorldProfile {
   }))
 
   // ── 地形 ──
-  const materialStrength = num(params.materialStrength, 1.3e8)
+  // 材料强度不再写死 1.3e8（花岗岩）：由 α 推出（ADR-0001 S2）。
+  // 现实常数下这个函数恰好返回 1.3e8 —— 所以不改变现有输出，只让它随 α 走。
+  const derivedStrength =
+    deriveScaleLadder({ ...OUR_UNIVERSE, alpha }).find((entry) => entry.id === 'material-strength')?.value ?? 1.3e8
+  const materialStrength = num(params.materialStrength, derivedStrength)
   const materialDensity = Math.max(100, num(params.materialDensity, 2700))
   const maxMountainHeight = materialStrength / (materialDensity * surfaceGravity)
 
   // 雪线：年均温度降到 0°C 的海拔
   // 若全球均温已低于冰点，雪线就是海平面（不是 0 这个数值巧合，而是"全球冰封"）
-  const lapseRate = 0.0065 // K/m
+  // 干绝热直减率 Γ = g·M/(3.5R)（双原子气体，第一性原理），
+  // 再乘湿绝热修正 0.665（唯一的经验系数，用地球 6.5 K/km 标定）。
+  // 这样重力或大气成分改变时，雪线会跟着移动，而不是永远 6.5 K/km。
+  const earthGravity = (CONSTANTS.G * EARTH.mass) / EARTH.radius ** 2
+  const LAPSE_MOIST_FACTOR = 0.0065 / ((earthGravity * 0.02896) / (3.5 * CONSTANTS.R))
+  const lapseRate = ((surfaceGravity * molarMass) / (3.5 * K.R)) * LAPSE_MOIST_FACTOR
   const snowLineM = surfaceMeanK > freezingPointK ? (surfaceMeanK - freezingPointK) / lapseRate : 0
   const horizonKm = Math.sqrt(2 * planetRadiusM * 1.7 + 1.7 ** 2) / 1000
 
@@ -617,10 +650,10 @@ export function generateWorld(params: WorldParams): WorldProfile {
   // 潮汐加速度：a_tidal = 2GM_moon·R_planet / d³
   const tidalAccel =
     moonCount > 0
-      ? (2 * CONSTANTS.G * moonMassKg * planetRadiusM) / moonDistanceM ** 3
+      ? (2 * K.G * moonMassKg * planetRadiusM) / moonDistanceM ** 3
       : 0
   const earthTidalAccel =
-    (2 * CONSTANTS.G * MOON_MASS * EARTH.radius) / MOON_DIST ** 3
+    (2 * K.G * MOON_MASS * EARTH.radius) / MOON_DIST ** 3
   const tidalRelativeEarth = tidalAccel / earthTidalAccel
 
   // 卫星角直径 = 2·arctan(R_moon / d)
@@ -691,6 +724,7 @@ export function generateWorld(params: WorldParams): WorldProfile {
   // 从地表观测者的角度把"能感知"的东西算出来：
   // 恒星颜色/谱型/视星等、白天天空配色、夜空亮度与可见星数、银河是否可见。
   const sky = observeSky({
+    alpha,
     starTempK,
     starRadiusM,
     starLuminosityW: luminosityW,
@@ -724,7 +758,7 @@ export function generateWorld(params: WorldParams): WorldProfile {
   if (moonCount > 0) {
     // 卫星轨道周期：T = 2π√(d³/(G(M+m)))
     const moonPeriodSeconds = 2 * Math.PI * Math.sqrt(
-      moonDistanceM ** 3 / (CONSTANTS.G * (planetMassKg + moonMassKg)),
+      moonDistanceM ** 3 / (K.G * (planetMassKg + moonMassKg)),
     )
     const moonPeriodDays = moonPeriodSeconds / 86400 / (solarDayHours / 24)
     // 一年能装多少个"月"
