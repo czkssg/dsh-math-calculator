@@ -36,6 +36,7 @@ import { analyzeMoonSystem, type MoonSpec, type MoonSystemReport } from './moons
 import { observeSky, type SkyReport } from './sky.js'
 import { describeStarStructure, type StellarProfile } from './stellar.js'
 import { assessLife, chemistryWindow, type ChemistryWindow, type LifeGate } from './life.js'
+import { checkWorld, type IntegrationCheck } from './integration.js'
 import { getActiveConstants } from './constants-graph.js'
 import { OUR_UNIVERSE, deriveScaleLadder, dimensionlessFromKnobs } from './constants-core.js'
 
@@ -232,6 +233,8 @@ export interface WorldProfile {
   stellar: StellarProfile
   /** 化学窗口与生命硬否决：只判断"绝对不行"，其余交给作者。 */
   life: { chemistry: ChemistryWindow; gate: LifeGate }
+  /** 跨模块一致性检查（后端整合）：各模块结果之间是否自相矛盾。 */
+  checks: IntegrationCheck[]
   /** 历法推算。 */
   calendar: {
     /** 太阳日长度（小时）。恒星日 + 太阳日修正。 */
@@ -827,6 +830,29 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     )
   }
 
+  // ── 跨模块一致性检查（v6，后端整合）──
+  //
+  // 各模块单独算都对，但它们之间可能互相矛盾：
+  // 轨道不在宜居带、历法用错卫星、宜居带内却被生命闸门判死……
+  // 这里统一交叉检查，输出 ok / warn / contradiction 三档。
+  const checks = checkWorld({
+    orbitAU,
+    starTempK,
+    stellar: {
+      massSun: stellar.massSun,
+      effectiveTempK: stellar.effectiveTempK,
+      habitableZoneAU: stellar.habitableZoneAU,
+      lifetimeAlphaGyr: stellar.lifetimeAlphaGyr,
+    },
+    moonSystem: {
+      moons: moonSystem.moons.map((moon) => ({ name: moon.name, periodDays: moon.periodDays })),
+      maxMoonCount: moonSystem.maxMoonCount,
+    },
+    calendar: { monthsPerYear, daysPerMonth },
+    life: { gate: lifeGate },
+    temperature: { surfaceMeanC },
+  })
+
   return {
     star: { massKg: starMassKg, radiusM: starRadiusM, tempK: starTempK, luminosityW, luminositySun },
     orbit: {
@@ -887,6 +913,7 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     sky,
     stellar,
     life: { chemistry: lifeChemistry, gate: lifeGate },
+    checks,
     calendar: {
       solarDayHours,
       siderealDayHours,

@@ -164,6 +164,22 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   for (const question of gate.openQuestions) lines.push(`    · ${question}`)
 
   lines.push('')
+  lines.push('【跨模块一致性】（后端整合检查）')
+  const mark = (status: string): string =>
+    status === 'ok' ? '✓' : status === 'warn' ? '⚠' : '✗'
+  for (const check of profile.checks) {
+    lines.push(`  ${mark(check.status)} ${check.title}：${check.detail}`)
+  }
+  const summary = profile.checks.reduce(
+    (acc, check) => {
+      acc[check.status] += 1
+      return acc
+    },
+    { ok: 0, warn: 0, contradiction: 0 } as Record<string, number>,
+  )
+  lines.push(`  统计：一致 ${summary.ok}，警告 ${summary.warn}，矛盾 ${summary.contradiction}`)
+
+  lines.push('')
   lines.push('【模型可信度】（哪些是物理、哪些只是地球标定）')
   for (const line of describeProvenance()) lines.push('  ' + line)
 
@@ -258,6 +274,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       sky: profile.sky,
       stellar: profile.stellar,
       life: profile.life,
+      checks: profile.checks,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
@@ -290,6 +307,7 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       sky: profile.sky,
       stellar: profile.stellar,
       life: profile.life,
+      checks: profile.checks,
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,

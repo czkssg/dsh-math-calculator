@@ -42,6 +42,7 @@ const SUITES = [
   { file: 'life.mjs', expect: 25, label: '化学窗口与生命硬否决' },
   { file: 'determinism.mjs', expect: 18, label: '确定性（同输入同输出）' },
   { file: 'numeric.mjs', expect: 29, label: '基础运算扩展（秩/零空间/奇异值/分解/求根）' },
+  { file: 'integration-checks.mjs', expect: 24, label: '跨模块一致性（后端整合）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
