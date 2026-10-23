@@ -77,6 +77,18 @@ check('有 dsh.client.platform', pkg.dsh && pkg.dsh.client && pkg.dsh.client.pla
 check('client.inject 含 ui-slots', Boolean(pkg.dsh && pkg.dsh.client && pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-slots')))
 check('exports 指向 client', Boolean(pkg.exports && pkg.exports['./client']))
 check('main 指向 lib/index.js', pkg.main === 'lib/index.js')
+check('engines.dsh 存在（标准位置）', Boolean(pkg.engines && typeof pkg.engines.dsh === 'string'), pkg.engines && pkg.engines.dsh)
+check('dsh.manifestVersion = 1', Boolean(pkg.dsh && pkg.dsh.manifestVersion === 1))
+
+console.log('== 7. 注册清单（dsh.plugin.json） ==')
+const manifestPath = join(root, 'dsh.plugin.json')
+check('清单存在', existsSync(manifestPath))
+if (existsSync(manifestPath)) {
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  check('清单 id = 包名', manifest.id === pkg.name, manifest.id)
+  check('清单 version = 包版本', manifest.version === pkg.version, manifest.version)
+  check('清单声明 math_execute', Boolean(manifest.contributes && manifest.contributes.tools && manifest.contributes.tools.includes('math_execute')))
+}
 
 console.log('')
 if (failures.length > 0) {
