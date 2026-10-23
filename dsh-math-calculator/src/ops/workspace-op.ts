@@ -139,7 +139,12 @@ export function opWorkspace(args: MathArgs): Outcome {
       }
 
       case 'create': {
-        const name = normalizeWorkspaceName(args.workspace)
+        // 兼容两种写法：workspace（历史）与 name（更符合直觉）。
+        //
+        // 踩过的坑：只认 args.workspace 时，调用方传 name 会静默落回 default，
+        // 然后收到「不能是 default」这句看似无关的错误——错误信息完全误导。
+        const requested = args.workspace ?? args.name
+        const name = normalizeWorkspaceName(requested)
         if (name === DEFAULT_WORKSPACE) {
           throw new CalcError('invalid_argument', '请给一个新工作区名（不能是 default）')
         }

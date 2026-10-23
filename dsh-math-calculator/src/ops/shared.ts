@@ -112,6 +112,13 @@ export interface MathArgs {
   action2?: string
   /** 工作区名（operation=workspace 用）。 */
   workspace?: string
+  /**
+   * 工作区名的别名（operation=workspace 的 create/switch 也认这个）。
+   *
+   * 为什么保留两个名字：schema 里早已暴露 name 给调用方，
+   * 模型常按直觉写 name 而不是 workspace。两者等价，谁给谁算。
+   */
+  name?: string
   /** 工作区简介。 */
   description?: string
   /** 要保存的局部地点。 */

@@ -50,6 +50,10 @@ const SUITES = [
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
   { file: 'formula-story2.mjs', expect: 29, label: '读者视角高频公式（第 5 批：建筑/攻城/农业/医药）' },
   { file: 'taxonomy.mjs', expect: 35, label: '公式三轴标签（层级/领域/频率）' },
+  // 兼容性：模拟「别的插件可以任意编程」的敌意环境。
+  // 这两套专门防「装上了但被别人的插件搞挂」——和 host-contract 一样属于真机防线。
+  { file: 'compat.mjs', expect: 29, label: '兼容性：敌意 ctx / 服务抢占 / 全局污染' },
+  { file: 'compat-data.mjs', expect: 13, label: '兼容性：数据损坏 / 并发 / 目录共存' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
