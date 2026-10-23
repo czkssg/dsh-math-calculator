@@ -2,7 +2,9 @@
  * operation="world" 的实现。
  *
  * 从 index.ts 原样迁出（纯搬迁：逻辑、错误消息、输出文本逐字未改）。
- */
+  *
+ * @module dsh-math-calculator/ops/world-op
+*/
 
 import { toJsonValue, type JsonValue } from '../format.js'
 import { describeTerrain, type TerrainClimatology, type TerrainParams } from '../terrain.js'

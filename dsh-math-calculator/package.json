@@ -59,7 +59,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node test/run.mjs",
     "test:all": "node run-all-tests.mjs",
-    "preflight": "node scripts/preflight.mjs"
+    "preflight": "node scripts/preflight.mjs",
+    "doccheck": "node scripts/doc-coverage.mjs"
   },
   "keywords": [
     "dsh",

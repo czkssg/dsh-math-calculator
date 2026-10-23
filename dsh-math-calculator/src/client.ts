@@ -17,7 +17,9 @@
  *
  * 构建注意：本文件必须保持「无 import/export 语句」，
  * 由 tsconfig 编译成普通脚本；package.json 的 exports 指向 lib/client.js。
- */
+  *
+ * @module dsh-math-calculator/client
+*/
 
 ;(function () {
   'use strict'

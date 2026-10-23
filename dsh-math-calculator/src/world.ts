@@ -371,6 +371,16 @@ export interface WorldOptions {
   constants?: Record<string, number>
 }
 
+/**
+ * 世界推演总入口。
+ *
+ * @param params - 作者给的设定（全部可选；缺省 = 地球）。
+ * @param options.constants - 生效的物理常数；缺省读当前工作区（getActiveConstants）。
+ *   这是 S2 的关键：以前用 CONSTANTS 快照，用户改常数不生效（bug 已修）。
+ * @returns 完整画像：恒星/轨道/行星/气候/天空/卫星/生命/一致性检查/可信度。
+ *
+ * 失败策略：不抛异常，所有异常都降级成 warnings —— 作者改设定时不该被中断。
+ */
 export function generateWorld(params: WorldParams, options: WorldOptions = {}): WorldProfile {
   const warnings: string[] = []
   const highlights: string[] = []

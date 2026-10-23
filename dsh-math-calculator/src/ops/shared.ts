@@ -8,7 +8,9 @@
  *
  * 注意 mathjs 引擎缓存（bignum / fast）必须保持单例，所以和类型放在同一模块。
  * JsonValue / toJsonValue 属于 format.js，这里不重复定义。
- */
+  *
+ * @module dsh-math-calculator/ops/shared
+*/
 
 import { create, all } from 'mathjs'
 
@@ -20,6 +22,13 @@ import type { WorldParams } from '../world.js'
 // 类型
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 工具支持的全部 operation。
+ *
+ * ⚠️ 这是**对外契约**：schema 的 enum、help 清单、integration 测试的
+ * "25 个 operation" 断言都直接依赖它。新增 operation 必须同步改三处，
+ * 否则模型看得到名字却调不通，或测试直接变红。
+ */
 export type MathOperation =
   | 'auto'
   | 'evaluate'
@@ -47,6 +56,12 @@ export type MathOperation =
   | 'feasibility'
   | 'help'
 
+/**
+ * 所有 operation 共用的参数对象。
+ *
+ * 不同 operation 只读取自己关心的字段，其余忽略；所以字段注释必须标明归属
+ * （例如 "operation=formula：…"），否则调用方不知道该在什么时候传。
+ */
 export interface MathArgs {
   expression?: string
   variables?: { [key: string]: number | string }
@@ -141,6 +156,14 @@ export interface MathArgs {
   tempPrefixes?: string[]
 }
 
+/**
+ * 一次操作的结果。
+ *
+ *   result —— 给人和模型读的文本：含单位、提示、错误说明，必须能独立复述结论
+ *   value  —— 给程序/UI 用的结构化数据，必须 JSON 安全（不能有 BigNumber/undefined）
+ *
+ * 两者内容保持一致；只给 value 会让模型无从解释，只给 result 会让 UI 无法渲染。
+ */
 export interface Outcome {
   result: string
   value?: JsonValue
@@ -150,6 +173,15 @@ export interface Outcome {
 // 错误
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 计算器内部错误。
+ *
+ * type 供调用方程序判断（invalid_argument / no_solution / unsupported / forbidden …），
+ * message 给人看，hint 给**修复方向**。
+ *
+ * 约定：不要抛裸 Error —— 裸 Error 会丢掉 type 与 hint，模型就只能看到一句
+ * 无法行动的话（这是踩过的坑）。
+ */
 export class CalcError extends Error {
   readonly type: string
   readonly hint?: string
@@ -175,6 +207,18 @@ export class CalcError extends Error {
  */
 import { factorizeInt, makeNsolve, nullspaceOf, rankOf, singularValuesOf } from '../numeric.js'
 
+/**
+ * 创建一个 mathjs 实例。
+ *
+ * 三个关键设置：
+ *   · matrix: 'Matrix' —— 矩阵函数返回 mathjs Matrix（eigs/lusolve 依赖这个形状）
+ *   · randomSeed 固定 —— 概率分布/蒙特卡洛可复现（确定性是硬要求）
+ *   · number/precision —— BigNumber 模式做精确算术
+ *
+ * 安全：删除 import / createUnit，防止表达式注入任意 JS 或改写单位表。
+ * **不能**删 typed/parse/evaluate —— derivative/simplify 依赖它们。
+ * 自定义函数（rank/nsolve…）在删除 import **之前**注册，顺序不能反。
+ */
 export function buildMath(numberMode: 'BigNumber' | 'number', precision: number): any {
   const instance: any = create(all as any, {
     number: numberMode,
@@ -213,6 +257,12 @@ export function buildMath(numberMode: 'BigNumber' | 'number', precision: number)
 /** 当前精度下的 BigNumber 引擎（精度可变，按需重建）。 */
 let bignumCache: { precision: number; instance: any } | undefined
 
+/**
+ * 取 BigNumber 引擎（按 precision 缓存）。
+ *
+ * 缓存原因：mathjs 实例创建成本高，而 precision 在单次调用内不变。
+ * 精度变化必须重建，否则旧配置会污染新结果。
+ */
 export function bignum(precision: number): any {
   if (!bignumCache || bignumCache.precision !== precision) {
     bignumCache = { precision, instance: buildMath('BigNumber', precision) }
@@ -222,6 +272,12 @@ export function bignum(precision: number): any {
 
 /** 数值引擎（eigs/概率/回归用）。 */
 let fastCache: any | undefined
+/**
+ * 取数值引擎（固定 15 位有效数字）。
+ *
+ * 用于本来就只能近似的部分：eigs、概率、回归、ODE —— 迭代算法本身是浮点的，
+ * 用 BigNumber 只会更慢且没有意义。
+ */
 export function fast(): any {
   if (!fastCache) fastCache = buildMath('number', 15)
   return fastCache
@@ -231,6 +287,12 @@ export function fast(): any {
 // 输入处理 / 数字格式化
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 规范化输入：换行转语句分隔符、去多余分号、引号内原样保留。
+ *
+ * 为什么需要：模型常把多行表达式或带引号的字符串直接传来，
+ * 换行会被 mathjs 当成语句结束而报错。
+ */
 export function normalizeSource(input: string): string {
   let output = ''
   let quote = ''

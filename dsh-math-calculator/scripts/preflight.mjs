@@ -11,6 +11,7 @@
  * 退出码非 0 表示「先别装」。
  */
 import { readFileSync, existsSync, statSync } from 'node:fs'
+import { auditDocs } from './doc-coverage.mjs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -62,7 +63,14 @@ const officialImports = [...indexSource.matchAll(/from '(@deepseek-ai\/[^']+)'/g
 const unexpected = officialImports.filter((name) => name !== '@deepseek-ai/dsh-tools')
 check('只 import 官方 dsh-tools', unexpected.length === 0, unexpected.join(', ') || '无其它')
 
-console.log('== 5. package.json ==')
+console.log('== 5. 注释覆盖 ==')
+const docs = auditDocs(join(root, 'src'))
+check('模块头齐全', docs.missingHeaders.length === 0, docs.missingHeaders.slice(0, 3).join('; '))
+check('模块头带 @module', docs.missingModules.length === 0, docs.missingModules.slice(0, 3).join('; '))
+check('导出都有文档注释', docs.missingExports.length === 0, docs.missingExports.slice(0, 3).join('; '))
+notes.push(`注释行占比 ${(docs.commentRatio * 100).toFixed(1)}%（${docs.files} 文件 / ${docs.exports} 导出）`)
+
+console.log('== 6. package.json ==')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 check('有 dsh.bundle.patch', Boolean(pkg.dsh && pkg.dsh.bundle && pkg.dsh.bundle.patch))
 check('有 dsh.client.platform', pkg.dsh && pkg.dsh.client && pkg.dsh.client.platform === 'web')

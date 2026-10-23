@@ -15,6 +15,7 @@ const LANCZOS = [
   9.9843695780195716e-6, 1.5056327351493116e-7,
 ]
 
+/** log Γ(x)：Lanczos 近似，x<0.5 时用反射公式避免精度损失。 */
 export function logGamma(x: number): number {
   if (x < 0.5) {
     // 反射公式
@@ -121,6 +122,7 @@ export function exponentialCdf(x: number, rate: number): number {
   if (x < 0) return 0
   return 1 - Math.exp(-rate * x)
 }
+/** 指数分布密度 f(x)=λe^{-λx}（x<0 时为 0）；λ 是单位时间发生率。 */
 export function exponentialPdf(x: number, rate: number): number {
   if (x < 0) return 0
   return rate * Math.exp(-rate * x)

@@ -201,8 +201,15 @@ import { opFeasibility } from './ops/feasibility-op.js'
 // ────────────────────────────────────────────────────────────────────────────
 
 // 公开类型从 ops/shared.ts 再导出，保持 index.ts 的对外 API 不变。
+/** 对外再导出 operation 联合类型：调用方只需从入口 import。 */
 export type { MathOperation } from './ops/shared.js'
 
+/**
+ * 工具执行结果（模型与 UI 都读这个）。
+ *
+ * ok=false 时 result 里是结构化错误文本，error 字段给出 type/message/hint；
+ * **任何情况下都不抛异常**，保证模型不会因为一次坏输入中断整轮对话。
+ */
 export interface MathResult {
   ok: boolean
   operation: string
@@ -2208,6 +2215,7 @@ export const mathExecuteTool = defineTool({
 // Cordis 插件入口
 // ────────────────────────────────────────────────────────────────────────────
 
+/** cordis 插件名：宿主用它做插件去重与排序，必须与 package.json 的 name 一致。 */
 export const name = PLUGIN_NAME
 
 /**
@@ -2253,6 +2261,17 @@ function optionalService(ctx: any, name: string): any {
   return undefined
 }
 
+/**
+ * 插件入口：注册工具 → 三层提醒 → UI 后端路由。
+ *
+ * 顺序有意为之：
+ *   1. 先注册工具 —— 即使后面的可选服务全不可用，核心能力也要在；
+ *   2. 再挂钩子与系统提示 —— 失败只影响"提醒模型来用"，不影响工具；
+ *   3. 最后挂 HTTP 路由 —— 依赖 webServer，headless 宿主没有时静默跳过。
+ *
+ * 每一步独立 try/catch：任何一步失败都不能让整个 entry 判为 did not activate
+ * （那会导致工具根本没注册，是踩过的真机事故）。
+ */
 export function apply(ctx: any): void {
   if (!ctx || typeof ctx.tools?.register !== 'function') {
     throw new Error(`${PLUGIN_NAME}: 宿主未提供 tools 服务，无法注册 ${TOOL_NAME}`)

@@ -306,6 +306,13 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
   }
 }
 
+/**
+ * 本插件 HTTP 前缀（唯一性关键：撞了别的插件会互相截胡）。
+ *
+ * 注册 prefix 路由时**不能带尾斜杠** —— 宿主判据是
+ * `pathname === prefix || pathname.startsWith(prefix + '/')`，自带斜杠；
+ * 写尾斜杠会让除裸路径外的所有子路由失效。
+ */
 export const API_PREFIX = '/api/dsh-math-calculator'
 
 // ────────────────────────────────────────────────────────────────────────────

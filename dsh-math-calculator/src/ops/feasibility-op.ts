@@ -2,7 +2,9 @@
  * operation="feasibility" 的实现。
  *
  * 从 index.ts 原样迁出（纯搬迁：逻辑、错误消息、输出文本逐字未改）。
- */
+  *
+ * @module dsh-math-calculator/ops/feasibility-op
+*/
 
 import { CONSTRAINTS, checkFeasibility, deriveConstraintContext, type ConstraintResult } from '../feasibility.js'
 import { toJsonValue } from '../format.js'

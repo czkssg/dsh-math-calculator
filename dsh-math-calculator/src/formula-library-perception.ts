@@ -21,6 +21,12 @@ import type { FormulaDef } from './formula-library.js'
 const p = (value: number, desc: string) => ({ value, desc })
 const req = (desc: string) => ({ value: null, desc })
 
+/**
+ * 第三批公式：读者可感知层（地平线、昼夜、声音、行军、城市、星空）。
+ *
+ * 这一批的判断标准不是"物理学上重要"，而是"读者会在故事里注意到"。
+ * 与后续 story 批次的区别：这些是环境与尺度感，story 批次偏材料/天气/医药等具体处境。
+ */
 export const PERCEPTION_FORMULAS: FormulaDef[] = [
   // ══════════════════════════════════════════════════════════════════
   // 一、视野与地平线（旅人抬头就能看见）

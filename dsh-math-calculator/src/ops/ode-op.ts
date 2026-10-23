@@ -2,7 +2,9 @@
  * operation="ode" 的实现。
  *
  * 从 index.ts 原样迁出（纯搬迁：逻辑、错误消息、输出文本逐字未改）。
- */
+  *
+ * @module dsh-math-calculator/ops/ode-op
+*/
 
 import { OdeError, parseOdeSystem, solveOde, type OdeSolution } from '../ode.js'
 import { CalcError, fast, normalizeSource, trimNumber, type MathArgs, type Outcome } from './shared.js'

@@ -16,6 +16,12 @@ const p = (value: number, desc: string) => ({ value, desc })
 /** 必填参数。 */
 const req = (desc: string) => ({ value: null, desc })
 
+/**
+ * 第二批公式（力学/电磁/热/波/光/天文/生物/化学/军事/社科）。
+ *
+ * 与主批次的区别只是收录时间与来源，**分类不看本文件**：
+ * 规则层级与学科领域由 taxonomy.ts 统一判定（cat 只是旧路径字段）。
+ */
 export const EXT_FORMULAS: FormulaDef[] = [
   // ══════════════════════════════════════════════════════════════════
   // 物理 · 力学（补充）

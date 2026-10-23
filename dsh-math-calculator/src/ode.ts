@@ -42,6 +42,12 @@ export interface OdeSystem {
   equations: OdeEquation[]
 }
 
+/**
+ * ODE 求解错误。
+ *
+ * type 区分 syntax / blowup / unsupported / invalid_argument；
+ * 调用方据 type 决定改初值、改步长，还是换 operation。
+ */
 export class OdeError extends Error {
   readonly type: string
   constructor(type: string, message: string) {
