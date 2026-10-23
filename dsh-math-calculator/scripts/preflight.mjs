@@ -56,6 +56,10 @@ check('挂 sidebar.panellist 入口', client.includes('sidebar.panellist'))
 check('挂 main 页面', client.includes("name: 'main'"))
 check('有错误边界', client.includes('MathCalcBoundary'))
 check('不注入全局样式', !client.includes('document.head'))
+// 真机事故：桌面宿主会重复执行 client bundle，宿主加载器对同一 id 二次注册会抛错，
+// 未捕获错误会让整次 web boot 失败并被桌面端升级为致命错误（窗口都出不来）。
+check('客户端入口幂等（重复执行不抛）', client.includes('__dshMathCalculatorClientRegistered__'))
+check('注册失败被兜底', /try\s*\{[\s\S]{0,400}?loader\.load/.test(client) && client.includes('console.warn'))
 
 console.log('== 4. 运行期依赖 ==')
 const indexSource = readFileSync(join(root, 'lib/index.js'), 'utf8')

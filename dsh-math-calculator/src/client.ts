@@ -844,14 +844,33 @@
   }
 
   // ── 注册到宿主的浏览器模块加载器 ──
+  //
+  // ⚠️ 真机事故（2026-10-24 崩溃日志）：
+  //   Uncaught Error: client-modules: duplicate factory registration for
+  //   "dsh-math-calculator-client" (bundle executed twice without invalidate?)
+  //   → web boot: 1 entry did not activate
+  //   → DesktopHostFatalError: cannot create effect on inactive context
+  //   → 桌面端直接退出，窗口都没出来。
+  //
+  // 原因：桌面宿主在启动/热重载时会**重复执行同一个 client bundle**。
+  // 宿主加载器对同一个 id 第二次 load 会抛错，这个未捕获错误会把整次
+  // web boot 判为失败；桌面端再把它升级成致命错误。
+  //
+  // 教训：client 入口必须**幂等**——重复执行只能是 no-op，绝不能抛。
   const loader = typeof window !== 'undefined' ? (window as any).__ModuleLoader__ : undefined
   if (!loader || typeof loader.load !== 'function') {
     // 宿主未提供加载器时静默跳过（不影响 node 侧功能）
     return
   }
 
-  loader.load({
-    id: 'dsh-math-calculator-client',
+  // 幂等闸门：同一个页面里第二次执行直接返回。
+  const REGISTER_FLAG = '__dshMathCalculatorClientRegistered__'
+  const w = window as any
+  if (w[REGISTER_FLAG]) return
+
+  try {
+    loader.load({
+      id: 'dsh-math-calculator-client',
     factory: function (require) {
       let react = null
       try {
@@ -968,5 +987,16 @@
         },
       }
     },
-  })
+    })
+    // 注册成功才置位；重复执行时上面会直接 return。
+    w[REGISTER_FLAG] = true
+  } catch (error) {
+    // 重复注册不是致命错误：宿主可能重放 bundle。
+    // 这里必须吞掉——抛出会让整次 web boot 判为失败，桌面端直接退出。
+    try {
+      console.warn('[dsh-math-calculator] client module registration skipped:', error)
+    } catch {
+      /* console 也可能不可用 */
+    }
+  }
 })()
