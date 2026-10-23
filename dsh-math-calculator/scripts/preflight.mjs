@@ -90,6 +90,30 @@ if (existsSync(manifestPath)) {
   check('清单声明 math_execute', Boolean(manifest.contributes && manifest.contributes.tools && manifest.contributes.tools.includes('math_execute')))
 }
 
+console.log('== 8. peer 依赖是否接受宿主的 prerelease 版本 ==')
+//
+// 为什么必须查这一项（真机事故）：
+//   dsh-my-guardian 这类"守门人"插件会在挂载前校验 peerDependencies。
+//   宿主发布的是 0.1.7-rc.2 这类 **prerelease** 版本，而 semver 默认
+//   `>=0.1.0 <0.3.0` **不接受任何 prerelease** —— 于是插件被判"依赖版本不满足"，
+//   先 quarantine 后 freeze，最后被移出启动名册，表现就是"装上了但启动不了"。
+//
+// 正确写法：范围里带 `-0`（包含所有 prerelease），或显式枚举 rc 版本。
+const toolsPkgPath = join(root, 'node_modules/@deepseek-ai/dsh-tools/package.json')
+if (existsSync(toolsPkgPath)) {
+  const hostToolsVersion = JSON.parse(readFileSync(toolsPkgPath, 'utf8')).version
+  const peerRange = pkg.peerDependencies && pkg.peerDependencies['@deepseek-ai/dsh-tools']
+  const hostIsPrerelease = String(hostToolsVersion).includes('-')
+  const rangeAcceptsPrerelease = typeof peerRange === 'string' && (peerRange.includes('-0') || /-rc\.|\b0\.[0-9]+\.[0-9]+-/.test(peerRange))
+  check(
+    'peer[dsh-tools] 接受宿主 prerelease 版本',
+    Boolean(peerRange) && (!hostIsPrerelease || rangeAcceptsPrerelease),
+    `宿主 ${hostToolsVersion} / 声明 ${peerRange ?? '(缺失)'}；需要 -0 或显式 rc`,
+  )
+} else {
+  notes.push('未找到本地 dsh-tools，跳过 peer 版本检查')
+}
+
 console.log('')
 if (failures.length > 0) {
   console.log('✗ 自检未通过（先别装）：')
