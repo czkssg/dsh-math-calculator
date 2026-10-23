@@ -168,7 +168,8 @@ console.log('-- 5. client 产物格式（宿主能否加载）--')
     vm.runInContext(source, context)
     assert('client.js 能在脚本环境执行', true)
     assert('向 loader 注册了模块', Boolean(loadedSpec))
-    assert('模块 id 正确', loadedSpec && loadedSpec.id === 'dsh-math-calculator-client',
+    // 宿主按包名查找 client 模块：id 必须是包名（真机事故，见 docs/handoff）
+    assert('模块 id 等于包名', loadedSpec && loadedSpec.id === 'dsh-math-calculator',
       loadedSpec ? loadedSpec.id : '')
     // 调用 factory
     const fakeRequire = () => ({ createElement: () => null, useState: () => [{}, () => {}], useEffect: () => {}, useCallback: (fn) => fn })

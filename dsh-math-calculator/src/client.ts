@@ -870,7 +870,18 @@
 
   try {
     loader.load({
-      id: 'dsh-math-calculator-client',
+      // ⚠️ 这个 id 必须等于**包名**（不是随便起的名）。
+      //
+      // 真机证据（2026-10-24 02:03 崩溃日志 + 逐插件比对）：
+      //   dsh-hover-approve / dsh-context / dshmarket / dsh-question-note /
+      //   dsh-mattpocock-skills-deck / dsh-connect-workbuddy —— 全部用包名注册。
+      //   宿主 boot 时按**包名**去模块表里取 client 模块；取不到就判
+      //   「entry did not activate → import failed」，桌面端随即致命退出。
+      //
+      // 原先用 'dsh-math-calculator-client'：模块其实注册成功了，
+      // 但宿主按 'dsh-math-calculator' 查不到 → 一直被判失败。
+      // 这也是「侧栏入口从来没出现过」的真正原因。
+      id: 'dsh-math-calculator',
     factory: function (require) {
       let react = null
       try {

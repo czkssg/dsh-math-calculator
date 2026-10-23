@@ -57,7 +57,9 @@ globalThis.window = {
 }
 await import(pathToFileURL(clientPath).href)
 assert('模块加载器被调用', captured !== null)
-assert('id 唯一', captured.id === 'dsh-math-calculator-client', captured?.id)
+// 真机事故：宿主按**包名**查找 client 模块，注册 id 必须是包名。
+// 用 '<包名>-client' 时模块注册成功但宿主查不到 → 每次 boot 都报 import failed。
+assert('id 等于包名', captured.id === 'dsh-math-calculator', captured?.id)
 
 class FakeComponent {
   constructor(props) {

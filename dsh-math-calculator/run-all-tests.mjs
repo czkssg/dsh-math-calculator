@@ -56,7 +56,7 @@ const SUITES = [
   { file: 'compat-data.mjs', expect: 13, label: '兼容性：数据损坏 / 并发 / 目录共存' },
   // 真机崩溃回归：桌面宿主会重复执行 client bundle，重复注册必须是无害的 no-op。
   // 这条来自 2026-10-24 的崩溃日志：duplicate factory registration → 桌面端退出。
-  { file: 'client-idempotent.mjs', expect: 15, label: '客户端入口幂等（防宿重重放导致致命崩溃）' },
+  { file: 'client-registration.mjs', expect: 16, label: '客户端入口幂等 + 注册 id = 包名（防桌面端致命崩溃）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },

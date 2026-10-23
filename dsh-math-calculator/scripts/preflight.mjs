@@ -60,6 +60,12 @@ check('不注入全局样式', !client.includes('document.head'))
 // 未捕获错误会让整次 web boot 失败并被桌面端升级为致命错误（窗口都出不来）。
 check('客户端入口幂等（重复执行不抛）', client.includes('__dshMathCalculatorClientRegistered__'))
 check('注册失败被兜底', /try\s*\{[\s\S]{0,400}?loader\.load/.test(client) && client.includes('console.warn'))
+// 真机事故：宿主按**包名**查找 client 模块。注册 id 写成 "<包名>-client" 时，
+// 模块其实注册成功了，但宿主按包名取不到 → "entry did not activate / import failed"
+// → 桌面端升级为致命错误，窗口都出不来。
+const clientPackageName = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name
+check('客户端注册 id = 包名', client.includes(`id: '${clientPackageName}'`), clientPackageName)
+check('客户端注册 id 不是 "<包名>-client"', !client.includes(`id: '${clientPackageName}-client'`))
 
 console.log('== 4. 运行期依赖 ==')
 const indexSource = readFileSync(join(root, 'lib/index.js'), 'utf8')
