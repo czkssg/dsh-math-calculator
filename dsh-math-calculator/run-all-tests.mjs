@@ -53,6 +53,7 @@ const SUITES = [
   { file: 'anchor.mjs', expect: 30, label: '逆推校准 + 七张表持久化 + 版本对比' },
   { file: 'fantasy.mjs', expect: 36, label: '幻想层（叠加/等价现实量/只提醒不反驳）' },
   { file: 'universe-ops.mjs', expect: 26, label: '补丁（混沌拦截/数据表继承/A-B对比）' },
+  { file: 'civilization.mjs', expect: 30, label: '目录4 宏观文明（能量/材料/交通/技术树）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

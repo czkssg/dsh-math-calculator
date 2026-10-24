@@ -30,6 +30,7 @@ import { archiveDerivation, loadArchive, compareVersions } from '../derivation-l
 import { currentWorkspace } from '../workspace.js'
 import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
+import { runCivilization } from '../civilization.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -301,6 +302,42 @@ export function opDerivation(args: MathArgs): Outcome {
         value.cost = computeCost(overlay(physical, ability, demand).fantasy * ability.costPerUnit, bodyArea)
       }
     }
+  } else if (sub === 'civilization') {
+    // 目录4：宏观文明推演（能量/材料/交通/技术树）
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const civ = runCivilization(worldParams)
+    out.push('═══ 宏观文明推演 ═══', '')
+    const groups: Array<[string, string]> = [
+      ['energy', '4.1 能量与热力学'],
+      ['material', '4.2 材料与结构'],
+      ['transport', '4.3 空间与交通'],
+    ]
+    const num = function (value: number): string {
+      if (!Number.isFinite(value)) return '—'
+      const abs = Math.abs(value)
+      if (abs >= 1e6 || (abs < 1e-2 && abs > 0)) return value.toExponential(2)
+      return Number(value.toPrecision(4)).toString()
+    }
+    for (const group of groups) {
+      const items = civ.limits.filter(function (item) { return item.category === group[0] })
+      if (items.length === 0) continue
+      out.push('【' + group[1] + '】')
+      for (const item of items) {
+        out.push('  ' + item.name.padEnd(22) + num(item.value).padStart(12) + ' ' + item.unit)
+        out.push('    依据：' + item.basis)
+        if (item.breakthrough) out.push('    突破方向：' + item.breakthrough)
+      }
+      out.push('')
+    }
+    out.push('【4.4 技术树】被物理锁死或放开的分支')
+    for (const item of civ.tech) {
+      const mark = item.status === 'open' ? '开放' : item.status === 'conditional' ? '有条件' : '锁死'
+      out.push('  ' + mark.padEnd(6) + item.branch.padEnd(18) + item.reason)
+      if (item.requirement) out.push('         需要：' + item.requirement)
+    }
+    out.push('')
+    out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
+    value.civilization = civ
   } else if (sub === 'chaos') {
     // 混沌拦截器（补丁13）：不确定性的量化表达，不猜数字。
     const lyapunov = typeof args.lyapunov === 'number' ? args.lyapunov : 1.0
@@ -385,7 +422,7 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / archive / history / compare / checklist / tables')
+    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / civilization / chaos / inherit / diff / archive / history / compare / checklist / tables')
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }
