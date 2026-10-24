@@ -204,11 +204,27 @@ export function dimensionlessPack(constants: Record<string, number>): Dimensionl
   const alphaG = (G * mp * mp) / (hbar * c)
   const gravityOverEm = alphaG / alpha
 
+  // 现实值也用**同一组公式**从现实常数算出来，不写死数字。
+  // 否则公式一改，standard 与实际就脱节，出现第二份真相。
+  const REAL = {
+    c: 299792458,
+    hbar: 1.054571817e-34,
+    e: 1.602176634e-19,
+    me: 9.1093837015e-31,
+    mp: 1.67262192369e-27,
+    G: 6.6743e-11,
+    epsilon0: 8.8541878128e-12,
+  }
+  const realAlpha = (REAL.e * REAL.e) / (4 * Math.PI * REAL.epsilon0 * REAL.hbar * REAL.c)
+  const realMpMe = REAL.mp / REAL.me
+  const realAlphaG = (REAL.G * REAL.mp * REAL.mp) / (REAL.hbar * REAL.c)
+  const realGravityOverEm = realAlphaG / realAlpha
+
   const packs = [
-    { name: 'alpha', meaning: '精细结构常数 —— 电磁力相对强弱', standard: 1 / 137.035999084, current: alpha },
-    { name: 'mp/me', meaning: '质子电子质量比 —— 物质与化学的尺标', standard: 1836.15267343, current: mpMe },
-    { name: 'alphaG', meaning: '引力耦合常数 —— 引力为何可忽略', standard: 5.906149417e-39, current: alphaG },
-    { name: 'gravity/em', meaning: '引力与电磁力强度比', standard: 5.906149417e-39 / (1 / 137.035999084), current: gravityOverEm },
+    { name: 'alpha', meaning: '精细结构常数 —— 电磁力相对强弱', standard: realAlpha, current: alpha },
+    { name: 'mp/me', meaning: '质子电子质量比 —— 物质与化学的尺标', standard: realMpMe, current: mpMe },
+    { name: 'alphaG', meaning: '引力耦合常数 —— 引力为何可忽略', standard: realAlphaG, current: alphaG },
+    { name: 'gravity/em', meaning: '引力与电磁力强度比', standard: realGravityOverEm, current: gravityOverEm },
   ]
 
   return packs.map(function (pack) {

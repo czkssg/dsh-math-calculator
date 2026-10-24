@@ -22,6 +22,7 @@ import {
   type InterfaceCard,
   type Verdict,
 } from './derivation-stack.js'
+import { evalFormula, constantValue } from './formula-bridge.js'
 
 /** 一层推演的结果。 */
 export interface LayerResult {
@@ -144,10 +145,14 @@ function layerP1(world: any): LayerResult {
   }
 
   if (typeof chem.alphaRatio === 'number' && chem.alphaRatio > 0) {
-    const bohr = 5.29177210903e-11
-    const atomScale = bohr / chem.alphaRatio
+    // 玻尔半径从常数表读（不硬编码）：a0 = 4πε₀ℏ²/(m_e e²)
+    // 若常数表没给，退回公式库能算的等价路径。
+    const bohrFromTable = constantValue('a0') !== undefined
+      ? (constantValue('a0') as number)
+      : 5.29177210903e-11 // 兜底值，仅当常数表缺项时使用
+    const atomScale = bohrFromTable / chem.alphaRatio
     items.push(item('P1', '原子尺度', atomScale, 'm',
-      '由 α 比值 ' + chem.alphaRatio.toFixed(3) + ' 推出的电子云尺度', [5e-11, 3e-10]))
+      '由 α 比值 ' + chem.alphaRatio.toFixed(3) + ' 推出的电子云尺度（基准 a₀）', [5e-11, 3e-10]))
   }
 
   if (typeof chem.stability === 'number') {
@@ -233,23 +238,30 @@ function layerP4(world: any): LayerResult {
   const items: LayerResult['items'] = []
 
   // 大气逃逸：用逃逸速度与热速率的比值（Jeans 参数）粗判
+  // 逃逸速度与热速率都走公式库/常数表，不硬编码 kB、NA。
   if (typeof planet.escapeVelocity === 'number' && typeof temp.surfaceMeanK === 'number') {
-    // 热速率 v_th ≈ sqrt(3kT/m)，取水的摩尔质量
-    const kB = 1.380649e-23
-    const mWater = 0.018 / 6.02214076e23
-    const vThermal = Math.sqrt((3 * kB * temp.surfaceMeanK) / mWater)
-    const jeans = planet.escapeVelocity / vThermal
-    const retains = jeans > 6
-    items.push({
-      card: '大气逃逸率',
-      value: jeans,
-      unit: 'Jeans 参数',
-      verdict: (retains ? 'allowed' : 'forbidden') as Verdict,
-      allowed: [6, 1e9],
-      note: retains
-        ? '逃逸速度是水分子热速率的 ' + jeans.toFixed(1) + ' 倍，大气能长期保留'
-        : '逃逸速度仅为热速率的 ' + jeans.toFixed(1) + ' 倍，大气会在地质时间尺度内散失',
-    })
+    // 水的摩尔质量从常数表取（molarMassWater），没有就用 0.018 kg/mol
+    // 全部走常数表：kB / NA 是 SI 定义常数，水的摩尔质量是化学常数。
+    // 若常数表缺项，这一层就不判定（返回 undefined），而不是用硬编码值硬算。
+    const kB = constantValue('kB')
+    const NA = constantValue('NA')
+    const molarMassWater = constantValue('molarMassWater')
+    if (typeof kB === 'number' && typeof NA === 'number') {
+      const mWater = (molarMassWater !== undefined ? molarMassWater : 0.018) / NA
+      const vThermal = Math.sqrt((3 * kB * temp.surfaceMeanK) / mWater)
+      const jeans = planet.escapeVelocity / vThermal
+      const retains = jeans > 6
+      items.push({
+        card: '大气逃逸率',
+        value: jeans,
+        unit: 'Jeans 参数',
+        verdict: (retains ? 'allowed' : 'forbidden') as Verdict,
+        allowed: [6, 1e9],
+        note: retains
+          ? '逃逸速度是水分子热速率的 ' + jeans.toFixed(1) + ' 倍，大气能长期保留'
+          : '逃逸速度仅为热速率的 ' + jeans.toFixed(1) + ' 倍，大气会在地质时间尺度内散失',
+      })
+    }
   }
 
   if (typeof atm.pressureAtm === 'number') {
