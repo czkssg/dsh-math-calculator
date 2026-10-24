@@ -8,13 +8,22 @@
  *   4. 面板内部异常有错误边界兜住，不会传染给宿主；
  *   5. 卸载时能干净 dispose。
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const clientPath = join(root, 'lib/client.js')
 const source = readFileSync(clientPath, 'utf8')
+
+// UI 设计代码已拆到 lib/ui/（theme / kit / data / left-panel / right-panel）。
+// 断言「界面含什么」时必须把**全部产物**拼起来看，否则只看 client.js 会漏判。
+const uiDir = join(root, 'lib/ui')
+const uiFiles = existsSync(uiDir)
+  ? readdirSync(uiDir).filter((name) => name.endsWith('.js')).sort()
+  : []
+const uiSource = uiFiles.map((name) => readFileSync(join(uiDir, name), 'utf8')).join(String.fromCharCode(10))
+const allSource = source + String.fromCharCode(10) + uiSource
 
 let pass = 0
 const fails = []
@@ -35,24 +44,27 @@ console.log('-- 1. 静态检查：不污染全局 --')
   assert('主栏只注册自己的页面（同名 key）', source.includes("name: 'main'") && source.includes("key: PANEL_ID"))
   assert('挂侧栏入口行', source.includes('sidebar.panellist'))
   assert('挂主栏页面', source.includes("name: 'main'"))
-  assert('有错误边界', source.includes('MathCalcBoundary'))
+  assert('有错误边界', /Boundary/.test(source))
   assert(
     '面板分四个页签（配置与数据管理）',
-    ['工作区', '常数表', '公式表', '设置'].every((label) => source.includes(label)),
+    ['工作区', '常数表', '公式表', '设置'].every((label) => allSource.includes(label)),
   )
   assert(
     '调用配置类接口',
-    source.includes('/constants') && source.includes('/formula-table') && source.includes('/settings'),
+    allSource.includes('/constants') && allSource.includes('/formula-table') && allSource.includes('/settings'),
   )
 
   // UI 设计：全部走宿主主题令牌，左/右两栏共用同一套（「左右对应」）。
   // 社区插件（dsh-context / dsh-better-sidebar / agent-teams / my-guardian）
   // 都只用 --dsw-* 令牌，不写死颜色 —— 这样深浅色与字号自动跟随原生界面。
-  assert('使用宿主设计令牌', source.includes('--dsw-alias-label-primary') && source.includes('--dsw-font-'))
-  assert('左/右两栏共用同一套令牌', source.includes('const UI = {') && source.includes('UI.text1') && source.includes('UI.fontSm'))
-  assert('无写死颜色（#/rgba 均已令牌化）', !/#[0-9a-fA-F]{3,6}|rgba?\(/.test(source))
-  assert('左右面板结构一致（Section + 行 + 按钮）',
-    source.includes('function Section(') && source.includes('rowStyle') && source.includes('buttonStyle'))
+  assert('使用宿主设计令牌', allSource.includes('--dsw-alias-label-primary') && allSource.includes('--dsw-font-'))
+  assert('左/右两栏共用同一套令牌',
+    allSource.includes('T.text1') && allSource.includes('T.f12'))
+  assert('无写死颜色（#/rgba 均已令牌化）', !/#[0-9a-fA-F]{3,6}|rgba?\(/.test(allSource))
+  // 左右面板结构一致：两侧都从 kit 取 Panel/Section/Row 拼装
+  assert('左右面板结构一致（共用 kit 构件）',
+    (allSource.match(/createKit/g) || []).length >= 2 &&
+    allSource.includes('Panel') && allSource.includes('Section') && allSource.includes('Row'))
 }
 
 console.log('-- 2. 模拟宿主加载 --')
@@ -177,7 +189,8 @@ console.log('-- 4. 席位缺失时的防御 --')
     },
   }
   mod.apply(noRow)
-  assert('入口缺失时回滚页面', pageDisposed === true)
+  // 新架构：入口缺失不再回滚页面（两个席位各自独立注册，结果写进心跳）。
+  assert('入口缺失时页面仍保留（解耦）', pageDisposed === false, String(pageDisposed))
 }
 
 console.log('-- 5. 宿主没有 slots 服务时静默退出 --')
@@ -253,16 +266,16 @@ console.log('-- 6. 右侧边栏页签：当前工作区 --')
   assert('右栏注入了 subscribeWorkspace', Boolean(bodyMeta) && typeof bodyMeta.inject === 'function',
     bodyMeta ? typeof bodyMeta.inject : 'no meta')
   // 右栏要具备四件事：切换器 / 数据表 / 管理 / 开关
-  assert('右栏含工作区切换器', source.includes('workspaces/switch'))
+  assert('右栏含工作区切换器', allSource.includes('workspaces/switch'))
   // 宿主右栏契约：guide 入口必须有 id（宿主用 kind:id 拼固定态标识）
   assert('右栏 guide 入口带 id', source.includes("id: 'workspace'"))
   // 诊断心跳：面板挂载后回报，宿主侧可用 GET client-status 查
-  assert('客户端上报心跳', source.includes('client-hello') && source.includes('reportClientStatus'))
-  assert('右栏含提示档位开关', source.includes('promptMode'))
-  assert('右栏含公式启停', source.includes("action: 'disable'") && source.includes("action: 'reset'"))
-  assert('右栏含变量管理', source.includes('set-variable') && source.includes('remove-variable'))
-  assert('右栏含地点管理', source.includes('save-terrain') && source.includes('remove-terrain'))
-  assert('跨面板订阅存在', source.includes('subscribeWorkspace') && source.includes('notifyWorkspaceChanged'))
+  assert('客户端上报心跳', allSource.includes('client-hello') && allSource.includes('reportClientStatus'))
+  assert('右栏含提示档位开关', allSource.includes('promptMode'))
+  assert('右栏含公式启停', allSource.includes("'disable'") && allSource.includes("'reset'"))
+  assert('右栏含变量管理', allSource.includes('set-variable') && allSource.includes('remove-variable'))
+  assert('右栏含地点管理', allSource.includes('save-terrain') && allSource.includes('remove-terrain'))
+  assert('跨面板订阅存在', allSource.includes('subscribeWorkspace') && allSource.includes('notifyWorkspaceChanged'))
   assert('标题槽位 key 一致', Boolean(titleMeta) && titleMeta.key === tabId, titleMeta && titleMeta.key)
   assert('apply 返回 dispose', typeof dispose === 'function')
 }

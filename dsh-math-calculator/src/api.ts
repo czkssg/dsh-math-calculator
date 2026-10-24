@@ -111,6 +111,13 @@ function field(body: unknown, key: string): string | undefined {
  */
 let clientHeartbeat: { at: string; payload: Record<string, unknown> | null } | null = null
 
+/**
+ * 处理一次 UI 后端请求。
+ *
+ * @param path - 去掉前缀的路径
+ * @param request - 请求
+ * @returns 响应
+ */
 export function handleApiRequest(path: string, request: ApiRequest): ApiResponse {
   const method = (request.method ?? 'GET').toUpperCase()
   const body = request.body

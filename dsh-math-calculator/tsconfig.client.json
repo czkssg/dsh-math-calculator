@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2023", "DOM"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "module": "preserve",
     "moduleResolution": "bundler",
     "outDir": "lib",
@@ -16,6 +19,12 @@
     "noEmitOnError": false,
     "types": []
   },
-  "include": ["src/client.ts"],
-  "exclude": ["node_modules", "lib", "test"]
+  "include": [
+    "src/client.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib",
+    "test"
+  ]
 }
