@@ -30,6 +30,8 @@
  *   ④ 判据（什么算硬约束、什么算叙事选择）。
  */
 
+import { currentWorkspace, loadWorkspace, updateWorkspace } from './workspace.js'
+
 /** 底座的一项能力。 */
 export interface BaseCapability {
   /** 调用方式。 */
@@ -194,7 +196,7 @@ export const CONFLICT_PRIORITY = [
 ];
 
 /** 工作流顺序（方案的 0—10 步，压缩成 AI 可执行的样子）。 */
-export const WORKFLOW = [
+export const WORKFLOW: Array<{ step: string; do: string; skip: string }> = [
   { step: '0 立项', do: '确认推演类型（叙事级/区域级/硬自洽级）与观测者', skip: '用户已说清时跳过' },
   { step: '1 变更清单', do: '记录改了哪些参数、每项怎么处理', skip: '没改参数时跳过' },
   { step: '2 无量纲化', do: 'derivation → dimensionless，看真正的变化', skip: '只改环境参数时跳过' },
@@ -307,5 +309,116 @@ export function buildBriefPlaybook(state: {
   if ((state.customConstants ?? 0) > 0) {
     out.push('- 本区有自创量，它们与现有物理的关系要你判断')
   }
+  return out.join(String.fromCharCode(10))
+}
+
+/** 可自定义的指令集配置。 */
+export interface PlaybookConfig {
+  /** 追加自定义硬约束。 */
+  extraHardConstraints?: string[]
+  /** 追加自定义软约束。 */
+  extraSoftConstraints?: string[]
+  /** 追加自定义叙事选择。 */
+  extraNarrative?: string[]
+  /** 自定义工作流（整批替换默认 11 步）。 */
+  customWorkflow?: Array<{ step: string; do: string; skip: string }>
+  /** 关闭某些底座能力的说明（减少提示词长度）。 */
+  disabledCapabilities?: string[]
+  /** 追加 AI 职责。 */
+  extraDuties?: Array<{ duty: string; why: string; good: string }>
+}
+
+/** 读配置（存在工作区里）。 */
+export function loadPlaybookConfig(): PlaybookConfig {
+  try {
+    const data = loadWorkspace(currentWorkspace())
+    return (data as any).playbookConfig ?? {}
+  } catch {
+    return {}
+  }
+}
+
+/** 写配置。 */
+export function savePlaybookConfig(config: PlaybookConfig): void {
+  updateWorkspace(currentWorkspace(), function (current) {
+    return { ...current, playbookConfig: config } as never
+  })
+}
+
+/**
+ * 合并默认配置与用户自定义。
+ *
+ * 用户可以在工作区里改：加自己的硬约束/软约束/叙事选择、
+ * 替换整套工作流、关闭不需要的能力说明、加自己的 AI 职责。
+ *
+ * @param config - 用户配置
+ * @returns 合并后的配置
+ */
+export function mergePlaybookConfig(config: PlaybookConfig = {}): {
+  hard: string[]
+  soft: string[]
+  narrative: string[]
+  workflow: Array<{ step: string; do: string; skip: string }>
+  capabilities: BaseCapability[]
+  duties: AIDuty[]
+} {
+  const disabled = new Set(config.disabledCapabilities ?? [])
+  return {
+    hard: VERDICT_RULES.hard.concat(config.extraHardConstraints ?? []),
+    soft: VERDICT_RULES.soft.concat(config.extraSoftConstraints ?? []),
+    narrative: VERDICT_RULES.narrative.concat(config.extraNarrative ?? []),
+    workflow: (config.customWorkflow && config.customWorkflow.length > 0)
+      ? config.customWorkflow
+      : WORKFLOW,
+    capabilities: BASE_CAPABILITIES.filter(function (cap) {
+      return !disabled.has(cap.call)
+    }),
+    duties: AI_DUTIES.concat(config.extraDuties ?? []),
+  }
+}
+
+/**
+ * 生成带用户配置的指令集。
+ *
+ * @param state - 工作区状态
+ * @returns 提示词文本
+ */
+export function buildConfiguredPlaybook(state: {
+  workspace?: string
+  changedConstants?: string[]
+  customConstants?: number
+  customFormulas?: number
+  hasArchive?: boolean
+}): string {
+  const merged = mergePlaybookConfig(loadPlaybookConfig())
+  const out: string[] = []
+  out.push('## 世界推演指令集')
+  out.push('')
+  out.push('**架构：确定性底座 + AI 开放层。** 底座算数，你负责判断与表达。')
+  out.push('')
+  out.push('### 底座能给你什么（可直接引用）')
+  for (const cap of merged.capabilities) {
+    out.push('- `' + cap.call + '` → ' + cap.produces)
+    out.push('  用在：' + cap.when + '；不管：' + cap.doesNot)
+  }
+  out.push('')
+  out.push('### 你必须接手的')
+  for (const duty of merged.duties) {
+    out.push('- **' + duty.duty + '**：' + duty.why)
+  }
+  out.push('')
+  out.push('### 判据')
+  out.push('- 硬约束：' + merged.hard.join('；'))
+  out.push('- 软约束：' + merged.soft.join('；'))
+  out.push('- 叙事选择：' + merged.narrative.join('；'))
+  out.push('')
+  out.push('### 工作流')
+  for (const item of merged.workflow) {
+    out.push('- ' + item.step + '：' + item.do + '（' + item.skip + '）')
+  }
+  out.push('')
+  out.push('### 底线')
+  out.push('1. 不要反驳用户的设定——说清「按这个参数会怎样」，并给出「想保留可以怎么调」。')
+  out.push('2. 不要编数字——算不出来的标待定或问用户。')
   return out.join(String.fromCharCode(10))
 }

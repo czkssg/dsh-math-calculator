@@ -19,6 +19,7 @@
  */
 
 import { CONSTRAINTS, deriveConstraintContext } from './feasibility.js'
+import { ecosystemFromWorld } from './ecosystem.js'
 
 /** 一条文明极限。 */
 export interface CivilLimit {
@@ -364,6 +365,19 @@ export function runCivilization(world: Record<string, unknown>): {
   const transport = transportLimits(ctx, world)
   const limits = energy.concat(material, transport)
   const tech = techTree(ctx, limits)
+  // 生态承载力：把生命基质层与文明层用能量流串起来
+  const eco = ecosystemFromWorld(world)
+  limits.push({
+    category: 'society',
+    name: '生态承载力',
+    value: eco.carryingCapacity,
+    unit: '人',
+    basis: '初级生产量 × 人类可占用 10% × 收获效率 10%，肉食部分再打 10% 折扣',
+    sensitiveTo: ['恒星光度', '轨道距离', '肉食比例', '农业效率'],
+    breakthrough: eco.verdict === 'ample'
+      ? '承载力充足，人口瓶颈不在食物'
+      : '承载力紧张，需提高农业效率或降低人口',
+  })
   const locked = tech.filter(function (item) { return item.status === 'locked' }).length
   const open = tech.filter(function (item) { return item.status === 'open' }).length
   const conditional = tech.filter(function (item) { return item.status === 'conditional' }).length
