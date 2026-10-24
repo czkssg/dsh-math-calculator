@@ -24,16 +24,27 @@ console.log('-- 1. 地球参数：正常 --')
   assert('说清可正常推演', v.summary.includes('正常'), v.summary)
 }
 
-console.log('-- 2. 远轨道：冻结 --')
+console.log('-- 2. 远轨道：冻结（marginal，不是死寂）--')
 {
   const v = judgeDead(world({ orbitAU: 3 }))
-  assert('判为 dead', v.level === 'dead', v.level)
+  // ⚠️ 冻结不该判 dead：火星均温 210 K 仍有液态卤水，物质还在。
+  // 只有「化学键坏 / 核不稳定」才是真的长不出物质。
+  assert('冻结判为 marginal', v.level === 'marginal', v.level)
   assert('识别为冻结', v.causes.some((c) => c.id === 'frozen'), v.causes.map((c) => c.id).join(','))
-  assert('建议灰化下游', v.greyOut === true)
+  assert('不灰化下游（物质还在）', v.greyOut === false)
   const cause = v.causes.find((c) => c.id === 'frozen')
   assert('给出物理依据', cause.physics.length > 5, cause.physics)
   assert('给出定性结语', cause.epitaph.includes('冰'), cause.epitaph)
   assert('给出挽救方向', cause.remedy.includes('温室') || cause.remedy.includes('轨道'), cause.remedy)
+}
+
+console.log('-- 2b. 真死寂：化学键过弱 --')
+{
+  const fake = { life: { chemistry: { verdict: 'bonds-too-weak', bondEnergyEv: 0.01, stability: 0.2, alphaRatio: 0.1 } } }
+  const v = judgeDead(fake)
+  assert('化学键坏判为 dead', v.level === 'dead', v.level)
+  assert('建议灰化下游', v.greyOut === true)
+  assert('指出化学键问题', v.causes.some((c) => c.id === 'bonds-weak'), v.causes.map((c) => c.id).join(','))
 }
 
 console.log('-- 3. 近轨道：沸腾 --')
@@ -56,7 +67,9 @@ console.log('-- 4. 大质量恒星：寿命过短 --')
 
 console.log('-- 5. 措辞：不反驳设定 --')
 {
-  const v = judgeDead(world({ orbitAU: 3 }))
+  // 用真正的死寂场景（化学键坏），措辞检查才有意义——
+  // marginal 的 note 文案不同，check 不到「不是设定错了」。
+  const v = judgeDead({ life: { chemistry: { verdict: 'bonds-too-weak', bondEnergyEv: 0.01, stability: 0.2, alphaRatio: 0.1 } } })
   const text = renderDead(v)
   assert('不含「错误」', !text.includes('错误'))
   assert('不含「禁止」', !text.includes('禁止'))
@@ -72,9 +85,14 @@ console.log('-- 6. 渲染结构 --')
   assert('正常世界里含状态判定', ok.includes('宇宙状态判定'))
   assert('正常世界不做灰化', !ok.includes('灰化锁定'))
 
-  const dead = renderDead(judgeDead(world({ orbitAU: 3 })))
+  // 真死寂（化学键坏）才会建议灰化；冻结只是 marginal
+  const dead = renderDead(judgeDead({ life: { chemistry: { verdict: 'bonds-too-weak', bondEnergyEv: 0.01, stability: 0.2, alphaRatio: 0.1 } } }))
   assert('死寂世界含致命原因', dead.includes('致命原因'))
   assert('死寂世界建议灰化', dead.includes('灰化锁定'))
+
+  // 冻结世界不灰化，但仍要有致命原因清单
+  const frozen = renderDead(judgeDead(world({ orbitAU: 3 })))
+  assert('冻结世界也有原因', frozen.includes('致命原因'), '')
 }
 
 console.log('')

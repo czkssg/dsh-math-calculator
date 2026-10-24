@@ -1012,8 +1012,9 @@ var CONSOLE_TREE = [
     title: '2 物理链路引擎',
     items: [
       { id: 'pipeline', title: '2.1 分层推演', hint: 'P1—P5 逐层判定' },
-      { id: 'cards', title: '2.2 接口卡矩阵', hint: '每层变量与允许区间' },
-      { id: 'timeline', title: '2.3 演化时间轴', hint: '快慢变量与临界点' },
+      { id: 'graph', title: '2.2 依赖图', hint: 'SVG 画布：谁依赖谁' },
+      { id: 'cards', title: '2.3 接口卡矩阵', hint: '每层变量与允许区间' },
+      { id: 'timeline', title: '2.4 演化时间轴', hint: '快慢变量与临界点' },
     ],
   },
   {
@@ -1039,7 +1040,7 @@ var CONSOLE_TREE = [
     title: '5 校验与分析',
     items: [
       { id: 'hardcheck', title: '5.1 硬约束监控', hint: '死寂判定与红绿灯' },
-      { id: 'phase', title: '5.2 敏感性与相图', hint: '微调警告' },
+      { id: 'phase', title: '5.2 相图热力图', hint: '色块网格 + 微调警告' },
       { id: 'pending', title: '5.3 待定项看板', hint: '不强行闭合' },
     ],
   },
@@ -1063,6 +1064,127 @@ var CONSOLE_TREE = [
  *
  * @param react - 宿主 react
  */
+/**
+ * DAG 画布：用原生 SVG 画依赖图。
+ *
+ * 为什么不用 React Flow：本项目 client.js 是**单文件、无 import、无打包**，
+ * 引不进第三方库。而 SVG 元素在 react 里就是普通标签，
+ * 所以手写布局 + SVG 就够用了。
+ *
+ * @param react - 宿主 react
+ */
+function makeGraphCanvas(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+  const { Section, Empty, Badge } = createKit(react)
+
+  return function GraphCanvas(props: any) {
+    const layout = props.layout
+    if (!layout || !layout.nodes || layout.nodes.length === 0) {
+      return h(Empty, { text: '（这张图没有可画的节点）' })
+    }
+
+    // SVG 尺寸要留出节点高度，否则最上/最下一行的框会被裁掉
+    const width = Math.max(layout.width, 260)
+    const height = Math.max(layout.height, 120)
+
+    const edges = layout.edges.map(function (edge: any, index: number) {
+      const midY = (edge.y1 + edge.y2) / 2
+      const d = 'M ' + edge.x1 + ' ' + edge.y1 +
+        ' C ' + edge.x1 + ' ' + midY + ', ' + edge.x2 + ' ' + midY + ', ' + edge.x2 + ' ' + edge.y2
+      return h('path', {
+        key: 'e-' + index,
+        d: d,
+        fill: 'none',
+        stroke: T.hairline,
+        strokeWidth: 1,
+      })
+    })
+
+    const nodes = layout.nodes.map(function (node: any) {
+      return h('g', { key: node.id, transform: 'translate(' + node.x + ',' + node.y + ')' },
+        h('rect', {
+          width: 108, height: 24, rx: 4,
+          fill: T.layer2,
+          // 边框粗细对应「被多少东西依赖」：越基础的东西越粗
+          stroke: node.incoming > 0 ? T.accent : T.hairline,
+          strokeWidth: node.incoming > 0 ? Math.min(1 + node.incoming * 0.4, 3) : 1,
+        }),
+        h('text', {
+          x: 54, y: 15, textAnchor: 'middle',
+          style: { font: T.f11, fill: T.text2 },
+        }, String(node.id).slice(0, 14)))
+    })
+
+    return h(Section, {
+      title: '依赖图',
+      count: layout.nodes.length,
+      hint: '共 ' + (layout.maxDepth + 1) + ' 层；框越粗表示被越多东西依赖',
+    },
+      h('div', { style: { overflowX: 'auto', overflowY: 'auto', maxHeight: '56vh' } },
+        h('svg', { width: width, height: height, style: { display: 'block' } }, edges.concat(nodes))))
+  }
+}
+
+/**
+ * 相图热力图：用 CSS grid 画色块。
+ *
+ * 不用 canvas：相图通常只有几十×几十格，DOM 反而更好——
+ * 每格都能 hover 看说明。
+ *
+ * @param react - 宿主 react
+ */
+function makeHeatmapView(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+  const { Section, Empty } = createKit(react)
+
+  return function HeatmapView(props: any) {
+    const map = props.map
+    if (!map || !map.cells || map.cells.length === 0) {
+      return h(Empty, { text: '（没有相图数据）' })
+    }
+    const cols = map.xValues.length
+    const rows = map.yValues.length
+
+    const colorOf = function (level: string) {
+      if (level === 'ok') return T.ok
+      if (level === 'warn') return T.warn
+      if (level === 'danger') return T.danger
+      return T.hairline
+    }
+
+    // 按行渲染：每行是一个 flex 容器
+    const rowEls = []
+    for (let r = 0; r < rows; r += 1) {
+      const cellsInRow = map.cells.filter(function (c: any) { return c.row === r })
+      rowEls.push(h('div', { key: 'row-' + r, style: { display: 'flex', gap: 2 } },
+        cellsInRow.map(function (cell: any) {
+          return h('div', {
+            key: 'c-' + cell.row + '-' + cell.col,
+            title: cell.note,
+            style: {
+              width: 16, height: 16, borderRadius: 2,
+              background: colorOf(cell.level),
+              opacity: cell.level === 'unknown' ? 0.3 : 1,
+            },
+          })
+        })))
+    }
+
+    return h(Section, {
+      title: '相图',
+      hint: map.xLabel + ' × ' + map.yLabel,
+    },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } }, rowEls),
+      h('div', { style: { font: T.f11, color: T.text3, marginTop: 6 } },
+        '绿=允许，黄=边缘，红=禁止。共 ' + map.cells.length + ' 格；' +
+        '每格可悬停看具体说明。'),
+      map.narrow && map.narrow.narrow
+        ? h('div', { style: { font: T.f11, color: T.warn, marginTop: 4 } }, map.narrow.note)
+        : null)
+  }
+}
 function makeDerivationPane(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
@@ -1097,6 +1219,16 @@ function makeDerivationPane(react: any) {
     if (state.error) return h(Failure, { text: '推演失败：' + state.error })
     if (!state.result) return h(Empty, { text: '（这个目录暂时没有输出）' })
 
+    // 结构化结果交给可视化组件；没有结构化数据就退回文本。
+    // 这样同一套 /derive 既能出图也能出文字，不必分成两套接口。
+    const structured = state.resultValue || {}
+    if (props.viz === 'graph' && structured.graph && props.GraphCanvas) {
+      return h(props.GraphCanvas, { layout: structured.graph })
+    }
+    if (props.viz === 'heatmap' && structured.heatmap && props.HeatmapView) {
+      return h(props.HeatmapView, { map: structured.heatmap })
+    }
+
     // 按行渲染：等宽字体 + 保留缩进，因为它本身就是排版好的表格
     const lines = String(state.result).split(String.fromCharCode(10))
     return h('div', null,
@@ -1117,6 +1249,8 @@ function createRightPanel(react: any) {
   const kit = createKit(react)
   const { Panel, Section, Row, Empty, Badge, Loading, Failure, Notice } = kit
   const DerivationPane = makeDerivationPane(react)
+  const GraphCanvas = makeGraphCanvas(react)
+  const HeatmapView = makeHeatmapView(react)
 
   return function RightPanel(props: any) {
     const [state, setState] = useState({
@@ -1561,7 +1695,10 @@ function createRightPanel(react: any) {
       // 4.x 四个小节都是 civilization 的不同切面，界面按目录过滤即可，
       // 不必让后端为每个小节各写一份。
       const subMap: Record<string, string> = {
+        // 2.1 依赖图与 5.2 相图用可视化组件渲染（其余目录仍是文本）
         'pipeline': 'pipeline',
+        'graph': 'graph',
+        'phase': 'heatmap',
         'cards': 'cards',
         'timeline': 'timeline',
         'biophysics': 'fantasy',
@@ -1571,14 +1708,22 @@ function createRightPanel(react: any) {
         'civil-transport': 'civilization',
         'civil-tech': 'civilization',
         'hardcheck': 'dead',
-        'phase': 'sensitivity',
         'pending': 'checklist',
         'archive': 'history',
         'checklist': 'checklist',
         'whitepaper': 'whitepaper',
       }
       const sub = subMap[id] || 'pipeline'
-      return h(DerivationPane, { sub: sub, world: state.worldParams || {}, key: id + '-' + sub })
+      // 可视化组件通过 props 传入：DerivationPane 是独立闭包，拿不到外层的组件。
+      const viz = (id === 'graph') ? 'graph' : (id === 'phase') ? 'heatmap' : null
+      return h(DerivationPane, {
+        sub: sub,
+        world: state.worldParams || {},
+        viz: viz,
+        GraphCanvas: GraphCanvas,
+        HeatmapView: HeatmapView,
+        key: id + '-' + sub,
+      })
     }
 
     const activeItem = state.activeNode || 'constants'
@@ -1677,6 +1822,60 @@ function makeSidebarTitle(react: any) {
 }
 
 /** 右栏页签标题。 */
+/**
+ * AI 工具卡片（方案第四部）：把推演结果显示成对话流里的一张卡。
+ *
+ * 宿主为工具结果提供了 `tool.view.cordis` 这个 slot，
+ * 注册进去就能在对话流里渲染自己的结果，而不是一坨纯文本。
+ *
+ * 卡片只显示**结论与状态**，不堆细节——细节在右侧控制台里看。
+ *
+ * @param react - 宿主 react
+ */
+function makeToolCard(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+
+  return function ToolCard(props: any) {
+    // 宿主会把工具结果放在 props.result / props.output 等字段上。
+    // 字段名不确定，所以从几个常见位置兜底取，取不到就退回原文。
+    const raw = props && (props.result ?? props.output ?? props.data ?? props.value)
+    const text = typeof raw === 'string'
+      ? raw
+      : (raw && (raw.result || raw.text || raw.content)) || ''
+
+    if (!text) return h('div', { style: { padding: 8, font: T.f12, color: T.text3 } }, '（无推演结果）')
+
+    // 抽取「标题行」与「结论行」：推演输出都以 ═══ 开头
+    const lines = String(text).split(String.fromCharCode(10)).filter(function (line: string) {
+      return line.trim() !== ''
+    })
+    const title = (lines[0] || '').replace(/^[=\s]+|[=\s]+$/g, '') || '推演结果'
+    const conclusion = lines.filter(function (line: string) {
+      return /判定|结论|总结|状态|承载力|上限|速度/.test(line)
+    }).slice(0, 3)
+
+    return h('div', {
+      style: {
+        border: '1px solid ' + T.hairline,
+        borderRadius: T.radius,
+        padding: '8px 10px',
+        margin: '4px 0',
+        background: T.layer2,
+      },
+    },
+      h('div', { style: { font: T.f13, color: T.text1, marginBottom: 4 } }, title),
+      conclusion.length > 0
+        ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+            conclusion.map(function (line: string, index: number) {
+              return h('div', { key: 'k' + index, style: { font: T.f12, color: T.text2 } }, line.trim())
+            }))
+        : h('div', { style: { font: T.f12, color: T.text2 } }, (lines[1] || '').trim()),
+      h('div', { style: { font: T.f11, color: T.text3, marginTop: 6 } },
+        '详细结论在右侧「推演控制台」查看。'))
+  }
+}
+
 function makeRightTabTitle(react: any) {
   return function RightTabTitle() {
     return react.createElement('span', { title: '本工作区', style: { font: T.f12, whiteSpace: 'nowrap' } }, '本区')
@@ -1709,6 +1908,8 @@ function makeRightTabTitle(react: any) {
         const SidebarTitle = react ? makeSidebarTitle(react) : function EmptyTitle() { return null }
         const RightTabTitle = react ? makeRightTabTitle(react) : function EmptyTabTitle() { return null }
         const Boundary: any = react ? makeBoundary(react) : function EmptyBoundary() { return null }
+        // AI 工具卡片：在对话流里渲染推演结果（宿主 slot = tool.view.cordis）
+        const ToolCard = react ? makeToolCard(react) : function EmptyToolCard() { return null }
 
         /** 用错误边界包一层。 */
         const guard = function (Component: any) {
@@ -1893,6 +2094,17 @@ function makeRightTabTitle(react: any) {
                     inner.push(sub.slots.inject('sidebar.right.pane.tab.title', function () {
                       return sub.slots.register({ name: 'sidebar.right.pane.tab.title', key: RIGHT_TAB_ID }, guard(RightTabTitle))
                     }))
+                    // 工具卡片（方案第四部）：注册到宿主的工具结果视图 slot。
+                    // key 用 'self' —— 与社区插件的用法一致，表示「自己的工具结果」。
+                    // 注册失败不算致命：卡片只是锦上添花，不能因为它把整个面板搞挂。
+                    try {
+                      inner.push(sub.slots.inject('tool.view.cordis', function () {
+                        if (!ToolCard) return function () {}
+                        return sub.slots.register({ name: 'tool.view.cordis', key: 'self' }, guard(ToolCard))
+                      }))
+                    } catch {
+                      /* 宿主没提供这个 slot 就算了 */
+                    }
                   } catch (error: any) {
                     right.error = error && error.message ? error.message : String(error)
                     for (const item of inner) {

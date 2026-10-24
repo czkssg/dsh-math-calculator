@@ -31,6 +31,8 @@ import { currentWorkspace } from '../workspace.js'
 import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { runCivilization } from '../civilization.js'
+import { layoutGraph } from '../graph-layout.js'
+import { buildHeatmap, linspace, detectNarrowWindow } from '../heatmap.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
 import { buildTimeline, renderTimeline, detectPathLock } from '../timeline.js'
@@ -394,6 +396,49 @@ export function opDerivation(args: MathArgs): Outcome {
     }
     out.push(renderCost(estimate))
     value.cost = estimate
+  } else if (sub === 'graph') {
+    // DAG 画布数据（方案 2.1）：返回节点与边的坐标，界面用 SVG 画。
+    const focus = typeof args.traceTarget === 'string' ? args.traceTarget : undefined
+    const rawEdges = buildGraph().map(function (edge) {
+      return { from: edge.from, to: edge.to }
+    })
+    const layout = layoutGraph(rawEdges, focus, 40)
+    out.push('═══ 依赖图 ═══', '')
+    out.push('  节点 ' + layout.nodes.length + ' 个，连线 ' + layout.edges.length + ' 条，共 ' +
+      (layout.maxDepth + 1) + ' 层')
+    if (focus) out.push('  焦点：' + focus)
+    out.push('')
+    out.push('（界面会用 SVG 渲染这张图。）')
+    value.graph = layout
+  } else if (sub === 'heatmap') {
+    // 相图热力图（方案 5.2）：扫（行星质量 × 轨道距离）
+    const massValues = linspace(0.2, 5, 9)
+    const orbitValues = linspace(0.5, 2.5, 9)
+    const map = buildHeatmap(
+      massValues,
+      orbitValues,
+      function (mass, orbit) {
+        const world = opWorld({ world: { planetMass: mass, orbitAU: orbit } } as never, 32).value as any
+        const verdict = judgeDead(world)
+        const level = verdict.level === 'alive' ? 'ok' : verdict.level === 'marginal' ? 'warn' : 'danger'
+        return {
+          level: level,
+          note: '质量 ' + mass.toFixed(2) + ' / 轨道 ' + orbit.toFixed(2) + ' AU → ' + verdict.summary,
+        }
+      },
+      { x: '行星质量（地球=1）', y: '轨道距离（AU）' },
+    )
+    const narrow = detectNarrowWindow(map.cells)
+    out.push('═══ 相图热力图 ═══', '')
+    out.push('  X：' + map.xLabel + '（' + massValues.length + ' 档）')
+    out.push('  Y：' + map.yLabel + '（' + orbitValues.length + ' 档）')
+    out.push('')
+    out.push('  允许 ' + map.summary.ok + ' / 边缘 ' + map.summary.warn + ' / 禁止 ' + map.summary.danger)
+    out.push('')
+    out.push('  ' + narrow.note)
+    out.push('')
+    out.push('（界面会用色块网格渲染这张图。）')
+    value.heatmap = { ...map, narrow: narrow }
   } else if (sub === 'whitepaper') {
     // 补丁8：白皮书（给人读）与 Prompt 卡片（给 AI 用）
     const worldParams = (args.world ?? {}) as Record<string, unknown>

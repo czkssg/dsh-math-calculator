@@ -124,8 +124,13 @@ export function judgeDead(world: any): DeadVerdict {
     })
   }
 
+  // 分级依据：
+  //   · 化学键坏 / 核不稳定 → 真的长不出物质 → dead
+  //   · 温度极端（冻结/沸腾）→ 环境恶劣但物质还在（火星均温 210 K 仍有液态卤水）→ marginal
+  //
+  // 曾经把温度类也算 dead，导致相图里 1.3 AU 之后一片红，与常识不符。
   const hard = causes.filter(function (c) {
-    return c.id === 'bonds-weak' || c.id === 'nuclei-unstable' || c.id === 'boiled' || c.id === 'frozen'
+    return c.id === 'bonds-weak' || c.id === 'nuclei-unstable'
   })
   const level: DeadLevel = hard.length > 0 ? 'dead' : causes.length > 0 ? 'marginal' : 'alive'
   const greyOut = level === 'dead'

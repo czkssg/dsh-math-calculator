@@ -72,7 +72,8 @@ console.log('-- 4. 系统提示已含分工说明 --')
 
 console.log('-- 5. 死寂结语是「参考写法」不是判决 --')
 {
-  const v = judgeDead({ temperature: { surfaceMeanK: 180, freezingPointK: 273.15, boilingPointK: 373.15 } })
+  // 用化学键坏的真死寂场景（温度类现在归 marginal）
+  const v = judgeDead({ life: { chemistry: { verdict: 'bonds-too-weak', bondEnergyEv: 0.01, stability: 0.2, alphaRatio: 0.1 } } })
   assert('判为死寂', v.level === 'dead', v.level)
   const cause = v.causes[0]
   assert('有参考结语', typeof cause.epitaph === 'string' && cause.epitaph.length > 5, String(cause.epitaph))
