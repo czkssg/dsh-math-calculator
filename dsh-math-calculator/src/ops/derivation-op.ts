@@ -29,6 +29,7 @@ import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
 import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
 import { currentWorkspace } from '../workspace.js'
 import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
+import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -299,6 +300,78 @@ export function opDerivation(args: MathArgs): Outcome {
         value.fantasy = overlay(physical, ability, demand)
         value.cost = computeCost(overlay(physical, ability, demand).fantasy * ability.costPerUnit, bodyArea)
       }
+    }
+  } else if (sub === 'chaos') {
+    // 混沌拦截器（补丁13）：不确定性的量化表达，不猜数字。
+    const lyapunov = typeof args.lyapunov === 'number' ? args.lyapunov : 1.0
+    const verdict = checkChaos(lyapunov)
+    out.push('═══ 混沌系统拦截器 ═══', '')
+    out.push('  Lyapunov 指数：' + lyapunov.toFixed(3))
+    out.push('')
+    if (verdict.chaotic) {
+      out.push('  【判定】进入混沌区——不给确定数值')
+      out.push('  可预测时间：' + verdict.horizon.toFixed(1) + ' 个特征时间')
+      out.push('')
+      out.push('  【概率云】随时间扩张的不确定度：')
+      for (const point of verdict.spread) {
+        if (Number.isNaN(point.low)) {
+          // 误差超过 100%，不再给数字——这才是「不强行闭合」
+          out.push('    t=' + point.t.toFixed(1) + '  不可预测（误差已超过 100%）')
+        } else {
+          out.push('    t=' + point.t.toFixed(1) + '  区间 [' + point.low.toFixed(3) + ', ' + point.high.toFixed(3) + ']')
+        }
+      }
+    } else {
+      out.push('  【判定】可预测，可以给确定数值')
+    }
+    out.push('')
+    out.push('  ' + verdict.reason)
+    out.push('  ' + verdict.advice)
+    out.push('')
+    out.push('【常见混沌系统的 Lyapunov 量级】')
+    for (const item of CHAOS_LIBRARY) {
+      out.push('  ' + item.name.padEnd(20) + item.lyapunov.toFixed(2).padStart(6) + '  ' + item.note)
+    }
+    value.chaos = verdict
+  } else if (sub === 'inherit') {
+    // 数据表继承（补丁9）：衍生表只读继承基线表的物理基石
+    const derived = typeof args.inheritDerived === 'string' ? args.inheritDerived : ''
+    const base = typeof args.inheritBase === 'string' ? args.inheritBase : ''
+    if (args.inheritSync === true) {
+      const result = syncInheritance()
+      out.push('═══ 继承同步 ═══', '')
+      out.push('  已更新 ' + result.count + ' 张衍生表')
+      for (const name of result.updated) out.push('  · ' + name)
+      value.sync = result
+    } else if (derived === '' || base === '') {
+      const links = loadInheritLinks()
+      out.push('═══ 继承关系 ═══', '')
+      if (links.length === 0) out.push('  （还没有继承关系）')
+      else for (const link of links) out.push('  ' + link.derived + ' 继承 ' + link.base)
+      out.push('')
+      out.push('建立继承：{"derivation":"inherit","inheritDerived":"派生表","inheritBase":"基线表"}')
+      out.push('同步更新：{"derivation":"inherit","inheritSync":true}')
+      value.links = links
+    } else {
+      const result = linkInherit(derived, base)
+      out.push(result.message)
+      value.link = result
+    }
+  } else if (sub === 'diff') {
+    // A/B 对比（补丁3）
+    const aName = typeof args.diffA === 'string' ? args.diffA : ''
+    const bName = typeof args.diffB === 'string' ? args.diffB : ''
+    if (aName === '' || bName === '') {
+      out.push('需要 diffA 与 diffB 两张表名')
+    } else {
+      const diff = diffTables(aName, bName)
+      out.push('═══ A/B 对比：' + aName + ' vs ' + bName + ' ═══', '')
+      out.push('  ' + diff.message)
+      if (diff.items.length > 0) {
+        out.push('')
+        for (const item of diff.items) out.push('  · ' + item.note)
+      }
+      value.diff = diff
     }
   } else if (sub === 'tables') {
     out.push('═══ 七张表（固定输出格式）═══', '')

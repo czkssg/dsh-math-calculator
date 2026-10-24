@@ -173,6 +173,20 @@ export interface MathArgs {
   fantasyPhysical?: number
   /** 施术者体表面积（m²），用于散热核算。 */
   fantasyBodyArea?: number
+
+  // ── 混沌拦截 / 继承 / A/B 对比 ──
+  /** Lyapunov 指数（>0 判为混沌）。 */
+  lyapunov?: number
+  /** 衍生表名。 */
+  inheritDerived?: string
+  /** 基线表名。 */
+  inheritBase?: string
+  /** 是否执行继承同步。 */
+  inheritSync?: boolean
+  /** A/B 对比的 A 表。 */
+  diffA?: string
+  /** A/B 对比的 B 表。 */
+  diffB?: string
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */
