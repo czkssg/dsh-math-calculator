@@ -1411,8 +1411,10 @@ function createSidebarTitle(react: any) {
 
           // ② 侧栏入口行：与「插件市场 / 任务看板」同一排，只占一行。
           //    宿主负责点击与选中态，我们只提供 icon 与 label。
+          let rowRegistered = false
           try {
             const rowDispose = ctx.slots.inject('sidebar.panellist', function () {
+              rowRegistered = true
               return ctx.slots.register(
                 {
                   name: 'sidebar.panellist',
@@ -1541,6 +1543,7 @@ function createSidebarTitle(react: any) {
           reportClientStatus({
             registered: disposers.length,
             page: typeof pageDispose === 'function',
+            rowRegistered,
             rightTabService: rightTabOutcome.service,
             rightTabRegistered: rightTabOutcome.registered,
             rightTabError: rightTabOutcome.error,
