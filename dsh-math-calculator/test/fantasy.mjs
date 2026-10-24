@@ -1,8 +1,12 @@
 /**
- * 幻想层测试：叠加式判定 + 代价核算 + 真实感校验。
+ * 幻想层测试：只算数字与提醒，不反驳设定。
+ *
+ * 用户定位（2026-10-25）：插件是给用户圆世界观的，不是去反驳的。
+ * 所以这里重点验证：输出里没有「禁止/必须」这类硬性措辞，
+ * 但数字（等价人力/散热/温升）仍然算得出来。
  */
 import {
-  overlay, computeCost, validateFantasy, renderFantasy,
+  overlay, computeCost, checkFields, renderFantasy,
   HUMAN_POWER_W, SUGAR_ENERGY_J_PER_KG, COOLING_W_PER_M2, SOURCE_LABEL,
 } from '../lib/fantasy-layer.js'
 
@@ -19,88 +23,75 @@ const mage = {
   boosts: '体力', meaning: '法师靠代谢转化灵能',
 }
 
-console.log('-- 1. 叠加式（不是覆盖）--')
+console.log('-- 1. 叠加式（不覆盖物理）--')
 {
   const r = overlay(100, mage, 5000)
   assert('物理部分保留', r.physical === 100, String(r.physical))
   assert('幻想部分是补足量', r.fantasy === 4900, String(r.fantasy))
-  assert('合计等于需求', r.total === 5000, String(r.total))
-  assert('合计 = 物理 + 幻想', r.total === r.physical + r.fantasy)
-  // 对比：若是覆盖式，physical 会被丢弃，total 只有 4900
-  assert('不是覆盖式（total > 幻想单独）', r.total > r.fantasy, r.total + ' > ' + r.fantasy)
+  assert('合计 = 物理 + 幻想', r.total === r.physical + r.fantasy, String(r.total))
+  assert('不是覆盖式', r.total > r.fantasy, r.total + ' > ' + r.fantasy)
 }
 
-console.log('-- 2. 效率语义 --')
+console.log('-- 2. 不反驳：没有 forbidden 这种判定 --')
 {
-  const efficient = { ...mage, efficiency: 0.1 }
-  const r1 = overlay(0, mage, 1000)
-  const r2 = overlay(0, efficient, 1000)
-  assert('效率越低，成本越高', r2.cost > r1.cost, r2.cost + ' > ' + r1.cost)
-  assert('效率 0.5 的成本是需求 2 倍', Math.abs(r1.cost - 2000) < 1e-6, String(r1.cost))
-}
-
-console.log('-- 3. 永动机检测 --')
-{
-  const cheat = { ...mage, efficiency: 3, source: 'metabolism' }
-  const r = overlay(0, cheat, 1000)
-  assert('效率>1 且非外部来源 → 禁止', r.verdict === 'forbidden', r.verdict)
-  assert('给出明确原因', r.notes.some((n) => n.includes('凭空产生能量')), r.notes.join('|'))
-
-  const divine = { ...cheat, source: 'external' }
-  const r2 = overlay(0, divine, 1000)
-  assert('声明外部来源后放行', r2.verdict === 'allowed', r2.verdict)
-}
-
-console.log('-- 4. 超预算检测 --')
-{
+  // 效率 3 倍、无代价、超预算——这三个原先都会被判禁止/拒绝
+  const cheat = { ...mage, efficiency: 3 }
+  const free = { ...mage, costPerUnit: 0 }
   const weak = { ...mage, powerLimit: 100 }
-  const r = overlay(0, weak, 10000)
-  assert('超预算 → 边缘', r.verdict === 'marginal', r.verdict)
-  assert('标出超出倍数', r.notes.some((n) => n.includes('超出')), r.notes.join('|'))
+  for (const [name, ability] of [['效率3倍', cheat], ['无代价', free], ['超预算', weak]]) {
+    const r = overlay(0, ability, 10000)
+    assert(name + ' 仍能算出结果', Number.isFinite(r.total), String(r.total))
+    assert(name + ' 不产生禁止结论', !('verdict' in r), Object.keys(r).join(','))
+    assert(name + ' 只给提醒', r.hints.length > 0, String(r.hints.length))
+  }
 }
 
-console.log('-- 5. 代价核算（幻想带真实的核心）--')
+console.log('-- 3. 提醒措辞是「建议」而非「禁令」--')
+{
+  const free = { ...mage, costPerUnit: 0 }
+  const text = renderFantasy(free, 1000, 100)
+  assert('不含「禁止」', !text.includes('禁止'))
+  assert('不含「必须」', !text.includes('必须'))
+  assert('含「由你决定」', text.includes('由你决定'))
+  assert('给出圆设定的方向', text.includes('想圆的话') || text.includes('也可以'), text.slice(0, 120))
+
+  const cheat = { ...mage, efficiency: 3 }
+  const text2 = renderFantasy(cheat, 10000, 100)
+  assert('效率>1 也只提醒不禁止', !text2.includes('禁止'))
+  assert('提示可以用来源解释', text2.includes('从哪来') || text2.includes('额外能量源'), text2.slice(0, 120))
+}
+
+console.log('-- 4. 现实量仍然算清（这是「结合幻想与真实」）--')
 {
   const cost = computeCost(5000, 1.8)
   assert('等价人力 = 功率/100W', Math.abs(cost.humanEquivalent - 50) < 0.01, String(cost.humanEquivalent))
   assert('等价食物可算', cost.sugarKg > 0, cost.sugarKg.toExponential(2))
   assert('散热需求 = 功率/100W每平米', Math.abs(cost.coolingAreaM2 - 50) < 0.01, String(cost.coolingAreaM2))
-  assert('散热不足时体温上升', cost.temperatureRiseK > 0, cost.temperatureRiseK.toFixed(1))
-  assert('指出会烧起来', cost.notes.some((n) => n.includes('体温')), cost.notes.join('|'))
+  assert('标记散热不足', cost.coolingShort === true)
+  assert('温升可算', cost.temperatureRiseK > 0, cost.temperatureRiseK.toFixed(1))
+  assert('提醒里给出可用的圆法', cost.hints.some((h) => h.text.includes('散热手段')), cost.hints.map((h) => h.text).join('|'))
 
-  // 小功率不该报散热问题
   const small = computeCost(50, 1.8)
-  assert('50W 不需要额外散热', small.coolingAreaM2 < 1.8, String(small.coolingAreaM2))
+  assert('50W 不报散热不足', small.coolingShort === false)
 }
 
-console.log('-- 6. 真实感校验 --')
+console.log('-- 5. 字段检查：只查能不能算 --')
 {
-  assert('完整定义通过', validateFantasy(mage).length === 0, validateFantasy(mage).join(';'))
-  assert('无代价被拒',
-    validateFantasy({ ...mage, costPerUnit: 0 }).some((p) => p.includes('不付代价')))
-  assert('无上限被拒',
-    validateFantasy({ ...mage, powerLimit: 0 }).some((p) => p.includes('上限')))
-  assert('效率>1 非外部被拒',
-    validateFantasy({ ...mage, efficiency: 3 }).some((p) => p.includes('永动机') || p.includes('external')))
-  assert('缺含义被拒',
-    validateFantasy({ ...mage, meaning: '' }).some((p) => p.includes('meaning')))
+  assert('完整定义能算', checkFields(mage).length === 0, checkFields(mage).join(';'))
+  assert('缺 name 算不了', checkFields({ ...mage, name: '' }).some((p) => p.includes('name')))
+  assert('效率<=0 算不了', checkFields({ ...mage, efficiency: 0 }).some((p) => p.includes('efficiency')))
+  assert('无上限算不了', checkFields({ ...mage, powerLimit: 0 }).some((p) => p.includes('powerLimit')))
+  // 这些设定本身合法，不该被 checkFields 拦
+  assert('效率>1 不算字段错误', checkFields({ ...mage, efficiency: 3 }).length === 0)
+  assert('无代价 不算字段错误', checkFields({ ...mage, costPerUnit: 0 }).length === 0)
 }
 
-console.log('-- 7. 常数语义 --')
+console.log('-- 6. 常数语义 --')
 {
   assert('人力基准 100W', HUMAN_POWER_W === 100)
-  assert('糖能量密度正确', SUGAR_ENERGY_J_PER_KG === 1.6e7)
+  assert('糖能量密度', SUGAR_ENERGY_J_PER_KG === 1.6e7)
   assert('散热基准 100W/m²', COOLING_W_PER_M2 === 100)
   assert('四种来源都有中文名', Object.keys(SOURCE_LABEL).length === 4)
-}
-
-console.log('-- 8. 渲染 --')
-{
-  const text = renderFantasy(mage, 5000, 100)
-  assert('含叠加结果', text.includes('叠加结果'))
-  assert('含代价核算', text.includes('代价核算'))
-  assert('含判定', text.includes('判定'))
-  assert('含等价人力', text.includes('等价人力'))
 }
 
 console.log('')

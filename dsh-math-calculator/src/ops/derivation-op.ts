@@ -28,7 +28,7 @@ import { opWorld } from './world-op.js'
 import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
 import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
 import { currentWorkspace } from '../workspace.js'
-import { overlay, computeCost, validateFantasy, renderFantasy } from '../fantasy-layer.js'
+import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -283,12 +283,13 @@ export function opDerivation(args: MathArgs): Outcome {
       out.push('efficiency > 1 时必须用 external，否则等于永动机会被判禁止。')
     } else {
       const ability = raw as never as import('../fantasy-layer.js').FantasyAbility
-      const problems = validateFantasy(ability)
+      // 只检查「能不能算」，不评判设定合不合理——设定由用户与 AI 决定。
+      const problems = checkFields(ability)
       if (problems.length > 0) {
-        out.push('═══ 幻想定义不自洽 ═══', '')
-        for (const problem of problems) out.push('  ✗ ' + problem)
+        out.push('═══ 字段不完整，没法算 ═══', '')
+        for (const problem of problems) out.push('  · ' + problem)
         out.push('')
-        out.push('「幻想带真实」的前提是：必须声明来源、代价、上限。缺一个就会失去真实感。')
+        out.push('补齐这些字段就能算出等价人力/食物/散热需求。')
         value.problems = problems
       } else {
         const demand = typeof args.fantasyDemand === 'number' ? args.fantasyDemand : 1000

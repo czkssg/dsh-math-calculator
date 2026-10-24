@@ -1,39 +1,32 @@
 /**
- * 幻想层：让幻想设定与真实物理**叠加**而非覆盖。
+ * 幻想层：算清幻想量的物理含义，只提示不自裁。
  *
  * @module dsh-math-calculator/fantasy-layer
  * @description
- * 用户明确选择「叠加式」：新量作为额外输入进入判定，保留原有物理。
- * 因为一个世界可能「既有正常物理，又有灵能」——两者都要算。
+ * 设计定位（用户 2026-10-25 明确）：
  *
- * ## 核心问题：怎么让幻想带真实
+ * > 插件是给用户**圆世界观**的，不是去反驳的。幻想怎么设定由用户与 AI 交互决定，
+ * > 插件只负责：算的时候别忘结合幻想量与真实量、检查逻辑自洽、提个醒。
  *
- * 幻想最容易犯的错是「想加就加，不付代价」。所以这里的设计是：
- * 每个幻想量必须回答三个问题，否则不给通过：
+ * 所以这一层的产出只有两类：
+ * 1. **数字**：把幻想能力换算成物理世界的等价量（人力、食物、散热面积、温升）；
+ * 2. **提醒**：指出「这里可能有个坑」，措辞一律是「需要注意 / 如果不……则……」，
+ *    **没有「禁止」这个词，也不拦截任何设定**。
  *
- * 1. **来源**：它从哪来？（生物自身代谢 / 环境场 / 外部装置）
- * 2. **代价**：用它要付什么？（能量、热量、物质、时间）
- * 3. **上限**：它最多能做到多少？（超过就退回纯物理）
+ * 唯一保留的硬错误是**输入不完整**（缺名字、缺单位这类），那不是世界观判断，
+ * 是数据缺字段，算不出来才需要说。
  *
- * ## 叠加的数学形式
+ * ## 叠加而不是覆盖
  *
- * 不是「灵能顶替代谢」，而是：
+ * 用户选的是叠加式：世界可能「既有正常物理，又有灵能」，两者都要算。
  *
- *   有效能力 = 物理能力 + 幻想能力 × 效率
- *   总成本   = 物理成本 + 幻想成本 / 效率
+ *   有效能力 = 物理能力 + 幻想能力
+ *   幻想能量 = (需求 − 物理能力) / 效率
+ *   总代价   = 幻想能量 × 单位成本
  *
- * 于是：
- *   · 灵能效率 1.0 时，能力翻倍、成本也翻倍——世界还是自洽的；
- *   · 灵能效率 0.01 时，只多一点点能力，却要付 100 倍成本——不划算，
- *     这就解释了「为什么不是人人都在用灵能」；
- *   · 效率 > 1 才叫「真正的幻想」，但那意味着**能量来源本身**是新的，
- *     此时必须声明来源，否则推演按「永动机」处理并标红。
- *
- * 这套形式的好处：幻想世界的数字仍然是**可比较的**——
- * 你能说「这个灵能法师相当于 50 个人力」，而不是「他很厉害」。
+ * 好处：幻想世界的数字仍然**可比较**——
+ * 能说「这个法师相当于 49 个人力」，而不是「他很厉害」。
  */
-
-import type { Verdict } from './derivation-stack.js'
 
 /** 幻想量的来源类型。 */
 export type FantasySource = 'metabolism' | 'ambient-field' | 'artifact' | 'external'
@@ -48,28 +41,30 @@ export const SOURCE_LABEL: Record<FantasySource, string> = {
 
 /** 一个幻想能力的定义。 */
 export interface FantasyAbility {
-  /** 量名（对应自创常数）。 */
+  /** 量名。 */
   name: string
   /** 中文名。 */
   label: string
-  /** 来源。 */
+  /** 来源（只是描述，不做合法性拦截）。 */
   source: FantasySource
-  /**
-   * 效率：每消耗 1 单位幻想能量，能得到多少单位的物理能力。
-   *
-   * 1.0 = 等效能（幻想只换形式，不凭空增量）
-   * <1  = 不划算（真实世界多数「特异功能」属于这档）
-   * >1  = 真正的额外能量源（必须声明 source，否则按永动机标红）
-   */
+  /** 效率：每消耗 1 单位幻想能量得到多少物理能力。 */
   efficiency: number
-  /** 单位能力需要多少幻想能量（J 或本地单位）。 */
+  /** 单位能力需要多少幻想能量。 */
   costPerUnit: number
-  /** 每单位时间最多能调用的幻想能量（功率上限，W）。 */
+  /** 每秒最多能调用的幻想能量（功率上限）。 */
   powerLimit: number
-  /** 它替代/增强哪个物理量（用于叠加）。 */
+  /** 它增强哪个物理量。 */
   boosts: string
-  /** 说明：在故事里怎么用。 */
+  /** 在故事里怎么用。 */
   meaning: string
+}
+
+/** 一条提醒（不是判定）。 */
+export interface Hint {
+  /** 提醒级别：info 只是说明，note 是可能需要注意的地方。 */
+  level: 'info' | 'note'
+  /** 内容。 */
+  text: string
 }
 
 /** 叠加结果。 */
@@ -80,66 +75,67 @@ export interface OverlayResult {
   fantasy: number
   /** 合计。 */
   total: number
-  /** 幻想部分的成本（能量/功率）。 */
+  /** 幻想部分的成本。 */
   cost: number
-  /** 成本是否超过可调用上限。 */
+  /** 可调用上限。 */
+  budget: number
+  /** 成本是否超过上限（只用于提醒，不做判定）。 */
   overBudget: boolean
-  /** 判定。 */
-  verdict: Verdict
-  /** 说明。 */
-  notes: string[]
+  /** 提醒列表。 */
+  hints: Hint[]
 }
 
 /**
  * 叠加计算：物理能力 + 幻想能力。
  *
+ * 只做算术与提醒，**不给通过/禁止的结论**——那由用户与 AI 决定。
+ *
  * @param physical - 纯物理能提供的能力值
  * @param ability - 幻想能力定义
- * @param demand - 需求（想要达到的能力值）
- * @returns 叠加结果与判定
+ * @param demand - 想要达到的能力值
+ * @returns 叠加结果与提醒
  */
 export function overlay(
   physical: number,
   ability: FantasyAbility,
   demand: number,
 ): OverlayResult {
-  const notes: string[] = []
+  const hints: Hint[] = []
   const needed = Math.max(0, demand - physical)
   const efficiency = Number.isFinite(ability.efficiency) && ability.efficiency > 0 ? ability.efficiency : 1
-
-  // 幻想能量需求 = 缺口 / 效率
   const fantasyEnergy = needed / efficiency
-  // 成本 = 能量 × 单位成本
   const cost = fantasyEnergy * ability.costPerUnit
-
-  // 可调用上限：功率上限 × 时间（这里按 1 秒看瞬时能力）
   const budget = ability.powerLimit
-  const overBudget = cost > budget
+  const overBudget = budget > 0 && cost > budget
 
-  // 能量来源合法性：效率 > 1 且来源不是 external，视为疑似永动机
-  let verdict: Verdict = 'allowed'
-  if (efficiency > 1 && ability.source !== 'external') {
-    verdict = 'forbidden'
-    notes.push(
-      '效率 ' + efficiency.toFixed(2) + ' > 1，但来源是「' + SOURCE_LABEL[ability.source] + '」——' +
-      '这等于凭空产生能量。要么把效率调到 ≤ 1，要么把来源声明为「外部注入」。',
-    )
-  } else if (overBudget) {
-    verdict = 'marginal'
-    notes.push(
-      '需要 ' + cost.toExponential(2) + ' 单位幻想能量，但每秒只能调用 ' + budget.toExponential(2) + '——' +
-      '超出 ' + (cost / budget).toFixed(1) + ' 倍。要么降低需求，要么提高功率上限。',
-    )
-  } else {
-    notes.push(
-      '物理提供 ' + physical.toExponential(2) + '，幻想补足 ' + needed.toExponential(2) + '，' +
-      '消耗幻想能量 ' + cost.toExponential(2) + '（预算 ' + budget.toExponential(2) + '）。',
-    )
+  // 只说事实，不下结论
+  if (efficiency > 1) {
+    hints.push({
+      level: 'info',
+      text: '效率 ' + efficiency.toFixed(2) + ' > 1：幻想能量产出高于投入，这属于「额外能量源」的设定。' +
+        '若来源是 ' + SOURCE_LABEL[ability.source] + '，故事里通常会交代它从哪来（信仰、地脉、外部文明…）。',
+    })
   }
-
-  // 效率 < 1 时给个「不划算」提示
-  if (efficiency < 0.1 && verdict === 'allowed') {
-    notes.push('效率仅 ' + (efficiency * 100).toFixed(1) + '%，代价是普通方式的 ' + (1 / efficiency).toFixed(0) + ' 倍——世界会自然倾向于不用它。')
+  if (overBudget) {
+    hints.push({
+      level: 'note',
+      text: '需要 ' + cost.toExponential(2) + ' 单位幻想能量，但设定里每秒只能调用 ' + budget.toExponential(2) +
+        '（超出 ' + (cost / budget).toFixed(1) + ' 倍）。若不打算改，可以让施法有冷却/蓄力时间来覆盖这个缺口。',
+    })
+  }
+  if (ability.costPerUnit === 0) {
+    hints.push({
+      level: 'note',
+      text: 'costPerUnit = 0：设定上没有能量代价。读者可能会问「那为什么不是人人都会」。' +
+        '想圆的话可以给个非能量代价（寿命、寿命、社会管制、精神损耗…），或干脆设定为「人人都能，世界因此不同」。',
+    })
+  }
+  if (hints.length === 0) {
+    hints.push({
+      level: 'info',
+      text: '物理提供 ' + physical.toExponential(2) + '，幻想补足 ' + needed.toExponential(2) +
+        '，消耗 ' + cost.toExponential(2) + '（预算 ' + budget.toExponential(2) + '）。',
+    })
   }
 
   return {
@@ -147,29 +143,31 @@ export function overlay(
     fantasy: needed,
     total: physical + needed,
     cost: cost,
+    budget: budget,
     overBudget: overBudget,
-    verdict: verdict,
-    notes: notes,
+    hints: hints,
   }
 }
 
 /**
  * 代价核算：把幻想能力换算成物理世界的等价量。
  *
- * 这是「幻想带真实」的核心——让幻想数字**可比较**。
- * 例如：「这个法师的灵能输出相当于 50 个人力」比「他很强」有用得多。
+ * 这是「算的时候别忘了结合现实量」的落地点——让幻想数字**可比较**。
+ * 只报告数字，不评价好坏。
  */
 export interface CostBreakdown {
   /** 等价人力（按 100 W 持续输出计）。 */
   humanEquivalent: number
-  /** 等价代谢食物（按 1 kg 糖 ≈ 1.6e7 J）。 */
+  /** 等价食物（按 1 kg 糖 ≈ 1.6e7 J）。 */
   sugarKg: number
-  /** 若要散热：需要多少体表面积（按 100 W/m² 散热能力）。 */
+  /** 若靠体表散热，需要多少面积（按 100 W/m²）。 */
   coolingAreaM2: number
-  /** 需要的体温与环境温差（若散热面积不足）。 */
+  /** 散热不足时的温升估计（K）。 */
   temperatureRiseK: number
-  /** 说明。 */
-  notes: string[]
+  /** 体表面积是否够散热。 */
+  coolingShort: boolean
+  /** 提醒列表。 */
+  hints: Hint[]
 }
 
 /** 人类持续输出功率基准（W）。 */
@@ -184,69 +182,74 @@ export const COOLING_W_PER_M2 = 100
 /**
  * 核算一次幻想输出的物理代价。
  *
+ * 只算数字与可能需要注意的地方，不评判设定好坏。
+ *
  * @param powerW - 幻想输出功率（W）
- * @param bodyAreaM2 - 施术者的体表面积（m²），用于判断散热是否够
- * @returns 等价量与散热需求
+ * @param bodyAreaM2 - 施术者体表面积（m²）
+ * @returns 等价量与提醒
  */
 export function computeCost(powerW: number, bodyAreaM2: number): CostBreakdown {
-  const notes: string[] = []
+  const hints: Hint[] = []
   const humanEquivalent = powerW / HUMAN_POWER_W
-  const energyPerSecond = powerW
-  const sugarKgValue = energyPerSecond / SUGAR_ENERGY_J_PER_KG
+  const sugarKg = powerW / SUGAR_ENERGY_J_PER_KG
   const coolingAreaM2 = powerW / COOLING_W_PER_M2
   const availableCooling = Math.max(0.01, bodyAreaM2) * COOLING_W_PER_M2
   const deficit = Math.max(0, powerW - availableCooling)
-  // 若散热不足，体温会上升；粗估每 1 W 多余热量需 1 K 温差（按体表面积摊）
   const temperatureRiseK = deficit / (Math.max(0.01, bodyAreaM2) * 10)
+  const coolingShort = coolingAreaM2 > bodyAreaM2
 
   if (humanEquivalent >= 1) {
-    notes.push('相当于 ' + humanEquivalent.toFixed(0) + ' 个成年人的持续输出。')
+    hints.push({
+      level: 'info',
+      text: '相当于 ' + humanEquivalent.toFixed(0) + ' 个成年人的持续输出——可用于和普通人力比较。',
+    })
   }
-  if (coolingAreaM2 > bodyAreaM2) {
-    notes.push(
-      '散热需要 ' + coolingAreaM2.toFixed(2) + ' m² 表面积，但施术者只有 ' + bodyAreaM2.toFixed(2) + ' m²——' +
-      '超出 ' + (coolingAreaM2 / Math.max(0.01, bodyAreaM2)).toFixed(1) + ' 倍，体温会升 ' + temperatureRiseK.toFixed(1) + ' K。',
-    )
-    notes.push('这是「为什么强力施术者会烧起来」的物理原因。')
+  if (coolingShort) {
+    hints.push({
+      level: 'note',
+      text: '靠体表散热需要 ' + coolingAreaM2.toFixed(2) + ' m²，而施术者只有 ' + bodyAreaM2.toFixed(2) + ' m²。' +
+        '若不打算改热功率，可以设想他有散热手段（汗腺强化、水冷外衣、短时爆发而非持续输出）。',
+    })
+    if (temperatureRiseK > 10) {
+      hints.push({
+        level: 'info',
+        text: '持续施法时体温估计会升 ' + temperatureRiseK.toFixed(0) + ' K——这本身可以当作设定亮点：' +
+          '「强力施术者都会烧起来」，读者会觉得可信。',
+      })
+    }
   }
   return {
     humanEquivalent: humanEquivalent,
-    sugarKg: sugarKgValue,
+    sugarKg: sugarKg,
     coolingAreaM2: coolingAreaM2,
     temperatureRiseK: temperatureRiseK,
-    notes: notes,
+    coolingShort: coolingShort,
+    hints: hints,
   }
 }
 
 /**
- * 校验一个幻想能力定义是否「带真实」。
+ * 检查幻想定义有没有**算不出来**的字段问题。
  *
- * 三个必答问题：来源、代价、上限。缺一个就不算自洽的幻想。
+ * 只报「缺字段导致算不了」，不评判设定是否合理——
+ * efficiency > 1、costPerUnit = 0 这类都可以算，只是会给出提醒。
  *
  * @param ability - 幻想能力
- * @returns 问题列表（空表示通过）
+ * @returns 缺失字段列表（空表示能算）
  */
-export function validateFantasy(ability: FantasyAbility): string[] {
+export function checkFields(ability: FantasyAbility): string[] {
   const problems: string[] = []
   if (!ability.name || ability.name.trim() === '') problems.push('缺 name')
   if (!ability.label || ability.label.trim() === '') problems.push('缺 label')
-  if (!(ability.efficiency > 0)) problems.push('efficiency 必须 > 0')
-  if (ability.efficiency > 1 && ability.source !== 'external') {
-    problems.push('efficiency > 1 时必须声明 source=external（否则等于永动机）')
-  }
-  if (!(ability.costPerUnit >= 0)) problems.push('costPerUnit 必须 >= 0（无代价的幻想不叫幻想）')
-  if (ability.costPerUnit === 0) {
-    problems.push('costPerUnit = 0：不付代价的能力会让整个推演失去意义')
-  }
-  if (!(ability.powerLimit > 0)) problems.push('powerLimit 必须 > 0（没有上限等于无限强）')
-  if (!ability.meaning || ability.meaning.trim() === '') {
-    problems.push('缺 meaning：作者必须说明它在故事里怎么用')
-  }
+  if (!(ability.efficiency > 0)) problems.push('efficiency 必须 > 0（否则算不出来）')
+  if (!(ability.powerLimit > 0)) problems.push('powerLimit 必须 > 0（否则没有可调用上限）')
   return problems
 }
 
 /**
- * 渲染幻想层的分析报告。
+ * 渲染幻想层分析报告。
+ *
+ * 输出数字 + 提醒，**不含任何「禁止」字样**。
  *
  * @param ability - 幻想能力
  * @param demand - 想要达到的能力值
@@ -262,32 +265,31 @@ export function renderFantasy(
 ): string {
   const out: string[] = []
   const result = overlay(physical, ability, demand)
-  const cost = computeCost(result.fantasy * ability.costPerUnit, bodyAreaM2)
+  const cost = computeCost(result.fantasy * ability.costPerUnit / 1, bodyAreaM2)
   const num = function (value: number): string {
     if (!Number.isFinite(value)) return '—'
     const abs = Math.abs(value)
     if (abs >= 1e5 || (abs < 1e-2 && abs > 0)) return value.toExponential(2)
     return Number(value.toPrecision(4)).toString()
   }
-  out.push('═══ 幻想层叠加分析：' + ability.label + ' ═══')
+  out.push('═══ 幻想层分析：' + ability.label + ' ═══')
   out.push('')
   out.push('  来源：' + SOURCE_LABEL[ability.source] + '   效率：' + ability.efficiency)
   out.push('  单位成本：' + num(ability.costPerUnit) + '   功率上限：' + num(ability.powerLimit) + ' W')
   out.push('')
-  out.push('【叠加结果】（不覆盖，是相加）')
+  out.push('【叠加结果】物理与幻想相加，不覆盖')
   out.push('  需求总量：  ' + num(demand))
   out.push('  物理提供：  ' + num(result.physical))
   out.push('  幻想补足：  ' + num(result.fantasy))
   out.push('  合计：      ' + num(result.total))
   out.push('')
-  out.push('【代价核算】')
-  out.push('  幻想能量：  ' + num(result.cost))
+  out.push('【等价现实量】用于和普通人力/食物比较')
   out.push('  等价人力：  ' + cost.humanEquivalent.toFixed(1) + ' 人')
   out.push('  等价食物：  ' + num(cost.sugarKg) + ' kg 糖/秒')
   out.push('  散热需求：  ' + cost.coolingAreaM2.toFixed(2) + ' m²')
   out.push('')
-  out.push('【判定】' + (result.verdict === 'allowed' ? '允许' : result.verdict === 'marginal' ? '边缘' : '禁止'))
-  for (const note of result.notes) out.push('  · ' + note)
-  for (const note of cost.notes) out.push('  · ' + note)
+  out.push('【提醒】仅供参考，设定由你决定')
+  for (const hint of result.hints) out.push('  · ' + hint.text)
+  for (const hint of cost.hints) out.push('  · ' + hint.text)
   return out.join(String.fromCharCode(10))
 }
