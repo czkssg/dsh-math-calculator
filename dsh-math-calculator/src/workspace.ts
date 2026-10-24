@@ -670,3 +670,66 @@ export function resetActiveWorkspace(): void {
   activeWorkspaceName = DEFAULT_WORKSPACE
   cache.clear()
 }
+
+/**
+ * 由会话的工作目录派生「数据表作用域」。
+ *
+ * 这是本插件最关键的绑定逻辑，照 dsh-memory 的 scopeOf 同构实现：
+ *
+ *   const cwd = session?.meta?.cwd ?? session?.cwd
+ *   return basename(cwd)              // D:\0cengxu\5 -> "5"
+ *
+ * 为什么不能「取工作区列表里的第一个」：用户同时开着多个工作区时，
+ * 第一个往往不是他正在用的那个。宿主为每次工具调用带上当前会话的
+ * agent.meta.cwd，用它才是「跟着工作区走」。
+ *
+ * 目录名与宿主左侧列表里的工作区名一致，所以用户看到的是同一个名字；
+ * 不同目录 = 不同工作区 = 不同数据表，互不影响。
+ *
+ * @param cwd - 会话工作目录（绝对路径）
+ * @returns 合法的数据表名；无法判断时回落 default
+ */
+export function scopeFromCwd(cwd: unknown): string {
+  if (typeof cwd !== 'string' || cwd.trim() === '') return DEFAULT_WORKSPACE
+  // 统一分隔符后取末段（同时兼容 Windows 反斜杠与 POSIX 斜杠）
+  const normalized = cwd.trim().replace(/\\/g, '/').replace(/\/+$/, '')
+  const segments = normalized.split('/')
+  const base = segments[segments.length - 1] || ''
+  if (base === '' || base === '.' || base === '..') return DEFAULT_WORKSPACE
+  // 目录名可能含空格、中文、点号：转成合法表名；实在转不出来就用 default
+  const cleaned = base
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '')
+    .slice(0, 64)
+  return cleaned === '' ? DEFAULT_WORKSPACE : cleaned
+}
+
+/**
+ * 从工具执行上下文里取出「当前会话的工作目录」。
+ *
+ * 宿主在每次工具调用时传入 exec，其形状与 dsh-memory 一致：
+ *   exec.agent.meta.cwd（也兼容 exec.agent.cwd / exec.session.cwd）
+ *
+ * @param exec - 工具执行的第二个参数
+ * @returns cwd 字符串；拿不到返回空串
+ */
+export function cwdOfExec(exec: unknown): string {
+  const value = exec as Record<string, any> | undefined
+  if (!value) return ''
+  const candidates = [
+    value.agent?.meta?.cwd,
+    value.agent?.cwd,
+    value.session?.meta?.cwd,
+    value.session?.cwd,
+    value.meta?.cwd,
+    value.cwd,
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim() !== '') return candidate.trim()
+  }
+  return ''
+}
+
+

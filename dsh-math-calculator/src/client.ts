@@ -1197,8 +1197,28 @@ function makeRightTabTitle(react: any) {
                 if (!list || typeof list.getSnapshot !== 'function') return
                 const snapshot = list.getSnapshot()
                 const items = (snapshot && snapshot.items) || []
-                // 取第一个工作区作为当前（宿主默认选中第一个条目）。
-                const active = items[0]
+                if (items.length === 0) return
+
+                // 选「当前正在用的工作区」，不是第一个。
+                //
+                // 依据 dsh-memory 的 scopeOf：优先看当前会话属于哪个工作区
+                // （会话 cwd 的 basename 决定了数据表名）。拿不到会话信息时
+                // 才退回列表第一项。
+                let active: any = null
+                try {
+                  const currentSessionId = ws && ws.sessions && ws.sessions.list &&
+                    typeof ws.sessions.list.getSnapshot === 'function'
+                    ? ws.sessions.list.getSnapshot().currentSessionId
+                    : undefined
+                  if (currentSessionId) {
+                    active = items.find(function (item: any) {
+                      return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
+                    }) || null
+                  }
+                } catch {
+                  /* 没有会话服务：走兜底 */
+                }
+                if (!active) active = items[0]
                 if (!active) return
                 void fetch(API_BASE + '/workspaces/bind', {
                   method: 'POST',

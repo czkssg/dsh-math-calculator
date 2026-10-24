@@ -123,6 +123,8 @@ import {
   removeVariable,
   resetConstant,
   storageStats,
+  cwdOfExec,
+  scopeFromCwd,
   switchWorkspace,
   updateWorkspace,
   workspaceDirectory,
@@ -2189,8 +2191,26 @@ export const mathExecuteTool = defineTool({
     schema: OUTPUT_SCHEMA,
     render: (_args, value) => renderResult(value),
   },
-  execute: async (args) => {
+  execute: async (args, exec) => {
     const rawArgs = (args ?? {}) as Partial<MathArgs>
+
+    // ⚠️ 关键：每次工具调用都把**当前会话的工作区**切过来。
+    //
+    // 做法照 dsh-memory 的 scopeOf：用 exec.agent.meta.cwd 的 basename
+    // 作为作用域（D:\0cengxu\5 → "5"）。这样：
+    //   · 用户在会话 A（cwd=D:\proj-a）里算数 → 用 proj-a 的数据表；
+    //   · 切到会话 B（cwd=D:\proj-b）再算 → 自动换成 proj-b 的表；
+    //   · 两张表互不影响，且表名与左侧工作区名一致。
+    //
+    // 之前忽略了 exec 参数，所以数据表永远停在 default，不跟工作区走。
+    try {
+      const cwd = cwdOfExec(exec)
+      const scope = scopeFromCwd(cwd)
+      if (scope !== currentWorkspace()) switchWorkspace(scope)
+    } catch {
+      /* 切换失败不影响本次计算（仍在原表上算） */
+    }
+
     try {
       return runMathTool(rawArgs)
     } catch (error) {
