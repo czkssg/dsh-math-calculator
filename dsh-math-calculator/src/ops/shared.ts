@@ -163,6 +163,16 @@ export interface MathArgs {
   compareFrom?: string
   /** 版本对比的目标版本（省略则取最新）。 */
   compareTo?: string
+
+  // ── operation=derivation 的幻想层（叠加式）──
+  /** 幻想能力定义（必须含 source / efficiency / costPerUnit / powerLimit）。 */
+  fantasyAbility?: Record<string, unknown>
+  /** 想达到的能力总量。 */
+  fantasyDemand?: number
+  /** 纯物理能提供多少（基底）。 */
+  fantasyPhysical?: number
+  /** 施术者体表面积（m²），用于散热核算。 */
+  fantasyBodyArea?: number
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

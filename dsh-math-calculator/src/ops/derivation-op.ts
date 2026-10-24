@@ -28,6 +28,7 @@ import { opWorld } from './world-op.js'
 import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
 import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
 import { currentWorkspace } from '../workspace.js'
+import { overlay, computeCost, validateFantasy, renderFantasy } from '../fantasy-layer.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -272,6 +273,32 @@ export function opDerivation(args: MathArgs): Outcome {
       }
       value.diff = diff
     }
+  } else if (sub === 'fantasy') {
+    // 幻想层：叠加式（不覆盖物理），并要求付代价——这是「幻想带真实」的核心。
+    const raw = (args as unknown as Record<string, unknown>).fantasyAbility
+    if (!raw || typeof raw !== 'object') {
+      out.push('缺 fantasyAbility：需要 { name, label, source, efficiency, costPerUnit, powerLimit, boosts, meaning }')
+      out.push('')
+      out.push('三种 source：metabolism（自身代谢）/ ambient-field（环境场）/ artifact（器物）/ external（外部注入）')
+      out.push('efficiency > 1 时必须用 external，否则等于永动机会被判禁止。')
+    } else {
+      const ability = raw as never as import('../fantasy-layer.js').FantasyAbility
+      const problems = validateFantasy(ability)
+      if (problems.length > 0) {
+        out.push('═══ 幻想定义不自洽 ═══', '')
+        for (const problem of problems) out.push('  ✗ ' + problem)
+        out.push('')
+        out.push('「幻想带真实」的前提是：必须声明来源、代价、上限。缺一个就会失去真实感。')
+        value.problems = problems
+      } else {
+        const demand = typeof args.fantasyDemand === 'number' ? args.fantasyDemand : 1000
+        const physical = typeof args.fantasyPhysical === 'number' ? args.fantasyPhysical : 100
+        const bodyArea = typeof args.fantasyBodyArea === 'number' ? args.fantasyBodyArea : 1.8
+        out.push(renderFantasy(ability, demand, physical, bodyArea))
+        value.fantasy = overlay(physical, ability, demand)
+        value.cost = computeCost(overlay(physical, ability, demand).fantasy * ability.costPerUnit, bodyArea)
+      }
+    }
   } else if (sub === 'tables') {
     out.push('═══ 七张表（固定输出格式）═══', '')
     out.push('  1. 项目卡     推演类型 / 范围 / 时间窗口 / 观测者 / 优先级 / 不推演什么')
@@ -284,7 +311,7 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / archive / history / compare / checklist / tables')
+    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / archive / history / compare / checklist / tables')
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }
