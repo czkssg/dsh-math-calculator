@@ -23,6 +23,8 @@ import {
   type ChecklistItem,
 } from '../derivation-stack.js'
 import { recalculateConstants } from '../constants-graph.js'
+import { runPipeline, renderPipeline } from '../pipeline.js'
+import { opWorld } from './world-op.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -166,6 +168,21 @@ export function opDerivation(args: MathArgs): Outcome {
     ]
     out.push(renderChecklist(items))
     value.checklist = items
+  } else if (sub === 'pipeline') {
+    // 正向推演链路：跑一次 world，把结果逐层喂给接口卡判定。
+    // 这是「推演栈真正跑起来」的部分——不是展示卡片，而是串成流水线。
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const merged: Record<string, unknown> = {}
+    for (const key of ['planetRadius', 'planetMass', 'rotationHours', 'obliquityDeg']) {
+      const value = (args as unknown as Record<string, unknown>)[key]
+      if (typeof value === 'number') merged[key] = value
+    }
+    Object.assign(merged, worldParams)
+
+    const worldOut = opWorld({ world: merged } as never, 64)
+    const pipelineReport = runPipeline((worldOut as any).value)
+    out.push(renderPipeline(pipelineReport))
+    value.pipeline = pipelineReport
   } else if (sub === 'tables') {
     out.push('═══ 七张表（固定输出格式）═══', '')
     out.push('  1. 项目卡     推演类型 / 范围 / 时间窗口 / 观测者 / 优先级 / 不推演什么')
@@ -178,7 +195,7 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / checklist / tables')
+    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / checklist / tables')
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }
