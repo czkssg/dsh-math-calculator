@@ -33,6 +33,7 @@ import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLin
 import { runCivilization } from '../civilization.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
+import { buildDeadBriefPrompt } from '../ai-brief.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -360,8 +361,26 @@ export function opDerivation(args: MathArgs): Outcome {
     // 补丁6：宇宙死寂态兜底——说清"这个参数意味着什么"，不评判设定。
     const worldParams = (args.world ?? {}) as Record<string, unknown>
     const worldOut = opWorld({ world: worldParams } as never, 64)
-    const verdict = judgeDead((worldOut as any).value)
+    const worldValue = (worldOut as any).value || {}
+    const verdict = judgeDead(worldValue)
     out.push(renderDead(verdict))
+    out.push('')
+    // 把「判断权交给 AI」的提示词一并输出：
+    // 插件给结构与判据，结语与叙事判断由 AI 生成。
+    out.push('─── 给 AI 的提示（插件不做穷举，以下由你判断）───')
+    out.push(buildDeadBriefPrompt({
+      level: verdict.level,
+      causes: verdict.causes.map(function (cause) {
+        return { id: cause.id, name: cause.name, value: cause.value, physics: cause.physics }
+      }),
+      keyParams: {
+        '地表均温_K': worldValue?.temperature?.surfaceMeanK ?? 0,
+        '重力_m/s2': worldValue?.planet?.surfaceGravity ?? 0,
+        '气压_atm': worldValue?.atmosphere?.pressureAtm ?? 0,
+        '恒星寿命_Gyr': worldValue?.stellar?.lifetimeGyr ?? 0,
+      },
+      remedyHints: verdict.causes.map(function (cause) { return cause.remedy }),
+    }))
     value.dead = verdict
   } else if (sub === 'chaos') {
     // 混沌拦截器（补丁13）：不确定性的量化表达，不猜数字。

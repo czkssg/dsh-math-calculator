@@ -166,7 +166,7 @@ export function renderDead(verdict: DeadVerdict): string {
     for (const cause of verdict.causes) {
       out.push('  · ' + cause.name + '（' + cause.value + '）')
       out.push('    物理依据：' + cause.physics)
-      out.push('    定性结语：' + cause.epitaph)
+      out.push('    参考写法：' + cause.epitaph)
       out.push('    若想要物质世界：' + cause.remedy)
       out.push('')
     }
