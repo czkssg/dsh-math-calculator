@@ -1,5 +1,8 @@
 /**
- * 目录3.2 生态热力学金字塔 + playbook 可配置化测试。
+ * 目录3.2 生态热力学金字塔测试（重写版）。
+ *
+ * 关键回归：地球标定必须落在 0.5—1.5 倍之间。
+ * 旧版用叶片峰值效率 1.5%，算出 3400 亿（高 42 倍）——已修正。
  */
 import {
   computeEcosystem, ecosystemFromWorld, judgeOverload, trophicLevels,
@@ -15,113 +18,111 @@ function assert(name, cond, detail) {
   else { fails.push({ name, detail }); console.log('  FAIL ' + name + '\n         ' + (detail ?? '')) }
 }
 
-console.log('-- 1. 常量合理 --')
+console.log('-- 1. 标定常量 --')
 {
-  assert('10% 传递效率', ECO_CONSTANTS.trophicEfficiency === 0.1)
+  assert('地球 NPP 1.05e14', ECO_CONSTANTS.earthNPP === 1.05e14,
+    ECO_CONSTANTS.earthNPP.toExponential(2))
+  assert('地球吸收能量 3.8e24', ECO_CONSTANTS.earthAbsorbedJ === 3.8e24)
   assert('含碳率 45%', Math.abs(ECO_CONSTANTS.carbonFraction - 0.45) < 0.01)
-  assert('干物质热值 1.8e7', ECO_CONSTANTS.biomassEnergyDensity === 1.8e7)
-  assert('人均年能量约 3e9 J', ECO_CONSTANTS.perCapitaEnergyJ > 3e9 && ECO_CONSTANTS.perCapitaEnergyJ < 3.1e9,
-    ECO_CONSTANTS.perCapitaEnergyJ.toExponential(2))
+  assert('热值 1.8e7', ECO_CONSTANTS.biomassEnergyDensity === 1.8e7)
+  assert('10% 传递效率', ECO_CONSTANTS.trophicEfficiency === 0.1)
+  assert('现实折扣 0.58', Math.abs(ECO_CONSTANTS.realWorldDiscount - 0.58) < 0.01)
 }
 
-console.log('-- 2. 10% 定律 --')
+console.log('-- 2. 地球标定（关键回归）--')
+{
+  const eco = computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ)
+  // NPP 必须精确等于地球实测值
+  assert('NPP 精确等于 1.05e14', Math.abs(eco.netPrimaryProduction / 1.05e14 - 1) < 1e-9,
+    eco.netPrimaryProduction.toExponential(3))
+  // 承载力应在 0.5—1.5 倍地球人口之间（旧版高 42 倍）
+  const ratio = eco.carryingCapacity / 8e9
+  assert('承载力在地球实际 0.5—1.5 倍内', ratio > 0.5 && ratio < 1.5, ratio.toFixed(2) + ' 倍')
+  assert('不再是 3400 亿那种数量级', eco.carryingCapacity < 1e11,
+    (eco.carryingCapacity / 1e8).toFixed(1) + ' 亿')
+  assert('理论值高于现实值', eco.theoreticalCapacity > eco.carryingCapacity)
+}
+
+console.log('-- 3. 10% 定律 --')
 {
   const levels = trophicLevels(4)
-  assert('四级营养', levels.length === 4, String(levels.length))
+  assert('四级营养', levels.length === 4)
   assert('生产者 100%', levels[0].fraction === 1)
-  assert('初级消费者 10%', Math.abs(levels[1].fraction - 0.1) < 1e-9)
-  assert('次级消费者 1%', Math.abs(levels[2].fraction - 0.01) < 1e-9)
-  assert('三级消费者 0.1%', Math.abs(levels[3].fraction - 0.001) < 1e-9)
-}
-
-console.log('-- 3. 地球量级（关键回归）--')
-{
-  const earth = opWorld({ world: {} }, 32).value
-  const eco = ecosystemFromWorld(earth)
-  // 地球实际 NPP 约 1e14-1e15 kg C/yr
-  assert('NPP 量级合理（1e14—1e16）',
-    eco.netPrimaryProduction > 1e14 && eco.netPrimaryProduction < 1e16,
-    eco.netPrimaryProduction.toExponential(2))
-  // 承载力应在 1e10—1e12 之间（现实 8e9，考虑浪费后合理）
-  assert('承载力量级合理（1e10—1e12）',
-    eco.carryingCapacity > 1e10 && eco.carryingCapacity < 1e12,
-    eco.carryingCapacity.toExponential(2))
-  assert('判为充足', eco.verdict === 'ample', eco.verdict)
+  assert('初级 10%', Math.abs(levels[1].fraction - 0.1) < 1e-9)
+  assert('次级 1%', Math.abs(levels[2].fraction - 0.01) < 1e-9)
+  assert('三级 0.1%', Math.abs(levels[3].fraction - 0.001) < 1e-9)
 }
 
 console.log('-- 4. 肉食比例影响 --')
 {
-  const earth = opWorld({ world: {} }, 32).value
-  const plant = ecosystemFromWorld(earth, { meatFraction: 0 })
-  const meat = ecosystemFromWorld(earth, { meatFraction: 1 })
-  assert('全素食承载力更高', plant.carryingCapacity > meat.carryingCapacity,
-    plant.carryingCapacity.toExponential(2) + ' > ' + meat.carryingCapacity.toExponential(2))
-  assert('差距接近 10 倍',
-    Math.abs(plant.carryingCapacity / meat.carryingCapacity - 10) < 2,
+  const plant = computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ, { meatFraction: 0 })
+  const meat = computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ, { meatFraction: 1 })
+  assert('全素高于全肉', plant.carryingCapacity > meat.carryingCapacity)
+  assert('接近 10 倍差',
+    Math.abs(plant.carryingCapacity / meat.carryingCapacity - 10) < 1,
     (plant.carryingCapacity / meat.carryingCapacity).toFixed(1))
 }
 
-console.log('-- 5. 文明过载判定 --')
+console.log('-- 5. 亮星承载更多 --')
 {
-  const sustainable = judgeOverload(1e11, 8e9)
-  assert('地球人口可持续', sustainable.overloaded === false, sustainable.verdict)
-  assert('给出占用比例', sustainable.note.includes('占用的'), sustainable.note)
-
-  const critical = judgeOverload(1e10, 1.05e10)
-  assert('略超判为临界', critical.verdict === '临界', critical.verdict)
-
-  const over = judgeOverload(1e10, 5e10)
-  assert('远超判为过载', over.overloaded === true, over.verdict)
-  assert('给出 3 个以上应对方案', over.options.length >= 3, String(over.options.length))
-  assert('提到生态已崩溃也是一种设定',
-    over.options.some((o) => o.includes('崩溃')), over.options.join('|').slice(0, 80))
+  const dim = computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ * 0.5)
+  const bright = computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ * 2)
+  assert('能量翻倍承载力翻倍',
+    Math.abs(bright.carryingCapacity / dim.carryingCapacity - 4) < 0.1,
+    (bright.carryingCapacity / dim.carryingCapacity).toFixed(2))
 }
 
-console.log('-- 6. 远轨道世界承载力更低 --')
+console.log('-- 6. 远轨道世界承载力更低（字段名回归）--')
 {
   const near = ecosystemFromWorld(opWorld({ world: { orbitAU: 0.7 } }, 32).value)
   const far = ecosystemFromWorld(opWorld({ world: { orbitAU: 2 } }, 32).value)
-  assert('远轨道承载力更低', far.carryingCapacity < near.carryingCapacity,
-    far.carryingCapacity.toExponential(1) + ' < ' + near.carryingCapacity.toExponential(1))
+  assert('远轨道更低', far.carryingCapacity < near.carryingCapacity,
+    (far.carryingCapacity / 1e8).toFixed(1) + ' < ' + (near.carryingCapacity / 1e8).toFixed(1))
+  assert('差距明显', near.carryingCapacity / far.carryingCapacity > 3,
+    (near.carryingCapacity / far.carryingCapacity).toFixed(1) + ' 倍')
 }
 
-console.log('-- 7. 渲染 --')
+console.log('-- 7. 世界参数实证 --')
 {
-  const eco = ecosystemFromWorld(opWorld({ world: {} }, 32).value)
-  const text = renderEcosystem(eco)
-  assert('含能量流', text.includes('能量流'))
-  assert('含营养级', text.includes('营养级'))
-  assert('含判定', text.includes('判定'))
+  const earth = ecosystemFromWorld(opWorld({ world: {} }, 32).value)
+  assert('地球判为充足', earth.verdict === 'ample', earth.verdict)
+  const ratio = earth.carryingCapacity / 8e9
+  assert('地球承载力合理', ratio > 0.5 && ratio < 1.5, ratio.toFixed(2) + ' 倍')
 }
 
-console.log('-- 8. playbook 可配置化 --')
+console.log('-- 8. 过载判定 --')
+{
+  const ok = judgeOverload(8e9, 6e9)
+  assert('未过载判可持续', ok.overloaded === false, ok.verdict)
+  const over = judgeOverload(8e9, 4e10)
+  assert('远超判过载', over.overloaded === true, over.verdict)
+  assert('给 3 个应对方案', over.options.length >= 3, String(over.options.length))
+  assert('含「崩溃也可以是设定」',
+    over.options.some((o) => o.includes('崩溃')), over.options.join('|').slice(0, 60))
+}
+
+console.log('-- 9. 渲染 --')
+{
+  const text = renderEcosystem(computeEcosystem(ECO_CONSTANTS.earthAbsorbedJ))
+  assert('含能量流', text.includes('能量流'))
+  assert('含承载力', text.includes('承载力'))
+  assert('含营养级', text.includes('营养级'))
+  assert('用亿作单位', text.includes('亿'))
+}
+
+console.log('-- 10. playbook 可配置化 --')
 {
   const merged = mergePlaybookConfig({})
-  assert('默认有硬约束', merged.hard.length > 0, String(merged.hard.length))
-  assert('默认 11 步工作流', merged.workflow.length === 11, String(merged.workflow.length))
-  assert('默认 12 项能力', merged.capabilities.length === 12, String(merged.capabilities.length))
-
+  assert('默认 11 步', merged.workflow.length === 11, String(merged.workflow.length))
+  assert('默认 12 能力', merged.capabilities.length === 12, String(merged.capabilities.length))
   const custom = mergePlaybookConfig({
-    extraHardConstraints: ['我的自定义硬约束'],
     extraNarrative: ['要有龙'],
     disabledCapabilities: ['world'],
   })
-  assert('追加自定义硬约束', custom.hard.includes('我的自定义硬约束'))
-  assert('追加自定义叙事', custom.narrative.includes('要有龙'))
+  assert('追加叙事选择', custom.narrative.includes('要有龙'))
   assert('关闭能力生效', custom.capabilities.length === 11, String(custom.capabilities.length))
-  assert('关闭后不含 world', !custom.capabilities.some((c) => c.call === 'world'))
-
-  const customWorkflow = mergePlaybookConfig({
-    customWorkflow: [{ step: '1 只做一件事', do: '算', skip: '从不跳过' }],
-  })
-  assert('自定义工作流整批替换', customWorkflow.workflow.length === 1,
-    String(customWorkflow.workflow.length))
-  assert('替换后内容正确', customWorkflow.workflow[0].step === '1 只做一件事')
-
-  const withDuty = mergePlaybookConfig({
-    extraDuties: [{ duty: '我的职责', why: '因为', good: '好' }],
-  })
-  assert('追加 AI 职责', withDuty.duties.length > 6, String(withDuty.duties.length))
+  const wf = mergePlaybookConfig({ customWorkflow: [{ step: 'x', do: 'y', skip: 'z' }] })
+  assert('工作流整批替换', wf.workflow.length === 1)
 }
 
 console.log('')

@@ -58,7 +58,7 @@ const SUITES = [
   { file: 'observer.mjs', expect: 25, label: '补丁7 观测者物理过滤（人择选择效应）' },
   { file: 'ai-brief.mjs', expect: 31, label: 'AI 协作提示（分工/不穷举/结语交给 AI）' },
   { file: 'playbook.mjs', expect: 41, label: '推演指令集（底座清单/AI职责/判据/动态定制）' },
-  { file: 'ecosystem.mjs', expect: 34, label: '目录3.2 生态金字塔 + playbook 可配置化' },
+  { file: 'ecosystem.mjs', expect: 35, label: '目录3.2 生态金字塔 + playbook 可配置化' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
