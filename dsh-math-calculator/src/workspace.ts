@@ -143,6 +143,19 @@ function workspaceFile(name: string): string {
   return join(workspaceDirectory(), `${name}.json`)
 }
 
+/**
+ * 工作区数据表的绝对路径（对外）。
+ *
+ * UI 绑定宿主工作区时需要先判断「这张表是否已存在」，才能区分
+ * 「新建」与「复用」。
+ *
+ * @param name - 工作区名
+ * @returns 数据表文件路径
+ */
+export function workspaceFilePath(name: string): string {
+  return workspaceFile(name)
+}
+
 /** 空的默认工作区。 */
 function emptyWorkspace(name: string): WorkspaceData {
   const now = new Date().toISOString()

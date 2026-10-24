@@ -211,6 +211,52 @@ console.log('-- 10. 新建工作区即生成同名数据表 --')
   call('POST', 'workspaces/delete', { name })
 }
 
+console.log('-- 10.5 按宿主工作区绑定数据表（一个工作区一张同名表）--')
+{
+  // 用两个假的工作区身份，验证：各自建表、互不影响、重复绑定复用。
+  const wsA = { workspaceId: 'aaaaaaaa-1111-2222-3333-444444444444', title: 'bind_alpha' }
+  const wsB = { workspaceId: 'bbbbbbbb-5555-6666-7777-888888888888', title: 'bind_beta' }
+  const fileA = join(workspaceDirectory(), wsA.title + '.json')
+  const fileB = join(workspaceDirectory(), wsB.title + '.json')
+  for (const f of [fileA, fileB]) if (existsSync(f)) call('POST', 'workspaces/delete', { name: f.replace(/\.json$/, '').split('\\').pop() })
+
+  const firstA = call('POST', 'workspaces/bind', wsA)
+  assert('绑定 A → 200', firstA.status === 200, String(firstA.status))
+  assert('A 建出同名数据表', existsSync(fileA), fileA)
+  assert('A 是新建（created=true）', firstA.json.created === true, String(firstA.json.created))
+  assert('A 表名 = 工作区标题', firstA.json.name === wsA.title, firstA.json.name)
+
+  const firstB = call('POST', 'workspaces/bind', wsB)
+  assert('绑定 B → 200', firstB.status === 200, String(firstB.status))
+  assert('B 建出自己的表', existsSync(fileB), fileB)
+  assert('A 与 B 是两张不同的表', firstA.json.name !== firstB.json.name,
+    firstA.json.name + ' vs ' + firstB.json.name)
+
+  // 往 A 写数据，B 不应受影响
+  call('POST', 'workspaces/set-variable', { name: wsA.title, variableName: 'onlyA', value: 9 })
+  const dataA = JSON.parse(readFileSync(fileA, 'utf8'))
+  const dataB = JSON.parse(readFileSync(fileB, 'utf8'))
+  assert('A 的表里写入了变量', dataA.variables && dataA.variables.onlyA === 9, JSON.stringify(dataA.variables))
+  assert('B 的表没有被污染', !dataB.variables || dataB.variables.onlyA === undefined, JSON.stringify(dataB.variables))
+
+  // 重复绑定 A：必须复用，不能重建（否则数据会丢）
+  const againA = call('POST', 'workspaces/bind', wsA)
+  assert('重复绑定复用同一张表', againA.json.name === firstA.json.name, againA.json.name)
+  assert('重复绑定不再算新建', againA.json.created === false, String(againA.json.created))
+  const afterRe = JSON.parse(readFileSync(fileA, 'utf8'))
+  assert('复用后原有数据还在', afterRe.variables && afterRe.variables.onlyA === 9, JSON.stringify(afterRe.variables))
+
+  // 只有 id 没有标题时，用 id 前缀派生稳定表名
+  const idOnly = { workspaceId: 'cccccccc-9999-0000-1111-222222222222', title: '' }
+  const bound = call('POST', 'workspaces/bind', idOnly)
+  assert('只有 id 也能派生表名', bound.json.name === 'ws-cccccccc', bound.json.name)
+  call('POST', 'workspaces/delete', { name: bound.json.name })
+
+  // 收尾
+  switchWorkspace('default')
+  for (const name of [wsA.title, wsB.title]) call('POST', 'workspaces/delete', { name })
+}
+
 console.log('-- 11. 客户端心跳（诊断：面板挂没挂上）--')
 {
   assert('GET client-status 200', call('GET', 'client-status').status === 200)

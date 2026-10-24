@@ -547,8 +547,15 @@ function createLeftPanel(react: any) {
 
     return h('div', null,
       state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
-      h(Section, { title: '工作区', count: state.list.length, hint: '数据表：每个工作区一份同名 json' },
-        rows.length ? h('div', null, rows) : h(Empty, { text: '还没有工作区，先在下面新建一个。' })),
+      // 这里列的是**数据表**。每张表由宿主的一个工作区绑定而来（同名），
+      // 所以名字与左侧会话列表里的「5 / 默认工作区」一一对应；
+      // 切换宿主工作区时，当前表会自动跟着换。
+      h(Section, {
+        title: '数据表',
+        count: state.list.length,
+        hint: '每个宿主工作区一份同名表',
+      },
+        rows.length ? h('div', null, rows) : h(Empty, { text: '还没有数据表。切换宿主工作区会自动建表。' })),
       h(Section, { title: '新建' },
         h('div', { style: { display: 'flex', gap: 6, margin: '4px 0 6px' } },
           h('input', {
@@ -784,7 +791,7 @@ function createLeftPanel(react: any) {
           style: tabButton(item.id === tab),
           onClick: () => setTab(item.id),
         }, item.label))),
-      h(Panel, { title: '数学工作区', subtitle: '全局管理：所有工作区与跨区配置',
+      h(Panel, { title: '数学工作区', subtitle: '数据表与宿主工作区一一对应；切换工作区会自动换表',
         actions: h('span', { style: dim }, '') },
         h(Active, null)))
   }
@@ -1165,7 +1172,7 @@ function makeRightTabTitle(react: any) {
         }
 
         return {
-          /** 依赖的客户端服务（只声明必需的；可选服务用嵌套 inject）。 */
+          /** 依赖的客户端服务（只声明必需的；uiWorkspace 可选，用 ctx.get 取）。 */
           inject: ['slots'],
 
           apply: function (ctx: any) {
@@ -1174,6 +1181,49 @@ function makeRightTabTitle(react: any) {
             const disposers: Array<() => void> = []
             let pageOk = false
             let rowOk = false
+
+            // ⓪ 把「宿主工作区」绑定到数据表 —— 这是「一个工作区一张同名数据表」的关键。
+            //
+            // 宿主的 uiWorkspace 服务暴露 workspaces.list（getSnapshot/subscribe），
+            // 每项含 workspaceId / path / title。我们据此决定当前数据表：
+            //   · 初次：把当前工作区绑定过去（不存在就建表）；
+            //   · 用户切换宿主工作区：订阅变更，再绑定一次 → 右栏自动换表。
+            //
+            // 这条链路缺失过，导致数据表一直停在独立的 default、与宿主工作区无关。
+            const bindHost = function () {
+              try {
+                const ws: any = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined
+                const list = ws && ws.workspaces && ws.workspaces.list
+                if (!list || typeof list.getSnapshot !== 'function') return
+                const snapshot = list.getSnapshot()
+                const items = (snapshot && snapshot.items) || []
+                // 取第一个工作区作为当前（宿主默认选中第一个条目）。
+                const active = items[0]
+                if (!active) return
+                void fetch(API_BASE + '/workspaces/bind', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ workspaceId: active.workspaceId, title: active.title }),
+                }).then(function () {
+                  // 绑定完成后通知左右两栏重新拉表
+                  notifyWorkspaceChanged()
+                }).catch(function () {
+                  /* 绑定失败不影响面板显示 */
+                })
+              } catch {
+                /* 宿主没有 uiWorkspace：面板仍可用，只是停留在默认表 */
+              }
+            }
+            bindHost()
+            try {
+              const ws: any = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined
+              const list = ws && ws.workspaces && ws.workspaces.list
+              if (list && typeof list.subscribe === 'function') {
+                disposers.push(list.subscribe(bindHost))
+              }
+            } catch {
+              /* 订阅失败忽略 */
+            }
             const right: { service: boolean; registered: boolean; error: string | null } = {
               service: false,
               registered: false,

@@ -44,7 +44,7 @@ const SUITES = [
   { file: 'numeric.mjs', expect: 29, label: '基础运算扩展（秩/零空间/奇异值/分解/求根）' },
   { file: 'integration-checks.mjs', expect: 24, label: '跨模块一致性（后端整合）' },
   { file: 'client-ui.mjs', expect: 50, label: '前端挂载安全（令牌化 UI + 右栏 + 心跳）' },
-  { file: 'api.mjs', expect: 63, label: 'UI 后端 API（设置/常数/公式表/工作区管理/同名表/心跳）' },
+  { file: 'api.mjs', expect: 76, label: 'UI 后端 API（设置/常数/公式表/工作区绑定/同名表/心跳）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

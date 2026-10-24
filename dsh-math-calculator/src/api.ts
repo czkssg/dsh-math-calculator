@@ -12,6 +12,7 @@
  * @module dsh-math-calculator/api
  */
 
+import { existsSync } from 'node:fs'
 import {
   cleanupWorkspaces,
   currentWorkspace,
@@ -25,6 +26,7 @@ import {
   storageStats,
   switchWorkspace,
   updateWorkspace,
+  workspaceFilePath,
 } from './workspace.js'
 import { CONSTANT_GRAPH, setActiveConstants } from './constants-graph.js'
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
@@ -112,6 +114,64 @@ function field(body: unknown, key: string): string | undefined {
 let clientHeartbeat: { at: string; payload: Record<string, unknown> | null } | null = null
 
 /**
+ * 把宿主的工作区身份换成一张同名数据表（不存在就创建），并切为当前。
+ *
+ * 命名规则（稳定、可读、跨重启不变）：
+ *   · 有 `title` 用 title 的合法化结果（如「5」「默认工作区」）；
+ *   · 只有 id 时用 `ws-<id 前 8 位>`，保证同一工作区每次都落到同一张表。
+ *
+ * @param rawId - 宿主 workspaceId
+ * @param rawTitle - 宿主显示名
+ * @returns 绑定结果（表名 + 数据 + 是否新建）
+ */
+function bindHostWorkspace(rawId: unknown, rawTitle: unknown): {
+  bound: boolean
+  name: string
+  workspaceId: string
+  created: boolean
+  workspace: unknown
+} {
+  const hostId = typeof rawId === 'string' ? rawId.trim() : ''
+  const title = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+
+  // 由宿主身份派生表名：优先用显示名，兜底用 id 前缀。
+  const candidate = title !== '' ? sanitizeWorkspaceFileName(title) : (hostId !== '' ? 'ws-' + hostId.slice(0, 8) : '')
+  const name = normalizeWorkspaceName(candidate)
+  const existed = existsSync(workspaceFilePath(name))
+
+  // 建表 + 切为当前（switchWorkspace 内部会在文件缺失时落盘）。
+  const data = switchWorkspace(name)
+  if (!existed) {
+    updateWorkspace(name, (current) => ({
+      ...current,
+      // 记下来源，便于界面上说明「这张表对应宿主哪个工作区」
+      hostWorkspaceId: hostId,
+      hostWorkspaceTitle: title,
+    }))
+  }
+  return { bound: true, name, workspaceId: hostId, created: !existed, workspace: data }
+}
+
+/**
+ * 把任意显示名变成合法的数据表文件名片段。
+ *
+ * 宿主的 title 可能含空格、点号、中文、括号等；数据表名只允许
+ * `[A-Za-z0-9_-]`，所以这里做保守替换，并保证结果非空。
+ *
+ * @param value - 原始显示名
+ * @returns 合法片段
+ */
+function sanitizeWorkspaceFileName(value: string): string {
+  const cleaned = value
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '')
+    .slice(0, 64)
+  return cleaned === '' ? 'workspace' : cleaned
+}
+
+/**
  * 处理一次 UI 后端请求。
  *
  * @param path - 去掉前缀的路径
@@ -132,6 +192,22 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     // ── 统计 ──
     if (method === 'GET' && route === 'workspaces/stats') {
       return ok(storageStats())
+    }
+
+    // ── 按宿主工作区绑定数据表（「一个工作区一张同名数据表」的真正入口）──
+    //
+    // 宿主的每个工作区有稳定身份：`workspaceId` + `path` + `title`
+    // （来自 uiWorkspace.workspaces.list）。用它派生数据表名，于是：
+    //   · 切到工作区 A → 自动建/读 A 的表；切到 B → 自动建/读 B 的表；
+    //   · 互不影响，也不会凭空多出与宿主无关的 default。
+    //
+    // GET  ：查询（不存在就**创建**）
+    // POST ：显式绑定（带上 title 便于第一次命名）
+    if (route === 'workspaces/bind') {
+      const params = request.params ?? {}
+      const rawId = method === 'GET' ? (params.workspaceId ?? '') : field(body, 'workspaceId')
+      const rawTitle = method === 'GET' ? (params.title ?? '') : field(body, 'title')
+      return ok(bindHostWorkspace(rawId, rawTitle))
     }
 
     // ── 当前工作区详情（右侧边栏用：打开就看到本工作区的数据表）──
