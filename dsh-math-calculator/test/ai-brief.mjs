@@ -57,16 +57,16 @@ console.log('-- 4. 系统提示已含分工说明 --')
 {
   setPromptMode('brief')
   const brief = buildSystemPromptSection()
-  assert('brief 含分工', brief.includes('分工'), brief.slice(0, 60))
-  assert('brief 含「插件只给结构与判据」', brief.includes('结构与判据'))
-  assert('brief 含「不要反驳」', brief.includes('不要反驳'))
-  assert('brief 含「算不出来的别编」', brief.includes('别编数字'))
+  assert('brief 含分工说明', brief.includes('底座算数'), brief.slice(-120))
+  assert('brief 说明该算的调工具', brief.includes('该算的'))
+  assert('brief 含「不反驳」', brief.includes('不反驳'))
+  assert('brief 含「别编」', brief.includes('别编'))
 
   setPromptMode('full')
   const full = buildSystemPromptSection()
   assert('full 含世界推演 operation', full.includes('世界推演相关 operation'))
   assert('full 列出 derivation 子命令', full.includes('backSolve') && full.includes('civilization'))
-  assert('full 含插件不做穷举', full.includes('插件不做穷举'))
+  assert('full 含指令集', full.includes('世界推演指令集') || full.includes('不写死分支逻辑'))
   setPromptMode('brief')
 }
 

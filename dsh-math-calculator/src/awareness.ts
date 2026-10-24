@@ -26,7 +26,10 @@
 
 import { FORMULAS } from './formulas.js'
 import { FUNDAMENTAL_NAMES, getActiveConstants } from './constants-graph.js'
-import { currentWorkspace, loadWorkspace } from './workspace.js'
+import { currentWorkspace, loadWorkspace, workspaceDirectory } from './workspace.js'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { buildBriefPlaybook, buildPlaybook } from './playbook.js'
 
 /** 提示档位。 */
 export type PromptMode = 'off' | 'brief' | 'full'
@@ -118,6 +121,17 @@ export function buildSystemPromptSection(): string {
       ? `\n· 该工作区有 ${customFormulaCount} 条自定义公式、${disabledCount} 条停用公式（只在本工作区生效）。`
       : ''
 
+  // 工作区状态快照（供指令集动态定制）
+  let customConstantCount = 0
+  let hasArchive = false
+  try {
+    const workspace = loadWorkspace(workspaceName)
+    customConstantCount = (workspace.customConstants ?? []).length
+    hasArchive = existsSync(join(workspaceDirectory(), workspaceName + '.derivation.json'))
+  } catch {
+    /* 读不到就按 0 */
+  }
+
   if (promptMode === 'brief') {
     return [
       '## 数学计算工具（math_execute）',
@@ -133,11 +147,7 @@ export function buildSystemPromptSection(): string {
       '· 【跨模块一致性】的 ✗ 表示设定自相矛盾，先修正再写；',
       '· 【模型可信度】标出哪些数字只是地球标定。',
       '',
-      '**分工**（重要）：插件只给结构与判据，不做穷举。',
-      '· 该算的（数值/判定/区间）调工具，引用它的结果；',
-      '· 该写的（结语/描写/把数字译成读者能懂的话）由你生成，不要照抄工具的输出；',
-      '· 插件给的是「参考写法」不是唯一答案；用户的设定由用户决定，不要反驳。',
-      '· 算不出来的别编数字——去问用户，或标为待定。',
+      buildBriefPlaybook({ changedConstants: changedConstants, customConstants: customConstantCount }),
       '',
       '不确定能力边界时先调 operation="help"。' + changedNote + tableNote,
     ].join('\n')
@@ -181,11 +191,15 @@ export function buildSystemPromptSection(): string {
     '### 使用要点',
     '- 单次调用尽量把表达式写完整，避免来回多次',
     '- 公式参数用 overrides 覆盖（架空世界改系数就靠这个）',
-    '- **插件不做穷举**：它给结构、判据、少量参考写法；',
-    '  具体的结语、描写、叙事判断由你生成，别照抄工具输出。',
-    '- **不要反驳用户的设定**：插件指出「按这个参数会怎样」，',
-    '  由你转述给用户，并给出「想保留的话可以怎么调」的选项。',
     '- 不确定能力边界时调 operation="help"' + changedNote + tableNote,
+    '',
+    buildPlaybook({
+      workspace: workspaceName,
+      changedConstants: changedConstants,
+      customConstants: customConstantCount,
+      customFormulas: customFormulaCount,
+      hasArchive: hasArchive,
+    }),
   ].join('\n')
 }
 
