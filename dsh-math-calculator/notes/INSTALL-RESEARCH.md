@@ -17,9 +17,9 @@
 | 桌面版 Electron | `44.7.0` | `resources\version` |
 | 内置 Node | `24.21.0` | `runtime.json` → `"node": "24.21.0"`；`runtime\versions.json` |
 | 内置 pnpm | `11.28.5` | `runtime.json` → `"pnpm": "11.28.5"` |
-| profile | `desktop`（**唯一一个**） | `Get-ChildItem C:\Users\曹某\.dsh\profiles -Directory` 只返回 `desktop` |
-| profile 目录 | `C:\Users\曹某\.dsh\profiles\desktop` | 同上 |
-| CLI 入口 | `C:\Users\曹某\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd` | 该文件内容：`ELECTRON_RUN_AS_NODE=1` + `"%~dp0..\..\..\..\DeepSeek Harness.exe" --expose-internals "%~dp0..\..\..\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js" %*` |
+| profile | `desktop`（**唯一一个**） | `Get-ChildItem C:\Users\<you>\.dsh\profiles -Directory` 只返回 `desktop` |
+| profile 目录 | `C:\Users\<you>\.dsh\profiles\desktop` | 同上 |
+| CLI 入口 | `C:\Users\<you>\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd` | 该文件内容：`ELECTRON_RUN_AS_NODE=1` + `"%~dp0..\..\..\..\DeepSeek Harness.exe" --expose-internals "%~dp0..\..\..\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js" %*` |
 | `dsh` 在 PATH 上？ | **否** | `Get-Command dsh / dsh.cmd / dsh.exe` 全部为空 |
 
 ## 1. `dsh plugin` 到底是什么
@@ -40,7 +40,7 @@ Options: --profile <name>  the profile whose plugins to manage (initialized on f
 
 ## 2. 一个插件是怎样进入插件树的
 
-证据：`C:\Users\曹某\.dsh\profiles\desktop\node_modules\dsh-hot-installer\README.md`
+证据：`C:\Users\<you>\.dsh\profiles\desktop\node_modules\dsh-hot-installer\README.md`
 
 - 第 41 行（EVIDENCE）：读包 `package.json` 的 `dsh.bundle.patch` → 解析 `cordis.patch.yml` →
   把 patch 条目追加到根 include entry 的 `config.patches` → `entry.update`。
@@ -54,9 +54,9 @@ Options: --profile <name>  the profile whose plugins to manage (initialized on f
 
 ## 3. profile 里没有 `@deepseek-ai/*`
 
-- `Get-ChildItem C:\Users\曹某\.dsh\profiles\desktop\node_modules\@deepseek-ai`（`-Force`, `-ErrorAction Continue`）
+- `Get-ChildItem C:\Users\<you>\.dsh\profiles\desktop\node_modules\@deepseek-ai`（`-Force`, `-ErrorAction Continue`）
   → **无输出**。
-- `Test-Path C:\Users\曹某\.dsh\profiles\desktop\node_modules\@deepseek-ai\dsh-tools\package.json` → `False`。
+- `Test-Path C:\Users\<you>\.dsh\profiles\desktop\node_modules\@deepseek-ai\dsh-tools\package.json` → `False`。
 - profile 的 `package.json` 里，`@deepseek-ai/*` 只出现在 `dsh.profile.bundles`（`dsh-base`、`dsh-web-app` 等），
   **不在 `dependencies`**（EVIDENCE，直接读该文件）。
 
@@ -76,14 +76,14 @@ schema 编译与参数校验在本地实现，并用 `test/schema-parity.mjs` �
 cd D:\0cengxu\5\dsh-math-calculator
 npm install ; npm run build
 
-& "C:\Users\曹某\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" `
+& "C:\Users\<you>\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" `
   plugin --profile desktop add D:/0cengxu/5/dsh-math-calculator
 ```
 
 验证：
 
 ```powershell
-Get-Content C:\Users\曹某\.dsh\profiles\desktop\package.json          # dependencies + dsh.profile.bundles 两处
+Get-Content C:\Users\<you>\.dsh\profiles\desktop\package.json          # dependencies + dsh.profile.bundles 两处
 & "...\dsh.cmd" --profile desktop --dump-config | Select-String math-calc
 ```
 

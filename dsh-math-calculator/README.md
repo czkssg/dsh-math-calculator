@@ -24,14 +24,14 @@ DSH（DeepSeek Harness）原生数学计算与**架空世界观推演**插件。
 本插件是标准 DSH bundle（`dsh.bundle.patch` → `cordis.patch.yml`）。
 
 本机 `dsh` 未加入 PATH，实际入口是随桌面版分发的：
-`C:\Users\曹某\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd`
+`C:\Users\<you>\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd`
 
 ```powershell
 cd D:\0cengxu\5\dsh-math-calculator
 npm install
 npm run build
 
-& "C:\Users\曹某\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" `
+& "C:\Users\<you>\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" `
   plugin --profile desktop add D:/0cengxu/5/dsh-math-calculator
 ```
 

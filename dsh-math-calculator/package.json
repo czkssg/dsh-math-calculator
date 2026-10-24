@@ -2,11 +2,24 @@
   "name": "dsh-math-calculator",
   "version": "2.0.0",
   "private": false,
-  "description": "DSH 原生数学与架空世界推演插件：BigNumber 高精度、符号微积分、线代（秩/零空间/奇异值）、统计概率、微分方程、270 条自然科学公式、物理常数推演、星球/天空/恒星/卫星/生命闸门推演。全部本地执行。",
+  "description": "DSH 原生数学与架空世界推演插件：BigNumber 高精度、符号微积分、线代（秩/零空间/奇异值）、统计概率、微分方程、342 条自然科学公式（三轴标签）、物理常数推演、星球/天空/恒星/卫星/生命闸门推演。全部本地执行。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "license": "MIT",
+  "author": "czkssg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/czkssg/dsh-math-calculator.git",
+    "directory": "dsh-math-calculator"
+  },
+  "homepage": "https://github.com/czkssg/dsh-math-calculator#readme",
+  "bugs": {
+    "url": "https://github.com/czkssg/dsh-math-calculator/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22.0.0",
     "dsh": ">=0.1.1-rc.2 <0.4.0"
@@ -41,7 +54,9 @@
     "src",
     "cordis.patch.yml",
     "dsh.plugin.json",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "dependencies": {
     "algebrite": "^1.4.0",
@@ -63,7 +78,9 @@
     "test": "node test/run.mjs",
     "test:all": "node run-all-tests.mjs",
     "preflight": "node scripts/preflight.mjs",
-    "doccheck": "node scripts/doc-coverage.mjs"
+    "doccheck": "node scripts/doc-coverage.mjs",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run test:all && npm run preflight"
   },
   "keywords": [
     "dsh",

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（私密报告）
+    url: https://github.com/czkssg/dsh-math-calculator/security/advisories/new
+    about: 请勿用公开 Issue 报告漏洞
+  - name: 使用问题与讨论
+    url: https://github.com/czkssg/dsh-math-calculator/discussions
+    about: 不确定是不是 bug？先来这里聊

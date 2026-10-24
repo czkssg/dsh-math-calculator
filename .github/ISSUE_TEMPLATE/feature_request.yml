@@ -1,0 +1,47 @@
+name: 功能建议
+description: 提出一个新的公式、能力或界面改进
+title: "[feat] "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提出建议前请先想清楚一件事：**这解决的是谁的什么问题？**
+        如果是新公式，请说明它在什么场景下会被用到。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 现在缺什么？卡在哪里？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你建议的做法
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: 类别
+      options:
+        - 新公式
+        - 计算能力（新运算/新分布/新求解）
+        - 世界推演
+        - 界面
+        - 文档
+        - 其它
+    validations:
+      required: true
+  - type: textarea
+    id: formula
+    attributes:
+      label: 若是公式，请给出表达式与量纲
+      placeholder: |
+        表达式：P = 2 * pi * r
+        参数：r 半径 m
+        单位：m
+        出处/依据：教科书 / 经验拟合（请注明适用域）
+    validations:
+      required: false

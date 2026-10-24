@@ -1,0 +1,35 @@
+name: Release
+
+# 打 tag（例如 v2.0.0）时自动发布到 npm。
+# 需要仓库 Secret：NPM_TOKEN（npm 的 Automation Token）。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: dsh-math-calculator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+          cache-dependency-path: dsh-math-calculator/package-lock.json
+
+      - run: npm ci
+
+      # prepublishOnly 会跑全量测试 + 装机自检：测试不过就发不出去
+      - name: 发布到 npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

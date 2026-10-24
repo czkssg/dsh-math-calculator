@@ -1,0 +1,74 @@
+name: Bug 报告
+description: 报告一个可复现的问题
+title: "[bug] "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量填全，**能复现的问题才会被修**。
+        安全漏洞请勿在此提交，见 [SECURITY.md](../SECURITY.md)。
+  - type: input
+    id: plugin-version
+    attributes:
+      label: 插件版本
+      placeholder: 例如 2.0.0（dsh-math-calculator/package.json 的 version）
+    validations:
+      required: true
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本
+      placeholder: 例如 0.2.1-rc.2
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 出问题的部分
+      options:
+        - 工具调用（math_execute）
+        - 公式库（检索/调用/扩展）
+        - 常数功能
+        - 世界推演
+        - 界面（左侧入口 / 右侧页签）
+        - 安装/启动
+        - 其它
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: 期望结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 若与工具调用有关，请贴出完整入参（JSON）与输出文本。
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志（可选）
+      description: 界面/启动问题请附 `%APPDATA%\@deepseek-ai\dsh-desktop\logs\` 下最新崩溃日志。
+    validations:
+      required: false

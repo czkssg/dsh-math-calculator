@@ -1,2 +1,24 @@
-# 会话产物的原始数据（可由 .scratch/toolchain/probe.ps1 重新生成）
-.scratch/toolchain/probe.txt
+# ── 依赖与构建 ──
+node_modules/
+*.tsbuildinfo
+
+# ── 运行时/发布产物 ──
+*.tgz
+npm-debug.log*
+
+# ── 本机与 agent 工作产物（**不要提交**）──
+# 历史里曾误提交过含凭据的调试日志（.credentials.yaml / web session token），
+# 这些目录一律忽略，避免再次把 token 或会话记录带进仓库。
+.scratch/
+.dsh-mattskillsdeck-cache/
+.dsh-acl-recovery/
+.dsh-market/
+.plugin-manager/
+profiles/
+*.log
+
+# ── 编辑器/系统 ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
