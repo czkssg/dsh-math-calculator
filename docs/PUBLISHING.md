@@ -123,6 +123,11 @@ dsh --profile mathlab --dump-config | Select-String dsh-math-calculator
 
 ---
 
+> ⚠️ **卸载有坑**：若 profile 里的 spec 是 `file:<源码目录>`，
+> `dsh plugin remove` 可能删掉你的源码目录（真实事故，见
+> [ADR-0003](adr/0003-install-method-and-uninstall-risk.md)）。
+> 要反复装卸的 profile，请从 **npm 包 / tgz** 安装。
+
 ## 7. 当前进度（2026-10-24 记录）
 
 已完成：

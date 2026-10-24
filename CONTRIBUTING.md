@@ -59,6 +59,20 @@ operation 数量是**对外契约**（有测试断言）。要加必须同时改
 
 **更推荐的做法**：给已有 operation 加参数或子动作（就像 `formulas` 的 `freq:` / `symbol:` 查询）。
 
+## ⚠️ 卸载前必读（真实事故）
+
+**不要把「从目录路径安装的插件」直接 `dsh plugin remove`。**
+
+如果 profile 里记录的是 `file:<你的源码目录>`（`dsh plugin add <目录>` 会这样记），
+执行 remove 可能**把源码目录整个删掉**。2026-10-24 发生过一次：110 个文件被清空。
+
+安全做法：
+
+1. 只从 **npm 包或 tgz** 安装到需要反复卸载的 profile；
+2. 指向源码目录的安装，卸载前先确认**仓库干净且已推送**（`lib/`、`node_modules/` 不在 git 里，
+   恢复后要 `npm install && npm run build`）；
+3. 详细分析与恢复步骤见 [docs/adr/0003](../docs/adr/0003-install-method-and-uninstall-risk.md)。
+
 ## 报 bug
 
 用 GitHub Issue，带上：
