@@ -190,6 +190,14 @@ export interface MathArgs {
 
   /** 观测者类型：human / tiny / giant / aquatic / aerial / 2d。 */
   observerKind?: string
+
+  // ── 时间轴（补丁1/11）──
+  /** 时间轴起点（Gyr）。 */
+  timelineFrom?: number
+  /** 时间轴终点（Gyr）。 */
+  timelineTo?: number
+  /** 采样点数。 */
+  timelineSteps?: number
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

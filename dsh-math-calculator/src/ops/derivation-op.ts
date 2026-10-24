@@ -33,6 +33,7 @@ import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLin
 import { runCivilization } from '../civilization.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
+import { buildTimeline, renderTimeline, detectPathLock } from '../timeline.js'
 import { buildDeadBriefPrompt } from '../ai-brief.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
@@ -341,6 +342,19 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value.civilization = civ
+  } else if (sub === 'timeline') {
+    // 补丁1 + 补丁11：快慢变量解耦 + 历史临界点
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const config = {
+      fromGyr: typeof args.timelineFrom === 'number' ? args.timelineFrom : 0,
+      toGyr: typeof args.timelineTo === 'number' ? args.timelineTo : 10,
+      steps: typeof args.timelineSteps === 'number' ? args.timelineSteps : 11,
+      starMassSun: typeof worldParams.starMass === 'number' ? (worldParams.starMass as number) : 1,
+      orbitAU: typeof worldParams.orbitAU === 'number' ? (worldParams.orbitAU as number) : 1,
+    }
+    const timeline = buildTimeline(config)
+    out.push(renderTimeline(timeline))
+    value.timeline = timeline
   } else if (sub === 'observer') {
     // 补丁7：观测者物理过滤——同一个世界，不同尺度看到不同结论。
     const kind = typeof args.observerKind === 'string' ? args.observerKind : 'human'
