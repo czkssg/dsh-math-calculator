@@ -119,6 +119,27 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok(storageStats())
     }
 
+    // ── 当前工作区详情（右侧边栏用：打开就看到本工作区的数据表）──
+    //
+    // 必须放在下面的 `workspaces/` 前缀匹配**之前**，否则 "workspaces/current"
+    // 会被当成工作区名 "current" 处理。
+    if (method === 'GET' && route === 'workspaces/current') {
+      const name = currentWorkspace()
+      const data = loadWorkspace(name)
+      return ok({
+        ...data,
+        // 给界面用的摘要：一眼看清本工作区改了什么
+        summary: {
+          name,
+          changedConstants: Object.keys(data.constants ?? {}).length,
+          overrides: (data.formulaTable?.overrides ?? []).length,
+          customFormulas: (data.formulaTable?.custom ?? []).length,
+          terrains: (data.terrains ?? []).length,
+          variables: Object.keys(data.variables ?? {}).length,
+        },
+      })
+    }
+
     // ── 详情 ──
     if (method === 'GET' && route.startsWith('workspaces/')) {
       const name = decodeURIComponent(route.slice('workspaces/'.length))

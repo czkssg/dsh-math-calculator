@@ -54,6 +54,9 @@ const client = readFileSync(clientPath, 'utf8')
 check('使用 __ModuleLoader__', client.includes('__ModuleLoader__'))
 check('挂 sidebar.panellist 入口', client.includes('sidebar.panellist'))
 check('挂 main 页面', client.includes("name: 'main'"))
+// 右侧边栏：当前工作区数据表。契约 = 先向 sidebarRightTabs 登记页签，
+// 再挂 sidebar.right.pane.tab 与 .title（两者的 key 必须与页签 id 一致）。
+check('挂右侧边栏页签（当前工作区）', client.includes('sidebar.right.pane.tab') && client.includes('sidebarRightTabs'))
 check('有错误边界', client.includes('MathCalcBoundary'))
 check('不注入全局样式', !client.includes('document.head'))
 // 真机事故：桌面宿主会重复执行 client bundle，宿主加载器对同一 id 二次注册会抛错，

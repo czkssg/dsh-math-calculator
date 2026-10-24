@@ -175,6 +175,95 @@ console.log('-- 5. 宿主没有 slots 服务时静默退出 --')
   assert('不抛异常', threw === false)
 }
 
+console.log('-- 6. 右侧边栏页签：当前工作区 --')
+{
+  // 宿主契约（读 dsh-context / dsh-better-sidebar 产物得出）：
+  //   1) 向 sidebarRightTabs 注册页签
+  //   2) 再挂 sidebar.right.pane.tab 与 .title，key 与页签 id 一致
+  const tabRegistrations = []
+  const innerSlots = []
+  const innerMetas = []
+  const sub = {
+    sidebarRightTabs: {
+      register(spec) {
+        tabRegistrations.push(spec)
+        return () => {}
+      },
+    },
+    slots: {
+      inject(name, callback) {
+        innerSlots.push(name)
+        const dispose = callback()
+        return () => {
+          if (typeof dispose === 'function') dispose()
+        }
+      },
+      register(meta) {
+        innerMetas.push(meta)
+        return () => {}
+      },
+    },
+  }
+  const ctx = {
+    // 左侧入口/页面：这个用例里不关心，给最小桩
+    slots: {
+      inject() {
+        return () => {}
+      },
+      register() {
+        return () => {}
+      },
+    },
+    inject(services, callback) {
+      assert('请求的注入服务是 sidebarRightTabs', services.includes('sidebarRightTabs'), services.join(','))
+      const dispose = callback(sub)
+      return typeof dispose === 'function' ? dispose : () => {}
+    },
+  }
+
+  const dispose = mod.apply(ctx)
+  assert('向 sidebarRightTabs 注册了页签', tabRegistrations.length === 1, String(tabRegistrations.length))
+  const tabId = tabRegistrations[0] && tabRegistrations[0].id
+  // id 带包名，避免与其它插件的页签相撞
+  assert('页签 id 带包名', tabId === 'dsh-math-calculator.workspace', String(tabId))
+  assert('页签有标题', typeof tabRegistrations[0].title === 'function')
+  assert('挂了右侧内容槽位', innerSlots.includes('sidebar.right.pane.tab'), innerSlots.join(', '))
+  assert('挂了右侧标题槽位', innerSlots.includes('sidebar.right.pane.tab.title'))
+  const bodyMeta = innerMetas.find((m) => m.name === 'sidebar.right.pane.tab')
+  const titleMeta = innerMetas.find((m) => m.name === 'sidebar.right.pane.tab.title')
+  assert('内容槽位 key = 页签 id', Boolean(bodyMeta) && bodyMeta.key === tabId, bodyMeta && bodyMeta.key)
+  assert('标题槽位 key 一致', Boolean(titleMeta) && titleMeta.key === tabId, titleMeta && titleMeta.key)
+  assert('apply 返回 dispose', typeof dispose === 'function')
+}
+
+console.log('-- 7. 没有 sidebarRightTabs 服务时跳过（不报错）--')
+{
+  let threw = false
+  let called = false
+  const ctx = {
+    slots: {
+      inject() {
+        return () => {}
+      },
+      register() {
+        return () => {}
+      },
+    },
+    inject(services, callback) {
+      called = true
+      // 真实宿主在服务缺失时根本不会执行回调；这里模拟同一行为
+      return () => {}
+    },
+  }
+  try {
+    mod.apply(ctx)
+  } catch {
+    threw = true
+  }
+  assert('不抛异常', threw === false)
+  assert('依然尝试过注入（由宿主决定是否回调）', called === true)
+}
+
 console.log('')
 if (fails.length === 0) {
   console.log(`全部通过：${pass} 项`)

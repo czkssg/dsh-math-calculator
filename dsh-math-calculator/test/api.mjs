@@ -4,8 +4,11 @@
  * 这一层是给「配置与数据管理面板」用的：用户不在这里算数，只在这里改配置、管数据。
  * 直接调 handleApiRequest，不经过 HTTP，跑得快也不需要宿主。
  */
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { handleApiRequest } from '../lib/api.js'
 import { FORMULAS } from '../lib/formulas.js'
+import { workspaceDirectory, switchWorkspace, currentWorkspace } from '../lib/workspace.js'
 
 let pass = 0
 const fails = []
@@ -97,6 +100,49 @@ console.log('-- 5. 路由语义 --')
   assert('GET 未知路径 → 404', call('GET', 'nope').status === 404)
   assert('PUT settings → 405', call('PUT', 'settings').status === 405, String(call('PUT', 'settings').status))
   assert('POST constants → 405', call('POST', 'constants', {}).status === 405)
+}
+
+console.log('-- 7. 当前工作区接口（右侧边栏「本区数据表」用）--')
+{
+  const r = call('GET', 'workspaces/current')
+  assert('GET workspaces/current 200', r.status === 200, String(r.status))
+  assert('返回当前工作区名', typeof r.json.name === 'string' && r.json.name.length > 0, r.json.name)
+  assert('返回 summary 摘要', Boolean(r.json.summary), JSON.stringify(r.json.summary))
+  const keys = ['changedConstants', 'overrides', 'customFormulas', 'terrains', 'variables']
+  assert('summary 字段齐全且为数字', keys.every((k) => typeof r.json.summary[k] === 'number'), JSON.stringify(r.json.summary))
+  assert('summary.name 与顶层一致', r.json.summary.name === r.json.name, r.json.summary.name)
+
+  // 关键：'workspaces/current' 不能被当成名为 "current" 的工作区
+  assert('current 未被当作工作区名', r.json.name !== 'current', r.json.name)
+
+  // 普通详情路由仍然可用
+  const detail = call('GET', 'workspaces/default')
+  assert('workspaces/default 仍走详情路由', detail.status === 200 && detail.json.name === 'default', detail.json.name)
+}
+
+console.log('-- 8. 切换工作区时数据表自动创建 --')
+{
+  const name = 'autocreate_check'
+  const file = join(workspaceDirectory(), name + '.json')
+  // 先确保它不存在
+  if (existsSync(file)) call('POST', 'workspaces/delete', { name })
+
+  const before = existsSync(file)
+  assert('测试起点：文件不存在', before === false, file)
+
+  const switched = call('POST', 'workspaces/switch', { name })
+  assert('切换到新工作区 200', switched.status === 200, String(switched.status))
+  assert('切换后 current = ' + name, currentWorkspace() === name, currentWorkspace())
+
+  // 自动创建：切换即落盘，工作区不再是「幽灵」
+  assert('数据表已自动创建（磁盘上真的有）', existsSync(file), file)
+
+  const detail = call('GET', 'workspaces/' + name)
+  assert('新工作区可读', detail.status === 200 && detail.json.name === name, detail.json.name)
+
+  // 回切到 default，别把测试状态留给其它用例
+  switchWorkspace('default')
+  if (existsSync(file)) call('POST', 'workspaces/delete', { name })
 }
 
 console.log('')

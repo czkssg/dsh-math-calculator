@@ -833,7 +833,130 @@
   }
 
   /** 侧栏页签标题（很小，只占一个 tab 的位置）。 */
-  function createSidebarTitle(react: any) {
+  /**
+ * 右侧边栏页签：**当前工作区**的数据表。
+ *
+ * 与左侧入口的分工（用户 2026-10-24 的要求）：
+ *   · 左侧入口（sidebar.panellist + main 页面）——**全局管理**：所有工作区，创建/切换/删除
+ *   · 右侧页签（sidebar.right.pane.tab）      ——**本工作区**：一打开就看到当前工作区的
+ *                                                改动常数 / 公式覆盖 / 地点 / 变量
+ *
+ * 数据全部来自后端 /workspaces/current，前端不自己推导（避免两份真相）。
+ */
+function createWorkspaceTab(react: any) {
+  const h = react.createElement
+  const { useState, useEffect, useCallback } = react
+
+  const box = { padding: '8px 10px', fontSize: 12, lineHeight: 1.65, overflow: 'auto', height: '100%' }
+  const sectionTitle = { marginTop: 12, marginBottom: 4, fontWeight: 600, opacity: 0.9 }
+  const rowStyle = { display: 'flex', justifyContent: 'space-between', gap: 8, padding: '2px 0' }
+  const muted = { opacity: 0.6 }
+
+  function Section(props: any) {
+    return h('div', null, h('div', { style: sectionTitle }, props.title), props.children)
+  }
+
+  return function WorkspaceTab() {
+    const [state, setState] = useState({ loading: true, error: null, data: null })
+
+    const load = useCallback(function () {
+      setState(function (prev: any) { return { ...prev, loading: true, error: null } })
+      return callApi('/workspaces/current')
+        .then(function (data: any) { setState({ loading: false, error: null, data }) })
+        .catch(function (error: any) {
+          setState({ loading: false, error: (error && error.message) || '读取失败', data: null })
+        })
+    }, [])
+
+    useEffect(function () { void load() }, [load])
+
+    if (state.loading && !state.data) return h('div', { style: box }, '正在读取当前工作区…')
+    if (state.error) {
+      return h('div', { style: box }, '读取失败：' + state.error,
+        h('button', { onClick: load, style: { marginLeft: 8 } }, '重试'))
+    }
+
+    const data = state.data || {}
+    const summary = data.summary || {}
+    const changed = Object.entries(data.constants || {})
+    const overrides = (data.formulaTable && data.formulaTable.overrides) || []
+    const custom = (data.formulaTable && data.formulaTable.custom) || []
+    const terrains = data.terrains || []
+    const variables = Object.entries(data.variables || {})
+
+    const header = h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+      h('div', { style: { fontWeight: 600 } }, '当前工作区：' + (summary.name || data.name || '—')),
+      h('button', { onClick: load, title: '重新读取' }, '刷新'))
+
+    const counts = h('div', { style: muted },
+      '改动常数 ' + changed.length +
+      ' · 公式覆盖 ' + overrides.length +
+      ' · 自定义 ' + custom.length +
+      ' · 地点 ' + terrains.length +
+      ' · 变量 ' + variables.length)
+
+    const constSection = h(Section, { title: '【改动的常数】' },
+      changed.length === 0
+        ? h('div', { style: muted }, '（未改动，全部为现实值）')
+        : h('div', null, changed.map(function (entry: any) {
+            const name = entry[0]
+            const value = entry[1]
+            return h('div', { key: name, style: rowStyle },
+              h('span', null, name),
+              h('span', null, typeof value === 'number' ? String(value) : String(value)))
+          })))
+
+    const formulaSection = h(Section, { title: '【本工作区公式表】' },
+      overrides.length === 0 && custom.length === 0
+        ? h('div', { style: muted }, '（未改动公式，全部用模板）')
+        : h('div', null,
+            overrides.map(function (item: any) {
+              return h('div', { key: 'o-' + item.id, style: rowStyle },
+                h('span', null, item.id),
+                h('span', { style: muted }, item.disabled ? '已停用' : '已覆盖'))
+            }),
+            custom.map(function (item: any) {
+              return h('div', { key: 'c-' + item.id, style: rowStyle },
+                h('span', null, item.id),
+                h('span', { style: muted }, '自定义'))
+            })))
+
+    const terrainSection = h(Section, { title: '【地点】' },
+      terrains.length === 0
+        ? h('div', { style: muted }, '（暂无）')
+        : h('div', null, terrains.map(function (t: any, index: number) {
+            return h('div', { key: (t && t.name) || index, style: rowStyle },
+              h('span', null, (t && t.name) || '未命名'),
+              h('span', { style: muted }, (t && t.kind) || ''))
+          })))
+
+    const variableSection = h(Section, { title: '【变量】' },
+      variables.length === 0
+        ? h('div', { style: muted }, '（暂无）')
+        : h('div', null, variables.map(function (entry: any) {
+            return h('div', { key: entry[0], style: rowStyle },
+              h('span', null, entry[0]),
+              h('span', null, String(entry[1])))
+          })))
+
+    const footer = h('div', { style: { marginTop: 12, ...muted } }, '管理全部工作区请在左侧「∑ 数学」入口。')
+
+    return h('div', { style: box }, header, counts, constSection, formulaSection, terrainSection, variableSection, footer)
+  }
+}
+
+/** 右侧页签的标题（宿主页签条上显示的那个）。 */
+function createWorkspaceTabTitle(react: any) {
+  return function WorkspaceTabTitle() {
+    return react.createElement(
+      'span',
+      { title: '当前工作区', style: { fontSize: 12, whiteSpace: 'nowrap' } },
+      '∑ 本区',
+    )
+  }
+}
+
+function createSidebarTitle(react: any) {
     return function SidebarTitle() {
       return react.createElement(
         'span',
@@ -894,6 +1017,9 @@
       const WorkspaceSection = react ? createWorkspacePanel(react) : function EmptySection() { return null }
       const ConfigPanel = react ? createConfigPanel(react, WorkspaceSection) : function EmptyPanel() { return null }
       const SidebarTitle = react ? createSidebarTitle(react) : function EmptyTitle() { return null }
+      // 右侧页签：当前工作区的数据表（与左侧「全局管理」分工不同）
+      const WorkspaceTab = react ? createWorkspaceTab(react) : function EmptyTab() { return null }
+      const WorkspaceTabTitle = react ? createWorkspaceTabTitle(react) : function EmptyTabTitle() { return null }
 
       /**
        * 错误边界：面板内部异常只影响本面板，不会传染给原生界面。
@@ -984,6 +1110,65 @@
                 /* ignore */
               }
             }
+          }
+
+          // ③ 右侧边栏页签：**当前工作区**的数据表。
+          //
+          // 契约来源（读 dsh-context / dsh-better-sidebar / dsh-agent-teams 的产物得出）：
+          //   1) 先向 sidebarRightTabs.register({ id, kind, title, guide }) 登记页签；
+          //   2) 再挂 sidebar.right.pane.tab（内容）与 sidebar.right.pane.tab.title（标题），
+          //      两个槽位的 key 必须与登记的 id 一致。
+          //
+          // sidebarRightTabs 是**可选**服务：用嵌套 ctx.inject 拿子上下文，
+          // 服务不存在时回调不执行 → 静默跳过，绝不因此让插件激活失败。
+          const RIGHT_TAB_ID = 'dsh-math-calculator.workspace'
+          try {
+            if (typeof ctx.inject === 'function') {
+              const disposeRight = ctx.inject(['sidebarRightTabs'], function (sub: any) {
+                const inner: Array<() => void> = []
+                try {
+                  const registry = sub && sub.sidebarRightTabs
+                  if (registry && typeof registry.register === 'function') {
+                    inner.push(registry.register({
+                      id: RIGHT_TAB_ID,
+                      kind: 'dsh-math-calculator',
+                      title: function () { return '数学' },
+                      guide: [{
+                        order: 60,
+                        title: function () { return '数学工作区' },
+                        description: function () { return '当前工作区的常数 / 公式 / 地点 / 变量' },
+                      }],
+                    }))
+                  }
+                  inner.push(sub.slots.inject('sidebar.right.pane.tab', function () {
+                    return sub.slots.register(
+                      { name: 'sidebar.right.pane.tab', key: RIGHT_TAB_ID },
+                      withBoundary(WorkspaceTab),
+                    )
+                  }))
+                  inner.push(sub.slots.inject('sidebar.right.pane.tab.title', function () {
+                    return sub.slots.register(
+                      { name: 'sidebar.right.pane.tab.title', key: RIGHT_TAB_ID },
+                      withBoundary(WorkspaceTabTitle),
+                    )
+                  }))
+                } catch {
+                  // 部分注册失败：撤掉已注册的，避免出现「有页签没内容」
+                  for (const dispose of inner) {
+                    try { dispose() } catch { /* ignore */ }
+                  }
+                  return function () {}
+                }
+                return function () {
+                  for (const dispose of inner) {
+                    try { dispose() } catch { /* ignore */ }
+                  }
+                }
+              }, 'dsh-math-calculator: 右侧工作区页签')
+              if (typeof disposeRight === 'function') disposers.push(disposeRight)
+            }
+          } catch {
+            /* 宿主没有 ctx.inject：右侧页签跳过，左侧入口与工具照常可用 */
           }
 
           return function disposeAll() {

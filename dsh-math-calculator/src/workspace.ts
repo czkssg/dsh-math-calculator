@@ -25,7 +25,7 @@
  * @module dsh-math-calculator/workspace
  */
 
-import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
@@ -615,7 +615,20 @@ export function currentWorkspace(): string {
 export function switchWorkspace(name: string): WorkspaceData {
   const normalized = normalizeWorkspaceName(name)
   activeWorkspaceName = normalized
-  return loadWorkspace(normalized)
+  const data = loadWorkspace(normalized)
+
+  // 自动创建数据表：切到一个还没有数据文件的工作区时立刻落盘。
+  //
+  // 为什么必须这么做：loadWorkspace 对缺失文件只返回**内存**里的空工作区，
+  // 不写盘。于是 currentWorkspace() 会指向一个磁盘上不存在的"幽灵工作区"，
+  // 界面上显示「当前工作区」却不在列表里，后续编辑还会悄悄生成新文件。
+  // 现在切换即落盘：每个工作区一定有自己真实存在的数据表（常数/公式/地点/变量）。
+  try {
+    if (!existsSync(workspaceFile(normalized))) saveWorkspace(data)
+  } catch {
+    /* 落盘失败不影响本次会话（saveWorkspace 本身也不抛） */
+  }
+  return data
 }
 
 /**
