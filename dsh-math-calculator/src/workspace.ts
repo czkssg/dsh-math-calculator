@@ -791,3 +791,78 @@ export function cwdOfSession(session: unknown): string {
 }
 
 
+
+
+/**
+ * 把任意显示名变成合法的数据表文件名片段。
+ *
+ * 宿主的 title 可能含空格、点号、中文、括号等；数据表名只允许
+ * `[A-Za-z0-9_-]`，所以这里做保守替换，并保证结果非空。
+ *
+ * @param value - 原始显示名
+ * @returns 合法片段
+ */
+export function sanitizeWorkspaceFileName(value: string): string {
+  const cleaned = value
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '')
+    .slice(0, 64)
+  return cleaned === '' ? 'workspace' : cleaned
+}
+
+/**
+ * 把宿主的工作区身份换成一张同名数据表（不存在就创建）。
+ *
+ * 这是「一个工作区一张同名数据表」的核心：`api.ts` 的 bind/sync 路由
+ * 与 node 侧的自动同步**共用这一个实现**，避免两份规则。
+ *
+ * 命名规则（稳定、可读、跨重启不变）：
+ *   · 有 title 用 title 的合法化结果（如「5」「默认工作区」）；
+ *   · 只有 id 时用 `ws-<id 前 8 位>`，保证同一工作区每次都落到同一张表。
+ *
+ * @param rawId - 宿主 workspaceId
+ * @param rawTitle - 宿主显示名或目录路径
+ * @param makeCurrent - 是否同时切为当前表（批量建表时应传 false）
+ * @returns 绑定结果
+ */
+export function bindHostWorkspace(
+  rawId: unknown,
+  rawTitle: unknown,
+  makeCurrent = true,
+): { bound: boolean; name: string; workspaceId: string; created: boolean; workspace: WorkspaceData } {
+  const hostId = typeof rawId === 'string' ? rawId.trim() : ''
+  const rawText = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+
+  // 标题可能是路径：取末段更像工作区名
+  const title = rawText.includes('/') || rawText.includes('\\')
+    ? rawText.replace(/\\/g, '/').replace(/\/+$/, '').split('/').pop() ?? ''
+    : rawText
+
+  const candidate = title !== '' ? sanitizeWorkspaceFileName(title) : hostId !== '' ? 'ws-' + hostId.slice(0, 8) : ''
+  const name = normalizeWorkspaceName(candidate)
+  const existed = existsSync(workspaceFile(name))
+
+  let data: WorkspaceData
+  if (makeCurrent) {
+    // switchWorkspace 内部会在文件缺失时落盘
+    data = switchWorkspace(name)
+  } else {
+    data = loadWorkspace(name)
+    if (!existed) saveWorkspace(data)
+  }
+
+  // 记下来源（新建和已知来源都更新，保证改名后能对上）
+  try {
+    updateWorkspace(name, (current) => ({
+      ...current,
+      hostWorkspaceId: hostId,
+      hostWorkspaceTitle: title,
+    }))
+  } catch {
+    /* 元信息写入失败不影响表本身 */
+  }
+
+  return { bound: true, name, workspaceId: hostId, created: !existed, workspace: data }
+}

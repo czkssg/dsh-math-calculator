@@ -576,8 +576,10 @@ function createLeftPanel(react: any) {
           }, '创建'))),
       state.stats
         ? h(Section, { title: '存储' },
-            h(Row, { first: true, label: '工作区数量', right: h('span', null, String(state.stats.count ?? '—')) }),
-            h(Row, { label: '占用空间', right: h('span', null, formatBytes(state.stats.bytes ?? 0)) }),
+            // 字段名必须与后端 storageStats() 一致：workspaceCount / totalBytes。
+            // 早先写成 count / bytes，界面只能显示「—」和「0 B」。
+            h(Row, { first: true, label: '数据表数量', right: h('span', null, String(state.stats.workspaceCount ?? '—')) }),
+            h(Row, { label: '占用空间', right: h('span', null, formatBytes(state.stats.totalBytes ?? 0)) }),
             h(Row, { label: '目录', note: state.stats.directory || '', right: null }))
         : null,
     )

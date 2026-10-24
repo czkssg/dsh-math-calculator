@@ -123,6 +123,7 @@ import {
   removeVariable,
   resetConstant,
   storageStats,
+  bindHostWorkspace,
   cwdOfExec,
   cwdOfSession,
   scopeFromCwd,
@@ -2346,6 +2347,63 @@ function optionalService(ctx: any, name: string): any {
  * 每一步独立 try/catch：任何一步失败都不能让整个 entry 判为 did not activate
  * （那会导致工具根本没注册，是踩过的真机事故）。
  */
+
+/**
+ * 把宿主的工作区「批量同步」成数据表（node 侧执行，不依赖浏览器）。
+ *
+ * 这是用户要的「自动创建」的真正落地点：
+ *   ① **安装后补建**：apply 时立刻跑一次，把已存在的工作区全部建表；
+ *   ② **新建即建表**：订阅 registry 变更，新工作区出现就建表。
+ *
+ * 数据来源是宿主 `workspaceRegistry` 服务（node 侧可用，dsh-memory 也用它）：
+ *
+ *   ctx.workspaceRegistry.list()  // [{ id, path, title, sessionIds, ... }]
+ *
+ * 早先只在**浏览器侧**（client.ts）触发 sync，依赖面板被打开；
+ * 面板没点开就一张表都不建 —— 这正是「装好了却没建表」的原因。
+ * node 侧不受这个限制：只要插件激活就会执行。
+ *
+ * @param ctx - 插件上下文
+ * @returns 同步汇总；无法同步时返回 null
+ */
+function syncHostWorkspaces(ctx: any): { total: number; created: number } | null {
+  try {
+    const registry = optionalService(ctx, 'workspaceRegistry')
+    if (!registry || typeof registry.list !== 'function') return null
+    const list = registry.list()
+    if (!Array.isArray(list) || list.length === 0) return null
+    let created = 0
+    for (const workspace of list) {
+      try {
+        const title = typeof workspace?.title === 'string' ? workspace.title : ''
+        const path = typeof workspace?.path === 'string' ? workspace.path : ''
+        const hostId = typeof workspace?.id === 'string' ? workspace.id : ''
+        // 批量建表不切当前表（否则当前会变成最后一个）
+        const result = bindHostWorkspace(hostId, title !== '' ? title : path, false)
+        if (result.created) created += 1
+      } catch {
+        /* 单个工作区失败不影响其它 */
+      }
+    }
+    return { total: list.length, created }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 插件入口。
+ *
+ * 按顺序做几件事，**每一步独立 try/catch**（任何一步失败都不能让整个 entry
+ * 判为 did not activate —— 那会导致工具根本没注册，是踩过的真机事故）：
+ *
+ * 1. 自动建表：把宿主已有工作区补齐同名数据表，并订阅后续变更；
+ * 2. 注册 math_execute 工具；
+ * 3. 挂钩子与系统提示（失败只影响「提醒模型来用」）；
+ * 4. 挂 HTTP 路由（依赖 webServer，headless 宿主没有时静默跳过）。
+ *
+ * @param ctx - cordis 插件上下文
+ */
 export function apply(ctx: any): void {
   if (!ctx || typeof ctx.tools?.register !== 'function') {
     throw new Error(`${PLUGIN_NAME}: 宿主未提供 tools 服务，无法注册 ${TOOL_NAME}`)
@@ -2355,6 +2413,36 @@ export function apply(ctx: any): void {
   // 工具定义是模块级的（宿主按名注册），拿不到 apply 的局部变量，
   // 所以用模块级引用把 ctx 传进去。
   ctxRef = ctx
+
+  // ── 自动建表（node 侧执行，不依赖浏览器打开面板）──
+  //
+  // ① 安装后补建：把所有已存在的宿主工作区建出同名数据表；
+  // ② 新建即建表：订阅 workspaceRegistry 变更，新工作区出现就补上。
+  //
+  // 这一步失败**不影响**工具注册（自动建表是增强，不是必需）。
+  // 早先只在浏览器侧触发，面板没点开就一张表都不建 —— 这是「装好了却没建表」的根因。
+  try {
+    const first = syncHostWorkspaces(ctx)
+    if (first && first.created > 0) {
+      console.log(`[${PLUGIN_NAME}] 已为 ${first.created}/${first.total} 个宿主工作区自动创建数据表`)
+    }
+  } catch {
+    /* 自动建表失败：工具照样可用 */
+  }
+  try {
+    const registry = optionalService(ctx, 'workspaceRegistry')
+    if (registry && typeof registry.subscribe === 'function') {
+      registry.subscribe(() => {
+        try {
+          syncHostWorkspaces(ctx)
+        } catch {
+          /* 单次同步失败忽略 */
+        }
+      })
+    }
+  } catch {
+    /* 没有订阅接口：只做启动那一次 */
+  }
 
   ctx.tools.register(mathExecuteTool)
 

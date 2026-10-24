@@ -303,6 +303,49 @@ console.log('-- 10.6 自动创建：安装后补建 + 新建即建表 --')
   }
 }
 
+console.log('-- 10.7 node 侧自动建表（apply 时批量补建 + 订阅新建）--')
+{
+  // 用真实 apply 跑一次，确认它在 node 侧就完成建表（不依赖浏览器）
+  const { apply } = await import('../lib/index.js')
+  const dir = workspaceDirectory()
+  const hostWorkspaces = [
+    { id: 'auto-host-0001', path: 'D:/proj/node-sync-a', title: 'node_sync_a', sessionIds: [] },
+    { id: 'auto-host-0002', path: 'D:/proj/node-sync-b', title: 'node_sync_b', sessionIds: [] },
+  ]
+  for (const w of hostWorkspaces) {
+    const f = join(dir, w.title + '.json')
+    if (existsSync(f)) rmSync(f, { force: true })
+  }
+
+  let subscribed = null
+  const registry = {
+    list: () => hostWorkspaces,
+    subscribe: (fn) => { subscribed = fn; return () => {} },
+  }
+  const tools = []
+  const fakeCtx = {
+    workspaceRegistry: registry,
+    tools: { register: (t) => tools.push(t.name) },
+    get: (n) => (n === 'workspaceRegistry' ? registry : undefined),
+  }
+
+  apply(fakeCtx)
+  assert('apply 注册了 math_execute', tools.includes('math_execute'), tools.join(','))
+  assert('apply 后已建出 A 的表', existsSync(join(dir, 'node_sync_a.json')))
+  assert('apply 后已建出 B 的表', existsSync(join(dir, 'node_sync_b.json')))
+  assert('订阅了 registry 变更', subscribed !== null)
+
+  // 模拟宿主新建第 3 个工作区 → 订阅触发自动建表
+  hostWorkspaces.push({ id: 'auto-host-0003', path: 'D:/proj/node-sync-c', title: 'node_sync_c', sessionIds: [] })
+  if (subscribed) subscribed()
+  assert('新建工作区后自动补建', existsSync(join(dir, 'node_sync_c.json')))
+
+  for (const w of hostWorkspaces) {
+    const f = join(dir, w.title + '.json')
+    if (existsSync(f)) rmSync(f, { force: true })
+  }
+}
+
 console.log('-- 11. 客户端心跳（诊断：面板挂没挂上）--')
 {
   assert('GET client-status 200', call('GET', 'client-status').status === 200)
