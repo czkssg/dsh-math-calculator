@@ -254,6 +254,10 @@ console.log('-- 6. 右侧边栏页签：当前工作区 --')
     bodyMeta ? typeof bodyMeta.inject : 'no meta')
   // 右栏要具备四件事：切换器 / 数据表 / 管理 / 开关
   assert('右栏含工作区切换器', source.includes('workspaces/switch'))
+  // 宿主右栏契约：guide 入口必须有 id（宿主用 kind:id 拼固定态标识）
+  assert('右栏 guide 入口带 id', source.includes("id: 'workspace'"))
+  // 诊断心跳：面板挂载后回报，宿主侧可用 GET client-status 查
+  assert('客户端上报心跳', source.includes('client-hello') && source.includes('reportClientStatus'))
   assert('右栏含提示档位开关', source.includes('promptMode'))
   assert('右栏含公式启停', source.includes("action: 'disable'") && source.includes("action: 'reset'"))
   assert('右栏含变量管理', source.includes('set-variable') && source.includes('remove-variable'))

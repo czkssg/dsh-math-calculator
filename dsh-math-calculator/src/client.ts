@@ -76,6 +76,26 @@
     fontStrong: 'var(--dsw-font-s-strong-14)',
   }
 
+  /**
+   * 上报客户端挂载情况（诊断用，失败静默）。
+   *
+   * 面板活在浏览器里，宿主侧看不见它的死活：入口有没有注册成功、
+   * 右侧页签服务在不在、注册时报了什么错 —— 这些只有浏览器知道。
+   * 回报一次，宿主侧就能用 GET client-status 直接读答案，不用再猜。
+   */
+  function reportClientStatus(payload: Record<string, unknown>) {
+    try {
+      if (typeof fetch !== 'function') return
+      void fetch(API_BASE + '/client-hello', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(function () { /* 诊断信息丢了不能影响功能 */ })
+    } catch {
+      /* fetch 不可用就跳过 */
+    }
+  }
+
   /** 按钮（幽灵型）：与宿主原生按钮同一套令牌。 */
   function buttonStyle(color?: string) {
     return {
@@ -1434,18 +1454,31 @@ function createSidebarTitle(react: any) {
           // sidebarRightTabs 是**可选**服务：用嵌套 ctx.inject 拿子上下文，
           // 服务不存在时回调不执行 → 静默跳过，绝不因此让插件激活失败。
           const RIGHT_TAB_ID = 'dsh-math-calculator.workspace'
+          // 右侧页签的注册结果（心跳要用：服务在不在、注册成没成、错在哪）
+          const rightTabOutcome: { service: boolean; registered: boolean; error: string | null } = {
+            service: false,
+            registered: false,
+            error: null,
+          }
           try {
             if (typeof ctx.inject === 'function') {
               const disposeRight = ctx.inject(['sidebarRightTabs'], function (sub: any) {
+                rightTabOutcome.service = true
                 const inner: Array<() => void> = []
                 try {
                   const registry = sub && sub.sidebarRightTabs
                   if (registry && typeof registry.register === 'function') {
+                    rightTabOutcome.registered = true
                     inner.push(registry.register({
                       id: RIGHT_TAB_ID,
                       kind: 'dsh-math-calculator',
                       title: function () { return '数学' },
+                      // guide 入口的契约（读宿主 SidebarRightTabRegistry 得出）：
+//   guideEntries = definition.guide.map(e => ({...e, kind, providerId}))
+//   每个入口必须有 id（宿主用 kind:id 拼固定态标识，并检查同一定义内 id 不重复）；
+//   title/description 是函数；order 决定胶囊在「开始」页里的排序。
                       guide: [{
+                        id: 'workspace',
                         order: 60,
                         title: function () { return '数学工作区' },
                         description: function () { return '当前工作区的常数 / 公式 / 地点 / 变量' },
@@ -1481,7 +1514,8 @@ function createSidebarTitle(react: any) {
                       withBoundary(WorkspaceTabTitle),
                     )
                   }))
-                } catch {
+                } catch (error) {
+                  rightTabOutcome.error = error && (error as Error).message ? (error as Error).message : String(error)
                   // 部分注册失败：撤掉已注册的，避免出现「有页签没内容」
                   for (const dispose of inner) {
                     try { dispose() } catch { /* ignore */ }
@@ -1496,9 +1530,22 @@ function createSidebarTitle(react: any) {
               }, 'dsh-math-calculator: 右侧工作区页签')
               if (typeof disposeRight === 'function') disposers.push(disposeRight)
             }
-          } catch {
+          } catch (error) {
+            rightTabOutcome.error = error && (error as Error).message ? (error as Error).message : String(error)
             /* 宿主没有 ctx.inject：右侧页签跳过，左侧入口与工具照常可用 */
           }
+
+          // ④ 心跳：把「我注册了什么」回报给宿主侧，供诊断查询
+          //    （GET /api/dsh-math-calculator/client-status）。
+          //    面板在浏览器里挂载、宿主看不见；没有这个信号，排查只能靠猜。
+          reportClientStatus({
+            registered: disposers.length,
+            page: typeof pageDispose === 'function',
+            rightTabService: rightTabOutcome.service,
+            rightTabRegistered: rightTabOutcome.registered,
+            rightTabError: rightTabOutcome.error,
+            order: 30,
+          })
 
           return function disposeAll() {
             for (const dispose of disposers) {

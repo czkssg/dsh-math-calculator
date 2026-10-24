@@ -103,6 +103,14 @@ function field(body: unknown, key: string): string | undefined {
  * @param request - 请求
  * @returns 响应
  */
+/**
+ * 最近一次「客户端心跳」。
+ *
+ * 面板在浏览器里挂载，宿主侧看不见；出问题时只能猜。客户端每次挂载
+ * 回报一次「我注册了什么」，这里存下来，`GET client-status` 读回。
+ */
+let clientHeartbeat: { at: string; payload: Record<string, unknown> | null } | null = null
+
 export function handleApiRequest(path: string, request: ApiRequest): ApiResponse {
   const method = (request.method ?? 'GET').toUpperCase()
   const body = request.body
@@ -147,6 +155,11 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok(data)
     }
 
+    // ── 客户端心跳（诊断：面板到底挂上了没有）──
+    if (method === 'GET' && route === 'client-status') {
+      return ok({ heartbeat: clientHeartbeat })
+    }
+
     // ── 设置（提示档位）──
     if (method === 'GET' && route === 'settings') {
       return ok({ promptMode: getPromptMode(), modes: ['off', 'brief', 'full'] })
@@ -182,6 +195,15 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return KNOWN_ROUTES.has(route)
         ? fail(405, '不支持的请求方法')
         : fail(404, `未知路径: ${route}`)
+    }
+
+    // ── 客户端心跳写入 ──
+    if (route === 'client-hello') {
+      clientHeartbeat = {
+        at: new Date().toISOString(),
+        payload: body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+      }
+      return ok({ recorded: true })
     }
 
     // ── 设置：切换提示档位 ──

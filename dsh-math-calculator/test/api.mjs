@@ -211,6 +211,28 @@ console.log('-- 10. 新建工作区即生成同名数据表 --')
   call('POST', 'workspaces/delete', { name })
 }
 
+console.log('-- 11. 客户端心跳（诊断：面板挂没挂上）--')
+{
+  assert('GET client-status 200', call('GET', 'client-status').status === 200)
+
+  const hello = call('POST', 'client-hello', {
+    registered: 3,
+    page: true,
+    rightTabService: true,
+    rightTabRegistered: false,
+    rightTabError: null,
+    order: 30,
+  })
+  assert('POST client-hello 200', hello.status === 200, String(hello.status))
+
+  const hb = call('GET', 'client-status').json.heartbeat
+  assert('心跳已记录且带时间戳', Boolean(hb) && typeof hb.at === 'string' && !Number.isNaN(Date.parse(hb.at)),
+    JSON.stringify(hb))
+  assert('心跳带回注册信息',
+    Boolean(hb) && Boolean(hb.payload) && hb.payload.page === true && hb.payload.order === 30,
+    JSON.stringify(hb && hb.payload))
+}
+
 console.log('')
 if (fails.length === 0) {
   console.log(`全部通过：${pass} 项`)
