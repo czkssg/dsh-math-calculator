@@ -46,6 +46,13 @@ export interface ConstantNode {
   derive?: (ctx: Record<string, number>) => number
   /** 依赖哪些常数（用于拓扑排序）。 */
   dependsOn?: string[]
+  /**
+   * 该常数定义了哪个 SI 基本单位（如 'second' / 'candela'）。
+   *
+   * 非空表示它是度量衡的源头：改它等于重定义单位本身。
+   * 界面上用这一项把「SI 定义常数」与普通常量区分开。
+   */
+  siDefines?: string
 }
 
 /**
@@ -72,7 +79,7 @@ export const CONSTANT_GRAPH: ConstantNode[] = [
     standard: 299792458,
     unit: 'm/s',
     meaning: '真空光速。同时决定相对论效应强度与电磁学换算。',
-    fundamental: true,
+    fundamental: true, siDefines: "metre",
   },
   {
     name: 'G',
@@ -86,21 +93,21 @@ export const CONSTANT_GRAPH: ConstantNode[] = [
     standard: 6.62607015e-34,
     unit: 'J·s',
     meaning: '普朗克常数。决定量子效应的尺度。',
-    fundamental: true,
+    fundamental: true, siDefines: "kilogram",
   },
   {
     name: 'kB',
     standard: 1.380649e-23,
     unit: 'J/K',
     meaning: '玻尔兹曼常数。连接温度与能量。',
-    fundamental: true,
+    fundamental: true, siDefines: "kelvin",
   },
   {
     name: 'e_charge',
     standard: 1.602176634e-19,
     unit: 'C',
     meaning: '元电荷。决定电磁力强度与化学键能量。',
-    fundamental: true,
+    fundamental: true, siDefines: "ampere",
   },
   {
     name: 'me',
@@ -121,7 +128,7 @@ export const CONSTANT_GRAPH: ConstantNode[] = [
     standard: 6.02214076e23,
     unit: '1/mol',
     meaning: '阿伏伽德罗常数。连接微观与摩尔尺度。',
-    fundamental: true,
+    fundamental: true, siDefines: "mole",
   },
   {
     name: 'epsilon0',
@@ -325,6 +332,109 @@ export const CONSTANT_GRAPH: ConstantNode[] = [
     unit: 'Pa',
     meaning: '标准大气压（地球海平面）。架空世界可改。',
     fundamental: true,
+  },
+
+  // ═══ SI 2019 定义常数（度量衡的源头）═══
+  //
+  // 现代 SI 不再靠实物基准，而是「固定 7 个常数的数值」来定义全部基本单位。
+  // 单列出来是因为它们回答一个本质问题：**单位为什么是这个大小？**
+  //
+  //   秒 (s)      ← ΔνCs  铯-133 超精细跃迁频率
+  //   米 (m)      ← c     真空中光速
+  //   千克 (kg)   ← h     普朗克常数
+  //   安培 (A)    ← e     元电荷
+  //   开尔文 (K)  ← kB    玻尔兹曼常数
+  //   摩尔 (mol)  ← NA    阿伏伽德罗常数
+  //   坎德拉 (cd) ← Kcd   光视效能
+  //
+  // c / h / e / kB / NA 已在上面「基础旋钮」里（既定义单位又是方程主角）。
+  // 这里补上缺的两个 —— 之前整个表缺了「秒」和「坎德拉」的定义根基。
+  {
+    name: 'dnu_Cs',
+    standard: 9192631770,
+    unit: 'Hz',
+    meaning:
+      '铯-133 基态超精细跃迁频率。**秒的定义常数**：1 秒 = 该频率的 9192631770 个周期。' +
+      '架空世界改它等于改「时间最小刻度」——计时、频率、波长全部跟着变。',
+    fundamental: true,
+    siDefines: 'second',
+  },
+  {
+    name: 'Kcd',
+    standard: 683,
+    unit: 'lm/W',
+    meaning:
+      '光视效能。**坎德拉的定义常数**：把「人眼亮度感受」与「物理辐射功率」钉在一起。' +
+      '它是唯一依赖人眼生理的 SI 基准，所以「这个世界的光看起来多亮」不只是物理问题。',
+    fundamental: true,
+    siDefines: 'candela',
+  },
+
+  // ═══ 微观基本量 ═══
+  //
+  // 补的是「构成物质世界的最小度量」：原子质量单位、普朗克尺度、经典电子半径。
+  // 它们不是 SI 定义常数，但在推演里给出「物质能多小 / 多密 / 多快」的硬边界。
+  {
+    name: 'u',
+    standard: 1.6605390666e-27,
+    unit: 'kg',
+    meaning: '原子质量单位（u / Da）= 碳-12 原子质量的 1/12。化学与天体物理的通用质量尺。',
+    fundamental: true,
+  },
+  {
+    name: 'mPlanck',
+    standard: 2.176434e-8,
+    unit: 'kg',
+    meaning: '普朗克质量 = √(ħc/G)。超过它，时空必然量子化——经典物理失效的边界。',
+    fundamental: false,
+    dependsOn: ['hbar', 'c', 'G'],
+    derive: (ctx) => Math.sqrt((ctx.hbar * ctx.c) / ctx.G),
+  },
+  {
+    name: 'lPlanck',
+    standard: 1.616255e-35,
+    unit: 'm',
+    meaning: '普朗克长度 = √(ħG/c³)。现存物理学能描述的最小长度。',
+    fundamental: false,
+    dependsOn: ['hbar', 'G', 'c'],
+    derive: (ctx) => Math.sqrt((ctx.hbar * ctx.G) / ctx.c ** 3),
+  },
+  {
+    name: 'tPlanck',
+    standard: 5.391247e-44,
+    unit: 's',
+    meaning: '普朗克时间 = lPlanck/c。公认的最短可测时间。',
+    fundamental: false,
+    dependsOn: ['hbar', 'G', 'c'],
+    derive: (ctx) => Math.sqrt((ctx.hbar * ctx.G) / ctx.c ** 5),
+  },
+  {
+    name: 're',
+    standard: 2.8179403262e-15,
+    unit: 'm',
+    meaning: '经典电子半径 = e²/(4π·epsilon0·me·c²)。电磁相互作用的特征长度。',
+    fundamental: false,
+    dependsOn: ['e_charge', 'epsilon0', 'me', 'c'],
+    derive: (ctx) => (ctx.e_charge ** 2) / (4 * Math.PI * ctx.epsilon0 * ctx.me * ctx.c ** 2),
+  },
+  {
+    name: 'F',
+    standard: 96485.33212331001,
+    unit: 'C/mol',
+    meaning: '法拉第常数 = e·NA。电解、电池、生物电的能量换算桥。',
+    fundamental: false,
+    dependsOn: ['e_charge', 'NA'],
+    derive: (ctx) => ctx.e_charge * ctx.NA,
+  },
+  {
+    name: 'alphaG',
+    standard: 5.906149417e-39,
+    unit: '无量纲',
+    meaning: '引力耦合常数 α_G = Gmₚ²/(ħc)。比精细结构常数小约 10⁴² 倍，' +
+      '这就是「引力为何处处可忽略」的量化答案。',
+    fundamental: false,
+    dependsOn: ['G', 'mp', 'hbar', 'c'],
+    derive: (ctx) => (ctx.G * ctx.mp ** 2) / (ctx.hbar * ctx.c),
   },
 
   // ═══ 纯数学常数（不随物理变化，仅列出便于引用）═══

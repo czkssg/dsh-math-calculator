@@ -303,6 +303,51 @@ console.log('-- 10.6 自动创建：安装后补建 + 新建即建表 --')
   }
 }
 
+console.log('-- 10.55 SI 定义常数（度量衡源头）--')
+{
+  const r = call('GET', 'constants')
+  const base = (r.json && r.json.base) || []
+  const si = base.filter((node) => node.siDefines)
+
+  assert('常数表至少 20 项', base.length >= 20, String(base.length))
+  assert('7 个 SI 定义常数齐全', si.length === 7, String(si.length))
+
+  // 七个基本单位必须各有一个定义常数
+  const units = si.map((node) => node.siDefines).sort()
+  const expected = ['ampere', 'candela', 'kelvin', 'kilogram', 'metre', 'mole', 'second']
+  assert('覆盖全部 7 个基本单位', units.join(',') === expected.join(','), units.join(','))
+
+  // 每个 SI 常数都要有含义说明（用户要能看懂"为什么单位是这个大小"）
+  assert('SI 常数都带说明', si.every((node) => typeof node.meaning === 'string' && node.meaning.length > 10))
+
+  // 秒与坎德拉的定义常数（之前整表缺失的两项）
+  assert('有秒的定义常数 dnu_Cs', base.some((node) => node.name === 'dnu_Cs' && node.siDefines === 'second'))
+  assert('有坎德拉的定义常数 Kcd', base.some((node) => node.name === 'Kcd' && node.siDefines === 'candela'))
+}
+
+console.log('-- 10.56 重置为默认值（单条 + 全部）--')
+{
+  const name = 'reset_api_check'
+  if (existsSync(join(workspaceDirectory(), name + '.json'))) call('POST', 'workspaces/delete', { name })
+  call('POST', 'workspaces/switch', { name })
+
+  // 单条重置
+  call('POST', 'workspaces/save-constant', { name, constantName: 'c', value: 1e8 })
+  assert('改动后 overrides 有 c', Boolean(call('GET', 'constants').json.overrides.c))
+  assert('单条重置 200', call('POST', 'workspaces/reset-constant', { name, constantName: 'c' }).status === 200)
+  assert('重置后 overrides 清空', Object.keys(call('GET', 'constants').json.overrides).length === 0)
+
+  // 全部重置
+  call('POST', 'workspaces/save-constant', { name, constantName: 'c', value: 1e8 })
+  call('POST', 'workspaces/save-constant', { name, constantName: 'G', value: 1e-10 })
+  assert('改了两项', Object.keys(call('GET', 'constants').json.overrides).length === 2)
+  assert('全部重置 200', call('POST', 'workspaces/reset', { name }).status === 200)
+  assert('全部重置后清空', Object.keys(call('GET', 'constants').json.overrides).length === 0)
+
+  switchWorkspace('default')
+  call('POST', 'workspaces/delete', { name })
+}
+
 console.log('-- 10.7 node 侧自动建表（apply 时批量补建 + 订阅新建）--')
 {
   // 用真实 apply 跑一次，确认它在 node 侧就完成建表（不依赖浏览器）

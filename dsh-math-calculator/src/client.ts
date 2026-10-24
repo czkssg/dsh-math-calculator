@@ -774,10 +774,12 @@ function createLeftPanel(react: any) {
   }
 
   const TABS = [
+    // 全局管理只放**跨工作区**的东西：有哪些工作区 + 插件的全局开关。
+    //
+    // 常数表 / 公式表不在这里 —— 它们属于某个工作区的数据，
+    // 放在右侧「本工作区」工作台（每个工作区各一份）。
     { id: 'workspaces', label: '工作区', Component: WorkspacesTab },
-    { id: 'constants', label: '常数表', Component: ConstantsTab },
-    { id: 'formula', label: '公式表', Component: FormulasTab },
-    { id: 'settings', label: '设置', Component: SettingsTab },
+    { id: 'settings', label: '插件设置', Component: SettingsTab },
   ]
 
   /** 左栏主页面。 */
@@ -841,22 +843,26 @@ function createRightPanel(react: any) {
       variable: { name: '', value: '' },
       terrain: { name: '', kind: 'plain' },
       disableId: '',
+      // 常数表的编辑草稿（名称 → 输入框里的字符串）
+      draft: {},
     })
 
-    /** 一次读齐本区需要的四样东西。 */
+    /** 一次读齐本区需要的五样东西（含完整常数表）。 */
     const load = useCallback(async () => {
       setState((prev: any) => ({ ...prev, loading: true, error: null }))
       try {
-        const [list, current, table, settings] = await Promise.all([
+        const [list, current, table, settings, constants] = await Promise.all([
           callApi('/workspaces'),
           callApi('/workspaces/current'),
           callApi('/formula-table'),
           callApi('/settings'),
+          // 常数表属于**本区**数据，所以在这里读（不再放全局管理）
+          callApi('/constants'),
         ])
         setState((prev: any) => ({
           ...prev, loading: false, error: null,
           list: (list && list.workspaces) || [], current: (list && list.current) || null,
-          data: current, table, settings,
+          data: current, table, settings, constants,
         }))
       } catch (error: any) {
         setState((prev: any) => ({ ...prev, loading: false, error: (error && error.message) || '读取失败' }))
@@ -1067,10 +1073,130 @@ function createRightPanel(react: any) {
         },
       }, '停用'))
 
+
+    /**
+     * 常数表（**本区数据**，不是全局配置）。
+     *
+     * 每个工作区可以有自己的「这个世界的光速/重力/日长」——
+     * 所以它属于工作区侧栏，而全局管理里只放「有哪些工作区」。
+     *
+     * 分组显示：SI 定义常数（度量衡源头）排在最前，因为用户最需要先理解
+     * 「单位是怎么被定义的」，再谈改数值。
+     */
+    const constantsData = state.constants || {}
+    const constBase = constantsData.base || []
+    const constOverrides = constantsData.overrides || {}
+    const siNodes = constBase.filter(function (node: any) { return node.siDefines })
+    const otherNodes = constBase.filter(function (node: any) { return !node.siDefines })
+    const changedCount = Object.keys(constOverrides).length
+
+    /** 保存单个常数。 */
+    const saveConstant = async function (constantName: string) {
+      const raw = state.draft[constantName] !== undefined ? state.draft[constantName] : constOverrides[constantName]
+      const value = Number(raw)
+      if (!Number.isFinite(value) || value <= 0) {
+        setState(function (prev: any) { return { ...prev, message: '常数必须是正的有限数' } })
+        return
+      }
+      const ok = await act('/workspaces/save-constant',
+        { name: name, constantName: constantName, value: value }, constantName + ' 已保存')
+      if (ok) {
+        setState(function (prev: any) {
+          const draft = { ...prev.draft }
+          delete draft[constantName]
+          return { ...prev, draft }
+        })
+      }
+    }
+
+    /** 单条恢复为现实值。 */
+    const resetConstant = async function (constantName: string) {
+      const ok = await act('/workspaces/reset-constant',
+        { name: name, constantName: constantName }, constantName + ' 已恢复默认值')
+      if (ok) {
+        setState(function (prev: any) {
+          const draft = { ...prev.draft }
+          delete draft[constantName]
+          return { ...prev, draft }
+        })
+      }
+    }
+
+    /** 全部恢复为现实值（清空本区所有常数覆盖）。 */
+    const resetAllConstants = async function () {
+      const ok = await act('/workspaces/reset', { name: name }, '本区常数已全部恢复默认值')
+      if (ok) setState(function (prev: any) { return { ...prev, draft: {} } })
+    }
+
+    /** 渲染一行常数。 */
+    const constantRow = function (node: any, index: number) {
+      const changed = constOverrides[node.name] !== undefined
+      const shown = state.draft[node.name] !== undefined
+        ? state.draft[node.name]
+        : changed ? constOverrides[node.name] : node.standard
+      return h(Row, {
+        key: node.name,
+        first: index === 0,
+        label: h('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } },
+          node.name,
+          node.siDefines ? h(Badge, { text: '定义' + node.siDefines, tone: 'accent' }) : null,
+          changed ? h(Badge, { text: '已改' }) : null),
+        note: (node.meaning || '') + (node.unit ? '  [' + node.unit + ']' : ''),
+        right: h('span', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: '0 0 auto' } },
+          h('input', {
+            style: { ...inputStyle(112), font: T.f11 },
+            value: shown === undefined ? '' : String(shown),
+            onChange: function (event: any) {
+              const value = event.target.value
+              setState(function (prev: any) { return { ...prev, draft: { ...prev.draft, [node.name]: value } } })
+            },
+          }),
+          h('button', {
+            style: btnStyle({ tiny: true, active: state.draft[node.name] !== undefined }),
+            disabled: state.busy || state.draft[node.name] === undefined,
+            onClick: function () { void saveConstant(node.name) },
+          }, '保存'),
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            disabled: state.busy || !changed,
+            onClick: function () { void resetConstant(node.name) },
+            title: '恢复成现实宇宙的值',
+          }, '重置')),
+      })
+    }
+
+    const constantSection = h(Section, {
+      title: '常数表',
+      count: constBase.length,
+      hint: changedCount > 0 ? '已改 ' + changedCount + ' 项' : '',
+    },
+      constBase.length === 0
+        ? h(Empty, { text: '（没有可调常数）' })
+        : h('div', null,
+            h('div', { style: { display: 'flex', justifyContent: 'flex-end', margin: '2px 0 4px' } },
+              h('button', {
+                style: btnStyle({ tiny: true, danger: changedCount > 0 }),
+                disabled: state.busy || changedCount === 0,
+                onClick: function () { void resetAllConstants() },
+              }, '全部重置为默认值')),
+            siNodes.length
+              ? h('div', null,
+                  h('div', { style: { font: T.f11, color: T.text3, margin: '2px 0' } },
+                    'SI 定义常数 —— 它们定义了秒/米/千克/安培/开尔文/摩尔/坎德拉'),
+                  siNodes.map(constantRow))
+              : null,
+            otherNodes.length
+              ? h('div', null,
+                  h('div', { style: { font: T.f11, color: T.text3, margin: '8px 0 2px' } }, '其它可调量'),
+                  otherNodes.map(function (node: any, index: number) { return constantRow(node, index) }))
+              : null,
+          ),
+    )
+
     const body = h('div', { style: { flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: '0 12px 14px' } },
       state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
       h(Section, { title: '开关', hint: '数据表：' + name }, modeRow, disabledRow),
-      h(Section, { title: '改动的常数', count: constants.length }, constants.length ? h('div', null, constantRows) : h(Empty, { text: '（全部为现实值）' })),
+      constantSection,
       h(Section, { title: '公式改动', count: overrides.length + custom.length }, formulaRows.length ? h('div', null, formulaRows) : h(Empty, { text: '（全部使用模板公式）' })),
       h(Section, { title: '地点', count: terrains.length }, terrains.length ? h('div', null, terrainRows) : h(Empty, { text: '（暂无地点）' })),
       h(Section, { title: '变量', count: variables.length }, variables.length ? h('div', null, variableRows) : h(Empty, { text: '（暂无变量）' })),

@@ -236,11 +236,14 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     if (method === 'GET' && route === 'constants') {
       const name = normalizeWorkspaceName(currentWorkspace())
       const data = loadWorkspace(name)
+      // 注意带上 siDefines：界面据此把「SI 定义常数」单独分组，
+      // 让用户一眼看到「秒/米/千克… 是被哪个常数定义的」。
       const base = CONSTANT_GRAPH.filter((node) => node.fundamental).map((node) => ({
         name: node.name,
         standard: node.standard,
         unit: node.unit,
         meaning: node.meaning,
+        ...(node.siDefines ? { siDefines: node.siDefines } : {}),
       }))
       return ok({ workspace: name, base, overrides: data.constants ?? {} })
     }
