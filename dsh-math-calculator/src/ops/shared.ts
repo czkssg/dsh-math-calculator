@@ -153,6 +153,16 @@ export interface MathArgs {
   customConstantName?: string
   /** 量纲检查时期望的结果量纲。 */
   expectedDimension?: Record<string, number>
+
+  // ── operation=derivation 的逆推与档案 ──
+  /** 叙事锚点 id（如 creatureHeight）。 */
+  anchor?: string
+  /** 锚点想要的值（如 50 米）。 */
+  anchorValue?: number
+  /** 版本对比的起始版本（如 v1）。 */
+  compareFrom?: string
+  /** 版本对比的目标版本（省略则取最新）。 */
+  compareTo?: string
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

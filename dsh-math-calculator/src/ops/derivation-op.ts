@@ -25,6 +25,9 @@ import {
 import { recalculateConstants } from '../constants-graph.js'
 import { runPipeline, renderPipeline } from '../pipeline.js'
 import { opWorld } from './world-op.js'
+import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
+import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
+import { currentWorkspace } from '../workspace.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -183,6 +186,92 @@ export function opDerivation(args: MathArgs): Outcome {
     const pipelineReport = runPipeline((worldOut as any).value)
     out.push(renderPipeline(pipelineReport))
     value.pipeline = pipelineReport
+  } else if (sub === 'anchors') {
+    // 列出可反推的叙事锚点及当前上限——让作者知道「哪些效果是可反推的」
+    const anchors = listAnchors((args.world ?? {}) as Record<string, unknown>)
+    out.push('═══ 可反推的叙事锚点 ═══', '')
+    out.push('  锚点 id                 名称                当前上限      说明')
+    for (const anchor of anchors) {
+      out.push('  ' + anchor.id.padEnd(24) + anchor.name.padEnd(20) +
+        (Number.isFinite(anchor.currentLimit) ? anchor.currentLimit.toFixed(1) : '—').padStart(10) +
+        ' ' + anchor.unit.padEnd(6) + ' ' + anchor.describe)
+    }
+    out.push('')
+    out.push('用法：{"operation":"derivation","derivation":"backSolve","anchor":"creatureHeight","anchorValue":50}')
+    value.anchors = anchors
+  } else if (sub === 'backSolve') {
+    // 逆推校准：从叙事锚点反推参数窗口（作者最常用的方向）
+    const anchor = typeof args.anchor === 'string' ? args.anchor : ''
+    const anchorValue = typeof args.anchorValue === 'number' ? args.anchorValue : 0
+    if (anchor === '' || anchorValue <= 0) {
+      out.push('缺参数：anchor（锚点 id）与 anchorValue（想要的值）')
+      out.push('先用 derivation="anchors" 看有哪些锚点可用。')
+    } else {
+      const solution = backSolve(anchor, anchorValue, (args.world ?? {}) as Record<string, unknown>)
+      if (!solution) {
+        out.push('无法反推：找不到锚点 "' + anchor + '" 或值不合法。')
+      } else {
+        out.push(renderBackSolve(solution))
+        value.solution = solution
+      }
+    }
+  } else if (sub === 'archive') {
+    // 七张表持久化 + 版本记录：把本次链路结果存进工作区
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const worldOut = opWorld({ world: worldParams } as never, 64)
+    const pipelineReport = runPipeline((worldOut as any).value)
+    const anchorsUsed: any[] = []
+    if (typeof args.anchor === 'string' && typeof args.anchorValue === 'number') {
+      const sol = backSolve(args.anchor, args.anchorValue, worldParams)
+      if (sol) anchorsUsed.push(sol)
+    }
+    const changes = Object.entries(worldParams).map(function (pair) {
+      return { parameter: pair[0], from: '默认', to: pair[1], handling: '显式追踪' }
+    })
+    const result = archiveDerivation(currentWorkspace(), pipelineReport, anchorsUsed, changes, [])
+    out.push('═══ 已归档（七张表）═══', '')
+    out.push('  工作区：' + currentWorkspace())
+    out.push('  版本：' + result.version + '（共 ' + result.total + ' 版）')
+    out.push('  接口卡：' + result.archive.interfaceCards.length + ' 条')
+    out.push('  硬约束：' + result.archive.constraints.hard.length + ' 条')
+    out.push('  叙事锚点：' + result.archive.anchors.length + ' 条')
+    out.push('')
+    out.push('换工作区会看到各自的历史；用 derivation="history" 查看，用 "compare" 对比两版。')
+    value.archive = result.archive
+    value.total = result.total
+  } else if (sub === 'history') {
+    const { versions } = loadArchive(currentWorkspace())
+    out.push('═══ 推演档案（' + currentWorkspace() + '）═══', '')
+    if (versions.length === 0) {
+      out.push('  （还没有归档过）')
+      out.push('用 derivation="archive" 把当前链路结果存成一版。')
+    } else {
+      out.push('  版本    时间                  接口卡  禁止项  结论变化')
+      for (const item of versions) {
+        const forbidden = item.interfaceCards.filter(function (c) { return c.verdict === 'forbidden' }).length
+        const marginals = item.interfaceCards.filter(function (c) { return c.verdict === 'marginal' }).length
+        out.push('  ' + item.version.padEnd(7) + item.at.slice(0, 19).padEnd(22) +
+          String(item.interfaceCards.length).padStart(6) + '  ' +
+          String(forbidden).padStart(5) + '  ' +
+          (forbidden === 0 ? (marginals > 0 ? '无禁止有边缘' : '全部通过') : '有禁止项'))
+      }
+    }
+    value.versions = versions
+  } else if (sub === 'compare') {
+    const from = typeof args.compareFrom === 'string' ? args.compareFrom : ''
+    const to = typeof args.compareTo === 'string' ? args.compareTo : undefined
+    if (from === '') {
+      out.push('缺 compareFrom（起始版本，如 v1）')
+    } else {
+      const diff = compareVersions(currentWorkspace(), from, to)
+      out.push('═══ 版本对比 ═══', '')
+      out.push('  ' + diff.message)
+      if (diff.changes.length > 0) {
+        out.push('')
+        for (const change of diff.changes) out.push('  · ' + change)
+      }
+      value.diff = diff
+    }
   } else if (sub === 'tables') {
     out.push('═══ 七张表（固定输出格式）═══', '')
     out.push('  1. 项目卡     推演类型 / 范围 / 时间窗口 / 观测者 / 优先级 / 不推演什么')
@@ -195,7 +284,7 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / checklist / tables')
+    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / archive / history / compare / checklist / tables')
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }
