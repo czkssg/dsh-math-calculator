@@ -46,6 +46,7 @@ const SUITES = [
   { file: 'client-ui.mjs', expect: 50, label: '前端挂载安全（令牌化 UI + 右栏 + 心跳）' },
   { file: 'api.mjs', expect: 102, label: 'UI 后端 API（绑定/sync/自动建表/SI常数/重置/心跳）' },
   { file: 'workspace-scope.mjs', expect: 20, label: '工作区作用域（数据表跟着会话 cwd 走）' },
+  { file: 'derivation.mjs', expect: 58, label: '推演栈（八层/接口卡/无量纲/单位陷阱/敏感性/相图）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

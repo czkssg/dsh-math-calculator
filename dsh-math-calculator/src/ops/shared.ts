@@ -54,6 +54,7 @@ export type MathOperation =
   | 'quantities'
   | 'formula-table'
   | 'feasibility'
+  | 'derivation'
   | 'help'
 
 /**
@@ -129,6 +130,18 @@ export interface MathArgs {
   claims?: { [constraintId: string]: number }
   /** operation=feasibility：只列出约束上限而不校验。 */
   listConstraints?: boolean
+
+  // ── operation=derivation（推演栈框架）──
+  /** 子命令：stack / cards / dimensionless / units / sensitivity / phase / checklist / tables */
+  derivation?: string
+  /** 只看某一层的接口卡（P1—P5）。 */
+  layer?: string
+  /** 单位缩放因子，检测「单位重定义陷阱」，如 { mass: 2 }。 */
+  unitScales?: Record<string, number>
+  /** 敏感性分析的基线值。 */
+  sensitivityBase?: number
+  /** 敏感性分析的幂次（结果 = 输入^幂）。 */
+  sensitivityExponent?: number
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */
