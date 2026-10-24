@@ -111,20 +111,47 @@ dsh --profile mathlab --dump-config | Select-String dsh-math-calculator
 
 ## 6. 发布清单
 
-- [ ] 四项检查全绿
-- [ ] 版本号 + CHANGELOG 已更新
-- [ ] `npm pack --dry-run` 清单干净（无密钥/本地路径/node_modules）
-- [ ] `npm publish` 成功（或打了 tag 让 CI 发）
-- [ ] GitHub topic 已加
-- [ ] 目录/清单已提交（如需）
-- [ ] 隔离 profile 实测安装通过
-- [ ] GitHub Release 写清本次变更
+- [x] 四项检查全绿（41 套 / 1697 项）
+- [x] 版本号 + CHANGELOG 已更新（2.0.0）
+- [x] `npm pack` 清单干净（151 项 / 519 KB，无密钥、无本地路径、无 node_modules）
+- [ ] **`npm publish`** ← 唯一阻塞项：本机 npm 未登录
+- [x] GitHub topic 已加（dsh-plugin / deepseek-harness / dsh / math / worldbuilding / scientific-computing）
+- [ ] 目录/清单已提交（如需，见 §4）
+- [x] 隔离 profile 实测安装通过（从 tgz 装进 mathlab：pnpm 从 registry 拉到 12 个依赖，
+      三个后端接口全部 200）
+- [ ] GitHub Release 写清本次变更（建议等 npm 发布成功后一起做）
 
 ---
 
-## 附：本地已验证、待你执行的两步
+## 7. 当前进度（2026-10-24 记录）
 
-截至交接时：
+已完成：
 
-1. **npm 未登录**：`npm whoami` 报 `ENEEDAUTH`。需要你 `npm login`（或用 CI 的 `NPM_TOKEN`）。
-2. **仓库改名与公开**：已完成/待执行的命令见下节记录。
+| 项 | 结果 |
+|---|---|
+| 仓库改名 | `czkssg/5` → **`czkssg/dsh-math-calculator`** |
+| 公开 | ✅ PUBLIC（匿名访问网页与 API 均 200） |
+| 历史清理 | ✅ 全历史已清除 `.scratch`（含误提交的 `.credentials.yaml` 与 web token 日志），已强推替换 |
+| 探针清理 | ✅ 移除 `host-load-test.cjs` / `scan-market.cjs` / `.dsh-acl-recovery` |
+| 脱敏 | ✅ 文档里的真实用户名 → `<you>` |
+| 开源文件 | ✅ LICENSE / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / CHANGELOG / CI / 模板 |
+| npm 包 | ✅ `npm pack` 产物干净，隔离 profile 实测可装可用 |
+| 包名可用 | ✅ `registry.npmjs.org/dsh-math-calculator` 返回 404（名字未被占用） |
+
+**待你执行的一步**（我无法代做，需要你的 npm 凭据）：
+
+```bash
+cd D:\0cengxu\5\dsh-math-calculator
+npm login                     # 输入 npm 账号 + 密码 + 邮箱 OTP
+npm publish --access public   # prepublishOnly 会自动跑全量测试 + 自检
+```
+
+或者走 CI（推荐，带 provenance）：先在仓库
+Settings → Secrets → Actions 里加 `NPM_TOKEN`（npm Automation Token），然后
+
+```bash
+git tag v2.0.0 && git push origin v2.0.0
+```
+
+发布成功后建议再做一次：`dsh plugin --profile mathlab add dsh-math-calculator`，
+确认从 npm 拉取也能装（与本文 §5 的本地 tgz 验证互为补充）。
