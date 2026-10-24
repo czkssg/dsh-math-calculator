@@ -1190,6 +1190,20 @@ function makeRightTabTitle(react: any) {
             //   · 用户切换宿主工作区：订阅变更，再绑定一次 → 右栏自动换表。
             //
             // 这条链路缺失过，导致数据表一直停在独立的 default、与宿主工作区无关。
+            /**
+             * 同步「宿主工作区」与「数据表」。
+             *
+             * 一次做三件事（这就是用户要的「自动创建」）：
+             *   ① **批量补建**：把所有已存在的宿主工作区都建出同名数据表
+             *      —— 插件装到已有工作区的环境里时，这一步会把历史工作区补齐；
+             *   ② **新建即建表**：宿主新建工作区会触发 list 变更 → 再次同步，
+             *      新工作区立刻拿到自己的表；
+             *   ③ **切当前表**：把「用户正在用的工作区」切为当前数据表，
+             *      这样右栏显示的就是本区数据。
+             *
+             * 为什么用 sync 而不是逐个 bind：bind 会把每个工作区都切成当前，
+             * 循环一遍后当前表会是「最后一个」，不是用户所在的那个。
+             */
             const bindHost = function () {
               try {
                 const ws: any = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined
@@ -1199,36 +1213,47 @@ function makeRightTabTitle(react: any) {
                 const items = (snapshot && snapshot.items) || []
                 if (items.length === 0) return
 
-                // 选「当前正在用的工作区」，不是第一个。
-                //
-                // 依据 dsh-memory 的 scopeOf：优先看当前会话属于哪个工作区
-                // （会话 cwd 的 basename 决定了数据表名）。拿不到会话信息时
-                // 才退回列表第一项。
-                let active: any = null
-                try {
-                  const currentSessionId = ws && ws.sessions && ws.sessions.list &&
-                    typeof ws.sessions.list.getSnapshot === 'function'
-                    ? ws.sessions.list.getSnapshot().currentSessionId
-                    : undefined
-                  if (currentSessionId) {
-                    active = items.find(function (item: any) {
-                      return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
-                    }) || null
-                  }
-                } catch {
-                  /* 没有会话服务：走兜底 */
-                }
-                if (!active) active = items[0]
-                if (!active) return
-                void fetch(API_BASE + '/workspaces/bind', {
+                const payload = items.map(function (item: any) {
+                  return { workspaceId: item.workspaceId, title: item.title }
+                })
+
+                // ① + ②：把所有工作区都建表（已存在的复用）
+                void fetch(API_BASE + '/workspaces/sync', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ workspaceId: active.workspaceId, title: active.title }),
-                }).then(function () {
-                  // 绑定完成后通知左右两栏重新拉表
-                  notifyWorkspaceChanged()
+                  body: JSON.stringify({ workspaces: payload }),
+                }).then(function (response) {
+                  return response && typeof response.json === 'function' ? response.json() : null
+                }).then(function (result: any) {
+                  const created = result && result.data ? result.data.created : undefined
+                  if (created > 0) notifyWorkspaceChanged()
+
+                  // ③ 再切到「用户正在用的工作区」
+                  let active: any = null
+                  try {
+                    const currentSessionId = ws && ws.sessions && ws.sessions.list &&
+                      typeof ws.sessions.list.getSnapshot === 'function'
+                      ? ws.sessions.list.getSnapshot().currentSessionId
+                      : undefined
+                    if (currentSessionId) {
+                      active = items.find(function (item: any) {
+                        return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
+                      }) || null
+                    }
+                  } catch {
+                    /* 没有会话服务：走兜底 */
+                  }
+                  if (!active) active = items[0]
+                  if (!active) return
+                  return fetch(API_BASE + '/workspaces/bind', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workspaceId: active.workspaceId, title: active.title }),
+                  }).then(function () {
+                    notifyWorkspaceChanged()
+                  })
                 }).catch(function () {
-                  /* 绑定失败不影响面板显示 */
+                  /* 同步失败不影响面板显示 */
                 })
               } catch {
                 /* 宿主没有 uiWorkspace：面板仍可用，只是停留在默认表 */
@@ -1239,6 +1264,7 @@ function makeRightTabTitle(react: any) {
               const ws: any = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined
               const list = ws && ws.workspaces && ws.workspaces.list
               if (list && typeof list.subscribe === 'function') {
+                // 宿主新建 / 改名 / 删除工作区都会触发这里 → 自动建表
                 disposers.push(list.subscribe(bindHost))
               }
             } catch {

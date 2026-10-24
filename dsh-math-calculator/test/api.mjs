@@ -4,7 +4,7 @@
  * 这一层是给「配置与数据管理面板」用的：用户不在这里算数，只在这里改配置、管数据。
  * 直接调 handleApiRequest，不经过 HTTP，跑得快也不需要宿主。
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { handleApiRequest } from '../lib/api.js'
 import { FORMULAS } from '../lib/formulas.js'
@@ -255,6 +255,52 @@ console.log('-- 10.5 按宿主工作区绑定数据表（一个工作区一张�
   // 收尾
   switchWorkspace('default')
   for (const name of [wsA.title, wsB.title]) call('POST', 'workspaces/delete', { name })
+}
+
+console.log('-- 10.6 自动创建：安装后补建 + 新建即建表 --')
+{
+  const dir = workspaceDirectory()
+  const defs = [
+    { workspaceId: 'sync-aaaa-0001', title: 'sync_one' },
+    { workspaceId: 'sync-bbbb-0002', title: 'sync_two' },
+    { workspaceId: 'sync-cccc-0003', title: 'sync_three' },
+  ]
+  const files = defs.map((d) => join(dir, d.title + '.json'))
+  for (const f of files) if (existsSync(f)) rmSync(f, { force: true })
+
+  // ① 安装后补建：一次 sync 把已存在的宿主工作区全部建表
+  const first = call('POST', 'workspaces/sync', { workspaces: defs })
+  const body1 = first.json && first.json.data ? first.json.data : first.json
+  assert('sync 200', first.status === 200, String(first.status))
+  assert('一次建出全部 3 张表', body1.created === 3, String(body1.created))
+  assert('3 个表文件都在', files.every((f) => existsSync(f)), files.map((f) => existsSync(f)).join(','))
+
+  // ② 重复 sync 不重复建
+  const second = call('POST', 'workspaces/sync', { workspaces: defs })
+  const body2 = second.json && second.json.data ? second.json.data : second.json
+  assert('重复 sync 不再新建', body2.created === 0, String(body2.created))
+  assert('重复 sync 识别为已有', body2.existing === 3, String(body2.existing))
+
+  // ③ 宿主新建工作区 → 再 sync 自动补上（「新建即建表」）
+  const withNew = defs.concat([{ workspaceId: 'sync-dddd-0004', title: 'sync_new' }])
+  const third = call('POST', 'workspaces/sync', { workspaces: withNew })
+  const body3 = third.json && third.json.data ? third.json.data : third.json
+  assert('新建的工作区被补建', body3.created === 1, String(body3.created))
+  assert('新表文件已落盘', existsSync(join(dir, 'sync_new.json')))
+
+  // ④ 逐项明细
+  assert('返回逐项结果', Array.isArray(body3.results) && body3.results.length === 4,
+    String(body3.results && body3.results.length))
+
+  // ⑤ 空列表不报错
+  assert('空列表 sync 不报错', call('POST', 'workspaces/sync', { workspaces: [] }).status === 200)
+
+  // 收尾
+  switchWorkspace('default')
+  for (const d of withNew) {
+    const f = join(dir, d.title + '.json')
+    if (existsSync(f)) rmSync(f, { force: true })
+  }
 }
 
 console.log('-- 11. 客户端心跳（诊断：面板挂没挂上）--')

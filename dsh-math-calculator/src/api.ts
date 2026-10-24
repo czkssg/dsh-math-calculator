@@ -211,6 +211,36 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok(bindHostWorkspace(rawId, rawTitle))
     }
 
+    // ── 批量补建：给「已存在的宿主工作区」一次性建齐数据表 ──
+    //
+    // 两个用途：
+    //   ① 插件刚装上时，宿主已经有若干工作区 → 一次性补建，不用一个个点；
+    //   ② 宿主工作区被新建/重命名后 → 再同步一次。
+    //
+    // body: { workspaces: [{ workspaceId, title }, ...] }
+    // 返回每个工作区的处理结果（新建 / 已有）与汇总。
+    if (route === 'workspaces/sync') {
+      const rawList = body && typeof body === 'object' ? (body as Record<string, unknown>).workspaces : undefined
+      const items = Array.isArray(rawList) ? rawList : []
+      const results: Array<{ name: string; workspaceId: string; title: string; created: boolean }> = []
+      for (const item of items) {
+        const record = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
+        const bound = bindHostWorkspace(record.workspaceId, record.title)
+        results.push({
+          name: bound.name,
+          workspaceId: bound.workspaceId,
+          title: typeof record.title === 'string' ? record.title : '',
+          created: bound.created,
+        })
+      }
+      return ok({
+        total: results.length,
+        created: results.filter((item) => item.created).length,
+        existing: results.filter((item) => !item.created).length,
+        results,
+      })
+    }
+
     // ── 当前工作区详情（右侧边栏用：打开就看到本工作区的数据表）──
     //
     // 必须放在下面的 `workspaces/` 前缀匹配**之前**，否则 "workspaces/current"
