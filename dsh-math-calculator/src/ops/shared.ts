@@ -198,6 +198,9 @@ export interface MathArgs {
   timelineTo?: number
   /** 采样点数。 */
   timelineSteps?: number
+
+  /** 白皮书模式：document（默认，给人读）/ prompt（给 AI 用）。 */
+  whitepaperMode?: string
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

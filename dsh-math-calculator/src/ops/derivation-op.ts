@@ -34,6 +34,7 @@ import { runCivilization } from '../civilization.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
 import { buildTimeline, renderTimeline, detectPathLock } from '../timeline.js'
+import { buildWhitepaper, renderWhitepaper, buildPromptCard, renderPromptCard } from '../whitepaper.js'
 import { buildDeadBriefPrompt } from '../ai-brief.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
@@ -342,6 +343,18 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value.civilization = civ
+  } else if (sub === 'whitepaper') {
+    // 补丁8：白皮书（给人读）与 Prompt 卡片（给 AI 用）
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const paper = buildWhitepaper(worldParams)
+    const card = buildPromptCard(paper)
+    if (args.whitepaperMode === 'prompt') {
+      out.push(renderPromptCard(card))
+    } else {
+      out.push(renderWhitepaper(paper))
+    }
+    value.whitepaper = paper
+    value.promptCard = card
   } else if (sub === 'timeline') {
     // 补丁1 + 补丁11：快慢变量解耦 + 历史临界点
     const worldParams = (args.world ?? {}) as Record<string, unknown>
