@@ -31,6 +31,7 @@ import { currentWorkspace } from '../workspace.js'
 import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { runCivilization } from '../civilization.js'
+import { judgeDead, renderDead } from '../dead-universe.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -338,6 +339,13 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value.civilization = civ
+  } else if (sub === 'dead') {
+    // 补丁6：宇宙死寂态兜底——说清"这个参数意味着什么"，不评判设定。
+    const worldParams = (args.world ?? {}) as Record<string, unknown>
+    const worldOut = opWorld({ world: worldParams } as never, 64)
+    const verdict = judgeDead((worldOut as any).value)
+    out.push(renderDead(verdict))
+    value.dead = verdict
   } else if (sub === 'chaos') {
     // 混沌拦截器（补丁13）：不确定性的量化表达，不猜数字。
     const lyapunov = typeof args.lyapunov === 'number' ? args.lyapunov : 1.0
@@ -422,7 +430,7 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / civilization / chaos / inherit / diff / archive / history / compare / checklist / tables')
+    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / civilization / dead / chaos / inherit / diff / archive / history / compare / checklist / tables')
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }
