@@ -55,6 +55,7 @@ export type MathOperation =
   | 'formula-table'
   | 'feasibility'
   | 'derivation'
+  | 'custom'
   | 'help'
 
 /**
@@ -142,6 +143,16 @@ export interface MathArgs {
   sensitivityBase?: number
   /** 敏感性分析的幂次（结果 = 输入^幂）。 */
   sensitivityExponent?: number
+
+  // ── operation=custom（自创常数 / 新物理量）──
+  /** 子命令：list / add / remove / check */
+  customAction?: string
+  /** 要定义的自创量（origin / dimension 必填）。 */
+  customConstant?: Record<string, unknown>
+  /** 要删除的自创量名。 */
+  customConstantName?: string
+  /** 量纲检查时期望的结果量纲。 */
+  expectedDimension?: Record<string, number>
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

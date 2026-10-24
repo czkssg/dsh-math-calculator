@@ -201,6 +201,7 @@ import { opQuantities } from './ops/quantities-op.js'
 import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation } from './ops/derivation-op.js'
+import { opCustom } from './ops/custom-op.js'
 
 // ────────────────────────────────────────────────────────────────────────────
 // 类型
@@ -281,6 +282,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'formula-table',
   'feasibility',
   'derivation',
+  'custom',
   'help',
 ]
 
@@ -1905,6 +1907,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'derivation':
         outcome = opDerivation(args)
+        break
+      case 'custom':
+        outcome = opCustom(args)
         break
       case 'evaluate':
       default:

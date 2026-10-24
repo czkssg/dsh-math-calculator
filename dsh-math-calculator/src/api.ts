@@ -30,7 +30,16 @@ import {
   lastExecShape,
   bindHostWorkspace,
 } from './workspace.js'
-import { CONSTANT_GRAPH, setActiveConstants } from './constants-graph.js'
+import { CONSTANT_GRAPH, setActiveConstants, standardValues } from './constants-graph.js'
+import {
+  validateCustomConstant,
+  resolveCustomConstants,
+  checkDimension,
+  dimensionText,
+  BASE_DIMENSIONS,
+  type CustomConstant,
+  type Dimension,
+} from './custom-constants.js'
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 
@@ -255,6 +264,28 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok({ workspace: name, overrides: table.overrides, custom: table.custom })
     }
 
+    // ── 自创常数 / 新物理量 ──
+    //
+    // 有的世界观必须引入现实没有的量（「以太压」「灵能浓度」）。
+    // 定义时**必须带量纲**，否则公式会悄悄算错——这是自适应的第一道闸。
+    if (method === 'GET' && route === 'custom-constants') {
+      const name = normalizeWorkspaceName(currentWorkspace())
+      const data = loadWorkspace(name)
+      const customs = data.customConstants ?? []
+      const resolved = resolveCustomConstants(customs, standardValues())
+      return ok({
+        workspace: name,
+        customs: customs.map(function (item) {
+          return {
+            ...item,
+            currentValue: resolved.values[item.name],
+            dimensionText: dimensionText(item.dimension),
+          }
+        }),
+        errors: resolved.errors,
+      })
+    }
+
     if (method !== 'POST') {
       // 路径认识、只是方法不对 → 405；路径本身不认识 → 404。
       // 原先一律回 405，会把「路径打错」误报成「方法不对」，面板排查时被这句话带偏。
@@ -422,6 +453,66 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       }))
       if (currentWorkspace() === name) setActiveConstants(data.constants)
       return ok({ saved: true, name, constantName, value })
+    }
+
+    if (route === 'custom-constants/add') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const input = body && typeof body === 'object' ? (body as Record<string, unknown>).constant : undefined
+      const errors = validateCustomConstant(input)
+      if (errors.length > 0) return fail(400, '定义不合法：' + errors.join('；'))
+      const item = input as Record<string, unknown>
+      const custom: CustomConstant = {
+        name: String(item.name),
+        label: String(item.label),
+        value: Number(item.value),
+        unit: String(item.unit),
+        dimension: item.dimension as Dimension,
+        meaning: String(item.meaning),
+        origin: item.origin === 'derived' ? 'derived' : 'author',
+        ...(Array.isArray(item.dependsOn) ? { dependsOn: item.dependsOn.map(String) } : {}),
+        ...(typeof item.derive === 'string' ? { derive: item.derive } : {}),
+        createdAt: new Date().toISOString(),
+      }
+      const data = updateWorkspace(name, function (current) {
+        const rest = (current.customConstants ?? []).filter(function (existing) {
+          return existing.name !== custom.name
+        })
+        return { ...current, customConstants: [...rest, custom] }
+      })
+      return ok({ saved: true, workspace: name, custom, count: (data.customConstants ?? []).length })
+    }
+
+    if (route === 'custom-constants/remove') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const constantName = field(body, 'constantName')
+      if (!constantName) return fail(400, '缺少 constantName')
+      let removed = false
+      const data = updateWorkspace(name, function (current) {
+        const kept = (current.customConstants ?? []).filter(function (item) {
+          if (item.name === constantName) {
+            removed = true
+            return false
+          }
+          return true
+        })
+        return { ...current, customConstants: kept }
+      })
+      return ok({ removed, workspace: name, constantName, count: (data.customConstants ?? []).length })
+    }
+
+    // ── 量纲检查（自创公式发行前自检）──
+    if (route === 'custom-constants/check') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const expression = field(body, 'expression')
+      if (!expression) return fail(400, '缺少 expression')
+      const data = loadWorkspace(name)
+      const dimensions: Record<string, Dimension> = {}
+      for (const item of data.customConstants ?? []) dimensions[item.name] = item.dimension
+      Object.assign(dimensions, BASE_DIMENSIONS)
+      const rawExpected = body && typeof body === 'object' ? (body as Record<string, unknown>).expected : undefined
+      const expected = rawExpected && typeof rawExpected === 'object' ? (rawExpected as Dimension) : undefined
+      const result = checkDimension(expression, dimensions, expected)
+      return ok({ workspace: name, ...result, resultText: dimensionText(result.resultDimension) })
     }
 
     // ── 清理 ──

@@ -82,7 +82,7 @@ const stub = { tool: captured.tool, hooks: host.hooks, promptSection: captured.s
   const missing = expected.filter((op) => !ops.includes(op))
   assert('全部 25 个 operation 都在 schema 里', missing.length === 0,
     '缺失: ' + missing.join(', '))
-  assert('operation 数量 = 26', ops.length === 26, String(ops.length))
+  assert('operation 数量 = 27', ops.length === 27, String(ops.length))
   assert('有 output.schema', Boolean(stub.tool.output && stub.tool.output.schema))
   assert('有 output.render', typeof stub.tool.output.render === 'function')
 }

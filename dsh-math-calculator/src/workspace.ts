@@ -30,6 +30,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 import type { WorkspaceFormulaTable } from './formula-table.js'
+import type { CustomConstant } from './custom-constants.js'
 
 /** 局部地形设定（存的是参数，不是计算结果——结果会随常数变化）。 */
 export interface SavedTerrain {
@@ -59,6 +60,14 @@ export interface WorkspaceData {
   variables: Record<string, number>
   /** 本工作区的公式表（覆盖 + 自定义），不同世界互不影响。 */
   formulaTable?: WorkspaceFormulaTable
+  /**
+   * 本工作区**自创的常数 / 新物理量**。
+   *
+   * 有些设定靠调现有参数做不出来，必须引入新量（如「以太压」「灵能浓度」）。
+   * 这些量带量纲声明，可以：被本区自定义公式引用、参与推演判定、
+   * 用发行前的量纲检查发现「公式算出来的不是想要的量」。
+   */
+  customConstants?: CustomConstant[]
   /** 创建时间。 */
   createdAt: string
   /** 最后修改时间。 */

@@ -49,6 +49,7 @@ const SUITES = [
   { file: 'derivation.mjs', expect: 58, label: '推演栈（八层/接口卡/无量纲/单位陷阱/敏感性/相图）' },
   { file: 'pipeline.mjs', expect: 21, label: '正向推演链路（world → P1—P5 逐层判定）' },
   { file: 'reuse.mjs', expect: 18, label: '复用性守卫（推演复用公式库与常数表，不重复实现）' },
+  { file: 'custom.mjs', expect: 28, label: '自创常数（量纲校验/派生求解/安全求值/量纲检查）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
