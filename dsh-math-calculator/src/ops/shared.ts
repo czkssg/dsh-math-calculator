@@ -201,6 +201,23 @@ export interface MathArgs {
 
   /** 白皮书模式：document（默认，给人读）/ prompt（给 AI 用）。 */
   whitepaperMode?: string
+
+  // ── 因果溯源（补丁4）──
+  /** 要溯源的量名。 */
+  traceTarget?: string
+  // ── 算力预警（补丁5）──
+  /** 估算类型：timeline / phase / backsolve / sweep。 */
+  costKind?: string
+  /** 相图 X 采样数。 */
+  costX?: number
+  /** 相图 Y 采样数。 */
+  costY?: number
+  /** 迭代次数。 */
+  costIterations?: number
+  /** 组合数。 */
+  costCombos?: number
+  /** 时间轴是否每步跑推演栈。 */
+  costWithPipeline?: boolean
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */

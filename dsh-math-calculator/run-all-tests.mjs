@@ -61,6 +61,7 @@ const SUITES = [
   { file: 'ecosystem.mjs', expect: 35, label: '目录3.2 生态金字塔 + playbook 可配置化' },
   { file: 'timeline.mjs', expect: 34, label: '补丁1/11 时间轴（快慢解耦+临界点+路径锁定）' },
   { file: 'whitepaper.mjs', expect: 35, label: '补丁8 白皮书 + Prompt 投射' },
+  { file: 'provenance-cost.mjs', expect: 43, label: '补丁4/5 因果溯源 + 算力预警' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

@@ -35,6 +35,8 @@ import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
 import { buildTimeline, renderTimeline, detectPathLock } from '../timeline.js'
 import { buildWhitepaper, renderWhitepaper, buildPromptCard, renderPromptCard } from '../whitepaper.js'
+import { trace, impact, renderTrace, renderImpact, buildGraph, allNodes } from '../provenance-graph.js'
+import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, renderCost } from '../compute-budget.js'
 import { buildDeadBriefPrompt } from '../ai-brief.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
@@ -343,6 +345,55 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value.civilization = civ
+  } else if (sub === 'trace') {
+    // 补丁4：因果溯源
+    const target = typeof args.traceTarget === 'string' ? args.traceTarget : ''
+    if (target === '') {
+      const graph = buildGraph()
+      const names = Array.from(allNodes(graph)).sort()
+      out.push('═══ 可溯源的量（共 ' + names.length + ' 个）═══', '')
+      for (let index = 0; index < names.length; index += 3) {
+        out.push('  ' + names.slice(index, index + 3).map(function (n) { return n.padEnd(22) }).join(''))
+      }
+      out.push('')
+      out.push('用法：{"derivation":"trace","traceTarget":"建筑高度上限"}')
+      value.nodes = names
+    } else {
+      const result = trace(target)
+      out.push(renderTrace(result))
+      value.trace = result
+    }
+  } else if (sub === 'impact') {
+    // 补丁4 反向：改一个量会波及什么
+    const target = typeof args.traceTarget === 'string' ? args.traceTarget : ''
+    if (target === '') {
+      out.push('需要 traceTarget（要改的量名）')
+    } else {
+      const result = impact(target)
+      out.push(renderImpact(target, result))
+      value.impact = result
+    }
+  } else if (sub === 'cost') {
+    // 补丁5：算力预警
+    const kind = typeof args.costKind === 'string' ? args.costKind : 'timeline'
+    let estimate
+    if (kind === 'phase') {
+      estimate = estimatePhase(
+        typeof args.costX === 'number' ? args.costX : 50,
+        typeof args.costY === 'number' ? args.costY : 50,
+      )
+    } else if (kind === 'backsolve') {
+      estimate = estimateBackSolve(typeof args.costIterations === 'number' ? args.costIterations : 40)
+    } else if (kind === 'sweep') {
+      estimate = estimateSweep(typeof args.costCombos === 'number' ? args.costCombos : 1000)
+    } else {
+      estimate = estimateTimeline(
+        typeof args.timelineSteps === 'number' ? args.timelineSteps : 11,
+        args.costWithPipeline === true,
+      )
+    }
+    out.push(renderCost(estimate))
+    value.cost = estimate
   } else if (sub === 'whitepaper') {
     // 补丁8：白皮书（给人读）与 Prompt 卡片（给 AI 用）
     const worldParams = (args.world ?? {}) as Record<string, unknown>
