@@ -689,6 +689,30 @@ export function resetActiveWorkspace(): void {
  * @param cwd - 会话工作目录（绝对路径）
  * @returns 合法的数据表名；无法判断时回落 default
  */
+/**
+ * 最近一次工具调用的执行上下文结构（诊断用）。
+ *
+ * 数据表跟着工作区走靠的是 exec 里的 cwd；一旦宿主换了字段名，
+ * 表面现象是「数据表不跟着切换」，而代码里没有任何信号。
+ * 这个快照让原因可观察（GET client-status 读回）。
+ */
+export let lastExecShape: Record<string, unknown> | null = null
+
+/**
+ * 记录一次 exec 形状（诊断）。
+ *
+ * @param shape - 形状快照
+ */
+export function setLastExecShape(shape: Record<string, unknown> | null): void {
+  lastExecShape = shape
+}
+
+/**
+ * 由会话工作目录派生数据表作用域（D:\\0cengxu\\5 -> "5"）。
+ *
+ * @param cwd - 会话工作目录
+ * @returns 合法数据表名；无法判断时回落 default
+ */
 export function scopeFromCwd(cwd: unknown): string {
   if (typeof cwd !== 'string' || cwd.trim() === '') return DEFAULT_WORKSPACE
   // 统一分隔符后取末段（同时兼容 Windows 反斜杠与 POSIX 斜杠）
@@ -709,8 +733,17 @@ export function scopeFromCwd(cwd: unknown): string {
 /**
  * 从工具执行上下文里取出「当前会话的工作目录」。
  *
- * 宿主在每次工具调用时传入 exec，其形状与 dsh-memory 一致：
- *   exec.agent.meta.cwd（也兼容 exec.agent.cwd / exec.session.cwd）
+ * ⚠️ 这里的结构是**读宿主源码确认过的**，不是猜的：
+ *
+ *   exec = { agent, callId, rootCallId, token, signal }      // dsh-tools 的 ToolExecution
+ *   agent.session.id                                          // 会话 id（没有 meta.cwd）
+ *
+ * 宿主真正的 cwd 在 `workingDirectory` 服务里（sessionProjections 的
+ * `workingDirectory` 投影 = header.cwd）。所以工具侧拿不到 cwd 时，
+ * 由调用方用 `ctx.get('workingDirectory').ensure(exec.agent)` 异步补齐。
+ *
+ * 这里先把「能从 exec 直接读到的」都读一遍（兼容多种宿主版本），
+ * 读不到就返回空串，交给上层用服务补齐。
  *
  * @param exec - 工具执行的第二个参数
  * @returns cwd 字符串；拿不到返回空串
@@ -721,10 +754,35 @@ export function cwdOfExec(exec: unknown): string {
   const candidates = [
     value.agent?.meta?.cwd,
     value.agent?.cwd,
+    value.agent?.session?.cwd,
+    value.agent?.session?.header?.cwd,
     value.session?.meta?.cwd,
     value.session?.cwd,
+    value.session?.header?.cwd,
     value.meta?.cwd,
     value.cwd,
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim() !== '') return candidate.trim()
+  }
+  return ''
+}
+
+/**
+ * 从会话对象上读取 cwd（宿主 sessionProjections 的 workingDirectory 投影）。
+ *
+ * @param session - exec.agent.session 或任意带 header 的会话对象
+ * @returns cwd；读不到返回空串
+ */
+export function cwdOfSession(session: unknown): string {
+  const value = session as Record<string, any> | undefined
+  if (!value) return ''
+  const candidates = [
+    value.cwd,
+    value.header?.cwd,
+    value.meta?.cwd,
+    value.projectionValues?.workingDirectory,
+    value.projections?.workingDirectory,
   ]
   for (const candidate of candidates) {
     if (typeof candidate === 'string' && candidate.trim() !== '') return candidate.trim()

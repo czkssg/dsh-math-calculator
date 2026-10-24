@@ -124,7 +124,9 @@ import {
   resetConstant,
   storageStats,
   cwdOfExec,
+  cwdOfSession,
   scopeFromCwd,
+  setLastExecShape,
   switchWorkspace,
   updateWorkspace,
   workspaceDirectory,
@@ -2183,6 +2185,27 @@ const PARAMETER_SPEC = {
 /**
  * 工具定义：官方 `defineTool`，与 DSH 社区成熟插件同一写法。
  */
+/**
+ * 最近一次工具调用的执行上下文结构（诊断用）。
+ *
+ * 为什么需要：数据表跟着工作区走，靠的就是 exec 里的 cwd。
+ * 一旦宿主换了字段名，表面现象是「数据表不跟着切换」，
+ * 而代码里没有任何信号。这个快照让原因可观察。
+ */
+/**
+ * 插件上下文引用（apply 时赋值）。
+ *
+ * 工具要读宿主服务（workingDirectory）拿当前工作目录，
+ * 但 defineTool 的定义在模块级、拿不到 apply 的局部变量。
+ */
+let ctxRef: any = null
+
+/**
+ * 数学计算工具（`math_execute`）。
+ *
+ * 25 个 operation 的对外入口。执行前会把「当前会话的工作区」切成
+ * 数据表作用域，所以同一个工具在不同工作区里用的是不同的数据。
+ */
 export const mathExecuteTool = defineTool({
   name: TOOL_NAME,
   description: DESCRIPTION,
@@ -2204,8 +2227,39 @@ export const mathExecuteTool = defineTool({
     //
     // 之前忽略了 exec 参数，所以数据表永远停在 default，不跟工作区走。
     try {
-      const cwd = cwdOfExec(exec)
+      // cwd 来源（按可靠性排序）：
+      //   ① 宿主 workingDirectory 服务 —— 权威来源（sessionProjections 的
+      //      workingDirectory 投影就是 header.cwd）；
+      //   ② exec / agent.session 上直接能读到的 cwd —— 兼容不同宿主版本；
+      //   ③ 都没有 → 空串 → 作用域回落 default（不切表，保持可用）。
+      let cwd = cwdOfExec(exec)
+      if (cwd === '') {
+        try {
+          const directories = optionalService(ctxRef, 'workingDirectory')
+          if (directories && typeof directories.ensure === 'function' && exec && (exec as any).agent) {
+            const resolved = await directories.ensure((exec as any).agent, (exec as any).signal)
+            if (typeof resolved === 'string' && resolved.trim() !== '') cwd = resolved.trim()
+          }
+        } catch {
+          /* 服务不可用：退回下面的会话读取 */
+        }
+      }
+      if (cwd === '') {
+        cwd = cwdOfSession((exec as any)?.agent?.session)
+      }
       const scope = scopeFromCwd(cwd)
+      // 诊断：把「取到的 cwd / 推出的作用域 / exec 有哪些键」记下来，
+      // 供 GET client-status 读取。排查 cwd 取不到时唯一可靠的证据。
+      setLastExecShape({
+        at: new Date().toISOString(),
+        isUndefined: exec === undefined,
+        topKeys: exec && typeof exec === 'object' ? Object.keys(exec as object) : [],
+        agentKeys: (exec as any)?.agent && typeof (exec as any).agent === 'object' ? Object.keys((exec as any).agent) : null,
+        agentMetaKeys: (exec as any)?.agent?.meta && typeof (exec as any).agent.meta === 'object' ? Object.keys((exec as any).agent.meta) : null,
+        sessionKeys: (exec as any)?.session && typeof (exec as any).session === 'object' ? Object.keys((exec as any).session) : null,
+        resolvedCwd: cwd,
+        resolvedScope: scope,
+      })
       if (scope !== currentWorkspace()) switchWorkspace(scope)
     } catch {
       /* 切换失败不影响本次计算（仍在原表上算） */
@@ -2296,6 +2350,12 @@ export function apply(ctx: any): void {
   if (!ctx || typeof ctx.tools?.register !== 'function') {
     throw new Error(`${PLUGIN_NAME}: 宿主未提供 tools 服务，无法注册 ${TOOL_NAME}`)
   }
+
+  // 保存插件上下文：工具执行时要靠它读 workingDirectory 服务拿 cwd。
+  // 工具定义是模块级的（宿主按名注册），拿不到 apply 的局部变量，
+  // 所以用模块级引用把 ctx 传进去。
+  ctxRef = ctx
+
   ctx.tools.register(mathExecuteTool)
 
   // ── 第三层提醒：实时检测模型「思维中的计算需求」──

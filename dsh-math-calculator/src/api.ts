@@ -27,6 +27,7 @@ import {
   switchWorkspace,
   updateWorkspace,
   workspaceFilePath,
+  lastExecShape,
 } from './workspace.js'
 import { CONSTANT_GRAPH, setActiveConstants } from './constants-graph.js'
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
@@ -240,7 +241,13 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
 
     // ── 客户端心跳（诊断：面板到底挂上了没有）──
     if (method === 'GET' && route === 'client-status') {
-      return ok({ heartbeat: clientHeartbeat })
+      return ok({
+        heartbeat: clientHeartbeat,
+        // 最近一次工具调用的 exec 结构（含取到的 cwd 与推出的作用域）。
+        // 「数据表不跟工作区走」的排查全靠这一项。
+        execShape: lastExecShape,
+        currentWorkspace: currentWorkspace(),
+      })
     }
 
     // ── 设置（提示档位）──
