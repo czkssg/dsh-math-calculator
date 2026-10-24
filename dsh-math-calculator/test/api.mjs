@@ -145,6 +145,46 @@ console.log('-- 8. 切换工作区时数据表自动创建 --')
   if (existsSync(file)) call('POST', 'workspaces/delete', { name })
 }
 
+console.log('-- 9. 本工作区的管理接口（右栏「管理」用）--')
+{
+  const name = 'manage_check'
+  const other = 'manage_other'
+  for (const n of [name, other]) {
+    if (existsSync(join(workspaceDirectory(), n + '.json'))) call('POST', 'workspaces/delete', { name: n })
+  }
+
+  assert('切换到新工作区（自动建表）', call('POST', 'workspaces/switch', { name }).status === 200)
+
+  // 变量
+  assert('set-variable 200', call('POST', 'workspaces/set-variable', { name, variableName: 'q', value: 42 }).status === 200)
+  const afterVar = call('GET', 'workspaces/' + name)
+  assert('变量写进了本工作区', Boolean(afterVar.json.variables) && afterVar.json.variables.q === 42, JSON.stringify(afterVar.json.variables))
+
+  // 地点（新增 + 同名覆盖）
+  assert('save-terrain 200', call('POST', 'workspaces/save-terrain', { name, terrain: { name: 'port', kind: 'coastal' } }).status === 200)
+  call('POST', 'workspaces/save-terrain', { name, terrain: { name: 'port', kind: 'desert' } })
+  const afterTerrain = call('GET', 'workspaces/' + name)
+  const ports = (afterTerrain.json.terrains || []).filter((t) => t.name === 'port')
+  assert('同名地点覆盖而非重复', ports.length === 1 && ports[0].kind === 'desert', JSON.stringify(ports))
+
+  // 一个工作区一张数据表：另一个工作区看不到这些
+  call('POST', 'workspaces/switch', { name: other })
+  const otherDetail = call('GET', 'workspaces/' + other)
+  assert('另一个工作区是独立数据表（没有上面的变量）',
+    !otherDetail.json.variables || otherDetail.json.variables.q === undefined,
+    JSON.stringify(otherDetail.json.variables))
+
+  // 参数校验
+  assert('set-variable 缺名字 400', call('POST', 'workspaces/set-variable', { name }).status === 400)
+  assert('set-variable 非数字 400', call('POST', 'workspaces/set-variable', { name, variableName: 'x', value: 'abc' }).status === 400)
+  assert('save-terrain 缺 terrain 400', call('POST', 'workspaces/save-terrain', { name }).status === 400)
+  assert('save-terrain 缺 terrain.name 400', call('POST', 'workspaces/save-terrain', { name, terrain: { kind: 'plain' } }).status === 400)
+
+  // 收尾：切回 default 并删除测试工作区
+  switchWorkspace('default')
+  for (const n of [name, other]) call('POST', 'workspaces/delete', { name: n })
+}
+
 console.log('')
 if (fails.length === 0) {
   console.log(`全部通过：${pass} 项`)

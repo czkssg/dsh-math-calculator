@@ -275,6 +275,40 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok({ removed, name, variableName })
     }
 
+    // ── 写入变量（新增/修改本工作区的变量）──
+    //
+    // 右侧「本工作区」面板的管理区用它；与 save-constant 同一套形状，
+    // 保证 UI 不自己拼数据结构。
+    if (route === 'workspaces/set-variable') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const variableName = field(body, 'variableName')
+      if (!variableName) return fail(400, '缺少 variableName')
+      const rawValue = body && typeof body === 'object' ? (body as Record<string, unknown>).value : undefined
+      const value = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+      if (!Number.isFinite(value)) return fail(400, '变量值必须是有限数')
+      updateWorkspace(name, (current) => ({
+        ...current,
+        variables: { ...current.variables, [variableName]: value },
+      }))
+      return ok({ saved: true, name, variableName, value })
+    }
+
+    // ── 写入地点（新增/修改本工作区的地点）──
+    if (route === 'workspaces/save-terrain') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const terrain = body && typeof body === 'object' ? (body as Record<string, unknown>).terrain : undefined
+      if (!terrain || typeof terrain !== 'object') return fail(400, '缺少 terrain 对象')
+      const terrainName = typeof (terrain as Record<string, unknown>).name === 'string'
+        ? String((terrain as Record<string, unknown>).name).trim()
+        : ''
+      if (terrainName === '') return fail(400, '缺少 terrain.name')
+      const data = updateWorkspace(name, (current) => {
+        const rest = current.terrains.filter((item) => item.name !== terrainName)
+        return { ...current, terrains: [...rest, terrain as never] }
+      })
+      return ok({ saved: true, name, terrain: data.terrains.find((item) => item.name === terrainName) })
+    }
+
     // ── 重置单个常数 ──
     if (route === 'workspaces/reset-constant') {
       const name = normalizeWorkspaceName(field(body, 'name'))

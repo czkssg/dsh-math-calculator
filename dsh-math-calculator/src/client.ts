@@ -29,6 +29,25 @@
   const PANEL_ID = 'dsh-math-calculator.workspaces'
   const API_BASE = '/api/dsh-math-calculator'
 
+  /**
+   * 跨面板的工作区通知（轻量订阅，不引入依赖）。
+   *
+   * 为什么需要：左侧是全局管理、右侧是本工作区，两个面板来自**同一个 client bundle**，
+   * 所以可以用模块级订阅互通 —— 左栏切换工作区后，右栏立刻重新拉取，不需要轮询。
+   * （社区插件 dsh-better-sidebar 用宿主的 sidebarRight/mounted store 达到同样效果；
+   *   我们额外用这个自建 store 覆盖「左栏切换」这条路径。）
+   */
+  const workspaceListeners = new Set<() => void>()
+  function notifyWorkspaceChanged(name?: string) {
+    for (const listener of Array.from(workspaceListeners)) {
+      try { listener() } catch { /* 单个面板出错不影响其它 */ }
+    }
+  }
+  function subscribeWorkspace(listener: () => void) {
+    workspaceListeners.add(listener)
+    return function () { workspaceListeners.delete(listener) }
+  }
+
   /** 请求后端。 */
   async function callApi(path: string, body?: any): Promise<any> {
     const response = await fetch(API_BASE + path, {
@@ -193,6 +212,15 @@
           try {
             await callApi(path, body)
             await reload()
+            // 左栏做了「创建 / 切换 / 删除工作区」→ 通知右栏立刻换成对应工作区的数据表。
+            // 这就是用户要的「换工作区自动切换」。
+            if (
+              path === '/workspaces/switch' ||
+              path === '/workspaces/create' ||
+              path === '/workspaces/delete'
+            ) {
+              notifyWorkspaceChanged(body && typeof body.name === 'string' ? body.name : undefined)
+            }
             setState((prev) => ({ ...prev, busy: false, message, confirmDelete: null }))
           } catch (error) {
             setState((prev) => ({
@@ -856,19 +884,77 @@ function createWorkspaceTab(react: any) {
     return h('div', null, h('div', { style: sectionTitle }, props.title), props.children)
   }
 
-  return function WorkspaceTab() {
-    const [state, setState] = useState({ loading: true, error: null, data: null })
+  return function WorkspaceTab(props: any) {
+    const [state, setState] = useState({
+      loading: true,
+      error: null,
+      data: null,
+      list: [],
+      current: null,
+      settings: null,
+      table: null,
+      busy: false,
+      message: null,
+      newVariable: { name: '', value: '' },
+      newTerrain: { name: '', kind: 'plain' },
+    } as any)
 
+    // 一次把「本工作区」需要的四样东西读齐：工作区列表（切换器）、
+    // 本区详情（数据表）、本区公式表（开关）、提示档位（开关）。
     const load = useCallback(function () {
       setState(function (prev: any) { return { ...prev, loading: true, error: null } })
-      return callApi('/workspaces/current')
-        .then(function (data: any) { setState({ loading: false, error: null, data }) })
+      return Promise.all([
+        callApi('/workspaces'),
+        callApi('/workspaces/current'),
+        callApi('/formula-table'),
+        callApi('/settings'),
+      ])
+        .then(function (result: any) {
+          setState(function (prev: any) {
+            return {
+              ...prev,
+              loading: false,
+              error: null,
+              list: (result[0] && result[0].workspaces) || [],
+              current: (result[0] && result[0].current) || null,
+              data: result[1],
+              table: result[2],
+              settings: result[3],
+            }
+          })
+        })
         .catch(function (error: any) {
-          setState({ loading: false, error: (error && error.message) || '读取失败', data: null })
+          setState(function (prev: any) {
+            return { ...prev, loading: false, error: (error && error.message) || '读取失败' }
+          })
         })
     }, [])
 
+    /** 统一动作入口：调用后端 → 刷新 → 提示。 */
+    const act = useCallback(function (path: string, body: any, okMessage: string) {
+      setState(function (prev: any) { return { ...prev, busy: true, message: null } })
+      return callApi(path, body)
+        .then(function () {
+          notifyWorkspaceChanged(body && typeof body.name === 'string' ? body.name : undefined)
+          setState(function (prev: any) { return { ...prev, busy: false, message: okMessage } })
+          return load()
+        })
+        .catch(function (error: any) {
+          setState(function (prev: any) {
+            return { ...prev, busy: false, message: '失败：' + ((error && error.message) || error) }
+          })
+        })
+    }, [load])
+
     useEffect(function () { void load() }, [load])
+
+    // ① 左栏切换工作区 → 右栏立刻跟着换（同一个 client bundle 里的轻量订阅）
+    // ② 宿主把右栏页签打开/可见性变化时也刷新一次（学习 dsh-better-sidebar 的做法：
+    //    订阅 sidebarRight 的 mounted store，而不是轮询）。
+    useEffect(function () {
+      const off = typeof props?.subscribeWorkspace === 'function' ? props.subscribeWorkspace(load) : null
+      return function () { if (typeof off === 'function') off() }
+    }, [load, props])
 
     if (state.loading && !state.data) return h('div', { style: box }, '正在读取当前工作区…')
     if (state.error) {
@@ -883,10 +969,33 @@ function createWorkspaceTab(react: any) {
     const custom = (data.formulaTable && data.formulaTable.custom) || []
     const terrains = data.terrains || []
     const variables = Object.entries(data.variables || {})
+    // 本区工作区名（所有写操作都要带上它 —— 一个工作区一张数据表）
+    const currentName = summary.name || data.name || state.current || 'default'
 
-    const header = h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-      h('div', { style: { fontWeight: 600 } }, '当前工作区：' + (summary.name || data.name || '—')),
-      h('button', { onClick: load, title: '重新读取' }, '刷新'))
+    // 顶部：当前工作区 + 切换器 + 刷新。
+    // 「换工作区自动切换」在这里与左栏共享同一个通知源（notifyWorkspaceChanged）。
+    const switcher = h('select', {
+      value: summary.name || data.name || '',
+      disabled: state.busy,
+      onChange: function (event: any) {
+        const next = event && event.target ? event.target.value : ''
+        if (next && next !== (summary.name || data.name)) {
+          void act('/workspaces/switch', { name: next }, '已切换到 "' + next + '"')
+        }
+      },
+      style: { maxWidth: 130 },
+    }, (state.list || []).map(function (item: any) {
+      return h('option', { key: item.name, value: item.name }, item.name)
+    }))
+
+    const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' } },
+      h('div', { style: { fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' } }, '本工作区：'),
+      switcher,
+      h('button', { onClick: load, title: '重新读取', disabled: state.busy }, '刷新'))
+
+    const messageLine = state.message
+      ? h('div', { style: { marginTop: 6, color: 'var(--dsw-alias-state-warn-primary, inherit)' } }, state.message)
+      : null
 
     const counts = h('div', { style: muted },
       '改动常数 ' + changed.length +
@@ -939,9 +1048,159 @@ function createWorkspaceTab(react: any) {
               h('span', null, String(entry[1])))
           })))
 
-    const footer = h('div', { style: { marginTop: 12, ...muted } }, '管理全部工作区请在左侧「∑ 数学」入口。')
+    // ── 开关：提示档位 + 公式启停 ──
+    //
+    // 用户明确要求：右侧不只看数据，还要有「开关」。
+    const promptMode = (state.settings && state.settings.promptMode) || 'brief'
+    const modeButton = function (mode: string, label: string) {
+      const active = promptMode === mode
+      return h('button', {
+        key: mode,
+        disabled: state.busy || active,
+        onClick: function () { void act('/settings', { promptMode: mode }, '提示档位已切到 ' + mode) },
+        style: { marginRight: 4, fontWeight: active ? 600 : 400 },
+      }, label)
+    }
 
-    return h('div', { style: box }, header, counts, constSection, formulaSection, terrainSection, variableSection, footer)
+    const overridesNow = (state.table && state.table.overrides) || []
+    const disabledIds = overridesNow.filter(function (item: any) { return item.disabled }).map(function (item: any) { return item.id })
+
+    const toggleSection = h(Section, { title: '【开关】' },
+      h('div', { style: { marginBottom: 6 } },
+        h('span', { style: muted }, '提示档位 '),
+        modeButton('off', '关'),
+        modeButton('brief', '简'),
+        modeButton('full', '全')),
+      h('div', { style: { marginBottom: 4 } },
+        h('span', { style: muted }, '停用公式：'),
+        disabledIds.length === 0
+          ? h('span', { style: muted }, '（无）')
+          : h('span', null, disabledIds.map(function (id: string) {
+              return h('button', {
+                key: id,
+                disabled: state.busy,
+                onClick: function () { void act('/formula-table', { name: currentName, action: 'reset', formulaId: id }, '已恢复公式 "' + id + '"') },
+                style: { marginRight: 4 },
+                title: '点一下恢复',
+              }, id + ' ×')
+            }))),
+      h('div', null,
+        h('input', {
+          placeholder: '公式 id',
+          value: state.disableId || '',
+          onChange: function (event: any) {
+            const value = event && event.target ? event.target.value : ''
+            setState(function (prev: any) { return { ...prev, disableId: value } })
+          },
+          style: { width: 110, marginRight: 4 },
+        }),
+        h('button', {
+          disabled: state.busy || !(state.disableId || '').trim(),
+          onClick: function () {
+            const id = String(state.disableId || '').trim()
+            if (id) void act('/formula-table', { name: currentName, action: 'disable', formulaId: id }, '已停用公式 "' + id + '"')
+          },
+        }, '停用')))
+
+    // ── 管理：变量与地点（增删）──
+    //
+    // 数据表只读是没用的；这里给出最小可用的增删入口，全部走后端接口，
+    // 前端不自己拼数据结构（避免两份真相）。
+    const manageSection = h(Section, { title: '【管理】' },
+      // 变量
+      h('div', { style: { marginBottom: 2 } }, h('span', { style: muted }, '变量')),
+      h('div', { style: { display: 'flex', gap: 4, marginBottom: 4 } },
+        h('input', {
+          placeholder: '名称',
+          value: state.newVariable.name,
+          onChange: function (event: any) {
+            const value = event && event.target ? event.target.value : ''
+            setState(function (prev: any) { return { ...prev, newVariable: { ...prev.newVariable, name: value } } })
+          },
+          style: { width: 84 },
+        }),
+        h('input', {
+          placeholder: '数值',
+          value: state.newVariable.value,
+          onChange: function (event: any) {
+            const value = event && event.target ? event.target.value : ''
+            setState(function (prev: any) { return { ...prev, newVariable: { ...prev.newVariable, value } } })
+          },
+          style: { width: 70 },
+        }),
+        h('button', {
+          disabled: state.busy || !state.newVariable.name.trim() || !state.newVariable.value.trim(),
+          onClick: function () {
+            const name = state.newVariable.name.trim()
+            const value = Number(state.newVariable.value)
+            if (!Number.isFinite(value)) {
+              setState(function (prev: any) { return { ...prev, message: '变量值必须是数字' } })
+              return
+            }
+            void act('/workspaces/set-variable', { name: currentName, variableName: name, value },
+              '变量 "' + name + '" 已保存').then(function () {
+                setState(function (prev: any) { return { ...prev, newVariable: { name: '', value: '' } } })
+              })
+          },
+        }, '保存')),
+      variables.map(function (entry: any) {
+        return h('div', { key: 'v-' + entry[0], style: rowStyle },
+          h('span', null, entry[0] + ' = ' + String(entry[1])),
+          h('button', {
+            disabled: state.busy,
+            onClick: function () {
+              void act('/workspaces/remove-variable', { name: currentName, variableName: entry[0] }, '已删除变量 "' + entry[0] + '"')
+            },
+          }, '删'))
+      }),
+      // 地点
+      h('div', { style: { marginTop: 8, marginBottom: 2 } }, h('span', { style: muted }, '地点')),
+      h('div', { style: { display: 'flex', gap: 4, marginBottom: 4 } },
+        h('input', {
+          placeholder: '地点名',
+          value: state.newTerrain.name,
+          onChange: function (event: any) {
+            const value = event && event.target ? event.target.value : ''
+            setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, name: value } } })
+          },
+          style: { width: 84 },
+        }),
+        h('select', {
+          value: state.newTerrain.kind,
+          onChange: function (event: any) {
+            const value = event && event.target ? event.target.value : 'plain'
+            setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, kind: value } } })
+          },
+        }, ['plain', 'coastal', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake'].map(function (kind) {
+          return h('option', { key: kind, value: kind }, kind)
+        })),
+        h('button', {
+          disabled: state.busy || !state.newTerrain.name.trim(),
+          onClick: function () {
+            const name = state.newTerrain.name.trim()
+            void act('/workspaces/save-terrain', { name: currentName, terrain: { name, kind: state.newTerrain.kind } },
+              '地点 "' + name + '" 已保存').then(function () {
+                setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, name: '' } } })
+              })
+          },
+        }, '保存')),
+      terrains.map(function (t: any, index: number) {
+        return h('div', { key: 't-' + ((t && t.name) || index), style: rowStyle },
+          h('span', null, ((t && t.name) || '未命名') + (((t && t.kind)) ? ' · ' + t.kind : '')),
+          h('button', {
+            disabled: state.busy || !(t && t.name),
+            onClick: function () {
+              if (t && t.name) void act('/workspaces/remove-terrain', { name: currentName, terrainName: t.name }, '已删除地点 "' + t.name + '"')
+            },
+          }, '删'))
+      }))
+
+    const footer = h('div', { style: { marginTop: 12, ...muted } },
+      '每个工作区各有独立数据表；切换工作区后本页自动跟随。全局管理在左侧「∑ 数学」。')
+
+    return h('div', { style: box },
+      header, messageLine, counts,
+      toggleSection, constSection, formulaSection, terrainSection, variableSection, manageSection, footer)
   }
 }
 
@@ -1092,7 +1351,10 @@ function createSidebarTitle(react: any) {
                 {
                   name: 'sidebar.panellist',
                   id: PANEL_ID,
-                  order: 900,
+                  // order 必须跟社区约定同量级：任务看板 20 / skill-explorer 30 / ssh 40。
+                  // 曾经写成 900 —— 宿主会把排位过靠后的行收进「更多」折叠区，
+                  // 于是入口看起来像被塞进了溢出菜单（真实反馈）。
+                  order: 30,
                   label: function () {
                     return '数学工作区'
                   },
@@ -1142,10 +1404,27 @@ function createSidebarTitle(react: any) {
                   }
                   inner.push(sub.slots.inject('sidebar.right.pane.tab', function () {
                     return sub.slots.register(
-                      { name: 'sidebar.right.pane.tab', key: RIGHT_TAB_ID },
+                      {
+                        name: 'sidebar.right.pane.tab',
+                        key: RIGHT_TAB_ID,
+                        // 把「工作区变更」的订阅函数交给面板：
+                        // 左栏一切换，右栏就重新拉本工作区的数据表。
+                        inject: function () { return { subscribeWorkspace: subscribeWorkspace } },
+                      },
                       withBoundary(WorkspaceTab),
                     )
                   }))
+
+                  // 页签可见性变化时也刷新一次（学 dsh-better-sidebar：订阅宿主的
+                  // sidebarRight.mounted store，而不是定时轮询）。
+                  try {
+                    const right = sub.sidebarRight
+                    if (right && right.mounted && typeof right.mounted.subscribe === 'function') {
+                      inner.push(right.mounted.subscribe(function () { notifyWorkspaceChanged() }))
+                    }
+                  } catch {
+                    /* 宿主没有该 store：不影响其它功能 */
+                  }
                   inner.push(sub.slots.inject('sidebar.right.pane.tab.title', function () {
                     return sub.slots.register(
                       { name: 'sidebar.right.pane.tab.title', key: RIGHT_TAB_ID },

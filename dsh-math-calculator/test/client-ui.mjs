@@ -111,6 +111,13 @@ console.log('-- 3. 入口 + 页面：官方席位 --')
   assert('先注册主栏页面', slots[0] === 'main')
   assert('再注册侧栏入口', slots[1] === 'sidebar.panellist')
 
+  // 侧栏入口的 order 必须与社区约定同量级（任务看板 20 / skill-explorer 30 / ssh 40）。
+  // 曾写成 900 —— 宿主把该行收进了「更多」折叠区，入口看起来像被塞进溢出菜单。
+  const panellistMeta = metas.find((m) => m.name === 'sidebar.panellist')
+  assert('侧栏入口 order 在社区量级（不是 900）', Boolean(panellistMeta) && panellistMeta.order === 30,
+    panellistMeta ? String(panellistMeta.order) : 'no meta')
+  assert('产物不含 order: 900', !source.includes('order: 900'))
+
   const page = metas.find((m) => m.name === 'main')
   const row = metas.find((m) => m.name === 'sidebar.panellist')
   assert('主栏用 key 寻址', page && page.key === 'dsh-math-calculator.workspaces', JSON.stringify(page))
@@ -232,6 +239,16 @@ console.log('-- 6. 右侧边栏页签：当前工作区 --')
   const bodyMeta = innerMetas.find((m) => m.name === 'sidebar.right.pane.tab')
   const titleMeta = innerMetas.find((m) => m.name === 'sidebar.right.pane.tab.title')
   assert('内容槽位 key = 页签 id', Boolean(bodyMeta) && bodyMeta.key === tabId, bodyMeta && bodyMeta.key)
+  // 右栏必须拿到「工作区变更」的订阅函数，才能在左栏切换后自动换成本区的数据表
+  assert('右栏注入了 subscribeWorkspace', Boolean(bodyMeta) && typeof bodyMeta.inject === 'function',
+    bodyMeta ? typeof bodyMeta.inject : 'no meta')
+  // 右栏要具备四件事：切换器 / 数据表 / 管理 / 开关
+  assert('右栏含工作区切换器', source.includes('workspaces/switch'))
+  assert('右栏含提示档位开关', source.includes('promptMode'))
+  assert('右栏含公式启停', source.includes("action: 'disable'") && source.includes("action: 'reset'"))
+  assert('右栏含变量管理', source.includes('set-variable') && source.includes('remove-variable'))
+  assert('右栏含地点管理', source.includes('save-terrain') && source.includes('remove-terrain'))
+  assert('跨面板订阅存在', source.includes('subscribeWorkspace') && source.includes('notifyWorkspaceChanged'))
   assert('标题槽位 key 一致', Boolean(titleMeta) && titleMeta.key === tabId, titleMeta && titleMeta.key)
   assert('apply 返回 dispose', typeof dispose === 'function')
 }
