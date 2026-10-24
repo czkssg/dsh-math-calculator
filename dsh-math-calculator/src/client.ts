@@ -1406,8 +1406,13 @@ function createSidebarTitle(react: any) {
             pageDispose = null
           }
 
-          // 宿主没有主栏席位时不注册入口：避免「点得开、里面是空页」。
-          if (!pageDispose) return function () {}
+          // ⚠️ 这里**不再**因为「主栏席位缺失」就整块放弃。
+          //
+          // 改前：main 拿不到就直接 return —— 结果是左栏入口、右栏页签全都不会注册，
+          // 用户看到的就是「UI 没做出来」，而且没有任何信号说明是哪一步断的。
+          // 改后：两个席位各自独立尝试，谁成功算谁的；结果全部写进心跳，
+          // 宿主侧 GET client-status 一看就知道断在哪。
+          const pageOk = typeof pageDispose === 'function'
 
           // ② 侧栏入口行：与「插件市场 / 任务看板」同一排，只占一行。
           //    宿主负责点击与选中态，我们只提供 icon 与 label。
@@ -1542,7 +1547,7 @@ function createSidebarTitle(react: any) {
           //    面板在浏览器里挂载、宿主看不见；没有这个信号，排查只能靠猜。
           reportClientStatus({
             registered: disposers.length,
-            page: typeof pageDispose === 'function',
+            page: pageOk,
             rowRegistered,
             rightTabService: rightTabOutcome.service,
             rightTabRegistered: rightTabOutcome.registered,
