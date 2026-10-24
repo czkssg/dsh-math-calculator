@@ -32,6 +32,7 @@ import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-lay
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { runCivilization } from '../civilization.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
+import { OBSERVERS, perceive, renderObserver } from '../observer.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
 
@@ -339,6 +340,22 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value.civilization = civ
+  } else if (sub === 'observer') {
+    // 补丁7：观测者物理过滤——同一个世界，不同尺度看到不同结论。
+    const kind = typeof args.observerKind === 'string' ? args.observerKind : 'human'
+    const observer = OBSERVERS.find(function (item) { return item.kind === kind })
+    if (!observer) {
+      out.push('未知识观测者：' + kind)
+      out.push('可选：' + OBSERVERS.map(function (item) { return item.kind + '（' + item.label + '）' }).join(' / '))
+    } else {
+      const worldParams = (args.world ?? {}) as Record<string, unknown>
+      const worldOut = opWorld({ world: worldParams } as never, 32)
+      const value2 = (worldOut as any).value || {}
+      const gravity = value2?.planet?.surfaceGravity ?? 9.80665
+      const scaleHeight = value2?.atmosphere?.scaleHeightM ?? 8500
+      out.push(renderObserver(observer, gravity, scaleHeight))
+      value.observer = { kind: kind, metrics: perceive(observer, gravity, scaleHeight) }
+    }
   } else if (sub === 'dead') {
     // 补丁6：宇宙死寂态兜底——说清"这个参数意味着什么"，不评判设定。
     const worldParams = (args.world ?? {}) as Record<string, unknown>

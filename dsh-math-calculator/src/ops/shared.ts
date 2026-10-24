@@ -187,6 +187,9 @@ export interface MathArgs {
   diffA?: string
   /** A/B 对比的 B 表。 */
   diffB?: string
+
+  /** 观测者类型：human / tiny / giant / aquatic / aerial / 2d。 */
+  observerKind?: string
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */
