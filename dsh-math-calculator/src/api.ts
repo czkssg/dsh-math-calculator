@@ -42,6 +42,7 @@ import {
 } from './custom-constants.js'
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
+import { opDerivation } from './ops/derivation-op.js'
 
 /** 简单的 HTTP 请求/响应抽象（避免依赖具体宿主类型）。 */
 interface ApiRequest {
@@ -139,7 +140,12 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
   try {
     // ── 列表 ──
     if (method === 'GET' && (route === 'workspaces' || route === '')) {
-      return ok({ current: currentWorkspace(), workspaces: listWorkspaces() })
+      // boundWorkspace：数据表名即宿主工作区派生名，所以「表名 == 绑定工作区名」。
+      // 显式带上它，界面才能显示绑定状态，而不是让前端自己猜。
+      const list = listWorkspaces().map(function (item) {
+        return { ...item, boundWorkspace: item.name }
+      })
+      return ok({ current: currentWorkspace(), workspaces: list })
     }
 
     // ── 统计 ──
@@ -237,6 +243,33 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok({ promptMode: getPromptMode(), modes: ['off', 'brief', 'full'] })
     }
 
+    // ── 推演控制台通用入口 ──
+    //
+    // 界面按六大目录请求某块内容时都走这里，理由：
+    //   · 加目录时只改前端，不用每次加一条后端路由；
+    //   · 六大目录背后全是 opDerivation 的子命令，本来就有统一入口。
+    //
+    // 这是 POST 而不是 GET：子命令参数（world、anchor…）是结构化的，
+    // 塞进 query string 既难读又容易超长。
+    if (method === 'POST' && route === 'derive') {
+      const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
+      const sub = typeof payload.sub === 'string' ? payload.sub : 'pipeline'
+      try {
+        const output = opDerivation({
+          derivation: sub,
+          world: payload.world,
+          anchor: payload.anchor,
+          anchorValue: payload.anchorValue,
+          observerKind: payload.observerKind,
+          timelineTo: payload.timelineTo,
+          traceTarget: payload.traceTarget,
+          whitepaperMode: payload.whitepaperMode,
+        } as never)
+        return ok({ result: output.result, value: output.value ?? null })
+      } catch (error: any) {
+        return fail(400, String((error && error.message) || error))
+      }
+    }
     // ── 当前工作区的常数表 ──
     //
     // UI 不自己维护常数清单，一律以后端为准：

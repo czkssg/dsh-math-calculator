@@ -515,9 +515,14 @@ function createLeftPanel(react: any) {
         first: index === 0,
         label: h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 } },
           h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, item.name),
-          active ? h(Badge, { text: '当前', tone: 'accent' }) : null),
+          // 「运行中」= 当前这个数据表正被活跃工作区绑定。
+          // 这是「一区一表强绑定」在界面上的唯一可见证据，不能省。
+          active ? h(Badge, { text: '运行中', tone: 'accent' }) : null,
+          item.boundWorkspace ? h(Badge, { text: '已绑定', tone: 'ok' }) : null),
         note: (item.updatedAt ? formatTime(item.updatedAt) : '—') +
-          (item.description ? ' · ' + item.description : ''),
+          (item.description ? ' · ' + item.description : '') +
+          // 绑定到哪个宿主工作区——用户切换工作区前需要先看到这个
+          (item.boundWorkspace ? ' · 绑定 ' + item.boundWorkspace : ' · 未绑定'),
         right: h('span', { style: { display: 'flex', gap: 4 } },
           active
             ? null
@@ -553,7 +558,7 @@ function createLeftPanel(react: any) {
       h(Section, {
         title: '数据表',
         count: state.list.length,
-        hint: '每个宿主工作区一份同名表',
+        hint: '一个宿主工作区强制绑定一份表；切换工作区时自动跟随',
       },
         rows.length ? h('div', null, rows) : h(Empty, { text: '还没有数据表。切换宿主工作区会自动建表。' })),
       h(Section, { title: '新建' },
@@ -829,11 +834,136 @@ var TERRAIN_KINDS = ['plain', 'coastal', 'plateau', 'mountain', 'valley', 'deser
  * @param react - 宿主提供的 react
  * @returns 侧边栏页签内容组件
  */
+// ═══════════════════════════════════════════════════════════════════
+// 推演控制台：六大目录（对齐 ui-design-v2 第三部）
+//
+// 设计要点：**一个 DSH 工作区强制绑定唯一数据表**。
+// 顶部永远显示「当前绑定：表名」，切换工作区时整棵树跟着换数据，
+// 不允许出现「左侧看 A 表、右侧改 B 表」的错位。
+// ═══════════════════════════════════════════════════════════════════
+
+/** 六大目录的静态结构（顺序即推演顺序）。 */
+var CONSOLE_TREE = [
+  {
+    id: 'laws',
+    title: '1 基础物理法则',
+    items: [
+      { id: 'constants', title: '1.1 常数表', hint: '可调旋钮与重置' },
+      { id: 'formulas', title: '1.2 公式库', hint: '模板与本区改动' },
+      { id: 'changes', title: '1.3 变更清单', hint: '改了哪些参数' },
+      { id: 'units', title: '1.4 单位与观测基准', hint: '观测者与本地基准' },
+    ],
+  },
+  {
+    id: 'engine',
+    title: '2 物理链路引擎',
+    items: [
+      { id: 'pipeline', title: '2.1 分层推演', hint: 'P1—P5 逐层判定' },
+      { id: 'cards', title: '2.2 接口卡矩阵', hint: '每层变量与允许区间' },
+      { id: 'timeline', title: '2.3 演化时间轴', hint: '快慢变量与临界点' },
+    ],
+  },
+  {
+    id: 'life',
+    title: '3 生命与生态基质',
+    items: [
+      { id: 'biophysics', title: '3.1 生物物理约束', hint: '键能、神经、散热' },
+      { id: 'ecosystem', title: '3.2 生态热力学', hint: '食物链与承载力' },
+    ],
+  },
+  {
+    id: 'civil',
+    title: '4 宏观文明推演',
+    items: [
+      { id: 'civil-energy', title: '4.1 能量与热力学', hint: '卡诺、散热、卡尔达肖夫' },
+      { id: 'civil-material', title: '4.2 材料与结构', hint: '建筑、太空电梯' },
+      { id: 'civil-transport', title: '4.3 空间与交通', hint: 'Δv、星际航行' },
+      { id: 'civil-tech', title: '4.4 技术树', hint: '锁死与开放' },
+    ],
+  },
+  {
+    id: 'validate',
+    title: '5 校验与分析',
+    items: [
+      { id: 'hardcheck', title: '5.1 硬约束监控', hint: '死寂判定与红绿灯' },
+      { id: 'phase', title: '5.2 敏感性与相图', hint: '微调警告' },
+      { id: 'pending', title: '5.3 待定项看板', hint: '不强行闭合' },
+    ],
+  },
+  {
+    id: 'output',
+    title: '6 输出与归档',
+    items: [
+      { id: 'archive', title: '6.1 七张表导出', hint: '项目卡到版本记录' },
+      { id: 'checklist', title: '6.2 完整性检查', hint: '逐项体检' },
+      { id: 'whitepaper', title: '6.3 白皮书与 AI 投射', hint: '文档 / Prompt' },
+    ],
+  },
+]
+
+/**
+ * 推演结果面板：请求 /derive 并渲染成可读文本。
+ *
+ * 为什么直接显示文本而不是自己解析成图表：
+ *   后端的 opDerivation 已经按「给人读」排好版，界面再解析一遍只会**二次失真**。
+ *   图表留给以后真有需要再做（DAG 画布是独立的大工程）。
+ *
+ * @param react - 宿主 react
+ */
+function makeDerivationPane(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+  const { useState, useEffect } = react
+  const kit = createKit(react)
+  const { Section, Loading, Failure, Empty, Notice } = kit
+
+  return function DerivationPane(props: any) {
+    const [state, setState] = useState({ loading: true, error: null, result: '', resultValue: null })
+
+    useEffect(function () {
+      let cancelled = false
+      setState(function (prev: any) { return { ...prev, loading: true, error: null } })
+      callApi('/derive', { sub: props.sub, world: props.world || {} })
+        .then(function (payload: any) {
+          if (cancelled) return
+          setState({
+            loading: false,
+            error: null,
+            result: (payload && payload.result) || '',
+            resultValue: (payload && payload.value) || null,
+          })
+        })
+        .catch(function (error: any) {
+          if (cancelled) return
+          setState({ loading: false, error: (error && error.message) || '推演失败', result: '', resultValue: null })
+        })
+      return function () { cancelled = true }
+    }, [props.sub])
+
+    if (state.loading) return h(Loading, { text: '正在推演…' })
+    if (state.error) return h(Failure, { text: '推演失败：' + state.error })
+    if (!state.result) return h(Empty, { text: '（这个目录暂时没有输出）' })
+
+    // 按行渲染：等宽字体 + 保留缩进，因为它本身就是排版好的表格
+    const lines = String(state.result).split(String.fromCharCode(10))
+    return h('div', null,
+      h(Section, { title: '推演结果', hint: '只读：由后端计算，界面不维护第二份数据' },
+        h('pre', {
+          style: {
+            margin: 0, padding: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            font: '11px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+            color: T.text2, background: T.layer2, borderRadius: T.radius,
+            maxHeight: '52vh', overflowY: 'auto',
+          },
+        }, lines.join(String.fromCharCode(10)))))
+  }
+}
 function createRightPanel(react: any) {
   const h = react.createElement
   const { useState, useEffect, useCallback } = react
   const kit = createKit(react)
   const { Panel, Section, Row, Empty, Badge, Loading, Failure, Notice } = kit
+  const DerivationPane = makeDerivationPane(react)
 
   return function RightPanel(props: any) {
     const [state, setState] = useState({
@@ -843,6 +973,9 @@ function createRightPanel(react: any) {
       variable: { name: '', value: '' },
       terrain: { name: '', kind: 'plain' },
       disableId: '',
+      // 当前打开的目录节点（默认第一项的 1.1 常数表）
+      activeNode: 'constants',
+      worldParams: {} as Record<string, unknown>,
       // 常数表的编辑草稿（名称 → 输入框里的字符串）
       draft: {},
     })
@@ -1193,20 +1326,108 @@ function createRightPanel(react: any) {
           ),
     )
 
-    const body = h('div', { style: { flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: '0 12px 14px' } },
-      state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
-      h(Section, { title: '开关', hint: '数据表：' + name }, modeRow, disabledRow),
-      constantSection,
-      h(Section, { title: '公式改动', count: overrides.length + custom.length }, formulaRows.length ? h('div', null, formulaRows) : h(Empty, { text: '（全部使用模板公式）' })),
-      h(Section, { title: '地点', count: terrains.length }, terrains.length ? h('div', null, terrainRows) : h(Empty, { text: '（暂无地点）' })),
-      h(Section, { title: '变量', count: variables.length }, variables.length ? h('div', null, variableRows) : h(Empty, { text: '（暂无变量）' })),
-      h(Section, { title: '添加变量' }, variableForm),
-      h(Section, { title: '添加地点' }, terrainForm),
-      h(Section, { title: '停用公式' }, disableForm),
-    )
+    // ══ 六大目录的内容区 ══
+    //
+    // 规则：只有「1.1—1.4」四页是真正可编辑的表单，其余页面都是**只读的推演结果**。
+    // 这样才能保证「一个工作区 = 一份数据」——用户能改的永远只有常数与公式，
+    // 推演结果由后端算，界面不自己维护第二份真相。
+    const renderPane = function (id: string) {
+      if (id === 'constants') {
+        return h('div', null,
+          h(Section, { title: '可调常数', count: constBase.length, hint: changedCount > 0 ? '已改 ' + changedCount + ' 项' : '' },
+            constantSection),
+          h(Section, { title: '地点与变量', count: terrains.length + variables.length },
+            terrains.length ? h('div', null, terrainRows) : h(Empty, { text: '（暂无地点）' }),
+            variables.length ? h('div', null, variableRows) : null,
+            variableForm, terrainForm))
+      }
+      if (id === 'formulas') {
+        return h('div', null,
+          h(Section, { title: '本区公式改动', count: overrides.length + custom.length },
+            formulaRows.length ? h('div', null, formulaRows) : h(Empty, { text: '（全部使用模板公式）' })),
+          h(Section, { title: '停用某条公式' }, disableForm))
+      }
+      if (id === 'changes') {
+        return h(Section, { title: '变更清单', hint: '本区相对模板改了什么' },
+          changedCount > 0
+            ? h('div', null, constants.map(function (entry: any) {
+                return h(Row, { key: 'ch-' + entry[0], label: entry[0], note: '= ' + String(entry[1]), right: null })
+              }))
+            : h(Empty, { text: '（还没改过任何常数）' }))
+      }
+      if (id === 'units') {
+        return h('div', null,
+          h(Section, { title: '提示注入档位', hint: '向 AI 注入多少推演说明' }, modeRow),
+          h(Section, { title: '观测者', hint: '切换后体感结论会变' },
+            h(Empty, { text: '观测者在对话里切换（说「用二维生物视角看」即可），或在推演里指定。' })))
+      }
+      // 其余页面统一渲染后端推演结果
+      const subMap: Record<string, string> = {
+        'pipeline': 'pipeline',
+        'cards': 'cards',
+        'timeline': 'timeline',
+        'biophysics': 'fantasy',
+        'ecosystem': 'civilization',
+        'civil-energy': 'civilization',
+        'civil-material': 'civilization',
+        'civil-transport': 'civilization',
+        'civil-tech': 'civilization',
+        'hardcheck': 'dead',
+        'phase': 'sensitivity',
+        'pending': 'checklist',
+        'archive': 'archive',
+        'checklist': 'checklist',
+        'whitepaper': 'whitepaper',
+      }
+      const sub = subMap[id] || 'pipeline'
+      return h(DerivationPane, { sub: sub, world: state.worldParams || {}, key: id + '-' + sub })
+    }
+
+    const activeItem = state.activeNode || 'constants'
+
+    // 左：六大目录树
+    const tree = h('div', {
+      style: {
+        flex: '0 0 132px', minWidth: 0, overflowY: 'auto',
+        borderRight: '1px solid ' + hairline.borderTop.replace('1px solid ', ''),
+        padding: '6px 0',
+      },
+    }, CONSOLE_TREE.map(function (group: any) {
+      return h('div', { key: group.id },
+        h('div', {
+          style: { font: T.f11, color: T.text3, padding: '6px 10px 2px', whiteSpace: 'nowrap' },
+          title: group.title,
+        }, group.title),
+        group.items.map(function (item: any) {
+          const active = activeItem === item.id
+          return h('div', {
+            key: item.id,
+            title: item.hint,
+            style: {
+              font: T.f12,
+              color: active ? T.text1 : T.text2,
+              background: active ? T.accentSoft : 'transparent',
+              borderLeft: active ? '2px solid ' + T.accent : '2px solid transparent',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            },
+            onClick: function () { setState((prev: any) => ({ ...prev, activeNode: item.id })) },
+          }, item.title)
+        }))
+    }))
+
+    const body = h('div', { style: { flex: '1 1 auto', minHeight: 0, display: 'flex', overflow: 'hidden' } },
+      tree,
+      h('div', { style: { flex: '1 1 auto', minWidth: 0, overflowY: 'auto', padding: '6px 12px 14px' } },
+        state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
+        renderPane(activeItem)))
+
 
     const footer = h('div', { style: { padding: '8px 12px', borderTop: '1px solid ' + hairline.borderTop.replace('1px solid ', ''), ...dim, flex: '0 0 auto' } },
-      '每个工作区一份同名数据表；切换后本页自动跟随。全局管理在左侧「数学工作区」。')
+      '一个工作区强制绑定一份数据表；切换工作区时本页自动跟随。全局管理在左侧「数学工作区」。')
 
     return h('div', { style: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' } }, header, body, footer)
   }
