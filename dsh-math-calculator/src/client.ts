@@ -778,12 +778,165 @@ function createLeftPanel(react: any) {
     )
   }
 
+  /**
+   * 继承页（补丁9）：建立基线表与衍生表的关系。
+   *
+   * 基线表锁定物理基石，衍生表只读继承、允许覆写初条件。
+   * 基线一改，所有衍生表跟着更新——这是「平行宇宙」的工程基础。
+   */
+  function InheritTab() {
+    const [state, setState] = useState({ loading: true, error: null, links: [], busy: false, message: null, derived: '', base: '' })
+    const load = useCallback(async () => {
+      setState((prev: any) => ({ ...prev, loading: true, error: null }))
+      try {
+        const data = await callApi('/workspaces/inherit')
+        setState((prev: any) => ({ ...prev, loading: false, links: data.links || [] }))
+      } catch (error: any) {
+        setState((prev: any) => ({ ...prev, loading: false, error: (error && error.message) || '读取失败' }))
+      }
+    }, [])
+    useEffect(() => { void load() }, [load])
+
+    const act = async (path: string, body: any, okText: string) => {
+      setState((prev: any) => ({ ...prev, busy: true, message: null }))
+      try {
+        await callApi(path, body)
+        setState((prev: any) => ({ ...prev, busy: false, message: okText }))
+        await load()
+      } catch (error: any) {
+        setState((prev: any) => ({ ...prev, busy: false, message: '失败：' + ((error && error.message) || error) }))
+      }
+    }
+
+    if (state.loading) return h(Loading, { text: '正在读取继承关系…' })
+    if (state.error) return h(Failure, { text: '读取失败：' + state.error, onRetry: load })
+
+    const rows = state.links.map(function (link: any, index: number) {
+      return h(Row, {
+        key: link.derived,
+        first: index === 0,
+        label: link.derived,
+        note: '继承自 ' + link.base,
+        right: null,
+      })
+    })
+
+    return h('div', null,
+      state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
+      h(Section, { title: '继承关系', count: state.links.length, hint: '基线一改，衍生表跟着变' },
+        rows.length ? h('div', null, rows) : h(Empty, { text: '还没有继承关系。' })),
+      h(Section, { title: '建立继承' },
+        h('div', { style: { display: 'flex', gap: 6, margin: '4px 0 6px' } },
+          h('input', {
+            style: inputStyle(88),
+            placeholder: '衍生表名',
+            value: state.derived,
+            onChange: (event: any) => setState((prev: any) => ({ ...prev, derived: event.target.value })),
+          }),
+          h('span', { style: { font: T.f12, color: T.text3, alignSelf: 'center' } }, '继承'),
+          h('input', {
+            style: inputStyle(88),
+            placeholder: '基线表名',
+            value: state.base,
+            onChange: (event: any) => setState((prev: any) => ({ ...prev, base: event.target.value })),
+          }),
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            disabled: state.busy || !state.derived.trim() || !state.base.trim(),
+            onClick: () => void act('/workspaces/inherit', { derived: state.derived.trim(), base: state.base.trim() },
+              '已建立继承：' + state.derived.trim() + ' ← ' + state.base.trim()),
+          }, '建立'))),
+      h(Section, { title: '同步更新' },
+        h('div', { style: { display: 'flex', gap: 6, margin: '4px 0 2px' } },
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            disabled: state.busy,
+            onClick: () => void act('/workspaces/inherit-sync', {}, '所有衍生表已同步'),
+          }, '把基线的常数推给所有衍生表')),
+        h('div', { style: { font: T.f11, color: T.text3, marginTop: 4 } },
+          '衍生表自己的地点与变量不会被覆盖。'))
+    )
+  }
+
+  /**
+   * A/B 对比页（补丁3）：两张表并排比，看常数改动导致什么差异。
+   */
+  function DiffTab() {
+    const [state, setState] = useState({ loading: true, error: null, list: [], busy: false, message: null, a: '', b: '', result: null })
+    const load = useCallback(async () => {
+      setState((prev: any) => ({ ...prev, loading: true, error: null }))
+      try {
+        const list = await callApi('/workspaces')
+        setState((prev: any) => ({ ...prev, loading: false, list: (list && list.workspaces) || [] }))
+      } catch (error: any) {
+        setState((prev: any) => ({ ...prev, loading: false, error: (error && error.message) || '读取失败' }))
+      }
+    }, [])
+    useEffect(() => { void load() }, [load])
+
+    const compare = async () => {
+      setState((prev: any) => ({ ...prev, busy: true, message: null, result: null }))
+      try {
+        const result = await callApi('/workspaces/diff', { a: state.a, b: state.b })
+        setState((prev: any) => ({ ...prev, busy: false, result }))
+      } catch (error: any) {
+        setState((prev: any) => ({ ...prev, busy: false, message: '失败：' + ((error && error.message) || error) }))
+      }
+    }
+
+    if (state.loading) return h(Loading, { text: '正在读取数据表…' })
+    if (state.error) return h(Failure, { text: '读取失败：' + state.error, onRetry: load })
+
+    const names = state.list.map(function (item: any) { return item.name })
+    const picker = function (key: string, value: string) {
+      return h('select', {
+        style: inputStyle(110),
+        value: value,
+        onChange: (event: any) => setState((prev: any) => ({ ...prev, [key]: event.target.value })),
+      }, h('option', { value: '' }, '（选一张表）'),
+        names.map(function (n: string) { return h('option', { key: n, value: n }, n) }))
+    }
+
+    const diff = state.result
+    const items = (diff && diff.items) || []
+    const rows = items.map(function (item: any, index: number) {
+      return h(Row, {
+        key: 'd-' + index,
+        first: index === 0,
+        label: item.name,
+        note: item.note,
+        right: h(Badge, {
+          text: item.tone === 'worse' ? '变差' : item.tone === 'better' ? '变好' : '变化',
+          tone: item.tone === 'worse' ? 'danger' : item.tone === 'better' ? 'ok' : 'accent',
+        }),
+      })
+    })
+
+    return h('div', null,
+      state.message ? h(Notice, { text: state.message, tone: 'error' }) : null,
+      h(Section, { title: '选择两张表对比' },
+        h('div', { style: { display: 'flex', gap: 6, margin: '4px 0 6px', flexWrap: 'wrap' } },
+          picker('a', state.a),
+          h('span', { style: { font: T.f12, color: T.text3, alignSelf: 'center' } }, 'vs'),
+          picker('b', state.b),
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            disabled: state.busy || !state.a || !state.b || state.a === state.b,
+            onClick: () => void compare(),
+          }, '对比'))),
+      diff
+        ? h(Section, { title: '差异', count: items.length, hint: diff.message || '' },
+            rows.length ? h('div', null, rows) : h(Empty, { text: '两表没有差异。' }))
+        : null)
+  }
   const TABS = [
     // 全局管理只放**跨工作区**的东西：有哪些工作区 + 插件的全局开关。
     //
     // 常数表 / 公式表不在这里 —— 它们属于某个工作区的数据，
     // 放在右侧「本工作区」工作台（每个工作区各一份）。
     { id: 'workspaces', label: '工作区', Component: WorkspacesTab },
+    { id: 'inherit', label: '继承', Component: InheritTab },
+    { id: 'diff', label: '对比', Component: DiffTab },
     { id: 'settings', label: '插件设置', Component: SettingsTab },
   ]
 
@@ -1032,6 +1185,48 @@ function createRightPanel(react: any) {
 
     if (state.loading && !state.data) return h(Loading, { text: '正在读取本工作区…' })
     if (state.error) return h(Failure, { text: '读取失败：' + state.error, onRetry: load })
+
+    // ══ 宇宙初始化引擎（方案 1.1）══
+    //
+    // 一个 DSH 工作区强制绑定唯一数据表。若当前工作区还没有表，
+    // 不给空白界面——那样用户不知道发生了什么事——而是明确告诉他「这里缺一张表」，
+    // 并给出两条路：立即生成，或从已有表导入。
+    // ⚠️ 这里不能用下面的 name（它稍后才声明）。
+    // state.current 是 /workspaces/current 返回的当前工作区，最可靠。
+    const boundName = (state.current && state.current.name) || state.current || 'default'
+    const hasTable = Boolean(state.data && (state.data.summary || state.data.name))
+    if (!hasTable) {
+      const createIt = async function () {
+        setState((prev: any) => ({ ...prev, busy: true, message: null }))
+        try {
+          await callApi('/workspaces/create', { name: boundName })
+          notifyWorkspaceChanged()
+          await load()
+        } catch (error: any) {
+          setState((prev: any) => ({ ...prev, busy: false, message: '失败：' + ((error && error.message) || error) }))
+        }
+      }
+      return h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
+        state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
+        h('div', { style: { font: T.f14s, color: T.text1 } }, '宇宙初始化引擎'),
+        h('div', { style: { font: T.f12, color: T.text2, lineHeight: 1.7 } },
+          '检测到当前工作区尚未绑定物理规则。'),
+        h('div', { style: { font: T.f12, color: T.text2, lineHeight: 1.7 } },
+          '系统将自动为你创建专属数据表《' + boundName + '》，并初始化常数表与空公式库。'),
+        h('div', { style: { display: 'flex', gap: 8, marginTop: 6 } },
+          h('button', {
+            style: btnStyle(),
+            disabled: state.busy,
+            onClick: createIt,
+          }, '立即生成'),
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            disabled: state.busy,
+            onClick: function () { void load() },
+          }, '重新检测')),
+        h('div', { style: { font: T.f11, color: T.text3, marginTop: 8, lineHeight: 1.6 } },
+          '一个工作区只绑定一份数据表。切换工作区时，本页会自动跟随到对应表，不会混数据。'))
+    }
 
     const data = state.data || {}
     const summary = data.summary || {}
@@ -1362,6 +1557,9 @@ function createRightPanel(react: any) {
             h(Empty, { text: '观测者在对话里切换（说「用二维生物视角看」即可），或在推演里指定。' })))
       }
       // 其余页面统一渲染后端推演结果
+      // 目录 → 后端子命令。多个目录共用同一子命令是**有意的**：
+      // 4.x 四个小节都是 civilization 的不同切面，界面按目录过滤即可，
+      // 不必让后端为每个小节各写一份。
       const subMap: Record<string, string> = {
         'pipeline': 'pipeline',
         'cards': 'cards',
@@ -1375,7 +1573,7 @@ function createRightPanel(react: any) {
         'hardcheck': 'dead',
         'phase': 'sensitivity',
         'pending': 'checklist',
-        'archive': 'archive',
+        'archive': 'history',
         'checklist': 'checklist',
         'whitepaper': 'whitepaper',
       }

@@ -63,6 +63,7 @@ const SUITES = [
   { file: 'whitepaper.mjs', expect: 35, label: '补丁8 白皮书 + Prompt 投射' },
   { file: 'provenance-cost.mjs', expect: 43, label: '补丁4/5 因果溯源 + 算力预警' },
   { file: 'ui-v2.mjs', expect: 29, label: 'UI v2 六大目录 + /derive 路由 + 强绑定' },
+  { file: 'ui-v2-panels.mjs', expect: 30, label: 'UI v2 左右栏补全（继承/对比/初始化引擎）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

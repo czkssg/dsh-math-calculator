@@ -43,6 +43,7 @@ import {
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 import { opDerivation } from './ops/derivation-op.js'
+import { linkInherit, loadInheritLinks, syncInheritance, diffTables } from './universe-ops.js'
 
 /** 简单的 HTTP 请求/响应抽象（避免依赖具体宿主类型）。 */
 interface ApiRequest {
@@ -220,6 +221,14 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       })
     }
 
+    // ⚠️ 专用 GET 路由必须放在 workspaces/* 通配**之前**。
+    // 通配那条会把 'workspaces/inherit' 当成表名 'inherit' 去 loadWorkspace，
+    // 而 loadWorkspace 对缺失的表会**自动创建**——于是请求「读继承链」
+    // 反而新建了一张名叫 inherit 的表，返回的还是工作区对象。
+    if (method === 'GET' && route === 'workspaces/inherit') {
+      return ok({ links: loadInheritLinks() })
+    }
+
     // ── 详情 ──
     if (method === 'GET' && route.startsWith('workspaces/')) {
       const name = decodeURIComponent(route.slice('workspaces/'.length))
@@ -241,6 +250,28 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     // ── 设置（提示档位）──
     if (method === 'GET' && route === 'settings') {
       return ok({ promptMode: getPromptMode(), modes: ['off', 'brief', 'full'] })
+    }
+
+    // ── 数据表继承（补丁9，左侧全局面板用）──
+    // 基线表锁定物理基石，衍生表只读继承并允许覆写初条件。
+    if (method === 'POST' && route === 'workspaces/inherit') {
+      const derived = typeof field(body, 'derived') === 'string' ? String(field(body, 'derived')) : ''
+      const base = typeof field(body, 'base') === 'string' ? String(field(body, 'base')) : ''
+      if (derived === '' || base === '') return fail(400, '需要 derived 与 base 两个表名')
+      const result = linkInherit(derived, base)
+      return result.ok ? ok(result) : fail(400, result.message)
+    }
+
+    if (method === 'POST' && route === 'workspaces/inherit-sync') {
+      return ok(syncInheritance())
+    }
+
+    // ── A/B 对比（补丁3，左侧全局面板用）──
+    if (method === 'POST' && route === 'workspaces/diff') {
+      const aName = typeof field(body, 'a') === 'string' ? String(field(body, 'a')) : ''
+      const bName = typeof field(body, 'b') === 'string' ? String(field(body, 'b')) : ''
+      if (aName === '' || bName === '') return fail(400, '需要 a 与 b 两个表名')
+      return ok(diffTables(aName, bName))
     }
 
     // ── 推演控制台通用入口 ──
