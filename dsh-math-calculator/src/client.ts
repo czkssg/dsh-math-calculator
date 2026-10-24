@@ -1570,6 +1570,13 @@ function createSidebarTitle(react: any) {
     })
     // 注册成功才置位；重复执行时上面会直接 return。
     w[REGISTER_FLAG] = true
+
+    // 最前置的一枪：模块本身**被执行了**。
+    // 与 apply 里的心跳配合，可以区分三种情况：
+    //   · 这条都没有 → 宿主压根没加载/执行我们的客户端 bundle；
+    //   · 有这条、没有 apply 那条 → 模块执行了，但插件没被激活（apply 没跑）；
+    //   · 两条都有 → 客户端跑完了，问题在宿主渲染/固定态，不在插件。
+    reportClientStatus({ stage: 'module-loaded', order: 30 })
   } catch (error) {
     // 重复注册不是致命错误：宿主可能重放 bundle。
     // 这里必须吞掉——抛出会让整次 web boot 判为失败，桌面端直接退出。
