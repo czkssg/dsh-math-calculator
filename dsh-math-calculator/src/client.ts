@@ -48,6 +48,62 @@
     return function () { workspaceListeners.delete(listener) }
   }
 
+  /**
+   * 设计令牌：**左/右两栏共用同一套**（这就是「左右 UI 对应」的基础）。
+   *
+   * 全部取宿主主题的 CSS 变量（--dsw-*），所以深浅色、字号、圆角、悬停态
+   * 都由宿主统一决定，视觉上自动与原生界面一致。
+   * 这是社区插件的做法（dsh-context / dsh-better-sidebar / agent-teams /
+   * dsh-my-guardian 全部只用令牌，不写死颜色）；它们的样式里共出现 103 个
+   * --dsw-* 令牌，我们只取其中与面板相关的一组。
+   */
+  const UI = {
+    text1: 'var(--dsw-alias-label-primary)',
+    text2: 'var(--dsw-alias-label-secondary)',
+    text3: 'var(--dsw-alias-label-tertiary)',
+    border: 'var(--dsw-alias-border-l2)',
+    borderSoft: 'var(--dsw-alias-border-l1)',
+    surface2: 'var(--dsw-alias-bg-layer-2)',
+    hover: 'var(--dsw-alias-interactive-bg-hover)',
+    accent: 'var(--dsw-alias-accent)',
+    danger: 'var(--dsw-alias-danger)',
+    warn: 'var(--dsw-alias-state-warn-primary)',
+    ok: 'var(--dsw-alias-state-success-primary)',
+    radius: 'var(--dsw-radius-sm)',
+    fontXs: 'var(--dsw-font-xxxs-11)',
+    fontSm: 'var(--dsw-font-xxs-12)',
+    fontMd: 'var(--dsw-font-xs-13)',
+    fontStrong: 'var(--dsw-font-s-strong-14)',
+  }
+
+  /** 按钮（幽灵型）：与宿主原生按钮同一套令牌。 */
+  function buttonStyle(color?: string) {
+    return {
+      padding: '4px 10px',
+      borderRadius: UI.radius,
+      border: '1px solid ' + UI.border,
+      background: 'transparent',
+      color: color || UI.text2,
+      cursor: 'pointer',
+      font: UI.fontSm,
+      whiteSpace: 'nowrap',
+    }
+  }
+
+  /** 输入框：与宿主表单同一套令牌。 */
+  function inputStyle(width?: number) {
+    return {
+      padding: '5px 8px',
+      borderRadius: UI.radius,
+      border: '1px solid ' + UI.border,
+      background: 'transparent',
+      color: UI.text1,
+      font: UI.fontSm,
+      minWidth: 0,
+      ...(width ? { width } : { flex: 1 }),
+    }
+  }
+
   /** 请求后端。 */
   async function callApi(path: string, body?: any): Promise<any> {
     const response = await fetch(API_BASE + path, {
@@ -87,48 +143,24 @@
     const useEffect = react.useEffect
     const useCallback = react.useCallback
 
+    // 全局管理面板：全部走 UI 令牌，视觉与右侧「本工作区工作台」对应。
     const styles = {
       root: {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        fontSize: 13,
-        color: 'inherit',
+        font: UI.fontMd,
+        color: UI.text1,
         gap: 8,
         padding: 12,
         overflow: 'hidden',
         boxSizing: 'border-box',
       },
       header: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-      title: { fontWeight: 600, fontSize: 15, marginRight: 'auto' },
-      button: {
-        padding: '4px 10px',
-        borderRadius: 6,
-        border: '1px solid rgba(128,128,128,.4)',
-        background: 'transparent',
-        color: 'inherit',
-        cursor: 'pointer',
-        fontSize: 12,
-      },
-      buttonDanger: {
-        padding: '4px 10px',
-        borderRadius: 6,
-        border: '1px solid rgba(220,80,80,.6)',
-        background: 'rgba(220,80,80,.12)',
-        color: 'inherit',
-        cursor: 'pointer',
-        fontSize: 12,
-      },
-      input: {
-        padding: '5px 8px',
-        borderRadius: 6,
-        border: '1px solid rgba(128,128,128,.4)',
-        background: 'transparent',
-        color: 'inherit',
-        fontSize: 12,
-        flex: 1,
-        minWidth: 100,
-      },
+      title: { fontWeight: 600, font: UI.fontStrong, marginRight: 'auto', color: UI.text1 },
+      button: buttonStyle(),
+      buttonDanger: buttonStyle(UI.danger),
+      input: inputStyle(),
       list: {
         overflowY: 'auto',
         flex: 1,
@@ -142,27 +174,28 @@
         alignItems: 'center',
         gap: 8,
         padding: '6px 8px',
-        borderRadius: 6,
-        border: '1px solid rgba(128,128,128,.25)',
+        borderRadius: UI.radius,
+        border: '1px solid ' + UI.borderSoft,
         cursor: 'pointer',
       },
-      rowActive: { borderColor: 'rgba(90,160,255,.8)', background: 'rgba(90,160,255,.10)' },
+      rowActive: { borderColor: UI.accent, background: UI.surface2 },
       badge: {
-        fontSize: 10,
+        font: UI.fontXs,
         padding: '1px 6px',
         borderRadius: 99,
-        border: '1px solid rgba(128,128,128,.4)',
-        opacity: 0.85,
+        border: '1px solid ' + UI.borderSoft,
+        color: UI.text2,
       },
-      muted: { opacity: 0.65, fontSize: 11 },
-      error: { color: '#e06c75', fontSize: 12 },
-      ok: { color: '#98c379', fontSize: 12 },
+      muted: { color: UI.text3, font: UI.fontSm },
+      error: { color: UI.danger, font: UI.fontSm },
+      ok: { color: UI.ok, font: UI.fontSm },
       detail: {
-        borderTop: '1px solid rgba(128,128,128,.3)',
+        borderTop: '1px solid ' + UI.borderSoft,
         paddingTop: 8,
         maxHeight: '45%',
         overflowY: 'auto',
-        fontSize: 12,
+        font: UI.fontSm,
+        color: UI.text2,
       },
     }
 
@@ -402,7 +435,7 @@
                   { style: { display: 'flex', gap: 6, alignItems: 'center' } },
                   h('span', { style: { fontWeight: 500 } }, workspace.name),
                   workspace.name === s.current
-                    ? h('span', { style: { ...styles.badge, borderColor: 'rgba(90,160,255,.8)' } }, '当前')
+                    ? h('span', { style: { ...styles.badge, borderColor: UI.accent, color: UI.text1 } }, '当前')
                     : null,
                   workspace.empty ? h('span', { style: styles.badge }, '空') : null,
                 ),
@@ -582,26 +615,12 @@
     const useEffect = react.useEffect
     const useCallback = react.useCallback
 
-    const btn = {
-      padding: '3px 8px',
-      borderRadius: 6,
-      border: '1px solid rgba(128,128,128,.4)',
-      background: 'transparent',
-      color: 'inherit',
-      cursor: 'pointer',
-      fontSize: 11,
-    }
-    const input = {
-      padding: '4px 8px',
-      borderRadius: 6,
-      border: '1px solid rgba(128,128,128,.4)',
-      background: 'transparent',
-      color: 'inherit',
-      fontSize: 12,
-      minWidth: 80,
-    }
-    const note = { fontSize: 11, opacity: 0.7 }
-    const errorStyle = { color: '#e06c75', fontSize: 12, padding: '4px 12px' }
+    // 主栏三个页签的按钮/输入框：与左右两栏同一套令牌。
+    const btn = buttonStyle()
+    const input = { ...inputStyle(), minWidth: 80 }
+    // 主栏页签（配置与数据管理）也走同一套令牌。
+    const note = { color: UI.text3, font: UI.fontSm }
+    const errorStyle = { color: UI.danger, font: UI.fontSm, padding: '4px 12px' }
     const message = (error: any): string => (error && error.message ? error.message : String(error))
 
     /** 常数表：只改当前工作区的旋钮。 */
@@ -668,7 +687,7 @@
         const value = draft[node.name] !== undefined ? draft[node.name] : String(override !== undefined ? override : node.standard)
         return h(
           'div',
-          { key: node.name, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid rgba(128,128,128,.15)' } },
+          { key: node.name, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid ' + UI.borderSoft } },
           h('span', { style: { width: 88, fontSize: 12 }, title: node.meaning }, node.name),
           h('span', { style: { width: 72, fontSize: 10, opacity: 0.65 } }, node.unit || ''),
           h('input', {
@@ -727,7 +746,7 @@
       const rows = data.overrides.map((item: any) =>
         h(
           'div',
-          { key: item.id, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid rgba(128,128,128,.15)' } },
+          { key: item.id, style: { display: 'flex', gap: 6, alignItems: 'center', padding: '4px 0', borderTop: '1px solid ' + UI.borderSoft } },
           h('span', { style: { flex: 1, fontSize: 12 } }, item.id),
           h('span', { style: { fontSize: 10, opacity: 0.7 } }, item.disabled ? '已停用' : '已覆盖'),
           h('button', { style: btn, disabled: busy, onClick: () => act('reset', item.id) }, '恢复模板'),
@@ -798,7 +817,7 @@
         h(
           'div',
           { key: mode, style: { display: 'flex', gap: 8, alignItems: 'center', padding: '5px 0' } },
-          h('button', { style: { ...btn, background: data.promptMode === mode ? 'rgba(90,160,255,.18)' : 'transparent' }, onClick: () => setMode(mode) }, mode),
+          h('button', { style: { ...btn, background: data.promptMode === mode ? 'var(--dsw-alias-interactive-bg-hover-accent)' : 'transparent', borderColor: data.promptMode === mode ? UI.accent : UI.border }, onClick: () => setMode(mode) }, mode),
           h('span', { style: { fontSize: 11, opacity: data.promptMode === mode ? 0.95 : 0.65 } }, EXPLAIN[mode] || ''),
           data.promptMode === mode ? h('span', { style: { fontSize: 10, opacity: 0.7 } }, '使用中') : null,
         ),
@@ -822,7 +841,7 @@
       const [tab, setTab] = useState('workspaces')
       const tabBar = h(
         'div',
-        { style: { display: 'flex', gap: 2, padding: '6px 8px 0', borderBottom: '1px solid rgba(128,128,128,.25)', flexShrink: 0 } },
+        { style: { display: 'flex', gap: 2, padding: '6px 8px 0', borderBottom: '1px solid ' + UI.borderSoft, flexShrink: 0 } },
         TABS.map((item) =>
           h(
             'button',
@@ -836,7 +855,7 @@
                 background: 'transparent',
                 color: 'inherit',
                 border: 'none',
-                borderBottom: tab === item.id ? '2px solid #5aa0ff' : '2px solid transparent',
+                borderBottom: tab === item.id ? '2px solid ' + UI.accent : '2px solid transparent',
               },
             },
             item.label,
@@ -875,13 +894,34 @@ function createWorkspaceTab(react: any) {
   const h = react.createElement
   const { useState, useEffect, useCallback } = react
 
-  const box = { padding: '8px 10px', fontSize: 12, lineHeight: 1.65, overflow: 'auto', height: '100%' }
-  const sectionTitle = { marginTop: 12, marginBottom: 4, fontWeight: 600, opacity: 0.9 }
-  const rowStyle = { display: 'flex', justifyContent: 'space-between', gap: 8, padding: '2px 0' }
-  const muted = { opacity: 0.6 }
+  // 右侧「本工作区工作台」：与左侧全局管理共用同一套 UI 令牌与组件样式。
+  const box = {
+    padding: '10px 12px',
+    font: UI.fontSm,
+    color: UI.text1,
+    lineHeight: 1.65,
+    overflow: 'auto',
+    height: '100%',
+    boxSizing: 'border-box',
+  }
+  const sectionTitle = { marginTop: 14, marginBottom: 4, font: UI.fontStrong, color: UI.text1 }
+  const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '3px 0' }
+  const muted = { color: UI.text3 }
+  const btn = buttonStyle()
+  const btnDanger = buttonStyle(UI.danger)
+  const btnActive = { ...buttonStyle(UI.text1), borderColor: UI.accent, background: UI.surface2 }
+  const input = inputStyle()
+  const selectStyle = { ...inputStyle(), width: 128, flex: 'none' }
 
+  /** 分节标题：标题 + 可选计数徽标，左右两栏同款。 */
   function Section(props: any) {
-    return h('div', null, h('div', { style: sectionTitle }, props.title), props.children)
+    return h('div', null,
+      h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 6 }, },
+        h('div', { style: sectionTitle }, props.title),
+        props.count !== undefined
+          ? h('span', { style: { font: UI.fontXs, color: UI.text3 } }, '（' + props.count + '）')
+          : null),
+      props.children)
   }
 
   return function WorkspaceTab(props: any) {
@@ -983,28 +1023,28 @@ function createWorkspaceTab(react: any) {
           void act('/workspaces/switch', { name: next }, '已切换到 "' + next + '"')
         }
       },
-      style: { maxWidth: 130 },
+      style: selectStyle,
     }, (state.list || []).map(function (item: any) {
       return h('option', { key: item.name, value: item.name }, item.name)
     }))
 
     const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' } },
-      h('div', { style: { fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' } }, '本工作区：'),
+      h('div', { style: { font: UI.fontStrong, color: UI.text1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' } }, '本工作区：'),
       switcher,
-      h('button', { onClick: load, title: '重新读取', disabled: state.busy }, '刷新'))
+      h('button', { onClick: load, title: '重新读取', disabled: state.busy, style: btn }, '刷新'))
 
     const messageLine = state.message
-      ? h('div', { style: { marginTop: 6, color: 'var(--dsw-alias-state-warn-primary, inherit)' } }, state.message)
+      ? h('div', { style: { marginTop: 6, color: UI.warn, font: UI.fontSm } }, state.message)
       : null
 
-    const counts = h('div', { style: muted },
+    const counts = h('div', { style: { ...muted, paddingBottom: 4, borderBottom: '1px solid ' + UI.borderSoft } },
       '改动常数 ' + changed.length +
       ' · 公式覆盖 ' + overrides.length +
       ' · 自定义 ' + custom.length +
       ' · 地点 ' + terrains.length +
       ' · 变量 ' + variables.length)
 
-    const constSection = h(Section, { title: '【改动的常数】' },
+    const constSection = h(Section, { title: '【改动的常数】', count: changed.length },
       changed.length === 0
         ? h('div', { style: muted }, '（未改动，全部为现实值）')
         : h('div', null, changed.map(function (entry: any) {
@@ -1015,7 +1055,7 @@ function createWorkspaceTab(react: any) {
               h('span', null, typeof value === 'number' ? String(value) : String(value)))
           })))
 
-    const formulaSection = h(Section, { title: '【本工作区公式表】' },
+    const formulaSection = h(Section, { title: '【本工作区公式表】', count: overrides.length + custom.length },
       overrides.length === 0 && custom.length === 0
         ? h('div', { style: muted }, '（未改动公式，全部用模板）')
         : h('div', null,
@@ -1030,7 +1070,7 @@ function createWorkspaceTab(react: any) {
                 h('span', { style: muted }, '自定义'))
             })))
 
-    const terrainSection = h(Section, { title: '【地点】' },
+    const terrainSection = h(Section, { title: '【地点】', count: terrains.length },
       terrains.length === 0
         ? h('div', { style: muted }, '（暂无）')
         : h('div', null, terrains.map(function (t: any, index: number) {
@@ -1039,7 +1079,7 @@ function createWorkspaceTab(react: any) {
               h('span', { style: muted }, (t && t.kind) || ''))
           })))
 
-    const variableSection = h(Section, { title: '【变量】' },
+    const variableSection = h(Section, { title: '【变量】', count: variables.length },
       variables.length === 0
         ? h('div', { style: muted }, '（暂无）')
         : h('div', null, variables.map(function (entry: any) {
@@ -1058,7 +1098,7 @@ function createWorkspaceTab(react: any) {
         key: mode,
         disabled: state.busy || active,
         onClick: function () { void act('/settings', { promptMode: mode }, '提示档位已切到 ' + mode) },
-        style: { marginRight: 4, fontWeight: active ? 600 : 400 },
+        style: active ? { ...btnActive, marginRight: 4 } : { ...btn, marginRight: 4 },
       }, label)
     }
 
@@ -1080,7 +1120,7 @@ function createWorkspaceTab(react: any) {
                 key: id,
                 disabled: state.busy,
                 onClick: function () { void act('/formula-table', { name: currentName, action: 'reset', formulaId: id }, '已恢复公式 "' + id + '"') },
-                style: { marginRight: 4 },
+                style: { ...btn, marginRight: 4 },
                 title: '点一下恢复',
               }, id + ' ×')
             }))),
@@ -1092,7 +1132,7 @@ function createWorkspaceTab(react: any) {
             const value = event && event.target ? event.target.value : ''
             setState(function (prev: any) { return { ...prev, disableId: value } })
           },
-          style: { width: 110, marginRight: 4 },
+          style: { ...input, width: 110, flex: 'none', marginRight: 4 },
         }),
         h('button', {
           disabled: state.busy || !(state.disableId || '').trim(),
@@ -1100,6 +1140,7 @@ function createWorkspaceTab(react: any) {
             const id = String(state.disableId || '').trim()
             if (id) void act('/formula-table', { name: currentName, action: 'disable', formulaId: id }, '已停用公式 "' + id + '"')
           },
+          style: btn,
         }, '停用')))
 
     // ── 管理：变量与地点（增删）──
@@ -1117,7 +1158,7 @@ function createWorkspaceTab(react: any) {
             const value = event && event.target ? event.target.value : ''
             setState(function (prev: any) { return { ...prev, newVariable: { ...prev.newVariable, name: value } } })
           },
-          style: { width: 84 },
+          style: { ...input, width: 84, flex: 'none' },
         }),
         h('input', {
           placeholder: '数值',
@@ -1126,7 +1167,7 @@ function createWorkspaceTab(react: any) {
             const value = event && event.target ? event.target.value : ''
             setState(function (prev: any) { return { ...prev, newVariable: { ...prev.newVariable, value } } })
           },
-          style: { width: 70 },
+          style: { ...input, width: 70, flex: 'none' },
         }),
         h('button', {
           disabled: state.busy || !state.newVariable.name.trim() || !state.newVariable.value.trim(),
@@ -1142,6 +1183,7 @@ function createWorkspaceTab(react: any) {
                 setState(function (prev: any) { return { ...prev, newVariable: { name: '', value: '' } } })
               })
           },
+          style: btn,
         }, '保存')),
       variables.map(function (entry: any) {
         return h('div', { key: 'v-' + entry[0], style: rowStyle },
@@ -1151,6 +1193,7 @@ function createWorkspaceTab(react: any) {
             onClick: function () {
               void act('/workspaces/remove-variable', { name: currentName, variableName: entry[0] }, '已删除变量 "' + entry[0] + '"')
             },
+            style: btnDanger,
           }, '删'))
       }),
       // 地点
@@ -1163,7 +1206,7 @@ function createWorkspaceTab(react: any) {
             const value = event && event.target ? event.target.value : ''
             setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, name: value } } })
           },
-          style: { width: 84 },
+          style: { ...input, width: 84, flex: 'none' },
         }),
         h('select', {
           value: state.newTerrain.kind,
@@ -1171,6 +1214,7 @@ function createWorkspaceTab(react: any) {
             const value = event && event.target ? event.target.value : 'plain'
             setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, kind: value } } })
           },
+          style: selectStyle,
         }, ['plain', 'coastal', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake'].map(function (kind) {
           return h('option', { key: kind, value: kind }, kind)
         })),
@@ -1183,6 +1227,7 @@ function createWorkspaceTab(react: any) {
                 setState(function (prev: any) { return { ...prev, newTerrain: { ...prev.newTerrain, name: '' } } })
               })
           },
+          style: btn,
         }, '保存')),
       terrains.map(function (t: any, index: number) {
         return h('div', { key: 't-' + ((t && t.name) || index), style: rowStyle },
@@ -1192,6 +1237,7 @@ function createWorkspaceTab(react: any) {
             onClick: function () {
               if (t && t.name) void act('/workspaces/remove-terrain', { name: currentName, terrainName: t.name }, '已删除地点 "' + t.name + '"')
             },
+            style: btnDanger,
           }, '删'))
       }))
 
@@ -1209,7 +1255,7 @@ function createWorkspaceTabTitle(react: any) {
   return function WorkspaceTabTitle() {
     return react.createElement(
       'span',
-      { title: '当前工作区', style: { fontSize: 12, whiteSpace: 'nowrap' } },
+      { title: '当前工作区', style: { font: UI.fontSm, whiteSpace: 'nowrap' } },
       '∑ 本区',
     )
   }
@@ -1219,7 +1265,7 @@ function createSidebarTitle(react: any) {
     return function SidebarTitle() {
       return react.createElement(
         'span',
-        { title: '数学工作区', style: { fontSize: 12, whiteSpace: 'nowrap' } },
+        { title: '数学工作区', style: { font: UI.fontSm, whiteSpace: 'nowrap' } },
         '∑ 数学',
       )
     }

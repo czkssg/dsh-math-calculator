@@ -4,7 +4,7 @@
  * 这一层是给「配置与数据管理面板」用的：用户不在这里算数，只在这里改配置、管数据。
  * 直接调 handleApiRequest，不经过 HTTP，跑得快也不需要宿主。
  */
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { handleApiRequest } from '../lib/api.js'
 import { FORMULAS } from '../lib/formulas.js'
@@ -183,6 +183,32 @@ console.log('-- 9. 本工作区的管理接口（右栏「管理」用）--')
   // 收尾：切回 default 并删除测试工作区
   switchWorkspace('default')
   for (const n of [name, other]) call('POST', 'workspaces/delete', { name: n })
+}
+
+console.log('-- 10. 新建工作区即生成同名数据表 --')
+{
+  const name = 'named_table_check'
+  if (existsSync(join(workspaceDirectory(), name + '.json'))) call('POST', 'workspaces/delete', { name })
+
+  const created = call('POST', 'workspaces/create', { name, description: '数据表同名测试' })
+  assert('create 200', created.status === 200, String(created.status))
+
+  // 关键：建工作区的同时，磁盘上立刻出现与工作区**同名**的数据表文件
+  const file = join(workspaceDirectory(), name + '.json')
+  assert('同名数据表已自动创建', existsSync(file), file)
+
+  const data = JSON.parse(readFileSync(file, 'utf8'))
+  assert('数据表内的 name 与工作区同名', data.name === name, data.name)
+  assert('数据表包含四张子表', ['constants', 'formulaTable', 'terrains', 'variables'].every((k) => data[k] !== undefined),
+    Object.keys(data).join(','))
+
+  // 再写一条变量，确认写的是这张同名表
+  call('POST', 'workspaces/set-variable', { name, variableName: 'mark', value: 1 })
+  const again = JSON.parse(readFileSync(file, 'utf8'))
+  assert('写入落在同名数据表里', again.variables && again.variables.mark === 1, JSON.stringify(again.variables))
+
+  switchWorkspace('default')
+  call('POST', 'workspaces/delete', { name })
 }
 
 console.log('')

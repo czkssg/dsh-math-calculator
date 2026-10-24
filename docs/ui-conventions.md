@@ -118,6 +118,44 @@ hasEntryActions && <PanelMoreMenu label={t('panels.more')} entries={panels} onPi
 
 ---
 
+
+## 5.5 视觉：只用宿主设计令牌，左右共用一套
+
+社区插件的面板外观不是自己调色，而是**全部取宿主主题 CSS 变量**。
+统计它们产物里出现的 `--dsw-*` 令牌共 **103 个**，常用的是：
+
+| 用途 | 令牌 |
+|---|---|
+| 文本层级 | `--dsw-alias-label-primary / -secondary / -tertiary / -caption` |
+| 分隔与描边 | `--dsw-alias-border-l1 … l4`、`--dsw-alias-hairline` |
+| 面/层 | `--dsw-alias-bg-layer-1 … 4`、`--dsw-alias-bg-overlay` |
+| 交互态 | `--dsw-alias-interactive-bg-hover`、`-hover-accent`、`-bg-active` |
+| 状态色 | `--dsw-alias-state-warn-primary`、`-success-primary`、`-error-primary`、`--dsw-alias-danger` |
+| 字体 | `--dsw-font-xxxs-11` / `xxs-12` / `xs-13` / `s-14` / `s-strong-14` |
+| 圆角 | `--dsw-radius-sm` / `md` / `lg` / `panel` |
+
+写法是 **`font: var(--dsw-font-xs-13)`** 与 `border: 1px solid var(--dsw-alias-border-l2)`，
+不要写死 `13px`、`#ccc`、`rgba(128,128,128,.4)` —— 那样在深色主题或用户改字号时就会失配。
+
+**我们的做法**：模块级 `UI` 令牌表 + `buttonStyle()` / `inputStyle()` 两个构造器，
+左栏（全局管理）、右栏（本工作区工作台）、主栏三个页签**全部复用同一套**。
+现有结果：源码 59 处令牌引用、产物 17 个令牌、**写死颜色 0 处**（有测试守着）。
+
+### 宿主 UI 原语（可选增强）
+
+社区插件还会 `require('@deepseek-ai/dsh-client-ui-primitives')` 拿宿主组件，
+实测可用的导出包括：
+`Button`、`Input`、`Switch`、`Pill`、`Tag`、`Menu`、`MenuSurface`、`Modal`、`Tooltip`、`Toast`、
+`DisclosureRow`、`StateDot`、`JsonTree`、`MarkdownText`，以及成体系的图标
+（`IconPlusOutlineRegular`、`IconTrashOutlineRegular`、`IconRefreshOutlineRegular`、
+`IconCheckOutlineRegular`、`IconWarningTriangleOutlineRegular` …）。
+
+它是**客户端基线模块**（不必在 `dsh.client.external` 声明），但 `dsh-novel-writer`
+的做法最稳：**`try/catch` 取，取不到就回退自绘**。我们目前只用令牌 + 原生元素，
+换取「零 API 依赖风险」；未来要用原语，请照 novel-writer 那样带兜底。
+
+---
+
 ## 5. 面板必须能单独失败
 
 `dsh-my-guardian` 等社区插件把面板当**独立故障域**；我们沿用：

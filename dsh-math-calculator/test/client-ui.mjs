@@ -44,6 +44,15 @@ console.log('-- 1. 静态检查：不污染全局 --')
     '调用配置类接口',
     source.includes('/constants') && source.includes('/formula-table') && source.includes('/settings'),
   )
+
+  // UI 设计：全部走宿主主题令牌，左/右两栏共用同一套（「左右对应」）。
+  // 社区插件（dsh-context / dsh-better-sidebar / agent-teams / my-guardian）
+  // 都只用 --dsw-* 令牌，不写死颜色 —— 这样深浅色与字号自动跟随原生界面。
+  assert('使用宿主设计令牌', source.includes('--dsw-alias-label-primary') && source.includes('--dsw-font-'))
+  assert('左/右两栏共用同一套令牌', source.includes('const UI = {') && source.includes('UI.text1') && source.includes('UI.fontSm'))
+  assert('无写死颜色（#/rgba 均已令牌化）', !/#[0-9a-fA-F]{3,6}|rgba?\(/.test(source))
+  assert('左右面板结构一致（Section + 行 + 按钮）',
+    source.includes('function Section(') && source.includes('rowStyle') && source.includes('buttonStyle'))
 }
 
 console.log('-- 2. 模拟宿主加载 --')
