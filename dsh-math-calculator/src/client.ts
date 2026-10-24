@@ -1351,9 +1351,13 @@ function createSidebarTitle(react: any) {
                 {
                   name: 'sidebar.panellist',
                   id: PANEL_ID,
-                  // order 必须跟社区约定同量级：任务看板 20 / skill-explorer 30 / ssh 40。
-                  // 曾经写成 900 —— 宿主会把排位过靠后的行收进「更多」折叠区，
-                  // 于是入口看起来像被塞进了溢出菜单（真实反馈）。
+                  // order 取社区同量级：任务看板 20 / skill-explorer 30 / ssh 40。
+                  //
+                  // ⚠️ 更正（读宿主 dsh-client-ui-sidebar 源码后确认）：
+                  //   左侧栏的「更多」是**宿主原生**的面板启动器（语言包键 panels.more），
+                  //   只要官方插件管理器提供了 sidebar.panellist.actions 就总会出现，
+                  //   它列出全部面板并提供「固定/取消固定」；**与 order 无关**，
+                  //   插件无法移除它。最初写成 900 只是排位靠后，并不会导致进「更多」。
                   order: 30,
                   label: function () {
                     return '数学工作区'

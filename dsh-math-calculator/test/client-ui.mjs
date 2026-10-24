@@ -111,10 +111,11 @@ console.log('-- 3. 入口 + 页面：官方席位 --')
   assert('先注册主栏页面', slots[0] === 'main')
   assert('再注册侧栏入口', slots[1] === 'sidebar.panellist')
 
-  // 侧栏入口的 order 必须与社区约定同量级（任务看板 20 / skill-explorer 30 / ssh 40）。
-  // 曾写成 900 —— 宿主把该行收进了「更多」折叠区，入口看起来像被塞进溢出菜单。
+  // order 取社区同量级（dshmarket=1 / dsh-context=20 / novel-writer=25）。
+  // 注意：左侧「更多」是宿主原生的面板启动器，与 order 无关（docs/ui-conventions.md §3）。
   const panellistMeta = metas.find((m) => m.name === 'sidebar.panellist')
-  assert('侧栏入口 order 在社区量级（不是 900）', Boolean(panellistMeta) && panellistMeta.order === 30,
+  assert('侧栏入口 order 在社区量级（10–40）',
+    Boolean(panellistMeta) && panellistMeta.order >= 10 && panellistMeta.order <= 40,
     panellistMeta ? String(panellistMeta.order) : 'no meta')
   assert('产物不含 order: 900', !source.includes('order: 900'))
 

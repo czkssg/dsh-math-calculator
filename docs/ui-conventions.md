@@ -77,10 +77,31 @@ ctx.inject(['sidebarRightTabs', 'sidebarRight', 'uiWorkspace', 'layout', 'slots'
 | `dsh-context` | **20** |
 | `dsh-novel-writer` | **25**（源码注释：「任务看板=20、skill-explorer=30、ssh=40：我们排在任务看板之后」） |
 
-**踩坑**：我们曾写 `order: 900`，宿主把这一行收进了「更多」折叠区，
-用户看到的是一个溢出菜单里的入口 —— 以为是「多加了一个【更多】入口」。
+**我们用 30**（与它们同排）。写更大（如 900）只会排到后面，**没有别的后果**。
 
-**结论**：想要出现在主列表里，order 取 10–40 量级，并在注释里写清「排在谁之后」。
+### ⚠️ 更正：左侧那行「更多」是宿主原生的
+
+读宿主 `dsh-client-ui-sidebar/lib/client.js` 后确认：
+
+```js
+const NO_PANELS = []
+createSnapshotStore({ unpinned: NO_PANELS })      // 初始为空、纯内存、不持久化
+
+// 主列表 = panels 中「不在 unpinned 集合里」的项
+panels.filter(({ id }) => id === 'plugins' || !unpinned.includes(id)).map(...)
+
+// 「更多」= 只要宿主提供了 entry actions 就**总是渲染**
+hasEntryActions && <PanelMoreMenu label={t('panels.more')} entries={panels} onPinnedChange={setPinned} />
+```
+
+- 语言包证据：`zh = { "panels.label": "全局面板", "panels.more": "更多" }`；
+- 它列出**全部面板**并带「固定 / 取消固定」开关；
+- 触发条件是 `hasEntryActions`（官方插件管理器提供 `sidebar.panellist.actions`），
+  **不是插件的 order**，插件侧也**无法移除**它；
+- `unpinned` 只存在内存里：默认空 → **所有面板默认都出现在主列表**；
+  只有在「更多」里点了取消固定，该面板才会从主列表移走（重启即恢复）。
+
+**自查**：看不到我们的入口时，先确认面板**注册成功**（见 §1），而不是去调 order。
 
 ---
 
