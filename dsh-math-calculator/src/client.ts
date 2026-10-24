@@ -1254,7 +1254,10 @@ function makeRightTabTitle(react: any) {
             try {
               const dispose = ctx.slots.inject('main', function () {
                 pageOk = true
-                return ctx.slots.register({ name: 'main', key: PANEL_ID }, guard(LeftPanel))
+                const result = ctx.slots.register({ name: 'main', key: PANEL_ID }, guard(LeftPanel))
+                // 真正挂上了才上报（这是「UI 到底有没有出现」的可靠信号）
+                reportClientStatus({ stage: 'slots', page: pageOk, row: rowOk, right, order: 30 })
+                return result
               })
               if (typeof dispose === 'function') disposers.push(dispose)
             } catch {
@@ -1266,6 +1269,7 @@ function makeRightTabTitle(react: any) {
             try {
               const dispose = ctx.slots.inject('sidebar.panellist', function () {
                 rowOk = true
+                reportClientStatus({ stage: 'slots', page: pageOk, row: rowOk, right, order: 30 })
                 return ctx.slots.register(
                   { name: 'sidebar.panellist', id: PANEL_ID, order: 30, label: function () { return '数学工作区' } },
                   guard(SidebarTitle),
@@ -1336,7 +1340,10 @@ function makeRightTabTitle(react: any) {
             }
 
             // ④ 心跳：把「挂了哪几个席位」回报给宿主侧（GET /client-status）。
-            reportClientStatus({ stage: 'apply', page: pageOk, row: rowOk, right, order: 30 })
+            // 注意：apply 结束时槽位往往还没声明（宿主是异步声明槽位的），
+          // 此刻读到的 pageOk/rowOk 一定是 false，不能作为结论。
+          // 真实结果由各槽位的注册回调在上报一次（stage: 'slots'）。
+          reportClientStatus({ stage: 'apply', page: pageOk, row: rowOk, right, order: 30, note: 'apply 结束时槽位可能尚未声明' })
 
             return function disposeAll() {
               for (const dispose of disposers) {
