@@ -69,12 +69,14 @@ console.log('-- 4. 工具卡片已注册 --')
   assert('含卡片样式令牌', source.includes('T.hairline') || source.includes('hairline'))
 }
 
-console.log('-- 5. SVG 画布（不引第三方库）--')
+console.log('-- 5. 依赖图渲染（不引第三方库）--')
 {
   const source = readFileSync(join(process.cwd(), 'lib', 'client.js'), 'utf8')
-  assert('用了 svg 标签', source.includes("'svg'") || source.includes('\"svg\"'))
-  assert('用了 path 标签', source.includes("'path'") || source.includes('\"path\"'))
-  assert('用了 rect 标签', source.includes("'rect'"))
+  // ⚠️ DAG 已从「SVG 一次性铺开」改成「分层可折叠 DOM」：
+  //    SVG 画布被验证过 1970px 宽，侧栏里要横向滚动，很难用；
+  //    折叠视图一屏能看完结构，且能点开。所以这条不再断言 svg 标签。
+  assert('用了可折叠视图', source.includes('collapsed'))
+  assert('有层标题', source.includes('点击展开') || source.includes('点击收起'))
   assert('无 react-flow 依赖', !source.includes('@xyflow'))
   assert('无 canvas 依赖', !source.includes('getContext'))
 }

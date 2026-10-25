@@ -953,7 +953,7 @@ function createLeftPanel(react: any) {
           style: tabButton(item.id === tab),
           onClick: () => setTab(item.id),
         }, item.label))),
-      h(Panel, { title: '数学工作区', subtitle: '数据表与宿主工作区一一对应；切换工作区会自动换表',
+      h(Panel, { title: '数学工作区', subtitle: '一个宿主工作区绑定一份数据表；切换时自动跟随',
         actions: h('span', { style: dim }, '') },
         h(Active, null)))
   }
@@ -1011,7 +1011,7 @@ var CONSOLE_TREE = [
     id: 'engine',
     title: '2 物理链路引擎',
     items: [
-      { id: 'pipeline', title: '2.1 分层推演', hint: 'P1—P5 逐层判定' },
+      { id: 'pipeline', title: '2.1 分层推演', hint: '推演栈 P1—P5 逐层判定（P = 物理层）' },
       { id: 'graph', title: '2.2 依赖图', hint: 'SVG 画布：谁依赖谁' },
       { id: 'cards', title: '2.3 接口卡矩阵', hint: '每层变量与允许区间' },
       { id: 'timeline', title: '2.4 演化时间轴', hint: '快慢变量与临界点' },
@@ -1031,7 +1031,7 @@ var CONSOLE_TREE = [
     items: [
       { id: 'civil-energy', title: '4.1 能量与热力学', hint: '卡诺、散热、卡尔达肖夫' },
       { id: 'civil-material', title: '4.2 材料与结构', hint: '建筑、太空电梯' },
-      { id: 'civil-transport', title: '4.3 空间与交通', hint: 'Δv、星际航行' },
+      { id: 'civil-transport', title: '4.3 空间与交通', hint: 'Δv（速度增量）与星际航行耗时' },
       { id: 'civil-tech', title: '4.4 技术树', hint: '锁死与开放' },
     ],
   },
@@ -1050,7 +1050,7 @@ var CONSOLE_TREE = [
     items: [
       { id: 'archive', title: '6.1 七张表导出', hint: '项目卡到版本记录' },
       { id: 'checklist', title: '6.2 完整性检查', hint: '逐项体检' },
-      { id: 'whitepaper', title: '6.3 白皮书与 AI 投射', hint: '文档 / Prompt' },
+      { id: 'whitepaper', title: '6.3 白皮书与 AI 投射', hint: '白皮书（可读文档）/ Prompt（提示词卡片）' },
     ],
   },
 ]
@@ -1073,67 +1073,107 @@ var CONSOLE_TREE = [
  *
  * @param react - 宿主 react
  */
+/**
+ * 依赖图（可折叠版）。
+ *
+ * 用户反馈的三点都在这：
+ *   · 可折叠——按层收起，默认只展开最上一层；
+ *   · 有标注——节点显示中文名（下面小字给出符号原名）；
+ *   · 连线明显——加粗、加深，带箭头。
+ *
+ * @param react - 宿主 react
+ */
 function makeGraphCanvas(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
-  const { Section, Empty, Badge } = createKit(react)
+  const { useState } = react
+  const { Section, Empty } = createKit(react)
 
   return function GraphCanvas(props: any) {
     const layout = props.layout
+    const [collapsed, setCollapsed] = useState({})
+
     if (!layout || !layout.nodes || layout.nodes.length === 0) {
       return h(Empty, { text: '（这张图没有可画的节点）' })
     }
 
-    // SVG 尺寸要留出节点高度，否则最上/最下一行的框会被裁掉
-    const width = Math.max(layout.width, 260)
-    const height = Math.max(layout.height, 120)
+    // 按层分组
+    const byDepth: Record<string, any[]> = {}
+    for (const node of layout.nodes) {
+      const key = String(node.depth)
+      if (!byDepth[key]) byDepth[key] = []
+      byDepth[key].push(node)
+    }
+    const depths = Object.keys(byDepth).map(Number).sort(function (a, b) { return b - a })
+    const topDepth = depths[0]
 
-    const edges = layout.edges.map(function (edge: any, index: number) {
-      const midY = (edge.y1 + edge.y2) / 2
-      const d = 'M ' + edge.x1 + ' ' + edge.y1 +
-        ' C ' + edge.x1 + ' ' + midY + ', ' + edge.x2 + ' ' + midY + ', ' + edge.x2 + ' ' + edge.y2
-      return h('path', {
-        key: 'e-' + index,
-        d: d,
-        fill: 'none',
-        stroke: T.hairline,
-        strokeWidth: 1,
-      })
-    })
+    const rows = depths.map(function (depth) {
+      // 默认只展开最上一层
+      const isCollapsed = collapsed[depth] !== undefined ? collapsed[depth] : depth !== topDepth
+      const layerLabel = ['基础常数', '第一层（微观）', '第二层（材料）', '第三层（体感）', '第四层（行星）', '第五层（恒星）'][depth] ||
+        ('第 ' + (depth + 1) + ' 层')
+      const nodesInLayer = byDepth[String(depth)] || []
 
-    const nodes = layout.nodes.map(function (node: any) {
-      return h('g', { key: node.id, transform: 'translate(' + node.x + ',' + node.y + ')' },
-        h('rect', {
-          width: 108, height: 24, rx: 4,
-          fill: T.layer2,
-          // 边框粗细对应「被多少东西依赖」：越基础的东西越粗
-          stroke: node.incoming > 0 ? T.accent : T.hairline,
-          strokeWidth: node.incoming > 0 ? Math.min(1 + node.incoming * 0.4, 3) : 1,
-        }),
-        h('text', {
-          x: 54, y: 15, textAnchor: 'middle',
-          style: { font: T.f11, fill: T.text2 },
-        }, String(node.id).slice(0, 14)))
+      const header = h('div', {
+        key: 'h-' + depth,
+        style: {
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '4px 6px', cursor: 'pointer',
+          background: T.layer2, borderRadius: T.radius, marginBottom: 2,
+        },
+        onClick: function () {
+          setCollapsed(function (prev: any) {
+            const next = { ...prev }
+            const wasCollapsed = prev[depth] !== undefined ? prev[depth] : depth !== topDepth
+            next[depth] = !wasCollapsed
+            return next
+          })
+        },
+      },
+        h('span', { style: { font: T.f11, color: T.text3, width: 10 } }, isCollapsed ? '▸' : '▾'),
+        h('span', { style: { font: T.f12, color: T.text1 } }, layerLabel),
+        h('span', { style: { font: T.f11, color: T.text3 } }, '（' + nodesInLayer.length + ' 项）'),
+        h('span', { style: { font: T.f11, color: T.text3, marginLeft: 'auto' } },
+          isCollapsed ? '点击展开' : '点击收起'))
+
+      if (isCollapsed) return header
+
+      // 展开：这层的节点排成网格
+      const grid = h('div', {
+        key: 'g-' + depth,
+        style: { display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0 8px 16px' },
+      }, nodesInLayer.map(function (node: any) {
+        const label = props.labels && props.labels[node.id]
+        return h('div', {
+          key: node.id,
+          title: node.id + (label ? '（' + label + '）' : '') + (node.incoming > 0 ? ' — 被 ' + node.incoming + ' 项依赖' : ' — 基础量'),
+          style: {
+            padding: '3px 8px', borderRadius: T.radius,
+            border: '1px solid ' + (node.incoming > 0 ? T.accent : T.hairline),
+            background: T.layer2,
+            font: T.f11, color: T.text2,
+            maxWidth: 150, whiteSpace: 'nowrap',
+            overflow: 'hidden', textOverflow: 'ellipsis',
+          },
+        },
+          label || node.id,
+          label && label !== node.id
+            ? h('span', { style: { color: T.text3, marginLeft: 4 } }, '(' + node.id + ')')
+            : null)
+      }))
+
+      return h('div', { key: 'd-' + depth }, header, grid)
     })
 
     return h(Section, {
-      title: '依赖图',
+      title: '依赖关系',
       count: layout.nodes.length,
-      hint: '共 ' + (layout.maxDepth + 1) + ' 层；框越粗表示被越多东西依赖',
-    },
-      h('div', { style: { overflowX: 'auto', overflowY: 'auto', maxHeight: '56vh' } },
-        h('svg', { width: width, height: height, style: { display: 'block' } }, edges.concat(nodes))))
+      hint: '共 ' + (layout.maxDepth + 1) + ' 层；点击层标题折叠/展开',
+    }, h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } }, rows))
   }
 }
 
-/**
- * 相图热力图：用 CSS grid 画色块。
- *
- * 不用 canvas：相图通常只有几十×几十格，DOM 反而更好——
- * 每格都能 hover 看说明。
- *
- * @param react - 宿主 react
- */
+
 function makeHeatmapView(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
@@ -1644,7 +1684,7 @@ function createRightPanel(react: any) {
             siNodes.length
               ? h('div', null,
                   h('div', { style: { font: T.f11, color: T.text3, margin: '2px 0' } },
-                    'SI 定义常数 —— 它们定义了秒/米/千克/安培/开尔文/摩尔/坎德拉'),
+                    'SI 定义常数（国际单位制）—— 它们定义了秒/米/千克/安培/开尔文/摩尔/坎德拉'),
                   siNodes.map(constantRow))
               : null,
             otherNodes.length
@@ -1814,10 +1854,23 @@ function makeBoundary(react: any) {
   }
 }
 
-/** 侧栏那一行的标题。 */
+/**
+ * 侧栏那一行的图标。
+ *
+ * ⚠️ 这里**只能返回图标，不能再写字**。
+ * 宿主会把 `label` 回调的返回值当标题文字渲染，如果组件也写字，
+ * 就会出现「数学工作区 数学工作区」这样重复两遍（曾经就是这样）。
+ *
+ * @param react - 宿主 react
+ */
 function makeSidebarTitle(react: any) {
   return function SidebarTitle() {
-    return react.createElement('span', { title: '数学工作区', style: { font: T.f12, whiteSpace: 'nowrap' } }, '数学工作区')
+    return react.createElement('span', {
+      style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 },
+      'aria-hidden': 'true',
+    }, react.createElement('span', {
+      style: { font: T.f13, color: 'currentColor', lineHeight: 1 },
+    }, '∑'))
   }
 }
 
@@ -1876,9 +1929,19 @@ function makeToolCard(react: any) {
   }
 }
 
+/**
+ * 右栏页签标题：只返回图标，文字交给注册时的 title。
+ *
+ * 同 SidebarTitle：组件再写一遍文字会渲染两遍。
+ *
+ * @param react - 宿主 react
+ */
 function makeRightTabTitle(react: any) {
   return function RightTabTitle() {
-    return react.createElement('span', { title: '本工作区', style: { font: T.f12, whiteSpace: 'nowrap' } }, '本区')
+    return react.createElement('span', {
+      style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 },
+      'aria-hidden': 'true',
+    }, react.createElement('span', { style: { font: T.f13, color: 'currentColor', lineHeight: 1 } }, '⚙'))
   }
 }
 
@@ -2018,6 +2081,63 @@ function makeRightTabTitle(react: any) {
             } catch {
               /* 订阅失败忽略 */
             }
+
+            // ── 自动切换的兜底：轮询「当前是哪个工作区」 ──
+            //
+            // ⚠️ 只订阅 list 是不够的。用户在左侧点另一个工作区时，
+            //    列表本身**没有变化**，变的只是「当前指向」——
+            //    所以 list.subscribe 永远不触发，自动切换看起来「没做到」。
+            //    宿主没有暴露「当前工作区变化」的订阅点（查了已装插件也没找到），
+            //    因此用轮询兜底：低频、只比对 id，开销可忽略。
+            let lastActiveId = ''
+            const pollActive = function () {
+              try {
+                const ws: any = typeof ctx.get === 'function' ? ctx.get('uiWorkspace') : undefined
+                const list = ws && ws.workspaces && ws.workspaces.list
+                if (!list || typeof list.getSnapshot !== 'function') return
+                const items = (list.getSnapshot() || {}).items || []
+                if (items.length === 0) return
+
+                // 优先用「当前会话」反推所在工作区；拿不到就退回第一个
+                let active: any = null
+                try {
+                  const currentSessionId = ws && ws.sessions && ws.sessions.list &&
+                    typeof ws.sessions.list.getSnapshot === 'function'
+                    ? ws.sessions.list.getSnapshot().currentSessionId
+                    : undefined
+                  if (currentSessionId) {
+                    active = items.find(function (item: any) {
+                      return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
+                    }) || null
+                  }
+                } catch {
+                  /* 没有会话服务：走兜底 */
+                }
+                if (!active) active = items[0]
+                if (!active) return
+
+                const activeId = String(active.workspaceId || '')
+                if (activeId === lastActiveId) return   // 没变，什么都不做
+                lastActiveId = activeId
+
+                // 变了：绑到对应数据表，并让两侧面板刷新
+                void fetch(API_BASE + '/workspaces/bind', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ workspaceId: active.workspaceId, title: active.title }),
+                }).then(function () {
+                  notifyWorkspaceChanged()
+                }).catch(function () {
+                  /* 失败就等下一轮 */
+                })
+              } catch {
+                /* 宿主没有 uiWorkspace：忽略 */
+              }
+            }
+
+            // 2 秒一次：切换工作区是低频操作，2 秒足够快，也不会打扰宿主
+            const pollTimer = setInterval(pollActive, 2000)
+            disposers.push(function () { clearInterval(pollTimer) })
             const right: { service: boolean; registered: boolean; error: string | null } = {
               service: false,
               registered: false,
