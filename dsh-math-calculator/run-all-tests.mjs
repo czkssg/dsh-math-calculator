@@ -95,6 +95,10 @@ const SUITES = [
   // UI 三版删掉后，deriveAll 的白名单过滤成了「派生量绝不入库」的唯一实现点，
   // 守护它的 test/ui-v3.mjs 也随界面一起没了 —— 这里补回来。
   { file: 'summary.mjs', expect: 37, label: '综合推演（派生量绝不入库）' },
+  // 交接文档把「验证 AI 全链路」列为未完成事项，但原方式是重启 DSH 人肉看。
+  // 这一套把 solve-anchor → save-world → summary → dead 这条链复刻成路由调用，
+  // 跑在真派发上（含路由顺序与前缀），进回归。
+  { file: 'ai-journey.mjs', expect: 58, label: 'AI 全链路（锚点反解→入库→重算→判定）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */

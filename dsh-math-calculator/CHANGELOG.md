@@ -15,6 +15,13 @@
 
 ### 修复
 
+- **`save-world` 的双白名单事故**（最重要）：该路由曾自带一份 14 键硬编码白名单，
+  而 `world-params.ts` 的 `WORLD_PARAMS` 有 23 个基础量 —— 于是 `starClass`
+  （「我要 G2V 恒星」）、`hasLiquid`、`materialStrength/Density`、`moonCount/Mass/Distance`、
+  `lightPollution`、`galaxyBand` 共 9 个键被**静默丢弃**：返回 200 OK，不报错不提示，
+  存完世界还是原样。现在白名单只留一个真相（直接遍历 `WORLD_PARAMS`），
+  并按 `spec.kind` 分别校验 bool / choice / number。
+  `test/ai-journey.mjs` 会逐个试存全部 23 个键来防回归。
 - **`npm run preflight` 因 UI 移除而崩溃**：它仍在 `readFileSync('lib/client.js')`，
   文件已删 → `ENOENT`，装机前自检直接非零退出。改为反向断言（客户端产物确实不存在、
   无 `dsh.client`、无 `exports["./client"]`、无 `tsconfig.client.json`），
@@ -27,9 +34,24 @@
   它是「**派生量绝不入库**」唯一还在运行的实现点。断言：硬塞 `gravity: 99` 被丢弃、
   重力仍按 `G·M/R²` 现算成 19.6 m/s²、垃圾键/空串/null/undefined 一律丢弃、
   基础量与派生量键名不重叠、结论层跟着基础量走、参数元数据表里不许出现派生量。
-  已进 `run-all-tests.mjs` 基线。期望值由公式独立算出（19.639 m/s² / 15.819 km/s），
-  不是从实现抄回来的。
-- 全量基线：**56 套 / 2232 项 → 57 套 / 2269 项**，全绿。
+- 新增 `test/ai-journey.mjs`（58 项），把「作者说一句话 → AI 该走的那条链」复刻成路由调用：
+  `world-params` → `solve-anchor` → `save-world` → `summary` → `derive/dead`，
+  跑在真派发上（含路由顺序与前缀），断言的终点是**整条链走完世界仍自洽**。
+  取代了原来「重启 DSH 人肉看」的验证方式。
+- 两个新套件都做过**反向对照**（故意破坏实现确认测试变红），避免装饰性测试。
+- 全量基线：**56 套 / 2232 项 → 58 套 / 2327 项**，全绿。
+
+### 文档
+
+- 删除 7 篇只描述已删界面的文档（`ui-simplified.md`、`ui-v3-workbench.md`、
+  `ui-feedback-fixes.md`、`ui-implementation-status.md`、`ui-v2-panels.md`、
+  `client-ui-architecture.md`、`ui-conventions.md`）。
+- 12 篇加了「已作废 / 仍有效」的说明，而不是删掉：`ui-redesign-v3.md`（改题为
+  「参数分层与自洽推演」，因为三层结构与四条自洽规则是领域核心）、`ui-design-v2.md`
+  （用户原始设计稿）、`adr/0002`（历史决策只追加 superseded）、`README.md`
+  （「UI 面板」章改成「AI 调用，没有面板」）、`LIMITS.md`、`code-map.md`、
+  `PUBLISHING.md`、`visualization.md`、`constants-and-layering.md`、
+  `self-audit-2026-10-24.md`、`implementation-status.md`。
 
 ## [2.0.0] — 2026-10-24
 

@@ -18,8 +18,8 @@ npm run build && npm run test:all && npm run preflight && npm run doccheck
 | 改动类型 | 版本 |
 |---|---|
 | 修 bug、改文档、改文案 | patch（2.0.1） |
-| 加公式、加参数、加界面能力（兼容） | minor（2.1.0） |
-| 改 operation 契约、改数据格式、改 UI 席位 | major（3.0.0） |
+| 加公式、加参数、加能力（兼容） | minor（2.1.0） |
+| 改 operation 契约、改数据格式 | major（3.0.0） |
 
 同时更新 `CHANGELOG.md`（不要只改版本号就发）。
 
@@ -37,7 +37,7 @@ npm pack                   # 生成 tgz，用 dsh plugin add <tgz> 实测安装
 必须出现在 tarball 里的东西：
 
 ```
-lib/                构建产物（含 client.js）
+lib/                构建产物（**没有 client.js** —— UI 已移除）
 src/                源码（便于他人审阅）
 cordis.patch.yml    让包成为 profile bundle 的补丁
 dsh.plugin.json     注册清单（社区目录读它）

@@ -44,7 +44,7 @@ import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-tab
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 import { opDerivation } from './ops/derivation-op.js'
 import { deriveAll } from './summary.js'
-import { paramsByGroup } from './world-params.js'
+import { paramsByGroup, WORLD_PARAMS } from './world-params.js'
 import { solveAnchor, ANCHORS, type AnchorKind } from './anchor-solve.js'
 import { linkInherit, loadInheritLinks, syncInheritance, diffTables } from './universe-ops.js'
 
@@ -547,7 +547,7 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     //   world     —— 这颗星球的环境（质量、自转、轨道、大气），改它们是调设定。
     // 作者 90% 的时间只需要动 world，constants 是给硬科幻准备的。
     if (route === 'workspaces/save-world') {
-      // name 留空 = 「存到当前工作区」——界面不必知道表名。
+      // name 留空 = 「存到当前工作区」——调用方不必知道表名。
       const rawName = field(body, 'name')
       const name = typeof rawName === 'string' && rawName.trim() !== ''
         ? normalizeWorkspaceName(rawName)
@@ -555,14 +555,33 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       const raw = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
       if (!raw || typeof raw !== 'object') return fail(400, '缺少 world 参数对象')
       const incoming = raw as Record<string, unknown>
-      // 只接受已知字段，防止写进垃圾键
-      const allowed = ['starMass', 'starRadius', 'starTemp', 'orbitAU', 'eccentricity',
-        'planetMass', 'planetRadius', 'rotationHours', 'obliquityDeg', 'albedo',
-        'pressure', 'molarMass', 'gamma', 'greenhouse']
-      const patch: Record<string, number> = {}
-      for (const key of allowed) {
+      // 只接受基础量，防止写进垃圾键或派生量。
+      //
+      // ⚠️ 白名单的**唯一真相**是 world-params.ts —— 这里绝不能另抄一份。
+      // 曾经这里硬编码了 14 个键，而 WORLD_PARAMS 有 23 个，于是作者最常用的
+      // starClass（「我要 G2V 恒星」）被**静默丢弃**：不报错、不提示，存完一看
+      // 还是太阳。双白名单不同步就是这么出事的（test/ai-journey.mjs 守着）。
+      const patch: Record<string, unknown> = {}
+      for (const spec of WORLD_PARAMS) {
+        const key = spec.key
         const value = incoming[key]
         if (value === undefined || value === null || value === '') continue
+        if (spec.kind === 'bool') {
+          // 布尔型：接受 true/false 与常见字面量，别把 'false' 当成 true
+          if (typeof value === 'boolean') { patch[key] = value; continue }
+          const text = String(value).trim().toLowerCase()
+          if (text === 'true' || text === '1') { patch[key] = true; continue }
+          if (text === 'false' || text === '0') { patch[key] = false; continue }
+          return fail(400, '参数 ' + key + ' 必须是布尔值')
+        }
+        if (spec.kind === 'choice') {
+          // 选项型：必须是 choices 里列出的值，否则静默存进去会与目录对不上
+          const text = String(value)
+          const legal = (spec.choices || []).some(function (item) { return item.value === text })
+          if (!legal) return fail(400, '参数 ' + key + ' 不是可选项：' + text)
+          patch[key] = text
+          continue
+        }
         const num = typeof value === 'number' ? value : Number(value)
         if (!Number.isFinite(num)) return fail(400, '参数 ' + key + ' 不是有效数字')
         patch[key] = num

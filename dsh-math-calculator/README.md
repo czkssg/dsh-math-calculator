@@ -107,28 +107,22 @@ npm pack
 
 > 作者显式给的恒星半径/温度优先于质径关系，避免同一份输出里出现两套数字。
 
-### 面向用户的 UI：配置与数据管理（不是计算器）
+### 面向用户的接口：AI 调用，没有面板
 
-**入口不占界面**：侧栏「插件市场 / 任务看板」那一排多一行「数学工作区」，
-点开才显示页面；不点就只占一行，不动原生主界面。
+**本插件不提供界面。** 2026-10-25 决定砍掉全部前端（做过目录树、精简版、单页工作台三版，
+效果始终不好，见 [docs/ui-removed.md](docs/ui-removed.md)）。作者不再点面板填表，
+而是**直接说需求**，由 AI 调用工具与路由：
 
-实现用的是 DSH 官方席位（与 dsh-novel-writer 同一套）：
-`sidebar.panellist` 提供入口行（`id/order/label`），`main` 用同名 `key` 提供页面内容，
-行盒子、选中态、折叠与无障碍全由宿主的 layout 服务负责。
+| 作者说 | AI 调用 |
+|---|---|
+| 「我想要个重力 1.5 倍的世界」 | `POST /solve-anchor` → 得 `planetMass=1.5` → `save-world` |
+| 「这个星球能住人吗」 | `POST /derive` `{sub:"dead"}` |
+| 「50 米巨兽需要什么条件」 | `derivation` `backSolve` |
+| 「文明能飞出这个星球吗」 | `derivation` `civilization` |
+| 「把设定整理成文档」 | `derivation` `whitepaper` |
 
-> 真机教训（来自 dsh-novel-writer 的注释）：等槽位必须用 `ctx.slots.inject`，
-> **绝不能用 `ctx.inject`** —— 后者会让宿主判定 entry "did not activate"，直接导致桌面端启动失败。
-
-面板的定位是**管理**，不是计算。计算全部交给 AI 调用工具完成。面板分四个页签：
-
-| 页签 | 作用 | 对应接口 |
-|---|---|---|
-| 工作区 | 建/切/删、看常数与地点、清理存储 | `/workspaces/*` |
-| 常数表 | 改当前工作区的物理常数（只影响这个世界观） | `GET /constants` + `save-constant` / `reset-constant` |
-| 公式表 | 停用 / 恢复公式、查看自定义公式数量 | `GET /formula-table` + `POST /formula-table` |
-| 设置 | 提示注入档位 off / brief / full | `GET/POST /settings` |
-
-所有修改都落到**当前工作区**，不同世界观互不影响。前端不复制业务规则，只调用后端接口。
+后端接口一条没删，恢复界面只需重建前端（见 `docs/ui-removed.md` 第七节）。
+所有修改都落到**当前工作区**，不同世界观互不影响。
 
 ### 面向 AI 的设计
 
@@ -364,7 +358,7 @@ npm pack
 5. **mathjs 没有 SVD / 秩 / 零空间**。
 6. **`pi` 常量硬编码 64 位**，`precision` 超过 64 对 pi 无效（对 `1/7` 等有效）。
 7. **局地气候与可行性校验是经验模型**，有 2~3 倍不确定性，输出已标注置信度。
-8. **UI 面板需要宿主提供 `slots` 服务**，部分宿主版本可能不派发槽位。
+8. **没有界面**。所有能力经 `math_execute` 与 HTTP 路由给 AI；想手动调参数只能让 AI 代劳。
 
 ---
 
@@ -380,11 +374,11 @@ npm pack
 
 ## 开发与测试
 
-装机前先跑自检（会检查构建产物、入口契约、客户端席位、运行期依赖、package.json）：
+装机前先跑自检（会检查构建产物、入口契约、运行期依赖、package.json 与注释覆盖）：
 
 ```bash
 npm run build
-npm run test:all      # 33 套 / 1380+ 项
+npm run test:all      # 58 套 / 2321 项
 npm run preflight     # 一条命令判断「能不能装」
 ```
 
@@ -392,14 +386,15 @@ npm run preflight     # 一条命令判断「能不能装」
 
 
 ```powershell
-npm run build          # 主代码 + client 分别编译
+npm run build          # tsc 单份配置（无客户端 bundle）
 npm run typecheck
-node run-all-tests.mjs # 19 套测试，960 项
+node run-all-tests.mjs # 58 套 / 2321 项
 ```
 
 单套测试：`node test/<name>.mjs`。
 
-测试清单：主功能 66 / 公式库 35 / 公式完整性 270 / 常识反算 15 / 常数耦合 51 / 长链后果 61 / 影响评估 42 / 量纲分析 42 / 公式表 33 / 可行性 40 / 模型感知 29 / 检测器 38 / 钩子 20 / 地形 30 / 星球 32 / ODE 34 / 工作区 38 / 清理 35 / 整合 49。
+测试清单与每套期望项数见 `run-all-tests.mjs` 的 `SUITES` 表——
+**新增测试必须进那张表**，否则「全绿」不代表覆盖。
 
 ### 目录结构
 
@@ -408,7 +403,7 @@ src/
 ├── index.ts            插件入口 + 工具定义 + operation 分发（2032 行）
 ├── ops/                8 个较大的 operation 实现
 ├── formula-library*.ts 342 条公式（5 个批次，含读者视角高频批）
-├── constants-graph.ts  34 个常数的依赖图
+├── constants-graph.ts  43 个常数的依赖图（23 基础旋钮 / 20 派生）
 ├── quantities.ts       量纲分析与缩放指数
 ├── feasibility.ts      11 条设定约束
 ├── consequences.ts     跨尺度长链后果
@@ -417,7 +412,7 @@ src/
 ├── workspace.ts        工作区隔离与持久化
 ├── formula-table.ts    工作区公式表
 ├── awareness.ts / detector.ts  模型感知
-├── api.ts / client.ts  UI 后端与浏览器面板
+├── api.ts              HTTP 路由（AI 的第二个入口，无前端）
 └── ...
 ```
 

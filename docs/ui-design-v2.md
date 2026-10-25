@@ -1,10 +1,13 @@
 # DSH 世界模拟器：插件 UI 强绑定设计方案
 
-> **来源**：用户提供的方案原文（`本方案将彻底解决“多工作区与多数据表如何强绑定、如何自动流转”的工程体.txt`），转为 Markdown 归档。
+> ⚠️ **历史文档：这里描述的界面已不存在。**
+> 2026-10-25 决定砍掉全部前端，见 [../dsh-math-calculator/docs/ui-removed.md](../dsh-math-calculator/docs/ui-removed.md)。
+> 保留本文是因为「一区一表强绑定」这套**数据模型**仍然有效（后端路由一条没删）；
+> 只有界面部分作废。原实现对照文件 `ui-implementation-status.md` 已随 UI 删除。
+
+> **来源**：用户提供的方案原文（`本方案将彻底解决"多工作区与多数据表如何强绑定、如何自动流转"的工程体.txt`），转为 Markdown 归档。
 > **性质**：UI 层工程设计——**覆盖**此前的 `world-simulator-design.md`，
 > 因为那一版只讲目录与业务逻辑，没解决「一区一表强绑定」。
->
-> 实现对照见 [ui-implementation-status.md](./ui-implementation-status.md)。
 
 ---
 

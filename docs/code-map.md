@@ -12,9 +12,11 @@
 | 入口 | 文件 | 说明 |
 |---|---|---|
 | 工具入口 | src/index.ts → lib/index.js | 导出 name / inject / apply；apply 注册工具、提醒层、HTTP 路由 |
-| 客户端入口 | src/client.ts → lib/client.js | window.__ModuleLoader__.load 格式；挂 sidebar.panellist 入口 + main 页面 |
-| UI 后端 | src/api.ts | /api/dsh-math-calculator/*，只被面板调用 |
-| 清单 | cordis.patch.yml + package.json 的 dsh 字段 | 决定插件加载顺序与客户端依赖 |
+| HTTP 入口 | src/api.ts | /api/dsh-math-calculator/*，供 **AI** 调用（没有前端，UI 已移除） |
+| 清单 | cordis.patch.yml + package.json 的 dsh 字段 | 决定插件加载顺序与依赖 |
+
+> **没有客户端入口。** 2026-10-25 砍掉全部前端，`src/client.ts` / `lib/client.js`
+> 已不存在，见 [../dsh-math-calculator/docs/ui-removed.md](../dsh-math-calculator/docs/ui-removed.md)。
 
 apply() 的顺序是有意的：先注册工具（核心能力），再挂提醒（失败不影响工具），最后挂路由（没有 webServer 就跳过）。
 
@@ -95,21 +97,23 @@ apply() 的顺序是有意的：先注册工具（核心能力），再挂提醒
 | provenance.ts | 经验/设定项登记 | provenance |
 | terrain.ts / quantities.ts / feasibility.ts / impact.ts / consequences.ts | 局地气候 / 量纲 / 设定校验 / 公式影响 / 长链后果 | 对应套件 |
 
-### 数据与界面
+### 数据与接口
 
 | 文件 | 职责 | 测试 |
 |---|---|---|
 | workspace.ts | 工作区隔离、持久化、清理 | workspace / cleanup |
-| api.ts | UI 后端路由（设置/常数/公式表/工作区） | api / host-contract |
-| client.ts | 侧栏入口 + 四页签面板 | client-ui |
+| api.ts | HTTP 路由（设置/常数/公式表/工作区/推演），供 AI 调用 | api / host-contract / ai-journey |
+| world-params.ts | 23 个基础量的元数据（**白名单的唯一真相**） | summary / ai-journey |
+| summary.ts | `deriveAll()`：派生量现算、绝不入库 | summary |
 | awareness.ts / detector.ts | 工具描述、系统提示、pre-step 检测 | awareness / detector / hook |
 
 ---
 
 ## 4. 自检命令
 
-    npm run build        # tsc 两份配置
-    npm run test:all     # 38 套 / 1616 项
+    npm run build        # tsc 单份配置（无客户端 bundle）
+    npm run test:all     # 58 套 / 2327 项
+    npm run preflight    # 装机前自检（含「客户端确实已移除」反向断言）
     npm run doccheck     # 注释覆盖（模块头 + 每条导出）
     npm run preflight    # 装机前总检（构建/契约/席位/依赖/注释/package）
 
@@ -145,4 +149,5 @@ doccheck 会强制 1、2；3–5 靠 review，但都有既有例子可照抄。
 | 新公式 | 写进对应 formula-library-*.ts（含 params 单位描述）→ node test/formulas-list.mjs 重生成目录 → formulas-all 基线 +1 |
 | 新全局公式（不改代码） | tableAction:"global-add"（校验会挡住坏公式） |
 | 新推演模块 | 先写模块头（问题/依据/失效条件）→ 纯函数 + 测试 → 接进 world.ts → 在 provenance.ts 登记经验系数 |
-| 新 UI 页签 | client.ts 的 createConfigPanel 加 TABS + 组件；接口走后端，不在前端复制规则 |
+| 新路由 | 加进 api.ts，**专用路由必须写在 `workspaces/*` 通配之前**（否则会被通配截获并自动建表）→ 进 test/api.mjs 基线 |
+| 新世界参数 | 只改 `world-params.ts` 一处（白名单单一真相，`save-world` 与 `deriveAll` 都跟着它走）→ summary 基线 +1 |
