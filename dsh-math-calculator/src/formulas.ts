@@ -21,11 +21,12 @@ import { EXT_FORMULAS } from './formula-library-ext.js'
 import { PERCEPTION_FORMULAS } from './formula-library-perception.js'
 import { STORY_FORMULAS } from './formula-library-story.js'
 import { STORY2_FORMULAS } from './formula-library-story2.js'
+import { POWER_FORMULAS } from './formula-library-power.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 
 /**
- * 全部公式 = 主批次 + 扩展批次 + 感知层批次。
+ * 全部公式 = 主批次 + 扩展批次 + 感知层批次 + 故事批次 + 势力动力学批次。
  * 分批组织而不是单文件拼接，避免 formula-library.ts 无限膨胀。
  */
 export const FORMULAS: FormulaDef[] = [
@@ -34,6 +35,7 @@ export const FORMULAS: FormulaDef[] = [
   ...PERCEPTION_FORMULAS,
   ...STORY_FORMULAS,
   ...STORY2_FORMULAS,
+  ...POWER_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -43,6 +45,7 @@ for (const formula of EXT_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of PERCEPTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of STORY_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of STORY2_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of POWER_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

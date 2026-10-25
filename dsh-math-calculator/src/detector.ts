@@ -98,6 +98,10 @@ const INTENT_PATTERNS: Array<{ pattern: RegExp; weight: number; label: string }>
   { pattern: /公式|常数|物理量|量纲/, weight: 0.4, label: '物理公式意图' },
   { pattern: /逃逸速度|轨道周期|表面重力|宜居|潮汐|恒星|行星/, weight: 0.45, label: '天文推演意图' },
   { pattern: /气候|降雨|地形|海拔|雪线|昼夜|季节/, weight: 0.4, label: '地理推演意图' },
+  // 势力收支类：对应 balance 这个 operation。
+  // 「养得起吗」「够不够」是作者最常问的一类，此前完全没有词表覆盖。
+  { pattern: /养得起|养得活|够不够|够吃|支撑得起|收支|缺口|军费|粮草|补给/, weight: 0.45, label: '收支盘点意图' },
+  { pattern: /人口|兵员|常备军|财政|税|粮产|单产/, weight: 0.35, label: '势力规模意图' },
 ]
 
 /** 数学运算模式 —— 直接就是可计算的表达式。 */

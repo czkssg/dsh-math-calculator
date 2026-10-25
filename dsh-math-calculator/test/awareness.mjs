@@ -33,16 +33,33 @@ function assert(n, c, d) { if (c) ok(n, d); else bad(n, d || '') }
 console.log('-- 1. description 必须枚举全部 operation --')
 {
   const description = tool.description
-  const expected = [
-    'evaluate', 'solve', 'system', 'derivative', 'integral', 'simplify', 'expand',
-    'roots', 'matrix', 'eigen', 'stats', 'dist', 'regression', 'ode', 'formula',
-    'formulas', 'world', 'constants', 'quantities', 'impact', 'workspace',
-    'formula-table', 'help',
-  ]
+  /**
+   * 清单**从 schema enum 派生**，不在这里手写。
+   *
+   * 为什么：这里曾经手写完一份清单，于是加了 derivation / custom / units / balance
+   * 之后清单没跟着改，而工具描述也漏掉它们 —— 模型根本不知道这些 operation 存在，
+   * 却所有测试全绿。手写清单就是「第二个真相」，早晚不同步。
+   *
+   * 现在唯一真相是 schema 的 enum：新加 operation 会自动进入这条断言。
+   */
+  const enumOps = tool.parameters.properties.operation.enum
+  const expected = enumOps.filter((op) => op !== 'auto')
+
   const missing = expected.filter((op) => !description.includes(op))
-  assert('全部 ' + expected.length + ' 个 operation 都被提到', missing.length === 0,
+  assert('全部 ' + expected.length + ' 个 operation 都在描述里', missing.length === 0,
     '未提到: ' + missing.join(', '))
+
+  // 反向：描述里不该出现 schema 之外的 operation 名（防止删了 op 却留着文案）
+  const knownWords = new Set([...expected, 'auto', 'help'])
+  const mentioned = (description.match(/\b[a-z][a-z-]{3,}\b/g) || [])
+    .filter((word) => expected.includes(word) || word === 'auto')
+  const unknown = mentioned.filter((word) => !knownWords.has(word))
+  assert('描述里没有 schema 外的 operation 名', unknown.length === 0, unknown.join(', '))
+
   console.log('       description 长度: ' + description.length + ' 字符')
+  // 描述每次请求都进上下文，给个软上限防止无限膨胀
+  assert('描述长度在预算内（≤ 900 字符）', description.length <= 900,
+    String(description.length))
 }
 
 console.log('-- 2. description 必须写「何时该用」--')

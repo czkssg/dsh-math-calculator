@@ -32,7 +32,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
-  { file: 'formulas-all.mjs', expect: 342, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 355, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -77,9 +77,9 @@ const SUITES = [
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
   { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
   { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
-  { file: 'awareness.mjs', expect: 29, label: '模型感知（提示注入）' },
+  { file: 'awareness.mjs', expect: 31, label: '模型感知（提示注入）' },
   { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
-  { file: 'hook.mjs', expect: 20, label: 'agent/pre-step 钩子' },
+  { file: 'hook.mjs', expect: 25, label: 'agent/pre-step 钩子' },
   { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
   { file: 'world.mjs', expect: 32, label: '星球体貌画像' },
   { file: 'ode.mjs', expect: 34, label: '微分方程求解' },
@@ -105,6 +105,15 @@ const SUITES = [
   // L1 只在写入时拦；历史存档、/summary 直传仍可能带坏值。
   // 这一套守着「Infinity 绝不流到 AI」与 invalid 判定档。
   { file: 'sanity.mjs', expect: 34, label: '物理量健全性（invalid 判定/不泄 Infinity）' },
+  // WorldForge-Q 方案里**方向对且我们确实缺**的几块，已按本插件取向实现：
+  //   · 单位换算：此前只有量纲分析，作者写「三丈」时无人换算
+  //   · 收支盘点：此前只有单项上限，答不了「这个王国养不养得起这支军队」
+  //   · 势力运行公式：EROI/技术扩散/粮食/财政/信息，原库 342 条里都没有
+  //   · 结论翻转：数值变了 ≠ 结论翻了，这两件事必须分开判
+  { file: 'units.mjs', expect: 52, label: '单位换算（中文古制/仿射温度/自定义单位）' },
+  { file: 'balance.mjs', expect: 55, label: '收支盘点与最短板（粮水能财政军费信息）' },
+  { file: 'power-formulas.mjs', expect: 115, label: '势力运行公式（EROI/扩散/粮食/财政/信息）' },
+  { file: 'flip.mjs', expect: 64, label: '结论翻转判定（数值变了≠结论翻了）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */

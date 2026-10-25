@@ -56,6 +56,8 @@ export type MathOperation =
   | 'feasibility'
   | 'derivation'
   | 'custom'
+  | 'units'
+  | 'balance'
   | 'help'
 
 /**
@@ -153,6 +155,57 @@ export interface MathArgs {
   customConstantName?: string
   /** 量纲检查时期望的结果量纲。 */
   expectedDimension?: Record<string, number>
+
+  // ── operation=derivation 的「结论翻转」判定 ──
+  /**
+   * 判据 id（derivation="flip" 用）。
+   *
+   * 与 sensitivity 的区别：sensitivity 问「数值变了多少」，
+   * flip 问「**能不能**变了没有」——数值变 1.8% 也可能让结论颠倒。
+   *
+   * 可用：rocket（化学火箭能飞出）/ human（人能站立）/
+   * flight（生物能飞）/ escape_keeps_atmosphere（能留住大气）。
+   */
+  flipClaim?: string
+  /** 扰动幅度（默认 0.2 = ±20%）。 */
+  flipEpsilon?: number
+  /** 输入倍率（相对地球基线，默认 1）。 */
+  flipBase?: number
+
+  // ── operation=units（单位换算）──
+  /**
+   * 要换算的数值。
+   *
+   * 不给 `unitFrom`/`unitTo` 时，`units` 只列出全部可用单位。
+   */
+  unitValue?: number
+  /** 源单位，如「里」「丈」「斤」。 */
+  unitFrom?: string
+  /** 目标单位，如「km」「m」。 */
+  unitTo?: string
+  /**
+   * 项目自定义单位（可覆盖内置）。
+   *
+   * 每项 `{ name, dimension, factor, aliases? }`，`factor` 是换到该量纲基准单位的系数。
+   * 例如把「里」定义成 576 m：`{name:'里', dimension:'length', factor:576}`。
+   */
+  customUnits?: Array<{
+    name: string
+    dimension: string
+    factor: number
+    aliases?: string[]
+    note?: string
+  }>
+
+  // ── operation=balance（收支盘点与最短板）──
+  /**
+   * 收支项：键名 → `{ demand, supply, unit? }`。
+   *
+   * 内置键名：grain / water / energy / land / fiscal / army / info，
+   * 也可自定键名。demand 是需求方，supply 是能提供多少。
+   * 最短板 K = min(supply/demand)。
+   */
+  balance?: Record<string, { demand: number; supply: number; unit?: string }>
 
   // ── operation=derivation 的逆推与档案 ──
   /** 叙事锚点 id（如 creatureHeight）。 */

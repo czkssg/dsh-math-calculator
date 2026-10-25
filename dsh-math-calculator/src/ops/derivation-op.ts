@@ -41,8 +41,10 @@ import { buildWhitepaper, renderWhitepaper, buildPromptCard, renderPromptCard } 
 import { trace, impact, renderTrace, renderImpact, buildGraph, allNodes } from '../provenance-graph.js'
 import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, renderCost } from '../compute-budget.js'
 import { buildDeadBriefPrompt } from '../ai-brief.js'
+import { checkFlip } from '../flip.js'
+import { FLIP_CLAIMS } from '../flip-claims.js'
 import { toJsonValue } from '../format.js'
-import type { MathArgs, Outcome } from './shared.js'
+import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
 /** 数字格式化（大/小值用科学计数）。 */
 function sci(value: number): string {
@@ -144,6 +146,48 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push(report.fineTuningWarning ? '⚠ 微调警告：结论对输入高度敏感，允许区间可能极窄。' : '✓ 结论基本稳定。')
     value.report = report
+  } else if (sub === 'flip') {
+    // 结论翻转判定：与上面的 sensitivity（「数值变了多少」）不同，
+    // 这里问的是「能不能」变了没有——数值变 1.8% 可能让结论翻，也可能不翻。
+    const claimId = typeof args.flipClaim === 'string' ? args.flipClaim : 'rocket'
+    const epsilon = typeof args.flipEpsilon === 'number' ? args.flipEpsilon : 0.2
+    const base = typeof args.flipBase === 'number' ? args.flipBase : 1
+    const claims = FLIP_CLAIMS
+    const chosen = claims.find(function (item) { return item.id === claimId })
+    if (!chosen) {
+      throw new CalcError(
+        'invalid_argument',
+        '不认识的判据「' + claimId + '」',
+        '可用判据：' + claims.map(function (item) { return item.id + '（' + item.label + '）' }).join(' / '),
+      )
+    }
+    const report = checkFlip(chosen.evaluate, chosen.judge, base, {
+      epsilon: epsilon,
+      claim: chosen.label,
+    })
+    out.push('═══ 结论翻转判定：' + chosen.label + ' ═══', '')
+    out.push('  判据：' + chosen.formula)
+    out.push('  基线输入 ' + sci(base) + ' → 判据值 ' + sci(report.baseValue) + ' → ' +
+      (report.baseHolds ? '成立' : '不成立'))
+    out.push('')
+    out.push('【扰动 ±' + (epsilon * 100).toFixed(0) + '%】')
+    for (const probe of report.probes) {
+      out.push(
+        '  ' + (probe.direction < 0 ? '下调' : '上调').padEnd(4) +
+        ' 输入=' + sci(probe.input).padEnd(12) +
+        ' 判据值=' + sci(probe.value).padEnd(12) +
+        ' 数值变化=' + (probe.relativeChange * 100).toFixed(2) + '%'.padEnd(6) +
+        ' ' + (probe.flipped ? '✗ 结论翻转' : '○ 结论不变'),
+      )
+    }
+    out.push('')
+    out.push('【判定】' + (report.severity === 'critical' ? '踩线' : report.severity === 'fragile' ? '余量薄' : '稳'))
+    out.push('  ' + report.verdict)
+    out.push('')
+    out.push('  说明：数值变化率不能用来判翻转——变 1.8% 也可能让「能/不能」颠倒。')
+    out.push('        这里看的是布尔结论变没变，与 sensitivity 子命令的分工不同。')
+    value.flip = report
+    value.claim = { id: chosen.id, label: chosen.label, formula: chosen.formula }
   } else if (sub === 'phase') {
     const slice = phaseSlice(
       function (g: number, size: number): Verdict {

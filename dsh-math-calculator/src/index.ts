@@ -202,6 +202,8 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation } from './ops/derivation-op.js'
 import { opCustom } from './ops/custom-op.js'
+import { opUnits } from './ops/units-op.js'
+import { opBalance } from './ops/balance-op.js'
 
 // ────────────────────────────────────────────────────────────────────────────
 // 类型
@@ -283,6 +285,8 @@ const OPERATIONS: readonly MathOperation[] = [
   'feasibility',
   'derivation',
   'custom',
+  'units',
+  'balance',
   'help',
 ]
 
@@ -1740,6 +1744,13 @@ function opHelp(): Outcome {
       '  constants     改变物理常数，自动推导派生量并评估世界偏离度',
       '  quantities    看哪些物理量该跟着常数变、哪些不该（量纲分析 + 缩放指数）',
       '  impact        改常数后跑全部公式并与现实对比，算每条偏差',
+      '  units         单位换算：把「三里」「两丈」「五百斤」换成标准单位',
+      '                不带单位参数 → 列出全部可用单位（含中文古制与天文单位）',
+      '                例：unitValue=30, unitFrom="里", unitTo="km" → 15 km',
+      '                自创单位用 customUnits 覆盖（如把「里」定成 576 m）',
+      '  balance       收支盘点：粮/水/能/地/财政/军费/信息 多项一起看，给最短板',
+      '                例：balance={grain:{demand:2.7e6,supply:3.1e6,unit:"kg/年"}}',
+      '                回答「这个王国养不养得起二十万兵」这类问题（feasibility 只管单项上限）',
       '',
       '【数据管理】',
       '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
@@ -1911,6 +1922,12 @@ export function runMathTool(rawArguments: unknown): MathResult {
       case 'custom':
         outcome = opCustom(args)
         break
+      case 'units':
+        outcome = opUnits(args)
+        break
+      case 'balance':
+        outcome = opBalance(args)
+        break
       case 'evaluate':
       default:
         outcome = opEvaluate(engine, input, scope, precision)
@@ -2057,6 +2074,39 @@ const PARAMETER_SPEC = {
   variable: {
     type: 'string',
     description: '求导/求根/积分的自变量，默认 "x"。',
+  },
+  unitValue: {
+    type: 'number',
+    description:
+      '换算的数值。operation=units 时使用；不给则按 1 计。' +
+      '例：{operation:"units", unitValue:30, unitFrom:"里", unitTo:"km"} → 15 km。',
+  },
+  unitFrom: {
+    type: 'string',
+    description:
+      '源单位。operation=units 时使用。支持中文古制（里/丈/尺/寸/步/亩/顷/斤/两/石/斗/刻/时辰/更）、' +
+      '英制（英里/英尺/磅/加仑）、天文（AU/光年/秒差距/地球半径/太阳半径）。' +
+      '只给单位不给参数则列出全部可用单位。',
+  },
+  unitTo: {
+    type: 'string',
+    description: '目标单位，与 unitFrom 同量纲。',
+  },
+  customUnits: {
+    type: 'array',
+    description:
+      '项目自定义单位，可覆盖内置（如把「里」定成 576 m）。' +
+      '每项 {name, dimension, factor, aliases?, note?}，factor 是换成该量纲基准单位的系数。' +
+      'dimension 可用：length/mass/time/area/volume/energy/power/temperature/speed。',
+  },
+  balance: {
+    type: 'object',
+    additionalProperties: true,
+    description:
+      '收支盘点（operation=balance）。每项 {demand: 需求量, supply: 能提供多少, unit?: 单位}。' +
+      '内置键名 grain/water/energy/land/fiscal/army/info，也可自定。' +
+      '给最短板 K=min(supply/demand)，回答「几项一起看这个势力撑不撑得住」。' +
+      '只判社会收支；单项生理/工程上限请用 feasibility。',
   },
   matrix: {
     type: 'array',
@@ -2496,13 +2546,29 @@ export function apply(ctx: any): void {
           )
           const step = typeof payload?.step === 'number' ? payload.step : 0
 
-          // 本会话是否已用过插件（粗判：assistant 消息里出现过 math_execute）
-          const toolUsedInSession = messages.some(
-            (m: any) =>
-              m &&
-              typeof m.content === 'string' &&
-              m.content.includes('math_execute'),
-          )
+          // 本会话是否已用过插件。
+          //
+          // ⚠️ 必须看**结构化的工具调用痕迹**，绝不能看文本里有没有 "math_execute"。
+          // 曾经写成 `content.includes('math_execute')`，而我们的系统提示每轮注入、
+          // 且必然包含这个词 —— 于是 toolUsed 恒为 true，检测器从第一轮之后永久静默，
+          // 主动提醒的命中率归零（检测器本身命中率其实有 72%）。
+          // 另外「用户问 math_execute 怎么用」也会被误判成「已用过」。
+          //
+          // 三种真实形态都算用过：
+          //   · OpenAI 风格：assistant 消息带 tool_calls 数组
+          //   · Anthropic 风格：content 数组里有 type === 'tool_use' 的块
+          //   · 工具结果消息：role === 'tool'
+          const toolUsedInSession = messages.some((m: any) => {
+            if (!m || typeof m !== 'object') return false
+            if (m.role === 'tool') return true
+            if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) return true
+            if (Array.isArray(m.content)) {
+              return m.content.some(
+                (block: any) => block && typeof block === 'object' && block.type === 'tool_use',
+              )
+            }
+            return false
+          })
 
           const detection = shouldPromptNow(sessionKey, text, step, toolUsedInSession, detectorConfig)
           if (!detection.shouldPrompt) return decision

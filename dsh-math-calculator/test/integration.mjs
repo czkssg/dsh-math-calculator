@@ -78,11 +78,11 @@ const stub = { tool: captured.tool, hooks: host.hooks, promptSection: captured.s
   assert('注册了工具', Boolean(stub.tool))
   assert('工具名是 math_execute', stub.tool.name === 'math_execute', stub.tool.name)
   const ops = stub.tool.parameters.properties.operation.enum
-  const expected = ['auto','evaluate','solve','system','derivative','integral','simplify','expand','roots','matrix','eigen','stats','dist','regression','formula','formulas','ode','world','constants','workspace','impact','quantities','formula-table','feasibility','derivation','custom','help']
+  const expected = ['auto','evaluate','solve','system','derivative','integral','simplify','expand','roots','matrix','eigen','stats','dist','regression','formula','formulas','ode','world','constants','workspace','impact','quantities','formula-table','feasibility','derivation','custom','units','balance','help']
   const missing = expected.filter((op) => !ops.includes(op))
-  assert('全部 27 个 operation 都在 schema 里', missing.length === 0,
+  assert('全部 29 个 operation 都在 schema 里', missing.length === 0,
     '缺失: ' + missing.join(', '))
-  assert('operation 数量 = 27', ops.length === 27, String(ops.length))
+  assert('operation 数量 = 29', ops.length === 29, String(ops.length))
   // 反向断言：schema 里不能有 expected 之外的名字（防止加了 operation 却漏进这份清单）
   const extra = ops.filter((op) => !expected.includes(op))
   assert('schema 里没有清单外的 operation', extra.length === 0, extra.join(', '))
