@@ -66,7 +66,7 @@ const SUITES = [
   { file: 'ui-v2-panels.mjs', expect: 30, label: 'UI v2 左右栏补全（继承/对比/初始化引擎）' },
   { file: 'visualization.mjs', expect: 26, label: '可视化（DAG 分层布局 + 热力图算法）' },
   { file: 'visualization-ui.mjs', expect: 32, label: '可视化界面（SVG 画布/热力图/工具卡片）' },
-  { file: 'ui-feedback.mjs', expect: 36, label: 'UI 反馈修复（标题/切换/标注/折叠）' },
+  { file: 'ui-feedback.mjs', expect: 45, label: 'UI 反馈修复（标题/切换/标注/折叠）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },

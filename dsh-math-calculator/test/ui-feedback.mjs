@@ -19,7 +19,9 @@ console.log('-- 1. 标题不再重复 --')
 {
   // 组件只出图标（∑ / ⚙），文字交给 label / title 回调
   assert('侧栏用 ∑ 图标', source.includes('∑'))
-  assert('右栏用 ⚙ 图标', source.includes('⚙'))
+  // 左右两处入口用**同一个**字形，视觉上是一套（之前左边 ∑、右边 ⚙ 不一致）
+  assert('右栏也用 ∑ 图标（与左侧统一）', source.includes('∑'))
+  assert('不再用 ⚙（已统一）', !source.includes('⚙'))
   // SidebarTitle 里不该再渲染「数学工作区」这串字
   const marker = 'function makeSidebarTitle'
   const idx = source.indexOf(marker)
@@ -101,6 +103,24 @@ console.log('-- 8. 硬约束 --')
   assert('无写死颜色', !/#[0-9a-fA-F]{6}\b/.test(source) && !/rgba\(/.test(source))
 }
 
+
+console.log('-- 9. 绑定状态灯（可观测性）--')
+{
+  // 用户排查「自动切换有没有生效」时靠这一行
+  assert('显示「已绑定」', source.includes('已绑定'))
+  assert('显示当前表名', source.includes('}, name)') || source.includes(', name)'))
+  assert('记录同步时刻', source.includes('syncedAt'))
+  assert('有悬停说明', source.includes('切换工作区时本行会自动跟随') || source.includes('自动跟随'))
+}
+
+console.log('-- 10. 自动切换的多源探测 --')
+{
+  // 宿主没有稳定契约，所以要按可能性依次试
+  assert('试 currentWorkspaceId', source.includes('currentWorkspaceId'))
+  assert('试 activeWorkspaceId', source.includes('activeWorkspaceId'))
+  assert('试会话反推', source.includes('currentSessionId'))
+  assert('有兜底', source.includes('items[0]'))
+}
 console.log('')
 if (fails.length === 0) { console.log('全部通过：' + pass + ' 项'); process.exit(0) }
 console.log('通过 ' + pass + '，失败 ' + fails.length)

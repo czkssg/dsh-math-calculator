@@ -1364,6 +1364,8 @@ function createRightPanel(react: any) {
           ...prev, loading: false, error: null,
           list: (list && list.workspaces) || [], current: (list && list.current) || null,
           data: current, table, settings, constants,
+          // 记录本次刷新的时刻：切换工作区时它会变，用户据此确认「自动跟随」生效了
+          syncedAt: new Date().toTimeString().slice(0, 8),
         }))
       } catch (error: any) {
         setState((prev: any) => ({ ...prev, loading: false, error: (error && error.message) || '读取失败' }))
@@ -1467,6 +1469,25 @@ function createRightPanel(react: any) {
     const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 8px', borderBottom: '1px solid ' + hairline.borderTop.replace('1px solid ', '') } },
       h('span', { style: { font: T.f14s, color: T.text1 } }, '本区'),
       switcher,
+      // 绑定状态灯：切换工作区后这里会自动跟着变。
+      // 用户排查「自动切换有没有生效」时，看这一行就够——
+      // 左边灰字显示宿主工作区，右边徽标显示已绑定哪张表。
+      h('span', {
+        title: '一个宿主工作区强制绑定一份同名数据表；切换工作区时本行会自动跟随',
+        style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 2 },
+      },
+        h('span', { style: { font: T.f11, color: T.text3 } }, '已绑定'),
+        h('span', {
+          style: {
+            font: T.f11, color: T.ok,
+            border: '1px solid ' + T.hairline, borderRadius: T.radius,
+            padding: '0 4px',
+          },
+        }, name),
+        h('span', {
+          title: '上一次自动跟随发生的时间',
+          style: { font: T.f11, color: T.text3 },
+        }, state.syncedAt ? '· ' + state.syncedAt : '')),
       h('button', { style: btnStyle({ tiny: true }), onClick: load, disabled: state.busy }, '刷新'))
 
     /** 开关行：提示档位。 */
@@ -1974,6 +1995,7 @@ function makeToolCard(react: any) {
  * 右栏页签标题：只返回图标，文字交给注册时的 title。
  *
  * 同 SidebarTitle：组件再写一遍文字会渲染两遍。
+ * 图标与左侧入口保持一致（同一个 ∑），这样一眼能看出左右是一套。
  *
  * @param react - 宿主 react
  */
@@ -1982,7 +2004,8 @@ function makeRightTabTitle(react: any) {
     return react.createElement('span', {
       style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 },
       'aria-hidden': 'true',
-    }, react.createElement('span', { style: { font: T.f13, color: 'currentColor', lineHeight: 1 } }, '⚙'))
+    // 与左侧入口用同一个字形：同属一个插件，视觉上要能看出是一套。
+    }, react.createElement('span', { style: { font: T.f13, color: 'currentColor', lineHeight: 1 } }, '∑'))
   }
 }
 
@@ -2139,21 +2162,45 @@ function makeRightTabTitle(react: any) {
                 const items = (list.getSnapshot() || {}).items || []
                 if (items.length === 0) return
 
-                // 优先用「当前会话」反推所在工作区；拿不到就退回第一个
+                // 找「当前工作区」——宿主没有稳定契约，所以按可能性依次试：
+                //   ① 列表快照自己带当前 id（最理想）
+                //   ② 用「当前会话」反推所在工作区
+                //   ③ 都拿不到才退回第一个（此时不会触发切换，只是保证界面有数据）
                 let active: any = null
+
+                // ① 快照里的当前 id 字段（不同版本叫法不同，都试一遍）
                 try {
-                  const currentSessionId = ws && ws.sessions && ws.sessions.list &&
-                    typeof ws.sessions.list.getSnapshot === 'function'
-                    ? ws.sessions.list.getSnapshot().currentSessionId
-                    : undefined
-                  if (currentSessionId) {
+                  const snap: any = list.getSnapshot() || {}
+                  const currentId = snap.currentWorkspaceId || snap.activeWorkspaceId ||
+                    snap.currentId || snap.activeId
+                  if (currentId) {
                     active = items.find(function (item: any) {
-                      return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
+                      return String(item.workspaceId) === String(currentId) || String(item.id) === String(currentId)
                     }) || null
                   }
                 } catch {
-                  /* 没有会话服务：走兜底 */
+                  /* 没有这个字段：继续试 ② */
                 }
+
+                // ② 用当前会话反推
+                if (!active) {
+                  try {
+                    const currentSessionId = ws && ws.sessions && ws.sessions.list &&
+                      typeof ws.sessions.list.getSnapshot === 'function'
+                      ? ws.sessions.list.getSnapshot().currentSessionId
+                      : undefined
+                    if (currentSessionId) {
+                      active = items.find(function (item: any) {
+                        return Array.isArray(item.sessionIds) && item.sessionIds.indexOf(currentSessionId) >= 0
+                      }) || null
+                    }
+                  } catch {
+                    /* 没有会话服务：继续 ③ */
+                  }
+                }
+
+                // ③ 兜底：第一个。注意这里只是让面板有数据可显示，
+                //    如果 ①② 都失败，说明拿不到「当前指向」，切换检测不会生效。
                 if (!active) active = items[0]
                 if (!active) return
 
