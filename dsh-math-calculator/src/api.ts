@@ -43,6 +43,9 @@ import {
 import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-table.js'
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 import { opDerivation } from './ops/derivation-op.js'
+import { deriveAll } from './summary.js'
+import { paramsByGroup } from './world-params.js'
+import { solveAnchor, ANCHORS, type AnchorKind } from './anchor-solve.js'
 import { linkInherit, loadInheritLinks, syncInheritance, diffTables } from './universe-ops.js'
 
 /** 简单的 HTTP 请求/响应抽象（避免依赖具体宿主类型）。 */
@@ -245,6 +248,13 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
         execShape: lastExecShape,
         currentWorkspace: currentWorkspace(),
       })
+    }
+
+    // ── 参数元数据：界面据此渲染表单，不写死参数 ──
+    //
+    // 放在 GET 段：它是静态元数据，和当前状态无关，不该走 POST。
+    if (method === 'GET' && route === 'world-params') {
+      return ok({ groups: paramsByGroup(), anchors: ANCHORS })
     }
 
     // ── 设置（提示档位）──
@@ -503,6 +513,33 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok({ removed, name, constantName })
     }
 
+    // ── 综合推演：一次拿到界面要显示的全部内容 ──
+    //
+    // 界面改一个参数后要同时更新派生量、生物、文明、能不能住。
+    // 分四次请求会慢且不同步，所以合成一次（实测 2.1ms）。
+    if (route === 'summary') {
+      const rawWorld = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
+      // 没传 world 就用当前工作区存的那份
+      let worldParams = rawWorld && typeof rawWorld === 'object'
+        ? rawWorld as Record<string, unknown>
+        : {}
+      if (!rawWorld) {
+        const data = loadWorkspace(normalizeWorkspaceName(currentWorkspace()))
+        worldParams = (data.world || {}) as Record<string, unknown>
+      }
+      return ok(deriveAll(worldParams))
+    }
+
+    // ── 叙事锚点反解：从「我要什么」推回「该改哪个基础量」──
+    if (route === 'solve-anchor') {
+      const kind = String(field(body, 'kind') || 'gravity') as AnchorKind
+      const rawWanted = body && typeof body === 'object' ? (body as Record<string, unknown>).wanted : undefined
+      const wanted = typeof rawWanted === 'number' ? rawWanted : Number(rawWanted)
+      const rawWorld = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
+      const worldParams = rawWorld && typeof rawWorld === 'object' ? rawWorld as Record<string, unknown> : {}
+      return ok(solveAnchor(kind, wanted, worldParams))
+    }
+
     // ── 世界参数（作者真正关心的那几个）──
     //
     // 与 constants 的区别：
@@ -510,7 +547,11 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     //   world     —— 这颗星球的环境（质量、自转、轨道、大气），改它们是调设定。
     // 作者 90% 的时间只需要动 world，constants 是给硬科幻准备的。
     if (route === 'workspaces/save-world') {
-      const name = normalizeWorkspaceName(field(body, 'name'))
+      // name 留空 = 「存到当前工作区」——界面不必知道表名。
+      const rawName = field(body, 'name')
+      const name = typeof rawName === 'string' && rawName.trim() !== ''
+        ? normalizeWorkspaceName(rawName)
+        : normalizeWorkspaceName(currentWorkspace())
       const raw = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
       if (!raw || typeof raw !== 'object') return fail(400, '缺少 world 参数对象')
       const incoming = raw as Record<string, unknown>
@@ -534,7 +575,10 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     }
 
     if (route === 'workspaces/reset-world') {
-      const name = normalizeWorkspaceName(field(body, 'name'))
+      const rawName = field(body, 'name')
+      const name = typeof rawName === 'string' && rawName.trim() !== ''
+        ? normalizeWorkspaceName(rawName)
+        : normalizeWorkspaceName(currentWorkspace())
       const data = updateWorkspace(name, (current) => ({ ...current, world: {} }))
       return ok({ reset: true, name, world: data.world })
     }

@@ -1013,48 +1013,6 @@ var TERRAIN_KINDS = ['plain', 'coastal', 'plateau', 'mountain', 'valley', 'deser
  * 其余的（依赖图、接口卡、相图、敏感性、变更清单…）是**给 AI 的数据**，
  * 不该占用户界面——AI 需要时自己调工具，不必让作者看懂它们。
  */
-var CONSOLE_TREE = [
-  {
-    id: 'world',
-    title: '这个世界',
-    items: [
-      { id: 'world-basic', title: '基本设定', hint: '重力、日长、轨道、大气——作者最常调的四个' },
-      { id: 'world-dead', title: '这世界能住人吗', hint: '死寂判定与挽救方向' },
-    ],
-  },
-  {
-    id: 'impact',
-    title: '会有什么后果',
-    items: [
-      { id: 'impact-feel', title: '生活在这个世界', hint: '体感：能长多高、能飞多快、天空什么色' },
-      { id: 'impact-civ', title: '文明能走多远', hint: '能量、材料、交通、技术树' },
-    ],
-  },
-  {
-    id: 'fantasy',
-    title: '超出物理的设定',
-    items: [
-      { id: 'fantasy-magic', title: '魔法 / 灵能', hint: '换算成等价现实量，只提醒不判定' },
-      { id: 'fantasy-custom', title: '自创量', hint: '现有物理做不出的新量（带量纲）' },
-    ],
-  },
-  {
-    id: 'output',
-    title: '我要能拿走的东西',
-    items: [
-      { id: 'out-whitepaper', title: '设定文档', hint: '白皮书：可直接看、可当设定集' },
-      { id: 'out-prompt', title: '喂给 AI 的卡片', hint: '粘贴到对话里，AI 立刻按这套规则写' },
-    ],
-  },
-  {
-    id: 'history',
-    title: '我改过什么',
-    items: [
-      { id: 'history-archive', title: '版本记录', hint: '每次跑留一版，可对比' },
-      { id: 'history-changes', title: '常数改动', hint: '精调用，一般不用碰' },
-    ],
-  },
-]
 
 /**
  * 推演结果面板：请求 /derive 并渲染成可读文本。
@@ -1106,6 +1064,391 @@ var CONSOLE_TREE = [
  *
  * @param react - 宿主 react
  */
+/**
+ * 工作台（v3）：左调右看，一屏完成。
+ *
+ * @module ui/workbench
+ * @description
+ * ## 为什么重写
+ *
+ * v2 是「推演栈镜像」的目录树，改一个参数看结果要走 6 步（4 步导航）。
+ * 实测后端一次综合推演只要 2.1ms，完全可以实时——导航和保存按钮都是多余的。
+ *
+ * ## 结构
+ *
+ *   ┌──────────────┬──────────────────────┐
+ *   │ ① 设定         │ ② 这个世界长什么样（只读）│
+ *   │  （基础量）    │ ③ 这意味着什么          │
+ *   │  ▸ 进阶参数    │                      │
+ *   │ ④ 我想要（反解）│                      │
+ *   └──────────────┴──────────────────────┘
+ *
+ * ## 三条铁律
+ *
+ * 1. **① 区只放基础量**——派生量（重力/均温）绝不出现输入框；
+ * 2. **② 区只读**——它由 ① 现算，用户不能改；
+ * 3. **改完自动存**——没有保存按钮，300ms 防抖后自动写入并重算。
+ */
+
+/** 工作台需要的样式（复用主文件的 T 与 btnStyle/inputStyle）。 */
+function makeWorkbench(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+  const { useState, useEffect, useRef } = react
+  const { Section, Loading, Failure, Notice } = createKit(react)
+
+  return function Workbench(props: any) {
+    const [state, setState] = useState({
+      loading: true,
+      error: null,
+      summary: null,
+      meta: null,
+      draft: {} as Record<string, string>,
+      busy: false,
+      message: null,
+      showAdvanced: false,
+      // 反解
+      anchorKind: 'gravity',
+      anchorWanted: '',
+      anchorResult: null as any,
+    })
+
+    /** 防抖计时器：避免每敲一个字就重算。 */
+    const timerRef = useRef(null)
+
+    /** 首次加载：取元数据 + 当前世界 → 综合推演。 */
+    const load = function () {
+      setState(function (prev: any) { return { ...prev, loading: true, error: null } })
+      Promise.all([
+        callApi('/world-params'),
+        callApi('/summary', {}),
+      ]).then(function (results: any[]) {
+        const meta = results[0]
+        const summary = results[1]
+        // 用已存的值填草稿；没存过的留空（表示用默认）
+        const draft: Record<string, string> = {}
+        const saved = (summary && summary.params) || {}
+        for (const group of (meta && meta.groups) || []) {
+          for (const param of group.params) {
+            const value = saved[param.key]
+            draft[param.key] = value === undefined ? '' : String(value)
+          }
+        }
+        setState(function (prev: any) {
+          return { ...prev, loading: false, error: null, meta, summary, draft }
+        })
+      }).catch(function (error: any) {
+        setState(function (prev: any) {
+          return { ...prev, loading: false, error: (error && error.message) || '读取失败' }
+        })
+      })
+    }
+
+    useEffect(function () { load() }, [])
+
+    /**
+     * 把草稿转成 world 对象：空字符串不传（表示用默认值）。
+     *
+     * @returns 参数对象
+     */
+    const draftToWorld = function (draft: Record<string, string>) {
+      const world: Record<string, unknown> = {}
+      for (const [key, raw] of Object.entries(draft)) {
+        if (raw === '' || raw === undefined || raw === null) continue
+        // 开关型是布尔
+        if (raw === 'true') { world[key] = true; continue }
+        if (raw === 'false') { world[key] = false; continue }
+        const num = Number(raw)
+        if (Number.isFinite(num)) world[key] = num
+        else world[key] = raw   // 字符串型（如 starClass）
+      }
+      return world
+    }
+
+    /**
+     * 参数改动：更新草稿 → 防抖 → 保存并重算。
+     *
+     * @param key - 参数键
+     * @param raw - 输入框里的原始字符串
+     */
+    const changeParam = function (key: string, raw: string) {
+      setState(function (prev: any) {
+        const draft = { ...prev.draft, [key]: raw }
+        return { ...prev, draft }
+      })
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(function () {
+        setState(function (prev: any) {
+          const world = draftToWorld(prev.draft)
+          // 先存，再算——保证刷新后读到的就是刚改的
+          callApi('/workspaces/save-world', { name: props.name || '', world })
+            .then(function () { return callApi('/summary', { world }) })
+            .then(function (summary: any) {
+              setState(function (p: any) { return { ...p, summary, message: null } })
+              notifyWorkspaceChanged()
+            })
+            .catch(function (error: any) {
+              setState(function (p: any) {
+                return { ...p, message: '重算失败：' + ((error && error.message) || error) }
+              })
+            })
+          return prev
+        })
+      }, 300)
+    }
+
+    /**
+     * 恢复成地球：清空草稿 + 清后端。
+     */
+    const resetAll = function () {
+      setState(function (prev: any) { return { ...prev, busy: true, message: null } })
+      callApi('/workspaces/reset-world', { name: props.name || '' })
+        .then(function () { return callApi('/summary', { world: {} }) })
+        .then(function (summary: any) {
+          const draft: Record<string, string> = {}
+          for (const group of (state.meta && state.meta.groups) || []) {
+            for (const param of group.params) draft[param.key] = ''
+          }
+          setState(function (prev: any) {
+            return { ...prev, busy: false, summary, draft, message: '已恢复成地球参数' }
+          })
+          notifyWorkspaceChanged()
+        })
+        .catch(function () {
+          setState(function (prev: any) { return { ...prev, busy: false, message: '恢复失败' } })
+        })
+    }
+
+    /**
+     * 反解：把「我要什么」翻译成「该改哪个基础量」。
+     */
+    const solve = function () {
+      const wanted = Number(state.anchorWanted)
+      if (!Number.isFinite(wanted) || wanted <= 0) {
+        setState(function (prev: any) { return { ...prev, message: '目标值要是正数' } })
+        return
+      }
+      setState(function (prev: any) { return { ...prev, message: null } })
+      callApi('/solve-anchor', {
+        kind: state.anchorKind,
+        wanted: wanted,
+        world: draftToWorld(state.draft),
+      }).then(function (result: any) {
+        setState(function (prev: any) { return { ...prev, anchorResult: result } })
+      }).catch(function (error: any) {
+        setState(function (prev: any) {
+          return { ...prev, message: '反解失败：' + ((error && error.message) || error) }
+        })
+      })
+    }
+
+    /**
+     * 应用反解结果：把解出的基础量写进草稿并保存。
+     */
+    const applyAnchor = function () {
+      const result = state.anchorResult
+      if (!result || !result.solved) return
+      const draft = { ...state.draft }
+      for (const [key, value] of Object.entries(result.changes || {})) {
+        draft[key] = String(value)
+      }
+      setState(function (prev: any) { return { ...prev, draft, anchorResult: null, anchorWanted: '' } })
+      const world = draftToWorld(draft)
+      callApi('/workspaces/save-world', { name: props.name || '', world })
+        .then(function () { return callApi('/summary', { world }) })
+        .then(function (summary: any) {
+          setState(function (prev: any) {
+            return { ...prev, summary, message: '已应用改动' }
+          })
+          notifyWorkspaceChanged()
+        })
+        .catch(function () {
+          setState(function (prev: any) { return { ...prev, message: '应用失败' } })
+        })
+    }
+
+    if (state.loading) return h(Loading, { text: '正在读取世界设定…' })
+    if (state.error) return h(Failure, { text: '读取失败：' + state.error, onRetry: load })
+
+    const summary = state.summary || {}
+    const meta = state.meta || {}
+    const groups = meta.groups || []
+    const anchors = meta.anchors || []
+
+    // ── ① 参数输入（只放基础量）──
+    const paramRow = function (param: any) {
+      const value = state.draft[param.key] !== undefined ? state.draft[param.key] : ''
+      return h('div', {
+        key: param.key,
+        style: { display: 'flex', flexDirection: 'column', gap: 1, margin: '0 0 7px' },
+      },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          h('span', {
+            style: { font: T.f12, color: T.text2, minWidth: 92, flex: '0 0 auto' },
+            title: param.affects,
+          }, param.label),
+          param.kind === 'bool'
+            ? h('select', {
+                style: { ...inputStyle(76) },
+                value: value === '' ? String(param.def) : value,
+                disabled: state.busy,
+                onChange: function (event: any) { changeParam(param.key, event.target.value) },
+              },
+                h('option', { key: 'true', value: 'true' }, '有'),
+                h('option', { key: 'false', value: 'false' }, '无'))
+            : param.kind === 'choice'
+              ? h('select', {
+                  style: { ...inputStyle(150) },
+                  value: value === '' ? String(param.def) : value,
+                  disabled: state.busy,
+                  onChange: function (event: any) { changeParam(param.key, event.target.value) },
+                }, (param.choices || []).map(function (item: any) {
+                  return h('option', { key: item.value, value: item.value }, item.label)
+                }))
+              : h('input', {
+                  style: { ...inputStyle(96), textAlign: 'right' },
+                  placeholder: String(param.def),
+                  value: value,
+                  disabled: state.busy,
+                  onChange: function (event: any) { changeParam(param.key, event.target.value) },
+                }),
+          param.unit
+            ? h('span', { style: { font: T.f11, color: T.text3 } }, param.unit)
+            : null),
+        // 影响说明：灰色小字，鼠标不用悬停也能看到
+        h('div', {
+          style: { font: T.f11, color: T.text3, paddingLeft: 98, lineHeight: 1.5 },
+        }, param.affects))
+    }
+
+    const basicParams = []
+    const advancedParams = []
+    for (const group of groups) {
+      for (const param of group.params) {
+        if (param.tier === 'basic') basicParams.push(param)
+        else advancedParams.push(param)
+      }
+    }
+
+    const leftPanel = h(Section, {
+      title: '① 设定这个世界',
+      hint: '改了自动保存，右边立刻更新',
+    },
+      h('div', null, basicParams.map(paramRow)),
+      h('div', { style: { marginTop: 4 } },
+        h('div', {
+          style: { font: T.f11, color: T.text3, cursor: 'pointer', userSelect: 'none', padding: '4px 0' },
+          onClick: function () {
+            setState(function (prev: any) { return { ...prev, showAdvanced: !prev.showAdvanced } })
+          },
+        }, (state.showAdvanced ? '▾ ' : '▸ ') + '进阶参数（' + advancedParams.length + ' 项，一般不用改）'),
+        state.showAdvanced ? h('div', { style: { marginTop: 4 } }, advancedParams.map(paramRow)) : null),
+      h('div', { style: { display: 'flex', gap: 6, marginTop: 8 } },
+        h('button', { style: btnStyle({ tiny: true }), disabled: state.busy, onClick: resetAll }, '恢复成地球')))
+
+    // ── ④ 反解 ──
+    const anchor = anchors.filter(function (item: any) { return item.kind === state.anchorKind })[0]
+    const anchorPanel = h(Section, {
+      title: '④ 我想要…',
+      hint: '说目标，我告诉你该改哪个数',
+    },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4, flexWrap: 'wrap' } },
+        h('select', {
+          style: { ...inputStyle(140) },
+          value: state.anchorKind,
+          onChange: function (event: any) {
+            setState(function (prev: any) {
+              return { ...prev, anchorKind: event.target.value, anchorResult: null }
+            })
+          },
+        }, anchors.map(function (item: any) {
+          return h('option', { key: item.kind, value: item.kind }, item.label)
+        })),
+        h('input', {
+          style: { ...inputStyle(64), textAlign: 'right' },
+          placeholder: '目标',
+          value: state.anchorWanted,
+          onChange: function (event: any) {
+            setState(function (prev: any) { return { ...prev, anchorWanted: event.target.value } })
+          },
+          onKeyDown: function (event: any) { if (event.key === 'Enter') solve() },
+        }),
+        h('span', { style: { font: T.f11, color: T.text3 } }, anchor ? anchor.unit : ''),
+        h('button', { style: btnStyle({ tiny: true }), onClick: solve }, '算')),
+      anchor ? h('div', { style: { font: T.f11, color: T.text3, marginBottom: 6 } }, anchor.hint) : null,
+      state.anchorResult
+        ? h('div', null,
+            state.anchorResult.solved
+              ? h('div', null,
+                  h('div', { style: { font: T.f12, color: T.text2, lineHeight: 1.7 } },
+                    state.anchorResult.reasons.join(' ')),
+                  h('div', { style: { font: T.f11, color: T.text3, margin: '6px 0 2px' } }, '连带效应：'),
+                  h('div', null, (state.anchorResult.sideEffects || []).map(function (item: any, index: number) {
+                    return h('div', {
+                      key: 'se-' + index,
+                      style: { font: T.f11, color: T.text2, lineHeight: 1.6 },
+                    }, '  ' + item.label + '：' + item.before + ' → ' + item.after)
+                  })),
+                  h('div', { style: { marginTop: 8 } },
+                    h('button', { style: btnStyle(), onClick: applyAnchor }, '应用这个改动')))
+              : h('div', { style: { font: T.f12, color: T.warn } }, state.anchorResult.why || '解不出来'))
+        : null)
+
+    // ── ②③ 结果（只读）──
+    const derivedRows = (summary.derived || []).map(function (item: any, index: number) {
+      return h('div', {
+        key: 'd-' + item.key,
+        style: {
+          display: 'flex', justifyContent: 'space-between', gap: 8,
+          padding: '2px 0',
+          borderTop: index === 0 ? 'none' : '1px solid ' + T.hairline,
+        },
+      },
+        h('span', { style: { font: T.f12, color: T.text3 } }, item.label),
+        h('span', { style: { font: T.f12, color: T.text1, textAlign: 'right' } }, item.text))
+    })
+
+    const impactBlock = function (title: string, lines: any[]) {
+      if (!lines || lines.length === 0) return null
+      return h('div', { key: title, style: { marginTop: 10 } },
+        h('div', { style: { font: T.f12, color: T.text1, marginBottom: 3 } }, title),
+        h('div', null, lines.map(function (item: any, index: number) {
+          return h('div', {
+            key: 'i-' + title + '-' + index,
+            title: item.note || '',
+            style: { font: T.f11, color: T.text2, lineHeight: 1.7, display: 'flex', gap: 6 },
+          },
+            h('span', { style: { color: T.text3, minWidth: 96, flex: '0 0 auto' } }, item.label),
+            h('span', null, item.value))
+        })))
+    }
+
+    const rightPanel = h('div', null,
+      h(Section, { title: '② 这个世界长什么样', hint: '由左边的输入算出，不能直接改' },
+        h('div', null, derivedRows)),
+      h(Section, { title: '③ 这意味着什么', hint: '生物与文明会受什么限制' },
+        h('div', { style: { font: T.f11, color: T.text3, marginBottom: 2 } }, summary.headline || ''),
+        impactBlock('能不能住', summary.environment),
+        impactBlock('生物', summary.biology),
+        impactBlock('文明', summary.civilization)))
+
+    return h('div', { style: { display: 'flex', height: '100%', overflow: 'hidden' } },
+      h('div', {
+        style: {
+          flex: '0 0 44%', minWidth: 240, overflowY: 'auto',
+          padding: '10px 12px',
+          borderRight: '1px solid ' + T.hairline,
+        },
+      },
+        state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
+        leftPanel,
+        anchorPanel),
+      h('div', { style: { flex: '1 1 auto', minWidth: 0, overflowY: 'auto', padding: '10px 12px' } },
+        rightPanel))
+  }
+}
+
+
 function makeWorldForm(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
@@ -1498,6 +1841,7 @@ function createRightPanel(react: any) {
       disableId: '',
       // 当前打开的目录节点（默认第一项的 1.1 常数表）
       activeNode: 'constants',
+      exportText: '',
       worldParams: {} as Record<string, unknown>,
       // 常数表的编辑草稿（名称 → 输入框里的字符串）
       draft: {},
@@ -1543,6 +1887,31 @@ function createRightPanel(react: any) {
     }, [load])
 
     useEffect(() => { void load() }, [load])
+
+    /**
+     * 导出：白皮书或 AI 卡片。
+     *
+     * 结果直接显示在右栏，用户自己复制——不做「下载文件」是因为
+     * 桌面端写文件路径会有权限问题，复制粘贴最稳。
+     *
+     * @param mode - document 或 prompt
+     */
+    const loadExport = async function (mode: string) {
+      setState((prev: any) => ({ ...prev, busy: true, message: null }))
+      try {
+        const result = await callApi('/derive', { sub: 'whitepaper', whitepaperMode: mode })
+        setState((prev: any) => ({
+          ...prev,
+          busy: false,
+          exportText: (result && result.result) || '（没有内容）',
+          message: mode === 'prompt' ? '已生成 AI 卡片，复制粘贴即可' : '已生成设定文档',
+        }))
+      } catch (error: any) {
+        setState((prev: any) => ({
+          ...prev, busy: false, message: '生成失败：' + ((error && error.message) || error),
+        }))
+      }
+    }
 
     // 左栏切换工作区后自动跟随（同一 bundle 内的订阅，不轮询）。
     // 也订阅宿主传来的 subscribeWorkspace（如果宿主提供了）。
@@ -1991,46 +2360,44 @@ function createRightPanel(react: any) {
 
     const activeItem = state.activeNode || 'world-basic'
 
-    // 左：六大目录树
-    const tree = h('div', {
-      style: {
-        flex: '0 0 132px', minWidth: 0, overflowY: 'auto',
-        borderRight: '1px solid ' + hairline.borderTop.replace('1px solid ', ''),
-        padding: '6px 0',
-      },
-    }, CONSOLE_TREE.map(function (group: any) {
-      return h('div', { key: group.id },
-        h('div', {
-          style: { font: T.f11, color: T.text3, padding: '6px 10px 2px', whiteSpace: 'nowrap' },
-          title: group.title,
-        }, group.title),
-        group.items.map(function (item: any) {
-          const active = activeItem === item.id
-          return h('div', {
-            key: item.id,
-            title: item.hint,
-            style: {
-              font: T.f12,
-              color: active ? T.text1 : T.text2,
-              background: active ? T.accentSoft : 'transparent',
-              borderLeft: active ? '2px solid ' + T.accent : '2px solid transparent',
-              padding: '4px 8px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            },
-            onClick: function () { setState((prev: any) => ({ ...prev, activeNode: item.id })) },
-          }, item.title)
-        }))
-    }))
+    // ══ 右栏：只放三件事 ══
+    //
+    // 主区已经是完整工作台（改参数 → 看后果），右栏再放目录树就是重复。
+    // 这里只保留：状态速览 / 导出 / 换表。
+    const body = h('div', { style: { flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: '6px 12px 14px' } },
+      state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
 
-    const body = h('div', { style: { flex: '1 1 auto', minHeight: 0, display: 'flex', overflow: 'hidden' } },
-      tree,
-      h('div', { style: { flex: '1 1 auto', minWidth: 0, overflowY: 'auto', padding: '6px 12px 14px' } },
-        state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
-        renderPane(activeItem)))
+      // ① 状态速览：说明主区与右栏的关系
+      h(Section, { title: '这个世界', hint: '在主区调参数，这里实时反映' },
+        h('div', { style: { font: T.f11, color: T.text3, lineHeight: 1.7 } },
+          '在主区「① 设定这个世界」改完，右侧「② 这个世界长什么样」会立刻更新。',
+          h('br', null),
+          '一个工作区固定一份数据表，切换工作区会自动跟随。')),
 
+      // ② 导出：白皮书 / Prompt
+      h(Section, { title: '拿走它', hint: '给别人看，或喂给 AI' },
+        h('div', { style: { display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' } },
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            onClick: function () { void loadExport('document') },
+          }, '生成设定文档'),
+          h('button', {
+            style: btnStyle({ tiny: true }),
+            onClick: function () { void loadExport('prompt') },
+          }, '生成 AI 卡片')),
+        state.exportText
+          ? h('pre', {
+              style: {
+                margin: '8px 0 0', padding: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                font: '11px/1.55 ui-monospace, Menlo, Consolas, monospace',
+                color: T.text2, background: T.layer2, borderRadius: T.radius,
+                maxHeight: '34vh', overflowY: 'auto',
+              },
+            }, state.exportText)
+          : null),
+
+      // ③ 设置：提示档位（大部分人可以不管）
+      h(Section, { title: 'AI 提示注入', hint: '向 AI 注入多少推演说明' }, modeRow))
 
     const footer = h('div', { style: { padding: '8px 12px', borderTop: '1px solid ' + hairline.borderTop.replace('1px solid ', ''), ...dim, flex: '0 0 auto' } },
       '一个工作区强制绑定一份数据表；切换工作区时本页自动跟随。全局管理在左侧「数学工作区」。')
@@ -2198,6 +2565,8 @@ function makeRightTabTitle(react: any) {
         const Boundary: any = react ? makeBoundary(react) : function EmptyBoundary() { return null }
         // AI 工具卡片：在对话流里渲染推演结果（宿主 slot = tool.view.cordis）
         const ToolCard = react ? makeToolCard(react) : function EmptyToolCard() { return null }
+        // v3 工作台：一屏完成「改参数 → 看后果」
+        const Workbench = react ? makeWorkbench(react) : function EmptyWorkbench() { return null }
 
         /** 用错误边界包一层。 */
         const guard = function (Component: any) {
@@ -2436,7 +2805,25 @@ function makeRightTabTitle(react: any) {
             try {
               const dispose = ctx.slots.inject('main', function () {
                 pageOk = true
-                const result = ctx.slots.register({ name: 'main', key: PANEL_ID }, guard(LeftPanel))
+                // 主区就是工作台。
+                //
+                // 它需要知道「当前是哪个工作区」（决定存到哪张表）。
+                // 主区组件的 props 不会自动带这个，所以用 inject 声明——
+                // 这是宿主的正规做法（dsh-novel-writer 也这么用）。
+                const MainPage = function MainPage(props: any) {
+                  // 空串 = 「用后端当前工作区」，由 save-world 的 name 字段留空表示
+                  return react.createElement(Workbench, {
+                    name: (props && props.workspaceName) || '',
+                  })
+                }
+                const result = ctx.slots.register({
+                  name: 'main',
+                  key: PANEL_ID,
+                  // ⚠️ 客户端拿不到 currentWorkspace（那是后端函数）。
+                  // 工作台内部会自己读 /summary（它返回当前工作区的参数），
+                  // 所以这里不注入名字，让 Workbench 用空串表示「用后端当前表」。
+                  inject: function () { return {} },
+                }, guard(MainPage))
                 // 真正挂上了才上报（这是「UI 到底有没有出现」的可靠信号）
                 reportClientStatus({ stage: 'slots', page: pageOk, row: rowOk, right, order: 30 })
                 return result

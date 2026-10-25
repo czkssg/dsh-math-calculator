@@ -68,6 +68,7 @@ const SUITES = [
   { file: 'visualization-ui.mjs', expect: 32, label: '可视化界面（SVG 画布/热力图/工具卡片）' },
   { file: 'ui-feedback.mjs', expect: 51, label: 'UI 反馈修复（标题/切换/标注/折叠）' },
   { file: 'ui-simplified.mjs', expect: 29, label: 'UI 精简（5 组 + 世界参数表单）' },
+  { file: 'ui-v3.mjs', expect: 50, label: 'UI v3 工作台（参数分层/综合推演/反解）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
