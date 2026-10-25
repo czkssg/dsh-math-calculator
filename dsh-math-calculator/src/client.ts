@@ -1456,15 +1456,31 @@ function createRightPanel(react: any) {
     const promptMode = (state.settings && state.settings.promptMode) || 'brief'
     const disabled = ((state.table && state.table.overrides) || []).filter((item: any) => item.disabled)
 
+    // 下拉框：既显示、也能切。选中后**同时**改「当前表」和绑定，两边保持一致。
+    //
+    // 早先只调 /workspaces/switch 改当前表、不动绑定，于是后台轮询会按宿主工作区
+    // 把表拉回去，出现「选了 B 又变回 A」的错位。
+    // 现在改成走 bind 语义：既然数据表与工作区一一对应，切表就等于绑到该表。
     const switcher = h('select', {
+      title: '切换数据表：会同时更新「当前表」与绑定关系，右栏内容随之刷新',
       style: { ...inputStyle(118) },
       value: name,
       disabled: state.busy,
       onChange: (event: any) => {
         const next = event.target.value
-        if (next && next !== name) void act('/workspaces/switch', { name: next }, '已切换到 "' + next + '"')
+        if (!next || next === name) return
+        // 用 bind 而不是 switch：bind 会把「当前表」和绑定元信息一起改掉。
+        //
+        // 参数说明（bindHostWorkspace 的语义）：
+        //   workspaceId —— 宿主工作区 id；这里传表名，因为选中的就是「想让哪个表当当前表」
+        //   title       —— 用来**推导表名**（它才是决定读哪张表的字段）
+        // 两者都传 next，于是「选中的表 == 绑定的表 == 当前表」，三处一致，不会错位。
+        void act('/workspaces/bind', { workspaceId: next, title: next }, '已切换到 "' + next + '"')
       },
-    }, (state.list || []).map((item: any) => h('option', { key: item.name, value: item.name }, item.name)))
+    }, (state.list || []).map((item: any) => {
+      return h('option', { key: item.name, value: item.name },
+        item.name + (item.boundWorkspace ? '（已绑定）' : ''))
+    }))
 
     const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 8px', borderBottom: '1px solid ' + hairline.borderTop.replace('1px solid ', '') } },
       h('span', { style: { font: T.f14s, color: T.text1 } }, '本区'),
@@ -2205,6 +2221,17 @@ function makeRightTabTitle(react: any) {
                 if (!active) return
 
                 const activeId = String(active.workspaceId || '')
+
+                // ⚠️ 首次轮询**只记录、不绑定**。
+                //
+                // 早先 lastActiveId 初值是空串，第一次必然「不相等」→ 立刻 bind，
+                // 而 active 可能只是兜底拿到的 items[0]（不是用户真正在用的工作区），
+                // 于是把「当前表」强行改成第一张表——用户看到的就是
+                // 「我明明切到 B 了，界面却显示 A」，误以为自动切换没做到。
+                if (lastActiveId === '') {
+                  lastActiveId = activeId
+                  return
+                }
                 if (activeId === lastActiveId) return   // 没变，什么都不做
                 lastActiveId = activeId
 
@@ -2223,8 +2250,36 @@ function makeRightTabTitle(react: any) {
               }
             }
 
+            // ── 兜底轮询：只要后端「当前表」变了，就通知界面刷新 ──
+            //
+            // 为什么还要这一层：上面的 pollActive 负责「宿主工作区 → 数据表」，
+            // 但它依赖宿主的内部结构，不一定拿得到当前工作区。
+            // 而**界面显示的是后端的当前表**——只要这个变了，UI 就必须跟着换，
+            // 否则就是用户说的「后台绑定了但 UI 不换，让人误会」。
+            //
+            // 这一层不猜宿主，只问后端：GET /workspaces/current 的 name 变了吗？
+            let lastBackendName = ''
+            const pollBackend = function () {
+              void fetch(API_BASE + '/workspaces/current', { method: 'GET' })
+                .then(function (response) { return response && response.json ? response.json() : null })
+                .then(function (payload: any) {
+                  const data = (payload && payload.data) || payload || {}
+                  const currentName = String(data.name || '')
+                  if (!currentName) return
+                  if (lastBackendName === '') { lastBackendName = currentName; return }
+                  if (currentName === lastBackendName) return
+                  // 后端当前表变了 → 通知所有面板重新拉数据
+                  lastBackendName = currentName
+                  notifyWorkspaceChanged()
+                })
+                .catch(function () { /* 网络失败等下一轮 */ })
+            }
+
             // 2 秒一次：切换工作区是低频操作，2 秒足够快，也不会打扰宿主
-            const pollTimer = setInterval(pollActive, 2000)
+            const pollTimer = setInterval(function () {
+              pollActive()
+              pollBackend()
+            }, 2000)
             disposers.push(function () { clearInterval(pollTimer) })
             const right: { service: boolean; registered: boolean; error: string | null } = {
               service: false,

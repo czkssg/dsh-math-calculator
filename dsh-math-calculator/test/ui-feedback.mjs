@@ -121,6 +121,28 @@ console.log('-- 10. 自动切换的多源探测 --')
   assert('试会话反推', source.includes('currentSessionId'))
   assert('有兜底', source.includes('items[0]'))
 }
+
+console.log('-- 11. 下拉框与绑定一致（三处同一张表）--')
+{
+  // 用户核心诉求：UI 选了哪个表，后台就得是哪个表，不能错位。
+  assert('下拉框可切（不是只读）', source.includes("const switcher = h('select'"))
+  assert('切换走 bind', source.includes("/workspaces/bind"))
+  assert('选项显示绑定状态', source.includes('（已绑定）'))
+}
+
+console.log('-- 12. 首次轮询不误绑 --')
+{
+  // 曾经 lastActiveId 初值空串 → 首次必然「不相等」→ 立刻 bind，
+  // 把用户正在用的表强行改成第一张，造成「切了却没变」的假象。
+  assert('首次轮询只记录', source.includes("lastActiveId === ''"))
+}
+
+console.log('-- 13. 后端当前表变化 → UI 必刷新 --')
+{
+  // 兜底：不管宿主内部结构怎么变，只要后端当前表变了就通知刷新。
+  assert('轮询后端当前表', source.includes('/workspaces/current'))
+  assert('记录上次后端表名', source.includes('lastBackendName'))
+}
 console.log('')
 if (fails.length === 0) { console.log('全部通过：' + pass + ' 项'); process.exit(0) }
 console.log('通过 ' + pass + '，失败 ' + fails.length)
