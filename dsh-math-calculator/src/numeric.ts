@@ -26,7 +26,23 @@ export function toMatrix(input: any): number[][] {
   return rows
 }
 
-/** 行最简形（RREF），返回矩阵与主元列。 */
+/**
+ * 行最简形（RREF），返回矩阵与主元列。
+ *
+ * 秩、零空间、线性系统求解都建在它上面 —— 是 `numeric.ts` 的根。
+ *
+ * ⚠️ 这是**高斯-约当消元（部分主元法）**，不是完全主元法，也不是 QR/SVD。
+ * 因此它对**病态矩阵**（条件数极大）会给出不准的秩，例如
+ * 范德蒙德矩阵在高阶时、或元素量级差异超过 1e12 的矩阵。
+ * 需要更稳健时用 `singularValuesOf` 看奇异值衰减，而不是只信 `rankOf`。
+ *
+ * `1e-12` 这个阈值是「视作零」的判据：浮点消元会产生 1e-17 量级的噪声，
+ * 不清理会把 0 当成主元，秩凭空变大。代价是真·极小主元（如 1e-13）也会被视作零 ——
+ * 对本书这种「结构分析」用途够用，对高精度数值线性代数不够。
+ *
+ * @param input - 任意可转成二维数组的输入
+ * @returns 行最简形矩阵与主元所在列
+ */
 export function rref(input: any): { matrix: number[][]; pivots: number[] } {
   const a = toMatrix(input).map((row) => [...row])
   const rows = a.length
@@ -131,6 +147,20 @@ export function singularValuesOf(input: any): number[] {
   const a = toMatrix(input)
   const rows = a.length
   const cols = rows === 0 ? 0 : a[0].length
+  /**
+   * 通过 AᵀA 的特征值间接求奇异值：σᵢ = √λᵢ(AᵀA)。
+   *
+   * 为什么用这条路：AᵀA 是对称矩阵，对称矩阵有稳定且简单的特征值算法
+   * （`symmetricEigenvalues` 用 Jacobi 旋转）；直接对一般矩阵做 SVD 要复杂得多。
+   *
+   * ⚠️ 代价是**数值条件被平方**：AᵀA 的条件数是 A 的平方，所以
+   * 小奇异值（相对最大者 < 1e-8）会被算得严重失真，甚至变成负数——
+   * 下面 `Math.max(0, value)` 就是兜这个：AᵀA 理论上半正定，
+   * 但浮点误差能让极小特征值变成 -1e-16，开方就成了 NaN。
+   *
+   * 所以：**大奇异值可信，小奇异值只当「接近零」看**。
+   * 用它判秩没问题（只看有几个显著大于零），用它做病态矩阵的精确分解不行。
+   */
   const ata: number[][] = Array.from({ length: cols }, () => new Array(cols).fill(0))
   for (let i = 0; i < cols; i += 1) {
     for (let j = 0; j < cols; j += 1) {
@@ -174,12 +204,24 @@ export function makeNsolve(parse: (text: string) => any) {
     let x = Number(guess)
     if (!Number.isFinite(x)) x = 0
 
+    /**
+     * 牛顿迭代，导数用**中心差商**近似而不是解析求导。
+     *
+     * 为什么用差商：这个函数拿到的是 mathjs 的表达式节点，解析求导要走
+     * `derivative()` 再 parse，慢且对复杂表达式容易失败。中心差商
+     * `(f(x+h) − f(x−h)) / 2h` 精度是 O(h²)，对本用途够。
+     *
+     * `h` 取 `max(1e-8, |x|·1e-7)` 而不是固定值：固定 h 在 x 很大时
+     * 会因 `f(x+h) − f(x−h)` 的相消误差失去精度（两个数几乎相等，差值全是噪声）。
+     * 随 |x| 缩放能让相对步长恒定。
+     */
     for (let i = 0; i < 80; i += 1) {
       const fx = f(x)
       if (!Number.isFinite(fx)) break
       if (Math.abs(fx) < 1e-13) return trim15(x)
       const h = Math.max(1e-8, Math.abs(x) * 1e-7)
       const derivative = (f(x + h) - f(x - h)) / (2 * h)
+      // 导数趋零说明碰到极值点（或函数平），牛顿法会飞走 —— 交给兜底
       if (!Number.isFinite(derivative) || Math.abs(derivative) < 1e-14) break
       const next = x - fx / derivative
       if (!Number.isFinite(next)) break
@@ -187,7 +229,13 @@ export function makeNsolve(parse: (text: string) => any) {
       x = next
     }
 
-    // 兜底：在 [-1e6, 1e6] 上找变号区间再二分
+    /**
+     * 兜底：在 [-1e6, 1e6] 上按 0.01 步长扫变号区间，再二分收敛。
+     *
+     * 为什么需要：牛顿法对初值敏感，初值猜偏就发散。二分只要**变号**就能收敛，
+     * 代价是要先扫一遍（2 亿个点 × 每点一次求值 —— 所以只在牛顿失败后才走）。
+     * 这也意味着它只能找到 [-1e6, 1e6] 内的实根，超出范围的根找不到。
+     */
     let previous = f(-1e6)
     for (let x0 = -1e6; x0 <= 1e6; x0 += 1e-2) {
       const current = f(x0)

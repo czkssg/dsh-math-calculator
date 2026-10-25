@@ -32,7 +32,7 @@ git checkout -- dsh-math-calculator     # 从仓库恢复被跟踪文件
 cd dsh-math-calculator
 npm install                             # 恢复依赖（lib 与 node_modules 不在 git 里）
 npm run build
-node run-all-tests.mjs && npm run preflight   # 41 套 / 1697 项全绿
+node run-all-tests.mjs && npm run preflight   # 67 套 / 2970 项全绿
 ```
 
 ## 决策

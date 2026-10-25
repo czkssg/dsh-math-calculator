@@ -18,7 +18,7 @@ npm run test:all
 ## 改动前先跑基线
 
 ```bash
-npm run test:all     # 期望：41 套 / 1697 项 全绿
+npm run test:all     # 期望：67 套 / 2970 项 全绿
 npm run preflight    # 期望：全 ✓
 npm run doccheck     # 期望：0 缺失
 ```

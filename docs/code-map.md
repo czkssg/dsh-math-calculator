@@ -74,7 +74,7 @@ apply() 的顺序是有意的：先注册工具（核心能力），再挂提醒
 
 | 文件 | 职责 | 测试 |
 |---|---|---|
-| formula-library*.ts（5 批） | 342 条公式数据 | formulas-all |
+| formula-library*.ts（6 批） | 355 条公式数据 | formulas-all |
 | formulas.ts | 合并批次、求值、检索、频次 | formulas / formula-story |
 | formula-table.ts | 工作区公式表（覆盖/自定义/停用）+ 常量绑定 | formula-table |
 | formula-pack.ts | 全局公式包（$DSH_HOME，可写盘） | formula-ext |

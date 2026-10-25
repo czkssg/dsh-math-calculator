@@ -38,7 +38,7 @@ AI 开放层（判断与生成）
 | 能力 | 产出 | 不管 |
 |---|---|---|
 | `evaluate/solve/matrix/stats` | 数值与可信度标签 | 不解释数字的意义 |
-| `formula/formulas`（342 条） | 带适用域的公式求值 | 不判断值在故事里合不合适 |
+| `formula/formulas`（355 条） | 带适用域的公式求值 | 不判断值在故事里合不合适 |
 | `world` | 星球画像/天空/恒星/卫星/生命闸门 | 不写文化历史 |
 | `derivation → pipeline` | P1—P5 逐层判定 | 不说该改哪一层 |
 | `derivation → backSolve` | 从锚点反推参数窗口 | 不判断诉求是否值得保留 |

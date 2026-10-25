@@ -1,6 +1,6 @@
 # dsh-math-calculator
 
-DSH（DeepSeek Harness）原生数学计算与**架空世界观推演**插件。
+DSH（DeepSeek Harness）原生的**高精度数学计算器**插件，附带可选的架空世界推演能力。
 
 运行期依赖三样：`mathjs`、`algebrite`，以及官方 `@deepseek-ai/dsh-tools` 里的 **`defineTool` 一个导出**。
 宿主服务一律用 `ctx.get` 可选读取，**不碰 `CallId` 这类宿主内部导出** —— 旧版正是死在那个导出被删除上。
@@ -12,10 +12,12 @@ DSH（DeepSeek Harness）原生数学计算与**架空世界观推演**插件。
 | 场景 | 传统方式 | 这个插件 |
 |---|---|---|
 | 高精度计算 | 心算 / bash 拼 | BigNumber 64 位，整数输出完整定点 |
-| 写公式 | 每次都重推 | 342 条公式库，参数全可覆盖 |
-| 架空世界设定 | 凭感觉 | 输入星球参数 → 出重力/气候/地形上限 |
-| 改物理常数 | 无法验证 | 自动推导派生量 + 全公式偏差 + 设定校验 |
-| 多世界观 | 互相污染 | 工作区隔离，各持一套常数表与公式表 |
+| 符号运算 | 查表或近似 | 求导/积分/化简/展开，符号精确 |
+| 单位换算 | 自己查系数 | 73 个单位，温度按仿射换算 |
+| 写公式 | 每次都重推 | 355 条公式库，参数全可覆盖 |
+| 改物理常数 | 无法验证 | 自动推导派生量 + 全公式偏差 |
+| 多项目数据 | 互相污染 | 工作区隔离，各持一套常数表与公式表 |
+| *（可选）* 架空世界设定 | 凭感觉 | 输入星球参数 → 出重力/气候/地形上限 |
 
 ---
 
@@ -50,7 +52,7 @@ npm pack
 
 ---
 
-## 27 个 operation
+## 29 个 operation
 
 ### 基础运算
 
@@ -79,7 +81,7 @@ npm pack
 
 | operation | 说明 | 示例 |
 |---|---|---|
-| `formula` | 调用 342 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
+| `formula` | 调用 355 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
 | `formulas` | 检索公式库 | `{"query":"重力","operation":"formulas"}` |
 | `world` | 星球参数 → 体感画像 | `{"world":{"planetRadius":1.4,"rotationHours":40},"operation":"world"}` |
 | `terrain` | 局地气候（配合 world） | `{"world":{"planetMass":2},"terrain":{"kind":"coastal","latitudeDeg":58},"operation":"world"}` |
@@ -130,7 +132,7 @@ npm pack
 
 | 层 | 位置 | 预算 |
 |---|---|---|
-| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符，枚举 27 个 operation 与读输出规则 |
+| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符，枚举 29 个 operation 与读输出规则 |
 | 系统提示 | `systemPrompt.section`（brief） | ≤ 320 字符，每轮注入 |
 | 主动提醒 | `agent/pre-step` 钩子 | 每会话 ≤ 3 次，检测到计算需求才触发 |
 
@@ -139,7 +141,7 @@ npm pack
 
 ### 公式库扩展（全局包 + 工作区临时）
 
-342 条内置公式不够时，不必改代码：
+355 条内置公式不够时，不必改代码：
 
 | 级别 | 存放 | 范围 | 用法 |
 |---|---|---|---|
@@ -179,7 +181,7 @@ npm pack
 {"operation":"formulas","query":"freq:low"}    // 低频：量子/核物理/相对论/金融
 ```
 
-当前分布：高频 113 / 中频 199 / 低频 30（共 342 条）。
+当前分布：高频 113 / 中频 199 / 低频 30（共 355 条）。
 
 ### 基础运算扩展
 
@@ -294,7 +296,7 @@ npm pack
 {"operation":"quantities","constants":{"G":1.3e-10},"constantName":"G"}
 //    → 普朗克长度 ∝√G、玻尔半径与 G 无关、表面重力 ∝G
 
-// 4. 看全部 342 条公式相对现实的偏差
+// 4. 看全部 355 条公式相对现实的偏差
 {"operation":"impact","constants":{"c":1.5e8}}
 //    → 11 条受影响：质能 -75%、黑体辐射 +300%、维恩位移 -50%
 
@@ -368,7 +370,7 @@ npm pack
 
 插件做了三层感知机制，避免模型「自己心算一遍」：
 
-1. **工具描述**枚举全部 27 个 operation，并写明「凡是需要数值计算都必须调用」
+1. **工具描述**枚举全部 29 个 operation，并写明「凡是需要数值计算都必须调用」
 2. **系统提示注入**（`ctx.systemPrompt.section`）每轮对话提醒，默认 `brief` 档，可用 `{"promptMode":"full"}` 切换
 3. **`agent/pre-step` 钩子**实时检测用户消息里的计算需求，命中则插入提醒（每会话最多 3 次，用过插件后静默）
 
@@ -431,7 +433,7 @@ node run-all-tests.mjs # 58 套 / 2321 项
 src/
 ├── index.ts            插件入口 + 工具定义 + operation 分发（2032 行）
 ├── ops/                8 个较大的 operation 实现
-├── formula-library*.ts 342 条公式（5 个批次，含读者视角高频批）
+├── formula-library*.ts 355 条公式（6 个批次，含势力运行批次）
 ├── constants-graph.ts  43 个常数的依赖图（23 基础旋钮 / 20 派生）
 ├── quantities.ts       量纲分析与缩放指数
 ├── feasibility.ts      11 条设定约束

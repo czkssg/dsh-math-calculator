@@ -111,7 +111,7 @@ dsh --profile mathlab --dump-config | Select-String dsh-math-calculator
 
 ## 6. 发布清单
 
-- [x] 四项检查全绿（41 套 / 1697 项）
+- [x] 四项检查全绿（67 套 / 2970 项）
 - [x] 版本号 + CHANGELOG 已更新（2.0.0）
 - [x] `npm pack` 清单干净（151 项 / 519 KB，无密钥、无本地路径、无 node_modules）
 - [ ] **`npm publish`** ← 唯一阻塞项：本机 npm 未登录

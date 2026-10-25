@@ -28,7 +28,7 @@
 
 | 层 | 载体 | 预算 | 内容 |
 |---|---|---|---|
-| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符 | 何时必须用、25 个 operation 分组、读输出约定 |
+| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符 | 何时必须用、29 个 operation 分组、读输出约定 |
 | 系统提示 | `systemPrompt.section`（brief） | ≤ 320 字符 | 核心能力 + 三条读输出规则 + help 指针 |
 | 主动提醒 | `agent/pre-step` 钩子 | 每会话 ≤ 3 次 | 检测到计算需求时插入一条提醒 |
 

@@ -65,6 +65,17 @@ export function normalInv(p: number): number {
   const b = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1]
   const c = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783]
   const d = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416]
+  /**
+   * 0.02425 是 Acklam 逼近的分段点，不是随口取的常数。
+   *
+   * 逼近式在靠近两端（p 极接近 0 或 1）时精度会掉，所以分三段：
+   *   · p < 0.02425：用「尾部」有理式（以 √(−2 ln p) 为变量，抵消 erf 逆的奇性）
+   *   · p > 1 − 0.02425：镜像同一式子再取负（对称性）
+   *   · 中间段：以 (p−0.5) 为变量，精度最好
+   *
+   * 改这个常数会导致尾部精度骤降，而尾部恰恰是置信区间最常问的地方
+   * （99.9% 置信度对应 p≈0.0005）。别动。
+   */
   const pLow = 0.02425
   if (p < pLow) {
     const q = Math.sqrt(-2 * Math.log(p))
@@ -134,12 +145,22 @@ export function chiSquareCdf(x: number, df: number): number {
   return regularizedGammaP(df / 2, x / 2)
 }
 
-/** 正则化下不完全 Gamma P(a, x)。 */
+/**
+ * 正则化下不完全 Gamma P(a, x)。
+ *
+ * 卡方分布与 t 分布的 CDF 都归结到这个函数，所以它的精度直接决定
+ * 统计结论可不可信（`dist` 的 chisquare / t 两个分布走这里）。
+ *
+ * 两个分支不是优化，是**数值稳定性**要求（Numerical Recipes 的标准做法）：
+ *   · `x < a+1` 用级数展开 —— 此时 x 较小，级数收敛快；
+ *   · 否则用连分式 —— 级数在大 x 处会因相消误差失去精度。
+ * 如果只实现一个分支，另一个区间会给出发散或严重失真的结果。
+ */
 export function regularizedGammaP(a: number, x: number): number {
   if (x < 0 || a <= 0) return Number.NaN
   if (x === 0) return 0
   if (x < a + 1) {
-    // 级数展开
+    // 级数展开：P(a,x) = x^a·e^-x / Γ(a) · Σ (x^n / (a(a+1)…(a+n)))
     let sum = 1 / a
     let term = sum
     let n = a
@@ -147,11 +168,13 @@ export function regularizedGammaP(a: number, x: number): number {
       n += 1
       term *= x / n
       sum += term
+      // 相对误差判据：term 相对已被累加的量可忽略就停
       if (Math.abs(term) < Math.abs(sum) * 1e-15) break
     }
     return sum * Math.exp(-x + a * Math.log(x) - logGamma(a))
   }
-  // 连分式
+  // 连分式（Lentz 算法）：避免大 x 时级数的相消误差
+  // FPMIN 不是随便取的小数：它是「防止除以 0」的下限，取 1e-300 因为 double 最小正规数约 2.2e-308
   const FPMIN = 1e-300
   let b = x + 1 - a
   let c = 1 / FPMIN

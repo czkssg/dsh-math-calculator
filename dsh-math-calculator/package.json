@@ -2,7 +2,7 @@
   "name": "dsh-math-calculator",
   "version": "2.0.0",
   "private": false,
-  "description": "DSH 原生数学与架空世界推演插件：BigNumber 高精度、符号微积分、线代（秩/零空间/奇异值）、统计概率、微分方程、342 条自然科学公式（三轴标签）、物理常数推演、星球/天空/恒星/卫星/生命闸门推演。全部本地执行。",
+  "description": "DSH 原生的高精度数学计算器插件：BigNumber 64 位求值、符号微积分、线性代数（秩/零空间/奇异值/特征值）、统计概率与回归、微分方程、单位换算、355 条公式库（三轴标签）、物理常数推演。全部本地执行，不联网。附带一组可选的世界观推演工具。",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -78,14 +78,19 @@
     "dsh",
     "deepseek-harness",
     "dsh-plugin",
+    "calculator",
     "math",
+    "arbitrary-precision",
     "bigdecimal",
     "symbolic",
     "calculus",
     "linear-algebra",
     "statistics",
-    "worldbuilding",
-    "astronomy",
-    "exoplanet"
+    "differential-equations",
+    "unit-conversion",
+    "physics",
+    "formulas",
+    "local-execution",
+    "worldbuilding"
   ]
 }
