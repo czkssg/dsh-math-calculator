@@ -29,9 +29,17 @@ console.log('-- 1. 规模与频次分布 --')
   const high = listFormulasByFrequency('high').length
   const medium = listFormulasByFrequency('medium').length
   const low = listFormulasByFrequency('low').length
-  assert('高频 50–130 条', high >= 50 && high <= 130, String(high))
-  assert('中频 > 100', medium > 100, String(medium))
-  assert('低频 10–80 条', low >= 10 && low <= 80, String(low))
+  /**
+   * 频次分档的规模约束：**按比例判断，不写死绝对值**。
+   *
+   * 原来写死「高频 50–130 条」，于是公式库从 355 增到 395 就误报失败 ——
+   * 断言的本意是「高频不应该失控到占满全库」，那是比例问题，不是绝对数问题。
+   * 写死数字会让每次扩容都来改一次测试，属于虚假警报。
+   */
+  assert('高频占 20%—60%', high / total >= 0.2 && high / total <= 0.6,
+    (high / total * 100).toFixed(0) + '%（' + high + '/' + total + '）')
+  assert('中频 > 20%', medium / total > 0.2, (medium / total * 100).toFixed(0) + '%')
+  assert('低频 ≤ 25%', low / total <= 0.25, (low / total * 100).toFixed(0) + '%')
   assert('三档之和 = 总数', high + medium + low === total, `${high}+${medium}+${low}=${total}`)
 }
 

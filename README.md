@@ -3,7 +3,7 @@
 一个给 DSH（DeepSeek Harness）用的**高精度数学计算器插件**。
 
 模型不再心算，而是调用它：64 位 BigNumber 求值、符号微积分、线性代数、统计概率、
-微分方程、单位换算、355 条带标签的公式、物理常数推演。**全部本地执行，不联网。**
+微分方程、单位换算、395 条带标签的公式、物理常数推演。**全部本地执行，不联网。**
 
 > 它首先是一个计算器。此外附带一组可选的架空世界推演工具（星球、文明、收支）——
 > 用得上就用，用不上不影响计算能力。
@@ -33,7 +33,7 @@ dsh plugin --profile <profile> add .
 | 统计概率 | 描述统计（含偏度峰度分位数）、7 种分布的 PDF/CDF、线性与多项式回归 |
 | 微分方程 | RK4 数值解，一阶方程组与二阶自动降阶 |
 | 单位换算 | 73 个单位：SI、中文古制（里/丈/斤/亩/时辰）、英制、天文；温度按仿射换算 |
-| 公式库 | 355 条公式，参数全可覆盖；支持三轴检索与工作区自定义 |
+| 公式库 | 395 条公式，参数全可覆盖；支持三轴检索与工作区自定义 |
 | 物理常数 | 改一个常数，自动重算依赖它的派生量，并评估对世界的偏离度 |
 
 ## 为什么安全
@@ -67,7 +67,7 @@ npm run preflight    # 装机前自检
 |---|---|
 | 安装与完整用法 | [dsh-math-calculator/README.md](dsh-math-calculator/README.md) |
 | 全部文档索引 | [docs/README.md](docs/README.md) |
-| 355 条公式目录 | [dsh-math-calculator/FORMULAS.md](dsh-math-calculator/FORMULAS.md) |
+| 395 条公式目录 | [dsh-math-calculator/FORMULAS.md](dsh-math-calculator/FORMULAS.md) |
 | 能力边界（实测） | [dsh-math-calculator/LIMITS.md](dsh-math-calculator/LIMITS.md) |
 | 代码结构 | [docs/code-map.md](docs/code-map.md) |
 | 关键设计决策 | [docs/adr/](docs/adr/) |

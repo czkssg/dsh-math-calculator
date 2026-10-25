@@ -9,6 +9,7 @@
 import { toJsonValue, type JsonValue } from '../format.js'
 import { describeTerrain, type TerrainClimatology, type TerrainParams } from '../terrain.js'
 import { generateWorld, type WorldParams, type WorldProfile } from '../world.js'
+import { WORLD_PARAMS } from '../world-params.js'
 import { MODEL_CONSTANTS, describeProvenance, provenanceSummary } from '../provenance.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
@@ -21,13 +22,26 @@ import { CalcError, type MathArgs, type Outcome } from './shared.js'
 export function opWorld(args: MathArgs, precision: number): Outcome {
   const params: WorldParams = (args.world ?? {}) as WorldParams
 
-  // 允许把常用参数直接写在顶层，减少嵌套
-  const shorthand: WorldParams = {}
-  if (typeof args.planetRadius === 'number') shorthand.planetRadius = args.planetRadius
-  if (typeof args.planetMass === 'number') shorthand.planetMass = args.planetMass
-  if (typeof args.rotationHours === 'number') shorthand.rotationHours = args.rotationHours
-  if (typeof args.obliquityDeg === 'number') shorthand.obliquityDeg = args.obliquityDeg
-  const merged: WorldParams = { ...shorthand, ...params }
+  /**
+   * 允许把世界参数直接写在顶层，减少嵌套。
+   *
+   * ⚠️ 这里必须**从白名单派生**，不能手写几个。
+   * 曾经只认 4 个（planetRadius / planetMass / rotationHours / obliquityDeg），
+   * 于是 `{operation:'world', starMass: 10}` 里的 `starMass` 被**静默忽略** ——
+   * 输出仍然是太阳（1 M☉、主序寿命 10 Gyr），一句报错都没有。
+   * 作者以为算的是 10 倍质量恒星，实际算的是太阳：典型的「参数静默失效」。
+   *
+   * 现在遍历 `WORLD_PARAMS` 的全部键：顶层给了合法世界参数就采纳，
+   * 且 `world` 里的同名键优先（显式嵌套仍是更明确的写法）。
+   */
+  const shorthand: Record<string, unknown> = {}
+  const rawArgs = args as unknown as Record<string, unknown>
+  for (const spec of WORLD_PARAMS) {
+    const value = rawArgs[spec.key]
+    if (value === undefined || value === null || value === '') continue
+    shorthand[spec.key] = value
+  }
+  const merged: WorldParams = { ...(shorthand as WorldParams), ...params }
 
   let profile: WorldProfile
   try {

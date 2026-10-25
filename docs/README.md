@@ -12,7 +12,7 @@
 | [formula-authoring.md](formula-authoring.md) | 公式怎么写：字段、三轴标签、符号消歧、校验规则 |
 | [custom-constants.md](custom-constants.md) | 自创物理量：定义、量纲校验、与现有物理的关系 |
 | [reuse-principle.md](reuse-principle.md) | 复用原则：推演调用公式库，不重复实现计算 |
-| [../dsh-math-calculator/FORMULAS.md](../dsh-math-calculator/FORMULAS.md) | 355 条公式的完整目录（自动生成） |
+| [../dsh-math-calculator/FORMULAS.md](../dsh-math-calculator/FORMULAS.md) | 395 条公式的完整目录（自动生成） |
 | [../dsh-math-calculator/LIMITS.md](../dsh-math-calculator/LIMITS.md) | 能力边界：哪些支持、哪些做不到（实测档案） |
 
 ## 二、插件工程

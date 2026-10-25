@@ -32,7 +32,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
-  { file: 'formulas-all.mjs', expect: 355, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 395, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -114,6 +114,9 @@ const SUITES = [
   { file: 'balance.mjs', expect: 55, label: '收支盘点与最短板（粮水能财政军费信息）' },
   { file: 'power-formulas.mjs', expect: 115, label: '势力运行公式（EROI/扩散/粮食/财政/信息）' },
   { file: 'flip.mjs', expect: 64, label: '结论翻转判定（数值变了≠结论翻了）' },
+  // 第七批：通用计算基础件（金融/几何/化学/电学/工程）+ 检索可达性。
+  // 「房贷月供」「余弦定理」「容抗」这类日常问题此前在 355 条里无解。
+  { file: 'basic-formulas.mjs', expect: 101, label: '通用计算公式（金融/几何/化学/电学/工程）' },
   // 上面那些验「算得对不对」；这一套验「作者拿去能不能用」：
   // 输出里不许让 AI 去找已删的界面、不许有 Infinity/NaN、必须带单位与可信度标签、
   // 措辞不许反驳作者设定，并且一个场景从头推到尾要前后自洽。

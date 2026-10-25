@@ -22,11 +22,12 @@ import { PERCEPTION_FORMULAS } from './formula-library-perception.js'
 import { STORY_FORMULAS } from './formula-library-story.js'
 import { STORY2_FORMULAS } from './formula-library-story2.js'
 import { POWER_FORMULAS } from './formula-library-power.js'
+import { BASIC_FORMULAS } from './formula-library-basic.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 
 /**
- * 全部公式 = 主批次 + 扩展批次 + 感知层批次 + 故事批次 + 势力动力学批次。
+ * 全部公式 = 主批次 + 扩展 + 感知层 + 故事 + 势力动力学 + 通用计算基础件。
  * 分批组织而不是单文件拼接，避免 formula-library.ts 无限膨胀。
  */
 export const FORMULAS: FormulaDef[] = [
@@ -36,6 +37,7 @@ export const FORMULAS: FormulaDef[] = [
   ...STORY_FORMULAS,
   ...STORY2_FORMULAS,
   ...POWER_FORMULAS,
+  ...BASIC_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -46,6 +48,7 @@ for (const formula of PERCEPTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula
 for (const formula of STORY_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of STORY2_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of POWER_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of BASIC_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。
@@ -218,37 +221,153 @@ export function buildFormulaScope(engine: any, values: Record<string, unknown>):
 }
 
 /**
- * 查找公式。支持 id 精确匹配、名称子串、关键词、分类。
+ * 检索用的同义词：规范词 → 用户的其它说法。
+ *
+ * 为什么需要：原来的检索**只做整串子串匹配**，于是
+ *   `比热` → 命中（keys 里有「比热」）
+ *   `比热容` → 0 条（没有任何字段包含「比热容」这三个字）
+ *   `粮食` → 命中 4 条，`粮食产量` → 0 条
+ * 这些都是用户最自然的说法，却查不到 —— 检索比补公式更影响体感。
+ */
+const SEARCH_ALIASES: Record<string, string[]> = {
+  比热容: ['比热'],
+  比热: ['热容'],
+  粮食产量: ['粮食', '单产', '产量'],
+  单产: ['每公顷产量'],
+  人口承载: ['承载力', '养活'],
+  承载力: ['养活', '供养'],
+  恒星寿命: ['主序寿命', '寿命'],
+  贷款月供: ['月供', '贷款', '还款'],
+  月供: ['贷款', '还款'],
+  折现: ['现值', '贴现'],
+  净现值: ['现值', '折现'],
+  通货膨胀: ['通胀', '物价'],
+  余弦定理: ['余弦', '三角形'],
+  正弦定理: ['正弦', '三角形'],
+  稀释浓度: ['稀释', '浓度'],
+  摩尔浓度: ['摩尔', '浓度'],
+  电阻功率: ['电功率', '功率'],
+  电功率: ['功率', '电压'],
+  齿轮比: ['齿轮', '传动比'],
+  传动比: ['齿轮'],
+  热膨胀: ['膨胀', '伸长'],
+  梁挠度: ['挠度', '弯曲'],
+  黏度: ['粘度', '黏性'],
+  粘度: ['黏度'],
+  动能: ['运动能量'],
+  势能: ['位能'],
+  功率: ['做功快慢'],
+  体表面积: ['表面积'],
+  剂畺: ['剂量'],
+  剂量: ['用药'],
+}
+
+/**
+ * 把查询拆成可匹配的**词元**。
+ *
+ * 三路并集：
+ *   1. 整串（保持原有精确匹配优先）
+ *   2. 按空格 / 顿号 / 逗号 / 加号切开的词
+ *   3. 中文 2—4 字滑窗子串 —— 这一步是关键：
+ *      「粮食产量」与关键词「粮食」「产量」都能对上，
+ *      「比热容」能对上「比热」。没有它，中文复合词一律查不到。
+ *
+ * 只收 2 字以上的词元，避免单字（「力」「数」）把整个库都召回来。
+ *
+ * @param query - 原始查询
+ * @returns 去重后的词元列表（长词在前，评分时优先）
+ */
+function tokenizeQuery(query: string): string[] {
+  const raw = query.trim()
+  const tokens = new Set<string>()
+  if (raw !== '') tokens.add(raw)
+
+  for (const part of raw.split(/[\s,、+/]+/)) {
+    const piece = part.trim()
+    if (piece.length >= 2) tokens.add(piece)
+  }
+
+  // 同义词展开（两个方向：查到别名、别名查到本体）
+  for (const [canonical, aliases] of Object.entries(SEARCH_ALIASES)) {
+    const related = [canonical, ...aliases]
+    if (related.some((word) => raw.includes(word) || word.includes(raw))) {
+      for (const word of related) if (word.length >= 2) tokens.add(word)
+    }
+  }
+
+  // 中文滑窗：2—4 字
+  const cjkOnly = raw.replace(/[^\u4e00-\u9fa5]/g, '')
+  for (let size = 4; size >= 2; size -= 1) {
+    for (let start = 0; start + size <= cjkOnly.length; start += 1) {
+      tokens.add(cjkOnly.slice(start, start + size))
+    }
+  }
+
+  // 长词优先：命中长词说明更相关
+  return [...tokens].sort((left, right) => right.length - left.length)
+}
+
+/**
+ * 查找公式。支持 id 精确匹配、名称子串、关键词、分类、同义词与中文子词。
  * 返回按相关度排序的候选。
  *
- * 排序优先级：id 精确 > 关键词精确 > id 子串 > 名称精确 > 名称子串 > 描述 > 分类。
+ * 排序优先级：整串精确 > id 精确 > 关键词精确 > id 子串 > 名称精确 > 名称子串 > 描述 > 分类。
  * 注意：分类命中给的分要低，否则搜「重力」会把整个 physics/gravity
  * 分类的公式都挤到最前面，把真正相关的 gravitation 埋掉。
+ *
+ * ⚠️ 词元匹配的分数按**词长加权**：命中 4 个字比命中 2 个字更相关。
+ * 否则「粮食产量」会把所有含「量」的公式都召回到同一档。
+ *
+ * @param query - 查询串（关键词 / 同义词 / 中文复合词都行）
+ * @param limit - 最多返回条数。宽泛查询给大一点，否则会被截断成 10 条
+ * @returns 按相关度排序的公式
  */
-export function findFormulas(query: string, limit = 10): FormulaDef[] {
+export function findFormulas(query: string, limit = 20): FormulaDef[] {
   const text = query.trim().toLowerCase()
   if (text === '') return []
 
+  const tokens = tokenizeQuery(query)
   const scored: Array<{ formula: FormulaDef; score: number }> = []
+
   for (const formula of FORMULAS) {
     let score = 0
     const id = formula.id.toLowerCase()
+    const name = formula.name
 
+    // ── 整串精确匹配（最高优先，保持原行为）──
     if (id === text) score += 5000
     else if (id.includes(text)) score += 800
-
-    for (const key of formula.keys ?? []) {
-      const lowered = key.toLowerCase()
-      if (lowered === text) score += 2000
-      else if (lowered.includes(text)) score += 400
-    }
-
-    if (formula.name === query) score += 3000
-    else if (formula.name.includes(query)) score += 700
-    else if (formula.name.toLowerCase().includes(text)) score += 350
-
+    if (name === query) score += 3000
+    else if (name.includes(query)) score += 700
+    else if (name.toLowerCase().includes(text)) score += 350
     if (formula.desc.toLowerCase().includes(text)) score += 80
     if (formula.cat.toLowerCase().includes(text)) score += 20
+
+    // ── 词元匹配（同义词 / 中文子词）──
+    // 每个词元按长度加权；只取**最佳**的那个词元，避免一个公式被多加几次分。
+    let bestTokenScore = 0
+    for (const token of tokens) {
+      const lowered = token.toLowerCase()
+      let tokenScore = 0
+      // 词越长越相关：2 字基础分 60，每多一字 +60
+      const weight = Math.max(0, (token.length - 1) * 60)
+
+      if (id === lowered) tokenScore = Math.max(tokenScore, 900 + weight)
+      else if (id.includes(lowered)) tokenScore = Math.max(tokenScore, 420 + weight)
+
+      for (const key of formula.keys ?? []) {
+        const keyLower = key.toLowerCase()
+        if (keyLower === lowered) tokenScore = Math.max(tokenScore, 700 + weight)
+        else if (keyLower.includes(lowered)) tokenScore = Math.max(tokenScore, 300 + weight)
+      }
+
+      if (name === token) tokenScore = Math.max(tokenScore, 800 + weight)
+      else if (name.includes(token)) tokenScore = Math.max(tokenScore, 380 + weight)
+      else if (formula.desc.includes(token)) tokenScore = Math.max(tokenScore, 40 + Math.floor(weight / 3))
+
+      if (tokenScore > bestTokenScore) bestTokenScore = tokenScore
+    }
+    score += bestTokenScore
 
     if (score > 0) scored.push({ formula, score })
   }
