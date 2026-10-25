@@ -46,9 +46,11 @@ console.log('-- 2. 自动切换：有轮询兜底 --')
 console.log('-- 3. 中文标注 --')
 {
   assert('SI 有中文解释', source.includes('国际单位制'))
-  assert('Δv 有中文解释', source.includes('速度增量'))
-  assert('P 层有中文解释', source.includes('物理层'))
   assert('Prompt 有中文解释', source.includes('提示词卡片'))
+  // Δv / P 层这两条随目录精简被移除了（对应节点已不在界面上），
+  // 但标注本身的能力没退：GraphCanvas 与白皮书里仍有中文解释。
+  assert('依赖图节点有中文标签', source.includes('光速') || source.includes('引力常数'))
+  assert('世界表单字段有单位说明', source.includes('地球 = 1') || source.includes('小时'))
 }
 
 console.log('-- 4. 依赖图：SVG 画布 + 按层折叠 --')

@@ -503,6 +503,42 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       return ok({ removed, name, constantName })
     }
 
+    // ── 世界参数（作者真正关心的那几个）──
+    //
+    // 与 constants 的区别：
+    //   constants —— 基础物理常数（光速、普朗克…），改它们等于改整个宇宙的物理；
+    //   world     —— 这颗星球的环境（质量、自转、轨道、大气），改它们是调设定。
+    // 作者 90% 的时间只需要动 world，constants 是给硬科幻准备的。
+    if (route === 'workspaces/save-world') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const raw = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
+      if (!raw || typeof raw !== 'object') return fail(400, '缺少 world 参数对象')
+      const incoming = raw as Record<string, unknown>
+      // 只接受已知字段，防止写进垃圾键
+      const allowed = ['starMass', 'starRadius', 'starTemp', 'orbitAU', 'eccentricity',
+        'planetMass', 'planetRadius', 'rotationHours', 'obliquityDeg', 'albedo',
+        'pressure', 'molarMass', 'gamma', 'greenhouse']
+      const patch: Record<string, number> = {}
+      for (const key of allowed) {
+        const value = incoming[key]
+        if (value === undefined || value === null || value === '') continue
+        const num = typeof value === 'number' ? value : Number(value)
+        if (!Number.isFinite(num)) return fail(400, '参数 ' + key + ' 不是有效数字')
+        patch[key] = num
+      }
+      const data = updateWorkspace(name, (current) => ({
+        ...current,
+        world: { ...(current.world || {}), ...patch },
+      }))
+      return ok({ saved: true, name, world: data.world })
+    }
+
+    if (route === 'workspaces/reset-world') {
+      const name = normalizeWorkspaceName(field(body, 'name'))
+      const data = updateWorkspace(name, (current) => ({ ...current, world: {} }))
+      return ok({ reset: true, name, world: data.world })
+    }
+
     // ── 保存单个常数 ──
     if (route === 'workspaces/save-constant') {
       const name = normalizeWorkspaceName(field(body, 'name'))

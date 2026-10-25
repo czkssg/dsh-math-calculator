@@ -996,61 +996,62 @@ var TERRAIN_KINDS = ['plain', 'coastal', 'plateau', 'mountain', 'valley', 'deser
 // ═══════════════════════════════════════════════════════════════════
 
 /** 六大目录的静态结构（顺序即推演顺序）。 */
+/**
+ * 面向作者的面板（不是推演栈的镜像）。
+ *
+ * ## 为什么砍到 5 个
+ *
+ * 上一版照搬方案里的六大目录，做了 18 个节点。但那 18 个是**推演栈的结构**，
+ * 不是「作者要做什么」。真正改设定的作者只需要五件事：
+ *
+ *   1. 调这个世界的样子（重力、日长、轨道…）
+ *   2. 看这样调会怎样（体感 / 文明极限）
+ *   3. 要个我能拿走的成品（白皮书 / 提示词）
+ *   4. 翻我的改动记录
+ *   5. 用魔法 / 灵能这类超出物理的设定
+ *
+ * 其余的（依赖图、接口卡、相图、敏感性、变更清单…）是**给 AI 的数据**，
+ * 不该占用户界面——AI 需要时自己调工具，不必让作者看懂它们。
+ */
 var CONSOLE_TREE = [
   {
-    id: 'laws',
-    title: '1 基础物理法则',
+    id: 'world',
+    title: '这个世界',
     items: [
-      { id: 'constants', title: '1.1 常数表', hint: '可调旋钮与重置' },
-      { id: 'formulas', title: '1.2 公式库', hint: '模板与本区改动' },
-      { id: 'changes', title: '1.3 变更清单', hint: '改了哪些参数' },
-      { id: 'units', title: '1.4 单位与观测基准', hint: '观测者与本地基准' },
+      { id: 'world-basic', title: '基本设定', hint: '重力、日长、轨道、大气——作者最常调的四个' },
+      { id: 'world-dead', title: '这世界能住人吗', hint: '死寂判定与挽救方向' },
     ],
   },
   {
-    id: 'engine',
-    title: '2 物理链路引擎',
+    id: 'impact',
+    title: '会有什么后果',
     items: [
-      { id: 'pipeline', title: '2.1 分层推演', hint: '推演栈 P1—P5 逐层判定（P = 物理层）' },
-      { id: 'graph', title: '2.2 依赖图', hint: 'SVG 画布：谁依赖谁' },
-      { id: 'cards', title: '2.3 接口卡矩阵', hint: '每层变量与允许区间' },
-      { id: 'timeline', title: '2.4 演化时间轴', hint: '快慢变量与临界点' },
+      { id: 'impact-feel', title: '生活在这个世界', hint: '体感：能长多高、能飞多快、天空什么色' },
+      { id: 'impact-civ', title: '文明能走多远', hint: '能量、材料、交通、技术树' },
     ],
   },
   {
-    id: 'life',
-    title: '3 生命与生态基质',
+    id: 'fantasy',
+    title: '超出物理的设定',
     items: [
-      { id: 'biophysics', title: '3.1 生物物理约束', hint: '键能、神经、散热' },
-      { id: 'ecosystem', title: '3.2 生态热力学', hint: '食物链与承载力' },
-    ],
-  },
-  {
-    id: 'civil',
-    title: '4 宏观文明推演',
-    items: [
-      { id: 'civil-energy', title: '4.1 能量与热力学', hint: '卡诺、散热、卡尔达肖夫' },
-      { id: 'civil-material', title: '4.2 材料与结构', hint: '建筑、太空电梯' },
-      { id: 'civil-transport', title: '4.3 空间与交通', hint: 'Δv（速度增量）与星际航行耗时' },
-      { id: 'civil-tech', title: '4.4 技术树', hint: '锁死与开放' },
-    ],
-  },
-  {
-    id: 'validate',
-    title: '5 校验与分析',
-    items: [
-      { id: 'hardcheck', title: '5.1 硬约束监控', hint: '死寂判定与红绿灯' },
-      { id: 'phase', title: '5.2 相图热力图', hint: '色块网格 + 微调警告' },
-      { id: 'pending', title: '5.3 待定项看板', hint: '不强行闭合' },
+      { id: 'fantasy-magic', title: '魔法 / 灵能', hint: '换算成等价现实量，只提醒不判定' },
+      { id: 'fantasy-custom', title: '自创量', hint: '现有物理做不出的新量（带量纲）' },
     ],
   },
   {
     id: 'output',
-    title: '6 输出与归档',
+    title: '我要能拿走的东西',
     items: [
-      { id: 'archive', title: '6.1 七张表导出', hint: '项目卡到版本记录' },
-      { id: 'checklist', title: '6.2 完整性检查', hint: '逐项体检' },
-      { id: 'whitepaper', title: '6.3 白皮书与 AI 投射', hint: '白皮书（可读文档）/ Prompt（提示词卡片）' },
+      { id: 'out-whitepaper', title: '设定文档', hint: '白皮书：可直接看、可当设定集' },
+      { id: 'out-prompt', title: '喂给 AI 的卡片', hint: '粘贴到对话里，AI 立刻按这套规则写' },
+    ],
+  },
+  {
+    id: 'history',
+    title: '我改过什么',
+    items: [
+      { id: 'history-archive', title: '版本记录', hint: '每次跑留一版，可对比' },
+      { id: 'history-changes', title: '常数改动', hint: '精调用，一般不用碰' },
     ],
   },
 ]
@@ -1096,6 +1097,154 @@ var CONSOLE_TREE = [
  *
  * @param react - 宿主 react
  */
+/**
+ * 基本设定表单：作者最常调的四个参数。
+ *
+ * 为什么只有这几个：world 支持十几个参数，但作者 90% 的时间只动
+ * 重力（行星质量/半径）、日长、轨道、大气。其余留默认，
+ * 想精调的人可以用 AI 对话改，或者去「常数改动」。
+ *
+ * @param react - 宿主 react
+ */
+function makeWorldForm(react: any) {
+  if (!react) return function Noop() { return null }
+  const h = react.createElement
+  const { useState, useEffect } = react
+  const { Section, Row, Loading, Failure, Empty, Notice } = createKit(react)
+
+  /** 四个字段的说明（用户要求：非中文处都加标注）。 */
+  const FIELDS = [
+    {
+      key: 'planetMass',
+      label: '行星质量',
+      unit: '地球 = 1',
+      hint: '决定重力。2 倍质量 ≈ 2 倍重力（半径不变时）',
+      def: 1,
+    },
+    {
+      key: 'planetRadius',
+      label: '行星半径',
+      unit: '地球 = 1',
+      hint: '和质一起决定重力。半径大则重力小',
+      def: 1,
+    },
+    {
+      key: 'rotationHours',
+      label: '一天多长',
+      unit: '小时',
+      hint: '地球 24。太短会有超级风暴，太长会昼夜温差极大',
+      def: 24,
+    },
+    {
+      key: 'orbitAU',
+      label: '离恒星多远',
+      unit: 'AU（地球 = 1）',
+      hint: '地球 1。决定冷暖；宜居带约 0.95—1.67',
+      def: 1,
+    },
+  ]
+
+  return function WorldForm(props: any) {
+    const [state, setState] = useState({ loading: true, error: null, draft: {}, saved: {}, busy: false, message: null })
+
+    const load = function () {
+      setState(function (prev: any) { return { ...prev, loading: true, error: null } })
+      callApi('/workspaces/current')
+        .then(function (data: any) {
+          const world = (data && data.world) || {}
+          const draft: any = {}
+          for (const field of FIELDS) {
+            draft[field.key] = world[field.key] !== undefined ? String(world[field.key]) : ''
+          }
+          setState(function (prev: any) {
+            return { ...prev, loading: false, error: null, draft, saved: world }
+          })
+        })
+        .catch(function (error: any) {
+          setState(function (prev: any) {
+            return { ...prev, loading: false, error: (error && error.message) || '读取失败' }
+          })
+        })
+    }
+
+    useEffect(function () { load() }, [])
+
+    if (state.loading) return h(Loading, { text: '正在读取世界设定…' })
+    if (state.error) return h(Failure, { text: '读取失败：' + state.error, onRetry: load })
+
+    const save = function () {
+      setState(function (prev: any) { return { ...prev, busy: true, message: null } })
+      const world: any = {}
+      for (const field of FIELDS) {
+        const raw = state.draft[field.key]
+        if (raw !== '' && raw !== undefined) world[field.key] = Number(raw)
+      }
+      callApi('/workspaces/save-world', { name: (props.name || ''), world })
+        .then(function () {
+          setState(function (prev: any) {
+            return { ...prev, busy: false, message: '已保存。调一下就能看「会有什么后果」那栏的变化。', saved: world }
+          })
+          notifyWorkspaceChanged()
+        })
+        .catch(function (error: any) {
+          setState(function (prev: any) {
+            return { ...prev, busy: false, message: '失败：' + ((error && error.message) || error) }
+          })
+        })
+    }
+
+    const reset = function () {
+      setState(function (prev: any) { return { ...prev, busy: true, message: null } })
+      callApi('/workspaces/reset-world', { name: (props.name || '') })
+        .then(function () {
+          setState(function (prev: any) { return { ...prev, busy: false, message: '已恢复成地球参数' } })
+          load()
+          notifyWorkspaceChanged()
+        })
+        .catch(function () {
+          setState(function (prev: any) { return { ...prev, busy: false, message: '恢复失败' } })
+        })
+    }
+
+    const rows = FIELDS.map(function (field: any, index: number) {
+      return h(Row, {
+        key: field.key,
+        first: index === 0,
+        label: field.label,
+        note: field.unit + ' — ' + field.hint,
+        right: h('input', {
+          style: { ...inputStyle(84), textAlign: 'right' },
+          placeholder: String(field.def),
+          value: state.draft[field.key] !== undefined ? state.draft[field.key] : '',
+          disabled: state.busy,
+          onChange: function (event: any) {
+            const value = event.target.value
+            setState(function (prev: any) {
+              return { ...prev, draft: { ...prev.draft, [field.key]: value } }
+            })
+          },
+        }),
+      })
+    })
+
+    return h('div', null,
+      state.message ? h(Notice, { text: state.message, tone: /失败/.test(state.message) ? 'error' : 'ok' }) : null,
+      h(Section, {
+        title: '基本设定',
+        hint: '留空就是默认值（地球）',
+      },
+        h('div', null, rows),
+        h('div', { style: { display: 'flex', gap: 6, marginTop: 8 } },
+          h('button', { style: btnStyle(), disabled: state.busy, onClick: save }, '保存'),
+          h('button', { style: btnStyle({ tiny: true }), disabled: state.busy, onClick: reset }, '恢复成地球'))),
+      h('div', { style: { font: T.f11, color: T.text3, marginTop: 10, lineHeight: 1.7 } },
+        '调完之后，看左边「会有什么后果」——那里会说清这个设定意味着什么。',
+        h('br', null),
+        '更细的参数（大气成分、轴倾角、反照率…）可以直接跟 AI 说，让它帮你算。'))
+  }
+}
+
+
 function makeGraphCanvas(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
@@ -1273,7 +1422,12 @@ function makeDerivationPane(react: any) {
     useEffect(function () {
       let cancelled = false
       setState(function (prev: any) { return { ...prev, loading: true, error: null } })
-      callApi('/derive', { sub: props.sub, world: props.world || {} })
+      // mode：同一子命令的不同呈现（如 whitepaper 的 document / prompt）
+      callApi('/derive', {
+        sub: props.sub,
+        world: props.world || {},
+        whitepaperMode: props.mode,
+      })
         .then(function (payload: any) {
           if (cancelled) return
           setState({
@@ -1332,6 +1486,7 @@ function createRightPanel(react: any) {
   const DerivationPane = makeDerivationPane(react)
   const GraphCanvas = makeGraphCanvas(react)
   const HeatmapView = makeHeatmapView(react)
+  const WorldForm = makeWorldForm(react)
 
   return function RightPanel(props: any) {
     const [state, setState] = useState({
@@ -1788,63 +1943,53 @@ function createRightPanel(react: any) {
             variables.length ? h('div', null, variableRows) : null,
             variableForm, terrainForm))
       }
-      if (id === 'formulas') {
+      // 常数精调：绝大多数作者不需要，所以只挂在「我改过什么」下面，
+      // 不占主流程。想改光速、普朗克常数这类基础量的人才进来。
+      if (id === 'history-changes') {
         return h('div', null,
-          h(Section, { title: '本区公式改动', count: overrides.length + custom.length },
-            formulaRows.length ? h('div', null, formulaRows) : h(Empty, { text: '（全部使用模板公式）' })),
-          h(Section, { title: '停用某条公式' }, disableForm))
-      }
-      if (id === 'changes') {
-        return h(Section, { title: '变更清单', hint: '本区相对模板改了什么' },
+          h(Section, {
+            title: '基础物理常数',
+            count: constBase.length,
+            hint: changedCount > 0 ? '已改 ' + changedCount + ' 项（会影响整个世界）' : '默认全部为现实值',
+          }, constantSection),
           changedCount > 0
-            ? h('div', null, constants.map(function (entry: any) {
-                return h(Row, { key: 'ch-' + entry[0], label: entry[0], note: '= ' + String(entry[1]), right: null })
-              }))
-            : h(Empty, { text: '（还没改过任何常数）' }))
+            ? h(Section, { title: '改动清单', hint: '本区相对现实值改了什么' },
+                h('div', null, constants.map(function (entry: any) {
+                  return h(Row, { key: 'ch-' + entry[0], label: entry[0], note: '= ' + String(entry[1]), right: null })
+                })))
+            : null)
       }
-      if (id === 'units') {
-        return h('div', null,
-          h(Section, { title: '提示注入档位', hint: '向 AI 注入多少推演说明' }, modeRow),
-          h(Section, { title: '观测者', hint: '切换后体感结论会变' },
-            h(Empty, { text: '观测者在对话里切换（说「用二维生物视角看」即可），或在推演里指定。' })))
+      // 「基本设定」是唯一的输入表单：作者在这里动手，其余页面都是结果。
+      if (id === 'world-basic') {
+        return h(WorldForm, { name: name, key: 'world-form-' + name })
       }
-      // 其余页面统一渲染后端推演结果
-      // 目录 → 后端子命令。多个目录共用同一子命令是**有意的**：
-      // 4.x 四个小节都是 civilization 的不同切面，界面按目录过滤即可，
-      // 不必让后端为每个小节各写一份。
+
+      // 其余页面：统一渲染后端推演结果。
+      //
+      // 一个节点对应一个子命令，多对一是有意的（体感与文明都是不同切面）。
       const subMap: Record<string, string> = {
-        // 2.1 依赖图与 5.2 相图用可视化组件渲染（其余目录仍是文本）
-        'pipeline': 'pipeline',
-        'graph': 'graph',
-        'phase': 'heatmap',
-        'cards': 'cards',
-        'timeline': 'timeline',
-        'biophysics': 'fantasy',
-        'ecosystem': 'civilization',
-        'civil-energy': 'civilization',
-        'civil-material': 'civilization',
-        'civil-transport': 'civilization',
-        'civil-tech': 'civilization',
-        'hardcheck': 'dead',
-        'pending': 'checklist',
-        'archive': 'history',
-        'checklist': 'checklist',
-        'whitepaper': 'whitepaper',
+        'world-dead': 'dead',
+        'impact-feel': 'pipeline',
+        'impact-civ': 'civilization',
+        'fantasy-magic': 'fantasy',
+        'fantasy-custom': 'cards',
+        'out-whitepaper': 'whitepaper',
+        'out-prompt': 'whitepaper',
+        'history-archive': 'history',
+        'history-changes': 'checklist',
       }
       const sub = subMap[id] || 'pipeline'
-      // 可视化组件通过 props 传入：DerivationPane 是独立闭包，拿不到外层的组件。
-      const viz = (id === 'graph') ? 'graph' : (id === 'phase') ? 'heatmap' : null
+      // 提示词卡片单独走一个模式，其余都是文档模式
+      const mode = (id === 'out-prompt') ? 'prompt' : undefined
       return h(DerivationPane, {
         sub: sub,
+        mode: mode,
         world: state.worldParams || {},
-        viz: viz,
-        GraphCanvas: GraphCanvas,
-        HeatmapView: HeatmapView,
         key: id + '-' + sub,
       })
     }
 
-    const activeItem = state.activeNode || 'constants'
+    const activeItem = state.activeNode || 'world-basic'
 
     // 左：六大目录树
     const tree = h('div', {

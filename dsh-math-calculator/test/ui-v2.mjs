@@ -61,8 +61,12 @@ console.log('-- 4. 客户端产物含六大目录 --')
   const source = readFileSync(clientPath, 'utf8')
   assert('含 CONSOLE_TREE', source.includes('CONSOLE_TREE'))
   assert('含 DerivationPane', source.includes('DerivationPane'))
-  assert('有六个一级目录', (source.match(/id: 'laws'|id: 'engine'|id: 'life'|id: 'civil'|id: 'validate'|id: 'output'/g) || []).length === 6,
-    String((source.match(/id: 'laws'|id: 'engine'|id: 'life'|id: 'civil'|id: 'validate'|id: 'output'/g) || []).length))
+  // ⚠️ 目录树已从「推演栈六大目录」精简为「面向作者的 5 组」。
+  //    技术目录（依赖图/接口卡/相图…）不占界面，AI 仍可通过 /derive 取。
+  const groups = ['world', 'impact', 'fantasy', 'output', 'history']
+  const groupCount = groups.filter(function (g) { return source.includes("id: '" + g + "'") }).length
+  assert('有五个一级目录（面向作者）', groupCount === 5, String(groupCount))
+  assert('不再有推演栈镜像目录', !source.includes("id: 'laws'") && !source.includes("id: 'engine'"))
 }
 
 console.log('-- 5. 客户端硬约束仍满足 --')
