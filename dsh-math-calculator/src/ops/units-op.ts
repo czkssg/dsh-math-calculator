@@ -95,6 +95,24 @@ function show(value: number): string {
 }
 
 /**
+ * 显示单位系数（清单里用）。
+ *
+ * 与 `show` 分开：`亩` 的系数是 666.666…（无限循环），
+ * 用 `show` 会显示成 666.667，在清单里看着像一个精确值。
+ * 这里对整数系数原样输出，其余保留 6 位有效数字。
+ *
+ * @param factor - 换算到基准单位的系数
+ * @returns 显示串
+ */
+function showFactor(factor: number): string {
+  if (!Number.isFinite(factor)) return '—'
+  const abs = Math.abs(factor)
+  if (abs !== 0 && (abs >= 1e15 || abs < 1e-4)) return factor.toExponential(6)
+  if (Number.isInteger(factor)) return String(factor)
+  return String(Number(factor.toPrecision(6)))
+}
+
+/**
  * `units`：单位换算与单位清单。
  *
  * @param args - 工具参数
@@ -134,7 +152,7 @@ export function opUnits(args: MathArgs): Outcome {
       for (const unit of custom) {
         lines.push(
           '  ' + unit.name.padEnd(10) + ' ' + DIMENSION_LABEL[unit.dimension].padEnd(4) +
-          ' 1 ' + unit.name + ' = ' + unit.factor + ' ' + BASE_UNIT[unit.dimension] +
+          ' 1 ' + unit.name + ' = ' + showFactor(unit.factor) + ' ' + BASE_UNIT[unit.dimension] +
           (unit.note ? '（' + unit.note + '）' : ''),
         )
       }
@@ -147,7 +165,7 @@ export function opUnits(args: MathArgs): Outcome {
       for (const unit of items) {
         const aliases = (unit.aliases || []).length > 0 ? '（别名：' + unit.aliases!.join('、') + '）' : ''
         lines.push(
-          '  ' + unit.name.padEnd(10) + ' = ' + String(unit.factor).padEnd(22) +
+          '  ' + unit.name.padEnd(10) + ' = ' + showFactor(unit.factor).padEnd(22) +
           BASE_UNIT[dimension] + aliases,
         )
         if (unit.note) lines.push('      · ' + unit.note)

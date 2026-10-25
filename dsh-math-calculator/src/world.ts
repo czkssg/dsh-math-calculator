@@ -640,7 +640,7 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
       (surfaceGravityEarth < 0.7
         ? '——跳跃更高更远，坠落伤害更小，大体积生物更容易支撑。'
         : surfaceGravityEarth > 1.4
-          ? '——动作沉重、攀爬困难，生物必须更矮壮，飞行几乎不可能。'
+          ? '——动作沉重、攀爬困难，生物得长成矮壮型才撑得住，飞行几乎不可能。'
           : '——与地球相近，人类体感几乎无差异。'),
   )
 

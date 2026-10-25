@@ -51,7 +51,10 @@ console.log('-- 3. help 清单必须提到新能力 --')
   assert('提到天空/恒星', help.includes('天空') && help.includes('恒星'))
   assert('提到生命闸门', help.includes('生命闸门'))
   assert('提到跨模块一致性', help.includes('一致性'))
-  assert('提到侧栏入口', help.includes('数学工作区'))
+  // UI 已于 2026-10-25 全部移除。help 里不该再出现「侧栏」「图形化管理」这类指引，
+  // 否则 AI 会告诉作者去点一个不存在的面板（真机实测踩到过）。
+  assert('help 不再提已删的侧栏入口', !help.includes('侧栏'), '')
+  assert('help 说明没有图形界面', /没有图形界面|无图形界面/.test(help), '')
 }
 
 console.log('-- 4. world 输出完整性 --')

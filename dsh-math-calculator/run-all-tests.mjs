@@ -61,7 +61,7 @@ const SUITES = [
   { file: 'timeline.mjs', expect: 34, label: '补丁1/11 时间轴（快慢解耦+临界点+路径锁定）' },
   { file: 'whitepaper.mjs', expect: 35, label: '补丁8 白皮书 + Prompt 投射' },
   { file: 'provenance-cost.mjs', expect: 43, label: '补丁4/5 因果溯源 + 算力预警' },
-  { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
+  { file: 'advanced.mjs', expect: 30, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
   { file: 'formula-story2.mjs', expect: 29, label: '读者视角高频公式（第 5 批：建筑/攻城/农业/医药）' },
@@ -114,6 +114,10 @@ const SUITES = [
   { file: 'balance.mjs', expect: 55, label: '收支盘点与最短板（粮水能财政军费信息）' },
   { file: 'power-formulas.mjs', expect: 115, label: '势力运行公式（EROI/扩散/粮食/财政/信息）' },
   { file: 'flip.mjs', expect: 64, label: '结论翻转判定（数值变了≠结论翻了）' },
+  // 上面那些验「算得对不对」；这一套验「作者拿去能不能用」：
+  // 输出里不许让 AI 去找已删的界面、不许有 Infinity/NaN、必须带单位与可信度标签、
+  // 措辞不许反驳作者设定，并且一个场景从头推到尾要前后自洽。
+  { file: 'real-usage.mjs', expect: 94, label: '实际使用验收（作者视角的完整场景）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */
