@@ -4,10 +4,12 @@
  * 检查项：
  *   1. 构建产物存在且比源码新（没有忘记 npm run build）
  *   2. 入口导出契约（name / apply / inject）
- *   3. 客户端产物格式与席位（__ModuleLoader__ / sidebar.panellist / main）
- *   4. 运行期只依赖官方 defineTool，不 import 其它 @deepseek-ai/* 包
- *   5. package.json 的 dsh 字段完整
+ *   3. 运行期只依赖官方 defineTool，不 import 其它 @deepseek-ai/* 包
+ *   4. package.json 的 dsh 字段完整
  *
+ * 注意：**没有**客户端产物检查。UI 已于 2026-10-25 全部移除
+ * （见 docs/ui-removed.md），能力只通过 math_execute 与 HTTP 路由给 AI。
+ * 这里反过来断言「客户端产物确实不存在」，防止哪天被无意加回来。
  * 退出码非 0 表示「先别装」。
  */
 import { readFileSync, existsSync, statSync } from 'node:fs'
@@ -30,9 +32,10 @@ function check(name, condition, detail) {
 
 console.log('== 1. 构建产物 ==')
 const mainPath = join(root, 'lib/index.js')
-const clientPath = join(root, 'lib/client.js')
 check('lib/index.js 存在', existsSync(mainPath))
-check('lib/client.js 存在', existsSync(clientPath))
+// UI 已移除：客户端产物必须不存在（否则说明 build 又把界面捡回来了）
+check('没有 lib/client.js 产物（UI 已移除）', !existsSync(join(root, 'lib/client.js')))
+check('没有 lib/client.d.ts 产物（UI 已移除）', !existsSync(join(root, 'lib/client.d.ts')))
 if (existsSync(mainPath)) {
   const newestSource = Math.max(
     ...['index.ts', 'world.ts', 'stellar.ts', 'life.ts', 'integration.ts', 'numeric.ts', 'api.ts'].map((file) => {
@@ -49,26 +52,18 @@ check('导出 name', typeof mod.name === 'string', mod.name)
 check('导出 apply', typeof mod.apply === 'function')
 check('inject 恰好是 [tools]', Array.isArray(mod.inject) && mod.inject.length === 1 && mod.inject[0] === 'tools', JSON.stringify(mod.inject))
 
-console.log('== 3. 客户端产物 ==')
-const client = readFileSync(clientPath, 'utf8')
-check('使用 __ModuleLoader__', client.includes('__ModuleLoader__'))
-check('挂 sidebar.panellist 入口', client.includes('sidebar.panellist'))
-check('挂 main 页面', client.includes("name: 'main'"))
-// 右侧边栏：当前工作区数据表。契约 = 先向 sidebarRightTabs 登记页签，
-// 再挂 sidebar.right.pane.tab 与 .title（两者的 key 必须与页签 id 一致）。
-check('挂右侧边栏页签（当前工作区）', client.includes('sidebar.right.pane.tab') && client.includes('sidebarRightTabs'))
-check('有错误边界', client.includes('MathCalcBoundary'))
-check('不注入全局样式', !client.includes('document.head'))
-// 真机事故：桌面宿主会重复执行 client bundle，宿主加载器对同一 id 二次注册会抛错，
-// 未捕获错误会让整次 web boot 失败并被桌面端升级为致命错误（窗口都出不来）。
-check('客户端入口幂等（重复执行不抛）', client.includes('__dshMathCalculatorClientRegistered__'))
-check('注册失败被兜底', /try\s*\{[\s\S]{0,400}?loader\.load/.test(client) && client.includes('console.warn'))
-// 真机事故：宿主按**包名**查找 client 模块。注册 id 写成 "<包名>-client" 时，
-// 模块其实注册成功了，但宿主按包名取不到 → "entry did not activate / import failed"
-// → 桌面端升级为致命错误，窗口都出不来。
-const clientPackageName = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name
-check('客户端注册 id = 包名', client.includes(`id: '${clientPackageName}'`), clientPackageName)
-check('客户端注册 id 不是 "<包名>-client"', !client.includes(`id: '${clientPackageName}-client'`))
+console.log('== 3. 客户端已移除（反向前提）==')
+//
+// UI 三版（目录树 → 精简 → 单页工作台）效果都不好，2026-10-25 决定全砍，
+// 能力转向 math_execute 与 HTTP 路由。客户端相关的自检项全部作废，
+// 改成断言「它确实不在」——这些断言与 test/integration.mjs 第 5 节互为印证。
+{
+  const pkgPath = join(root, 'package.json')
+  const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  check('package.json 无 dsh.client 声明', !(pkgJson.dsh && pkgJson.dsh.client))
+  check('exports 不含 ./client', !(pkgJson.exports && pkgJson.exports['./client']))
+  check('无 tsconfig.client.json', !existsSync(join(root, 'tsconfig.client.json')))
+}
 
 console.log('== 4. 运行期依赖 ==')
 const indexSource = readFileSync(join(root, 'lib/index.js'), 'utf8')
@@ -86,9 +81,6 @@ notes.push(`注释行占比 ${(docs.commentRatio * 100).toFixed(1)}%（${docs.fi
 console.log('== 6. package.json ==')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 check('有 dsh.bundle.patch', Boolean(pkg.dsh && pkg.dsh.bundle && pkg.dsh.bundle.patch))
-check('有 dsh.client.platform', pkg.dsh && pkg.dsh.client && pkg.dsh.client.platform === 'web')
-check('client.inject 含 ui-slots', Boolean(pkg.dsh && pkg.dsh.client && pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-slots')))
-check('exports 指向 client', Boolean(pkg.exports && pkg.exports['./client']))
 check('main 指向 lib/index.js', pkg.main === 'lib/index.js')
 check('engines.dsh 存在（标准位置）', Boolean(pkg.engines && typeof pkg.engines.dsh === 'string'), pkg.engines && pkg.engines.dsh)
 check('dsh.manifestVersion = 1', Boolean(pkg.dsh && pkg.dsh.manifestVersion === 1))

@@ -2,6 +2,35 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 移除
+
+- **UI 全部移除**（2026-10-25，`14f6ed0`）。做了三版（目录树 18 节点 → 精简 10 节点 →
+  单页工作台）效果始终不好，决定砍掉：`src/client.ts`（2497 行）、`lib/client.js`
+  （138.8 KB）、9 个客户端测试套件、`tsconfig.client.json`、`package.json` 的
+  `dsh.client` 与 `exports["./client"]`。**后端 63 个模块一个没动**，能力全部保留，
+  只经 `math_execute`（27 种 operation）与 HTTP 路由（`/derive`、`/summary`、
+  `/world-params`、`/solve-anchor`、`/workspaces/*`）给 AI。见 `docs/ui-removed.md`。
+
+### 修复
+
+- **`npm run preflight` 因 UI 移除而崩溃**：它仍在 `readFileSync('lib/client.js')`，
+  文件已删 → `ENOENT`，装机前自检直接非零退出。改为反向断言（客户端产物确实不存在、
+  无 `dsh.client`、无 `exports["./client"]`、无 `tsconfig.client.json`），
+  与 `test/integration.mjs` 第 5 节互为印证。
+- **`tsconfig.json` 仍排除 `src/client.ts`**：文件早不存在，排除项是无用残留，清掉。
+
+### 测试
+
+- 新增 `test/summary.mjs`（37 项），守护 `deriveAll()` 的白名单过滤 —— UI 三版删掉后，
+  它是「**派生量绝不入库**」唯一还在运行的实现点。断言：硬塞 `gravity: 99` 被丢弃、
+  重力仍按 `G·M/R²` 现算成 19.6 m/s²、垃圾键/空串/null/undefined 一律丢弃、
+  基础量与派生量键名不重叠、结论层跟着基础量走、参数元数据表里不许出现派生量。
+  已进 `run-all-tests.mjs` 基线。期望值由公式独立算出（19.639 m/s² / 15.819 km/s），
+  不是从实现抄回来的。
+- 全量基线：**56 套 / 2232 项 → 57 套 / 2269 项**，全绿。
+
 ## [2.0.0] — 2026-10-24
 
 首个公开版本。
