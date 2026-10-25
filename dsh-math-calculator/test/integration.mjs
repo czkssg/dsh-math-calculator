@@ -139,47 +139,15 @@ console.log('-- 4. 每个 operation 都能实际执行 --')
   assert('没有任何探针抛异常', threw === 0, String(threw))
 }
 
-console.log('-- 5. client 产物格式（宿主能否加载）--')
+console.log('-- 5. 客户端已移除（UI 全砍，能力转向 AI 接口）--')
 {
-  const clientPath = join(root, 'lib/client.js')
-  assert('client.js 存在', existsSync(clientPath))
-
-  const source = readFileSync(clientPath, 'utf8')
-  assert('是脚本格式（无顶层 import/export）',
-    !/^(import |export )/m.test(source),
-    (source.match(/^(import |export )/m) || [''])[0])
-  assert('用 __ModuleLoader__ 注册', source.includes('__ModuleLoader__'))
-  assert('有 factory', source.includes('factory'))
-  assert('声明了 slots 依赖', source.includes("inject: ['slots']") || source.includes('inject:["slots"]'))
-
-  // 在模拟的浏览器环境里加载它
-  let loadedSpec = null
-  const fakeWindow = {
-    __ModuleLoader__: {
-      load: (spec) => {
-        loadedSpec = spec
-      },
-    },
-  }
-  // 用 vm 跑，模拟浏览器
-  const vm = await import('node:vm')
-  const context = vm.createContext({ window: fakeWindow, console, setTimeout, Promise, fetch: () => Promise.reject(new Error('no fetch')) })
-  try {
-    vm.runInContext(source, context)
-    assert('client.js 能在脚本环境执行', true)
-    assert('向 loader 注册了模块', Boolean(loadedSpec))
-    // 宿主按包名查找 client 模块：id 必须是包名（真机事故，见 docs/handoff）
-    assert('模块 id 等于包名', loadedSpec && loadedSpec.id === 'dsh-math-calculator',
-      loadedSpec ? loadedSpec.id : '')
-    // 调用 factory
-    const fakeRequire = () => ({ createElement: () => null, useState: () => [{}, () => {}], useEffect: () => {}, useCallback: (fn) => fn })
-    const mod2 = loadedSpec.factory(fakeRequire)
-    assert('factory 返回 apply', typeof mod2.apply === 'function')
-    assert('factory 返回 inject', Array.isArray(mod2.inject) && mod2.inject.includes('slots'),
-      JSON.stringify(mod2.inject))
-  } catch (error) {
-    bad('client.js 在脚本环境执行', error.message)
-  }
+  // 决定（2026-10-25）：UI 不再提供，所有能力通过 math_execute 与 HTTP 路由给 AI。
+  // 因此不再有 client.js、不再有 dsh.client 声明。这里断言它们确实没了，
+  // 防止哪天又被无意加回来。
+  assert('没有 client.js 产物', !existsSync(join(root, 'lib/client.js')))
+  const pkg0 = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+  assert('没有 dsh.client 声明', !(pkg0.dsh && pkg0.dsh.client))
+  assert('exports 不含 ./client', !(pkg0.exports && pkg0.exports['./client']))
 }
 
 console.log('-- 6. manifest 三者一致 --')
@@ -188,8 +156,6 @@ console.log('-- 6. manifest 三者一致 --')
   assert('name 与入口导出一致', pkg.name === mod.name, pkg.name + ' vs ' + mod.name)
   assert('main 指向 lib/index.js', pkg.main === 'lib/index.js', pkg.main)
   assert('有 dsh.bundle.patch', Boolean(pkg.dsh && pkg.dsh.bundle && pkg.dsh.bundle.patch))
-  assert('有 dsh.client 声明', Boolean(pkg.dsh && pkg.dsh.client))
-  assert('exports 有 ./client', Boolean(pkg.exports && pkg.exports['./client']))
   assert('exports 有 ./package.json', Boolean(pkg.exports && pkg.exports['./package.json']))
   assert('deps 含 mathjs', Boolean(pkg.dependencies && pkg.dependencies.mathjs))
   assert('deps 含 algebrite', Boolean(pkg.dependencies && pkg.dependencies.algebrite))

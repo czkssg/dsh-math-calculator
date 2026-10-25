@@ -43,7 +43,6 @@ const SUITES = [
   { file: 'determinism.mjs', expect: 18, label: '确定性（同输入同输出）' },
   { file: 'numeric.mjs', expect: 29, label: '基础运算扩展（秩/零空间/奇异值/分解/求根）' },
   { file: 'integration-checks.mjs', expect: 24, label: '跨模块一致性（后端整合）' },
-  { file: 'client-ui.mjs', expect: 50, label: '前端挂载安全（令牌化 UI + 右栏 + 心跳）' },
   { file: 'api.mjs', expect: 102, label: 'UI 后端 API（绑定/sync/自动建表/SI常数/重置/心跳）' },
   { file: 'workspace-scope.mjs', expect: 20, label: '工作区作用域（数据表跟着会话 cwd 走）' },
   { file: 'derivation.mjs', expect: 58, label: '推演栈（八层/接口卡/无量纲/单位陷阱/敏感性/相图）' },
@@ -62,13 +61,6 @@ const SUITES = [
   { file: 'timeline.mjs', expect: 34, label: '补丁1/11 时间轴（快慢解耦+临界点+路径锁定）' },
   { file: 'whitepaper.mjs', expect: 35, label: '补丁8 白皮书 + Prompt 投射' },
   { file: 'provenance-cost.mjs', expect: 43, label: '补丁4/5 因果溯源 + 算力预警' },
-  { file: 'ui-v2.mjs', expect: 30, label: 'UI v2 六大目录 + /derive 路由 + 强绑定' },
-  { file: 'ui-v2-panels.mjs', expect: 30, label: 'UI v2 左右栏补全（继承/对比/初始化引擎）' },
-  { file: 'visualization.mjs', expect: 26, label: '可视化（DAG 分层布局 + 热力图算法）' },
-  { file: 'visualization-ui.mjs', expect: 32, label: '可视化界面（SVG 画布/热力图/工具卡片）' },
-  { file: 'ui-feedback.mjs', expect: 51, label: 'UI 反馈修复（标题/切换/标注/折叠）' },
-  { file: 'ui-simplified.mjs', expect: 29, label: 'UI 精简（5 组 + 世界参数表单）' },
-  { file: 'ui-v3.mjs', expect: 50, label: 'UI v3 工作台（参数分层/综合推演/反解）' },
   { file: 'advanced.mjs', expect: 29, label: '收尾补齐（复数根/扩展函数/help/世界字段）' },
   { file: 'formula-ext.mjs', expect: 29, label: '公式库扩展与符号消歧' },
   { file: 'formula-story.mjs', expect: 42, label: '读者视角高频公式（第 4 批）' },
@@ -80,7 +72,6 @@ const SUITES = [
   { file: 'compat-data.mjs', expect: 13, label: '兼容性：数据损坏 / 并发 / 目录共存' },
   // 真机崩溃回归：桌面宿主会重复执行 client bundle，重复注册必须是无害的 no-op。
   // 这条来自 2026-10-24 的崩溃日志：duplicate factory registration → 桌面端退出。
-  { file: 'client-registration.mjs', expect: 16, label: '客户端入口幂等 + 注册 id = 包名（防桌面端致命崩溃）' },
   { file: 'consequences.mjs', expect: 61, label: '长链后果' },
   { file: 'impact.mjs', expect: 42, label: '全公式影响评估' },
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
@@ -95,7 +86,7 @@ const SUITES = [
   { file: 'workspace.mjs', expect: 38, label: '工作区隔离' },
   { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
   { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
-  { file: 'integration.mjs', expect: 51, label: '整合验收（整体装配）' },
+  { file: 'integration.mjs', expect: 42, label: '整合验收（整体装配）' },
   { file: 'sky.mjs', expect: 43, label: '天空与星空（观测者视角）' },
   { file: 'moons.mjs', expect: 32, label: '多卫星系统（稳定性/观感）' },
   // 这一套专门防「插件在真宿主里装不起来」：桩忠实度 + 路由形状 + 派发行为。
