@@ -32,6 +32,7 @@ import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-lay
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { runCivilization } from '../civilization.js'
 import { layoutGraph } from '../graph-layout.js'
+import { QUANTITY_LABELS } from '../graph-render.js'
 import { buildHeatmap, linspace, detectNarrowWindow } from '../heatmap.js'
 import { judgeDead, renderDead } from '../dead-universe.js'
 import { OBSERVERS, perceive, renderObserver } from '../observer.js'
@@ -402,14 +403,25 @@ export function opDerivation(args: MathArgs): Outcome {
     const rawEdges = buildGraph().map(function (edge) {
       return { from: edge.from, to: edge.to }
     })
-    const layout = layoutGraph(rawEdges, focus, 40)
+    // graphDepths：只画指定层（界面折叠时传，未知层号的层号过滤在 layout 内部做）
+    const depths = Array.isArray(args.graphDepths) ? (args.graphDepths as number[]) : undefined
+    const layout = layoutGraph(rawEdges, focus, 40, depths)
+    // 全量层号：界面据此画「层开关」，即使当前只画了一部分
+    const fullLayout = layoutGraph(rawEdges, focus, 40)
+    const allDepths: number[] = []
+    for (const node of fullLayout.nodes) {
+      if (!allDepths.includes(node.depth)) allDepths.push(node.depth)
+    }
+    allDepths.sort(function (a, b) { return b - a })
     out.push('═══ 依赖图 ═══', '')
     out.push('  节点 ' + layout.nodes.length + ' 个，连线 ' + layout.edges.length + ' 条，共 ' +
       (layout.maxDepth + 1) + ' 层')
     if (focus) out.push('  焦点：' + focus)
     out.push('')
     out.push('（界面会用 SVG 渲染这张图。）')
-    value.graph = layout
+    // labels：量的中文名对照表（界面给节点加标注用）
+    // allDepths：全部层号（界面画层开关用）
+    value.graph = { ...layout, labels: QUANTITY_LABELS, allDepths: allDepths }
   } else if (sub === 'heatmap') {
     // 相图热力图（方案 5.2）：扫（行星质量 × 轨道距离）
     const massValues = linspace(0.2, 5, 9)

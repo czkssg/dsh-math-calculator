@@ -72,11 +72,12 @@ console.log('-- 4. 工具卡片已注册 --')
 console.log('-- 5. 依赖图渲染（不引第三方库）--')
 {
   const source = readFileSync(join(process.cwd(), 'lib', 'client.js'), 'utf8')
-  // ⚠️ DAG 已从「SVG 一次性铺开」改成「分层可折叠 DOM」：
-  //    SVG 画布被验证过 1970px 宽，侧栏里要横向滚动，很难用；
-  //    折叠视图一屏能看完结构，且能点开。所以这条不再断言 svg 标签。
-  assert('用了可折叠视图', source.includes('collapsed'))
-  assert('有层标题', source.includes('点击展开') || source.includes('点击收起'))
+  // DAG = SVG 画布 + 按层开关（层开关只控制显示哪些层，不换渲染方式）。
+  // 之所以保留 SVG：用户要求「连线希望更明显」，纯列表没有连线。
+  assert('用 SVG 画布', source.includes("'svg'"))
+  assert('有连线 path', source.includes("'path'"))
+  assert('有箭头 polygon', source.includes("'polygon'"))
+  assert('有层开关', source.includes('已隐藏') || source.includes('点击隐藏'))
   assert('无 react-flow 依赖', !source.includes('@xyflow'))
   assert('无 canvas 依赖', !source.includes('getContext'))
 }

@@ -78,6 +78,7 @@ export function layoutGraph(
   rawEdges: Array<{ from: string; to: string }>,
   focus?: string,
   maxNodes = 40,
+  visibleDepths?: number[],
 ): GraphLayout {
   // ① 挑出要画的节点：若给了 focus，只留它的上下游闭包
   let edges = rawEdges
@@ -134,9 +135,18 @@ export function layoutGraph(
   for (const name of keep) computeDepth(name)
 
   // ④ 按层分组并排坐标
+  //
+  // visibleDepths：只画这些层（用于「按层折叠」）。
+  // 必须在**算完 depth 之后**过滤：层号要靠完整依赖链才准，
+  // 先砍节点会让所有层号算错。
+  const depthFilter = visibleDepths && visibleDepths.length > 0
+    ? new Set(visibleDepths)
+    : null
+
   const byDepth = new Map<number, string[]>()
   for (const name of keep) {
     const depth = depthOf.get(name) ?? 0
+    if (depthFilter && !depthFilter.has(depth)) continue
     const list = byDepth.get(depth) ?? []
     list.push(name)
     byDepth.set(depth, list)

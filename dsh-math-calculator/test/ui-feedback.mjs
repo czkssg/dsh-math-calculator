@@ -49,12 +49,19 @@ console.log('-- 3. 中文标注 --')
   assert('Prompt 有中文解释', source.includes('提示词卡片'))
 }
 
-console.log('-- 4. 依赖图可折叠 --')
+console.log('-- 4. 依赖图：SVG 画布 + 按层折叠 --')
 {
-  assert('有折叠状态', source.includes('collapsed'))
-  assert('有展开/收起提示', source.includes('点击展开') || source.includes('点击收起'))
+  // 现在的实现是 SVG 画布 + 层开关（不是纯列表折叠），
+  // 所以断言放在「层开关」与「隐藏提示」上。
+  assert('有层隐藏状态', source.includes('hidden'))
+  assert('有层开关提示', source.includes('已隐藏') || source.includes('点击隐藏'))
   assert('有层名', source.includes('基础常数'))
   assert('节点有中文标签', source.includes('光速') || source.includes('引力常数'))
+  // 用户要求「连线更明显」：必须有 svg/path/polygon 且描边加粗
+  assert('用 SVG 画布', source.includes("'svg'") || source.includes('\"svg\"'))
+  assert('有连线 path', source.includes("'path'"))
+  assert('有箭头 polygon', source.includes("'polygon'"))
+  assert('连线加粗', source.includes('strokeWidth: 1.6') || source.includes('strokeWidth:1.6'))
 }
 
 console.log('-- 5. 量化标签表 --')

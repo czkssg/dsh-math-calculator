@@ -1083,93 +1083,128 @@ var CONSOLE_TREE = [
  *
  * @param react - 宿主 react
  */
+/**
+ * 依赖图：SVG 画布，可按层折叠。
+ *
+ * 用户的三点要求都在这：
+ *   · 「像图片一样点开伸缩」→ 按层折叠，默认只展开相邻两层；
+ *   · 「加上标注」→ 节点显示中文名，下面小字给符号原名；
+ *   · 「连线希望更明显」→ 描边加粗到 1.6px、用强调色、末端加箭头。
+ *
+ * 为什么按层折叠而不是把所有节点塞进一张图：
+ *   40 个节点铺开要 1970px 宽，侧栏里只能横向滚动，很难用。
+ *
+ * @param react - 宿主 react
+ */
 function makeGraphCanvas(react: any) {
   if (!react) return function Noop() { return null }
   const h = react.createElement
   const { useState } = react
-  const { Section, Empty } = createKit(react)
+  const { Section, Empty, Badge } = createKit(react)
+
+  /** 层名（与后端 LAYER_NAMES 对应）。 */
+  const LAYER_NAMES = ['基础常数', '第一层（微观）', '第二层（材料）', '第三层（体感）', '第四层（行星）', '第五层（恒星）']
 
   return function GraphCanvas(props: any) {
     const layout = props.layout
-    const [collapsed, setCollapsed] = useState({})
+    const labels = props.labels || {}
+    const allDepths = (props.allDepths || []).slice().sort(function (a: number, b: number) { return b - a })
+    const [hidden, setHidden] = useState({})
 
     if (!layout || !layout.nodes || layout.nodes.length === 0) {
       return h(Empty, { text: '（这张图没有可画的节点）' })
     }
 
-    // 按层分组
-    const byDepth: Record<string, any[]> = {}
-    for (const node of layout.nodes) {
-      const key = String(node.depth)
-      if (!byDepth[key]) byDepth[key] = []
-      byDepth[key].push(node)
-    }
-    const depths = Object.keys(byDepth).map(Number).sort(function (a, b) { return b - a })
-    const topDepth = depths[0]
+    // 画布宽度可能就是上千像素：外层加横向滚动，但默认缩放能看全
+    const width = Math.max(layout.width, 260)
+    const height = Math.max(layout.height, 120)
 
-    const rows = depths.map(function (depth) {
-      // 默认只展开最上一层
-      const isCollapsed = collapsed[depth] !== undefined ? collapsed[depth] : depth !== topDepth
-      const layerLabel = ['基础常数', '第一层（微观）', '第二层（材料）', '第三层（体感）', '第四层（行星）', '第五层（恒星）'][depth] ||
-        ('第 ' + (depth + 1) + ' 层')
-      const nodesInLayer = byDepth[String(depth)] || []
+    // 连线：加粗 + 强调色 + 贝塞尔
+    const edges = layout.edges.map(function (edge: any, index: number) {
+      const midY = (edge.y1 + edge.y2) / 2
+      return h('path', {
+        key: 'e-' + index,
+        d: 'M ' + edge.x1 + ' ' + edge.y1 + ' C ' + edge.x1 + ' ' + midY + ', ' +
+          edge.x2 + ' ' + midY + ', ' + edge.x2 + ' ' + edge.y2,
+        fill: 'none',
+        stroke: T.accent,
+        strokeWidth: 1.6,
+        strokeOpacity: 0.55,
+      })
+    })
 
-      const header = h('div', {
-        key: 'h-' + depth,
+    // 箭头：每条线的终点上方一个三角，指示「谁依赖谁」
+    const arrows = layout.edges.map(function (edge: any, index: number) {
+      const y = edge.y2
+      return h('polygon', {
+        key: 'a-' + index,
+        points: (edge.x2 - 4) + ',' + (y - 7) + ' ' + (edge.x2 + 4) + ',' + (y - 7) + ' ' + edge.x2 + ',' + (y - 1),
+        fill: T.accent,
+        fillOpacity: 0.75,
+      })
+    })
+
+    const nodes = layout.nodes.map(function (node: any) {
+      const label = labels[node.id] || node.id
+      const isBase = node.incoming === 0
+      return h('g', { key: node.id, transform: 'translate(' + node.x + ',' + node.y + ')' },
+        h('rect', {
+          width: 108, height: 30, rx: 4,
+          fill: T.layer2,
+          // 边框粗细 = 被多少东西依赖（基础量最粗，最好找）
+          stroke: isBase ? T.accent : T.hairline,
+          strokeWidth: isBase ? 2 : 1,
+        }),
+        // 第一行：中文名
+        h('text', {
+          x: 54, y: 13, textAnchor: 'middle',
+          style: { font: T.f11, fill: T.text1 },
+        }, String(label).slice(0, 12)),
+        // 第二行：符号原名（用户要求「非中文处都加标注」）
+        label !== node.id
+          ? h('text', {
+              x: 54, y: 24, textAnchor: 'middle',
+              style: { font: T.f11, fill: T.text3 },
+            }, String(node.id).slice(0, 14))
+          : null)
+    })
+
+    // 折叠按钮：每层一个
+    const toggles = allDepths.map(function (depth: number) {
+      const isHidden = Boolean(hidden[depth])
+      return h('button', {
+        key: 't-' + depth,
+        title: (LAYER_NAMES[depth] || ('第 ' + (depth + 1) + ' 层')) + (isHidden ? '（已隐藏，点击显示）' : '（显示中，点击隐藏）'),
         style: {
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '4px 6px', cursor: 'pointer',
-          background: T.layer2, borderRadius: T.radius, marginBottom: 2,
+          ...btnStyle({ tiny: true, active: !isHidden }),
+          marginRight: 3, marginBottom: 3,
         },
         onClick: function () {
-          setCollapsed(function (prev: any) {
+          setHidden(function (prev: any) {
             const next = { ...prev }
-            const wasCollapsed = prev[depth] !== undefined ? prev[depth] : depth !== topDepth
-            next[depth] = !wasCollapsed
+            next[depth] = !prev[depth]
             return next
           })
+          if (typeof props.onToggleDepth === 'function') props.onToggleDepth(depth, !isHidden)
         },
-      },
-        h('span', { style: { font: T.f11, color: T.text3, width: 10 } }, isCollapsed ? '▸' : '▾'),
-        h('span', { style: { font: T.f12, color: T.text1 } }, layerLabel),
-        h('span', { style: { font: T.f11, color: T.text3 } }, '（' + nodesInLayer.length + ' 项）'),
-        h('span', { style: { font: T.f11, color: T.text3, marginLeft: 'auto' } },
-          isCollapsed ? '点击展开' : '点击收起'))
-
-      if (isCollapsed) return header
-
-      // 展开：这层的节点排成网格
-      const grid = h('div', {
-        key: 'g-' + depth,
-        style: { display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0 8px 16px' },
-      }, nodesInLayer.map(function (node: any) {
-        const label = props.labels && props.labels[node.id]
-        return h('div', {
-          key: node.id,
-          title: node.id + (label ? '（' + label + '）' : '') + (node.incoming > 0 ? ' — 被 ' + node.incoming + ' 项依赖' : ' — 基础量'),
-          style: {
-            padding: '3px 8px', borderRadius: T.radius,
-            border: '1px solid ' + (node.incoming > 0 ? T.accent : T.hairline),
-            background: T.layer2,
-            font: T.f11, color: T.text2,
-            maxWidth: 150, whiteSpace: 'nowrap',
-            overflow: 'hidden', textOverflow: 'ellipsis',
-          },
-        },
-          label || node.id,
-          label && label !== node.id
-            ? h('span', { style: { color: T.text3, marginLeft: 4 } }, '(' + node.id + ')')
-            : null)
-      }))
-
-      return h('div', { key: 'd-' + depth }, header, grid)
+      }, (LAYER_NAMES[depth] || String(depth + 1)))
     })
 
     return h(Section, {
       title: '依赖关系',
       count: layout.nodes.length,
-      hint: '共 ' + (layout.maxDepth + 1) + ' 层；点击层标题折叠/展开',
-    }, h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } }, rows))
+      hint: '节点框越粗越基础；点层名可隐藏该层',
+    },
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', marginBottom: 6 } }, toggles),
+      h('div', { style: { overflow: 'auto', maxHeight: '46vh', border: '1px solid ' + T.hairline, borderRadius: T.radius } },
+        h('svg', {
+          width: width, height: height,
+          style: { display: 'block', minWidth: width },
+        }, arrows.concat(edges).concat(nodes))),
+      layout.nodes.length > 0
+        ? h('div', { style: { font: T.f11, color: T.text3, marginTop: 4 } },
+            '共 ' + layout.nodes.length + ' 个节点、' + layout.edges.length + ' 条连线；箭头指向依赖方。')
+        : null)
   }
 }
 
@@ -1263,7 +1298,13 @@ function makeDerivationPane(react: any) {
     // 这样同一套 /derive 既能出图也能出文字，不必分成两套接口。
     const structured = state.resultValue || {}
     if (props.viz === 'graph' && structured.graph && props.GraphCanvas) {
-      return h(props.GraphCanvas, { layout: structured.graph })
+      // labels / allDepths 由后端随布局一起给，界面只负责渲染——
+      // 这样中文对照表只有一份（src/graph-render.ts），不会前后端各写一遍。
+      return h(props.GraphCanvas, {
+        layout: structured.graph,
+        labels: structured.graph.labels || {},
+        allDepths: structured.graph.allDepths || [],
+      })
     }
     if (props.viz === 'heatmap' && structured.heatmap && props.HeatmapView) {
       return h(props.HeatmapView, { map: structured.heatmap })

@@ -191,6 +191,9 @@ export interface MathArgs {
   /** 观测者类型：human / tiny / giant / aquatic / aerial / 2d。 */
   observerKind?: string
 
+  /** 依赖图只画这些层（层号数组，界面按层折叠时传）。 */
+  graphDepths?: number[]
+
   // ── 时间轴（补丁1/11）──
   /** 时间轴起点（Gyr）。 */
   timelineFrom?: number
