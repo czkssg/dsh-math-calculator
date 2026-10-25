@@ -44,7 +44,8 @@ import { emptyFormulaTable, removeOverride, upsertOverride } from './formula-tab
 import { getPromptMode, setPromptMode, type PromptMode } from './awareness.js'
 import { opDerivation } from './ops/derivation-op.js'
 import { deriveAll } from './summary.js'
-import { paramsByGroup, WORLD_PARAMS } from './world-params.js'
+import { paramsByGroup } from './world-params.js'
+import { validateWorld } from './world-validation.js'
 import { solveAnchor, ANCHORS, type AnchorKind } from './anchor-solve.js'
 import { linkInherit, loadInheritLinks, syncInheritance, diffTables } from './universe-ops.js'
 
@@ -88,9 +89,19 @@ function ok(json: unknown): ApiResponse {
   return { status: 200, json }
 }
 
-/** 统一的错误响应。 */
-function fail(status: number, message: string): ApiResponse {
-  return { status, json: { error: message } }
+/**
+ * 统一的错误响应。
+ *
+ * `extra` 用来附带结构化明细（例如校验失败时的逐条 errors），
+ * 让 AI 能一次看到全部问题而不是只看到第一条。
+ *
+ * @param status - HTTP 状态码
+ * @param message - 一句话结论
+ * @param extra - 附加字段，合并进 json
+ * @returns 错误响应
+ */
+function fail(status: number, message: string, extra?: Record<string, unknown>): ApiResponse {
+  return { status, json: { error: message, ...(extra || {}) } }
 }
 
 /** 从 body 里取字符串字段。 */
@@ -430,6 +441,18 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
     // ── 切换 ──
     if (route === 'workspaces/switch') {
       const name = normalizeWorkspaceName(field(body, 'name'))
+      /**
+       * 切到一个还没有数据表的工作区时，**会**立刻落盘建表。这是有意设计，别改。
+       *
+       * 原因（见 workspace.ts 的 `switchWorkspace` 注释与 test/api.mjs 第 8 节）：
+       * `loadWorkspace` 对缺失文件只返回内存里的空工作区、不写盘，于是
+       * `currentWorkspace()` 会指向一个磁盘上不存在的「幽灵工作区」——
+       * 列表里看不到它，后续编辑又悄悄生成新文件，数据归属说不清。
+       * 所以「切换即落盘」是修掉那个 bug 的既定方案。
+       *
+       * 代价：名字打错时也会造出一张空表。但对比「幽灵工作区」，
+       * 空表至少是可见、可删、可复用的。想避免就别在 `switch` 里造新名字。
+       */
       const data = switchWorkspace(name)
       setActiveConstants(data.constants)
       return ok({ switched: true, current: name, constants: data.constants })
@@ -555,42 +578,37 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       const raw = body && typeof body === 'object' ? (body as Record<string, unknown>).world : undefined
       if (!raw || typeof raw !== 'object') return fail(400, '缺少 world 参数对象')
       const incoming = raw as Record<string, unknown>
-      // 只接受基础量，防止写进垃圾键或派生量。
+      // 校验交给 world-validation.ts：白名单、类型严格性、软/硬范围都在那里。
       //
       // ⚠️ 白名单的**唯一真相**是 world-params.ts —— 这里绝不能另抄一份。
       // 曾经这里硬编码了 14 个键，而 WORLD_PARAMS 有 23 个，于是作者最常用的
       // starClass（「我要 G2V 恒星」）被**静默丢弃**：不报错、不提示，存完一看
       // 还是太阳。双白名单不同步就是这么出事的（test/ai-journey.mjs 守着）。
-      const patch: Record<string, unknown> = {}
-      for (const spec of WORLD_PARAMS) {
-        const key = spec.key
-        const value = incoming[key]
-        if (value === undefined || value === null || value === '') continue
-        if (spec.kind === 'bool') {
-          // 布尔型：接受 true/false 与常见字面量，别把 'false' 当成 true
-          if (typeof value === 'boolean') { patch[key] = value; continue }
-          const text = String(value).trim().toLowerCase()
-          if (text === 'true' || text === '1') { patch[key] = true; continue }
-          if (text === 'false' || text === '0') { patch[key] = false; continue }
-          return fail(400, '参数 ' + key + ' 必须是布尔值')
-        }
-        if (spec.kind === 'choice') {
-          // 选项型：必须是 choices 里列出的值，否则静默存进去会与目录对不上
-          const text = String(value)
-          const legal = (spec.choices || []).some(function (item) { return item.value === text })
-          if (!legal) return fail(400, '参数 ' + key + ' 不是可选项：' + text)
-          patch[key] = text
-          continue
-        }
-        const num = typeof value === 'number' ? value : Number(value)
-        if (!Number.isFinite(num)) return fail(400, '参数 ' + key + ' 不是有效数字')
-        patch[key] = num
+      const result = validateWorld(incoming)
+      if (result.errors.length > 0) {
+        const first = result.errors[0]
+        return fail(400, first.message, {
+          errors: result.errors.map(function (item) {
+            return {
+              key: item.key,
+              value: item.value,
+              range: item.range,
+              message: item.message,
+            }
+          }),
+        })
       }
       const data = updateWorkspace(name, (current) => ({
         ...current,
-        world: { ...(current.world || {}), ...patch },
+        world: { ...(current.world || {}), ...result.patch },
       }))
-      return ok({ saved: true, name, world: data.world })
+      // warnings 随响应返回，让 AI 能转述「你这个值超出常规范围，但按你的设定算了」
+      return ok({
+        saved: true,
+        name,
+        world: data.world,
+        ...(result.warnings.length > 0 ? { warnings: result.warnings } : {}),
+      })
     }
 
     if (route === 'workspaces/reset-world') {

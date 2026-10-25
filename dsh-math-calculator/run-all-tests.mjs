@@ -86,7 +86,7 @@ const SUITES = [
   { file: 'workspace.mjs', expect: 38, label: '工作区隔离' },
   { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
   { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
-  { file: 'integration.mjs', expect: 42, label: '整合验收（整体装配）' },
+  { file: 'integration.mjs', expect: 43, label: '整合验收（整体装配）' },
   { file: 'sky.mjs', expect: 43, label: '天空与星空（观测者视角）' },
   { file: 'moons.mjs', expect: 32, label: '多卫星系统（稳定性/观感）' },
   // 这一套专门防「插件在真宿主里装不起来」：桩忠实度 + 路由形状 + 派发行为。
@@ -99,6 +99,12 @@ const SUITES = [
   // 这一套把 solve-anchor → save-world → summary → dead 这条链复刻成路由调用，
   // 跑在真派发上（含路由顺序与前缀），进回归。
   { file: 'ai-journey.mjs', expect: 58, label: 'AI 全链路（锚点反解→入库→重算→判定）' },
+  // world-params 里的 range 曾经是纯装饰（22 处声明无人读取），
+  // 于是 planetRadius=0 能存进去并算出 Infinity。这一套守着校验三档。
+  { file: 'validation.mjs', expect: 82, label: '参数校验（硬边界/软警告/类型严格）' },
+  // L1 只在写入时拦；历史存档、/summary 直传仍可能带坏值。
+  // 这一套守着「Infinity 绝不流到 AI」与 invalid 判定档。
+  { file: 'sanity.mjs', expect: 34, label: '物理量健全性（invalid 判定/不泄 Infinity）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */

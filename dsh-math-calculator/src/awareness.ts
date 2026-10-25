@@ -62,7 +62,7 @@ export const TOOL_DESCRIPTION = [
   '典型触发：算术/开方/对数/三角、解方程、求导积分、矩阵、统计、单位换算、',
   '物理公式求值、改常数看后果、推演星球/天空/恒星/卫星/生命可能性。',
   '',
-  'operation（共 25 个；不填 = auto，含等号判为方程；完整说明用 operation="help"）：',
+  'operation（共 27 个；不填 = auto，含等号判为方程；完整说明用 operation="help"）：',
   '  求值 evaluate | 方程 solve system | 微积分 derivative integral | 代数 simplify expand roots',
   '  线代 matrix eigen（只给矩阵时输出 秩/行列式/迹/奇异值/零空间/逆）',
   '  统计 stats dist regression | 微分方程 ode',

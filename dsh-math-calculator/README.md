@@ -50,7 +50,7 @@ npm pack
 
 ---
 
-## 25 个 operation
+## 27 个 operation
 
 ### 基础运算
 
@@ -130,7 +130,7 @@ npm pack
 
 | 层 | 位置 | 预算 |
 |---|---|---|
-| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符，枚举 25 个 operation 与读输出规则 |
+| 工具描述 | `TOOL_DESCRIPTION` | ≤ 800 字符，枚举 27 个 operation 与读输出规则 |
 | 系统提示 | `systemPrompt.section`（brief） | ≤ 320 字符，每轮注入 |
 | 主动提醒 | `agent/pre-step` 钩子 | 每会话 ≤ 3 次，检测到计算需求才触发 |
 
@@ -322,16 +322,45 @@ npm pack
 |---|---|
 | `expression` | 表达式/方程；多方程用逗号 |
 | `variables` | 变量字典，如 `{"m":500,"v":30}` |
-| `operation` | 上述 25 个之一；不填 = `auto` |
+| `operation` | 上述 27 个之一；不填 = `auto` |
 | `precision` | 有效数字，默认 64，范围 1-256 |
 | `variable` | 求导/求根的自变量，默认 `x` |
 | `overrides` | 公式参数覆盖（架空改造的核心） |
 | `constants` | 要改的物理常数（只能改基础旋钮） |
-| `world` | 星球参数 |
+| `world` | 星球参数（23 个基础量 + `moons` 逐颗卫星，见下） |
 | `terrain` | 局地地形参数 |
 | `claims` | 待校验的设定 |
 
 **34 个物理常数**：20 个基础旋钮（`c` `G` `h` `kB` `e_charge` `me` `mp` `NA` `epsilon0` `day` `AU` `Rearth` `Mearth` `Rsun` `Msun` `atm` + 4 个数学常数）+ 14 个派生量（自动推导，不能直接设）。
+
+### 世界参数的校验（三档，不反驳设定）
+
+`world-params.ts` 的 `range` 现在**真的生效**（2026-10-25 之前是纯装饰，
+`planetRadius=0` 能存进去并算出 `Infinity`）：
+
+| 档 | 行为 | 例 |
+|---|---|---|
+| **硬拒绝**（400） | 会算出无穷/非数/负物理量，下游没法用 | `planetRadius=0`、`planetMass=-5`、`orbitAU=0` |
+| **软警告**（200 + `warnings[]`） | 物理极端但可以是设定，照你的设定算 | `planetMass=500`（超常规上限 100）、`albedo=1.5` |
+| **静默接受** | 在范围内 | `planetMass=1.5` |
+
+只是「质量大得离谱」不会拦——那是设定自由；但「半径为零」会拦，因为除零算不出数。
+判定不是拍的，是逐个参数取极端值跑推演、统计产物里 `Infinity`/`NaN` 个数得出的。
+
+类型也收严了：`Number(true)===1`、`Number([])===0` 这类静默强转不再发生，
+`{planetMass:true}` 会 400 而不是悄悄存成 1。数字字符串仍接受（AI 常传 `"1.5"`）。
+
+### 逐颗卫星（`moons`）
+
+`world.moons` 是数组，每颗给 `name` / `massMoon` / `distanceMoon` / `radiusKm` / `albedo`：
+
+```json
+{"world": {"moons": [{"name":"小月","massMoon":0.1,"distanceMoon":3},
+                     {"name":"大月","massMoon":2,"distanceMoon":8}]}}
+```
+
+给了它，`moonCount`/`moonMass`/`moonDistance` 的数量语义就让位（以数组长度为准）。
+推演会逐颗算洛希极限、希尔球、相邻间距、角直径、视星等与潮汐力。
 
 ---
 
@@ -339,7 +368,7 @@ npm pack
 
 插件做了三层感知机制，避免模型「自己心算一遍」：
 
-1. **工具描述**枚举全部 25 个 operation，并写明「凡是需要数值计算都必须调用」
+1. **工具描述**枚举全部 27 个 operation，并写明「凡是需要数值计算都必须调用」
 2. **系统提示注入**（`ctx.systemPrompt.section`）每轮对话提醒，默认 `brief` 档，可用 `{"promptMode":"full"}` 切换
 3. **`agent/pre-step` 钩子**实时检测用户消息里的计算需求，命中则插入提醒（每会话最多 3 次，用过插件后静默）
 

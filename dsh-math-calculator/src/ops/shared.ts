@@ -26,7 +26,7 @@ import type { WorldParams } from '../world.js'
  * 工具支持的全部 operation。
  *
  * ⚠️ 这是**对外契约**：schema 的 enum、help 清单、integration 测试的
- * "25 个 operation" 断言都直接依赖它。新增 operation 必须同步改三处，
+ * "27 个 operation" 断言都直接依赖它。新增 operation 必须同步改三处，
  * 否则模型看得到名字却调不通，或测试直接变红。
  */
 export type MathOperation =

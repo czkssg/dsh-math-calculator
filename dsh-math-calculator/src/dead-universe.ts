@@ -20,8 +20,22 @@
 
 import type { ChemistryWindow } from './life.js'
 
-/** 死寂判定等级。 */
-export type DeadLevel = 'alive' | 'marginal' | 'dead'
+/**
+ * 死寂判定等级。
+ *
+ * | 等级 | 含义 |
+ * |---|---|
+ * | `alive` | 物质与化学成立，下游推演正常 |
+ * | `marginal` | 环境恶劣（冻结/沸腾），但物质还在 |
+ * | `dead` | 化学键坏 / 核不稳定 —— 长不出常规物质 |
+ * | `invalid` | **参数本身不成立**，算出的是 Infinity/NaN/负物理量 |
+ *
+ * `invalid` 与 `dead` 是两件事，必须分开：
+ *   · `dead` 是**设定结果**（死寂宇宙也是一种写法，措辞只讲代价）；
+ *   · `invalid` 是**算不出来**（半径为零 → 重力 Infinity），
+ *     不是设定问题，是输入问题，要指出哪个参数、怎么改。
+ */
+export type DeadLevel = 'alive' | 'marginal' | 'dead' | 'invalid'
 
 /** 一条致命原因。 */
 export interface FatalCause {
@@ -43,9 +57,101 @@ export interface DeadVerdict {
 }
 
 /**
+ * 检查世界产物里的物理量是否健全（非有限 / 负值）。
+ *
+ * 为什么要在渲染前查：`judgeDead` 读的是 `world` 的**输出**，而输出里
+ * 有些「数字」其实是格式化后的显示串（`planet.surfaceGravity` 是
+ * `'Infinity'` 字符串）。如果不查，`Infinity` 会一路流到 AI 的结语里，
+ * 被写成「这颗星球重力是 Infinity」——那比报错更伤可信度。
+ *
+ * @param world - world 的输出值
+ * @returns 不成立的物理量清单（为空表示健全）
+ */
+export function findPhysicsIssues(world: any): FatalCause[] {
+  const issues: FatalCause[] = []
+  /**
+   * 检查一个可能是数字、也可能是显示串的值。
+   *
+   * @param label - 中文名
+   * @param raw - 原始值
+   * @param unit - 单位
+   */
+  const check = (label: string, raw: unknown, unit: string): void => {
+    let num: number | undefined
+    if (typeof raw === 'number') num = raw
+    else if (typeof raw === 'string') {
+      if (raw === 'Infinity' || raw === '-Infinity' || raw === 'NaN') num = Number(raw)
+      else {
+        const parsed = Number(raw)
+        if (Number.isFinite(parsed)) num = parsed
+      }
+    }
+    if (num === undefined) return
+    if (Number.isFinite(num) && num > 0) return
+    const isNonFinite = !Number.isFinite(num)
+    /**
+     * 原因里的 `value` 是**给人看的说明**，不是结论数字。
+     *
+     * 原先直接写成 `String(raw)`，于是 `Infinity` 这个字面量会顺着
+     * `verdict.causes` 流到 AI 面前，被当成真数字复述进小说
+     * （实测：`summary.verdict.causes[0]` 就是 "表面重力不成立：Infinity m/s²"）。
+     * 这里改成中文描述，字面量不再出现在任何响应里。
+     */
+    const shown = isNonFinite
+      ? '算出来是无穷或非数'
+      : num < 0
+        ? '算出来是负数（' + num + (unit ? ' ' + unit : '') + '）'
+        : '算出来是零'
+    issues.push({
+      id: 'physics-invalid',
+      name: label + '不成立',
+      value: shown,
+      physics: isNonFinite
+        ? '这个量算出来是无穷或非数——通常是某个基础参数取了零或负值（如半径为零导致除零）'
+        : '这个量算出来不是正数——物理上不成立（如负质量给出负重力）',
+      epitaph: '按当前参数，世界的这一环算不出有意义的数字。',
+      remedy: '把相关的基础参数改回正常范围（半径、质量、轨道距离取正值即可）',
+    })
+  }
+
+  check('表面重力', world?.planet?.surfaceGravity, 'm/s²')
+  check('逃逸速度', world?.planet?.escapeVelocity, 'km/s')
+  check('行星半径', world?.planet?.radiusM, 'm')
+  check('年均温', world?.temperature?.surfaceMeanK, 'K')
+  check('大气标高', world?.atmosphere?.scaleHeightM, 'm')
+  // 有 NaN 时上面的 check 可能因为显示串形态漏掉，补一层全量扫描
+  const badLiterals: string[] = []
+  const walk = (node: any, path: string): void => {
+    if (node === null || node === undefined) return
+    if (typeof node === 'string' && (node === 'Infinity' || node === '-Infinity' || node === 'NaN')) {
+      badLiterals.push(path + '=' + node)
+      return
+    }
+    if (typeof node !== 'object') return
+    for (const [key, value] of Object.entries(node)) {
+      // 避免把 warnings 里的说明文字也扫进来
+      if (key === 'warnings' || key === 'highlights' || key === 'summary') continue
+      walk(value, path ? path + '.' + key : key)
+    }
+  }
+  walk(world, '')
+  if (badLiterals.length > 0 && issues.length === 0) {
+    issues.push({
+      id: 'physics-invalid',
+      name: '推演产物含无穷或非数',
+      value: badLiterals.slice(0, 3).join('、') + (badLiterals.length > 3 ? ' 等 ' + badLiterals.length + ' 处' : ''),
+      physics: '有基础参数取了零或负值，导致下游出现除零或开负数',
+      epitaph: '按当前参数，世界的这一环算不出有意义的数字。',
+      remedy: '把相关的基础参数改回正常范围',
+    })
+  }
+  return issues
+}
+
+/**
  * 判定一个世界是否进入死寂态。
  *
- * 从最底层往上查：化学键 → 溶剂 → 恒星寿命 → 核稳定性。
+ * 从最底层往上查：物理量健全性 → 化学键 → 溶剂 → 恒星寿命 → 核稳定性。
  *
  * @param world - world 的输出值
  * @returns 判定结果
@@ -125,18 +231,35 @@ export function judgeDead(world: any): DeadVerdict {
   }
 
   // 分级依据：
+  //   · 物理量算不出来（Infinity/NaN/负值）→ invalid（**输入问题**，不是设定问题）
   //   · 化学键坏 / 核不稳定 → 真的长不出物质 → dead
   //   · 温度极端（冻结/沸腾）→ 环境恶劣但物质还在（火星均温 210 K 仍有液态卤水）→ marginal
   //
   // 曾经把温度类也算 dead，导致相图里 1.3 AU 之后一片红，与常识不符。
+  //
+  // invalid 优先级最高：参数不成立时，下面那些判据读到的都是废数，
+  // 继续判 dead/marginal 只会误导作者以为「是设定太极端」。
+  const physicsIssues = findPhysicsIssues(world)
   const hard = causes.filter(function (c) {
     return c.id === 'bonds-weak' || c.id === 'nuclei-unstable'
   })
-  const level: DeadLevel = hard.length > 0 ? 'dead' : causes.length > 0 ? 'marginal' : 'alive'
-  const greyOut = level === 'dead'
+  const level: DeadLevel =
+    physicsIssues.length > 0
+      ? 'invalid'
+      : hard.length > 0
+        ? 'dead'
+        : causes.length > 0
+          ? 'marginal'
+          : 'alive'
+  const greyOut = level === 'dead' || level === 'invalid'
+
+  // invalid 的原因单独放在最前面，并明确说「这不是设定问题」
+  const allCauses = level === 'invalid' ? physicsIssues.concat(causes) : causes
 
   let summary: string
-  if (level === 'alive') {
+  if (level === 'invalid') {
+    summary = '按当前参数算不出有意义的物理量（出现了无穷或负数），先修正参数才能继续推演。'
+  } else if (level === 'alive') {
     summary = '这个世界能长出物质与化学，下游推演可以正常进行。'
   } else if (level === 'marginal') {
     summary = '这个世界的化学或环境很勉强，物质能存在但选择很少。'
@@ -144,13 +267,25 @@ export function judgeDead(world: any): DeadVerdict {
     summary = '按当前参数，这个宇宙里长不出常规物质。'
   }
 
-  const note = level === 'dead'
-    ? '这不是说设定错了。死寂宇宙本身可以是一个设定：' +
+  let note: string
+  if (level === 'invalid') {
+    note = '这不是设定太极端，而是参数本身算不出数——比如把半径写成 0 会导致除零。' +
+      '把上面提到的参数改回正常范围，推演就能继续。'
+  } else if (level === 'dead') {
+    note = '这不是说设定错了。死寂宇宙本身可以是一个设定：' +
       '「这个世界只有等离子体，文明以电磁形式存在」也是一种写法。' +
       '若你想要的其实是普通物质世界，按每条的「若想要物质世界」调即可。'
-    : '若你想更极端，可以继续推；想更稳妥，参考各条依据。'
+  } else {
+    note = '若你想更极端，可以继续推；想更稳妥，参考各条依据。'
+  }
 
-  return { level: level, causes: causes, summary: summary, greyOut: greyOut, note: note }
+  return {
+    level: level,
+    causes: allCauses,
+    summary: summary,
+    greyOut: greyOut,
+    note: note,
+  }
 }
 
 /**
@@ -161,23 +296,32 @@ export function judgeDead(world: any): DeadVerdict {
  */
 export function renderDead(verdict: DeadVerdict): string {
   const out: string[] = []
-  const mark = verdict.level === 'dead' ? '死寂' : verdict.level === 'marginal' ? '勉强' : '正常'
+  const mark =
+    verdict.level === 'dead' ? '死寂'
+      : verdict.level === 'marginal' ? '勉强'
+        : verdict.level === 'invalid' ? '参数不成立'
+          : '正常'
   out.push('═══ 宇宙状态判定：' + mark + ' ═══')
   out.push('')
   out.push('  ' + verdict.summary)
   out.push('')
   if (verdict.causes.length > 0) {
-    out.push('【致命原因】')
+    out.push(verdict.level === 'invalid' ? '【要修的参数】' : '【致命原因】')
     for (const cause of verdict.causes) {
       out.push('  · ' + cause.name + '（' + cause.value + '）')
       out.push('    物理依据：' + cause.physics)
-      out.push('    参考写法：' + cause.epitaph)
+      if (verdict.level !== 'invalid') out.push('    参考写法：' + cause.epitaph)
       out.push('    若想要物质世界：' + cause.remedy)
       out.push('')
     }
   }
   if (verdict.greyOut) {
-    out.push('【下游面板建议】灰化锁定——生命、生态、文明部分在此宇宙中无对象。', '')
+    out.push(
+      verdict.level === 'invalid'
+        ? '【下游面板建议】判定为参数不成立，生命、生态、文明部分暂时无对象；修正参数后自动恢复。'
+        : '【下游面板建议】灰化锁定——生命、生态、文明部分在此宇宙中无对象。',
+      '',
+    )
   }
   out.push('注：' + verdict.note)
   return out.join(String.fromCharCode(10))

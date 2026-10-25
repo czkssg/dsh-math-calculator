@@ -31,18 +31,48 @@ export interface ParamSpec {
   label: string
   /** 单位（显示在输入框右侧）。 */
   unit: string
-  /** 默认值。 */
-  def: number | string | boolean
+  /** 默认值。array 型给空数组。 */
+  def: number | string | boolean | unknown[]
   /** 分层：basic 默认展开，advanced 折叠。 */
   tier: 'basic' | 'advanced'
-  /** 类型：number 数字输入，choice 下拉，bool 开关。 */
-  kind: 'number' | 'choice' | 'bool'
+  /**
+   * 类型：
+   *   number 数字，choice 下拉，bool 开关，**array 结构化数组**（如逐颗卫星）。
+   *
+   * `array` 是给「一个参数装一整张表」用的：`moons` 是 MoonSpec[]，
+   * 每颗卫星各有质量/距离/半径/反照率。它不能按标量校验，
+   * 由 `itemShape` 描述单颗的字段。
+   */
+  kind: 'number' | 'choice' | 'bool' | 'array'
   /** choice 型可选项。 */
   choices?: Array<{ value: string; label: string }>
+  /**
+   * array 型：单个元素的字段规格。
+   *
+   * 每项 `{ key, kind, range? }`；`kind` 支持 number / string。
+   * 校验时逐元素逐字段走，越界按该字段的 range 判。
+   */
+  itemShape?: Array<{
+    key: string
+    kind: 'number' | 'string'
+    range?: { min?: number; max?: number; hard?: boolean }
+    /** 是否必填（缺了就用该字段的默认值，一般不必填）。 */
+    required?: boolean
+  }>
   /** 改了它影响什么（给作者看的一句话）。 */
   affects: string
-  /** 合理范围（用于输入校验与提示，不强制拦截）。 */
-  range?: { min?: number; max?: number }
+  /**
+   * 合理范围。
+   *
+   * ⚠️ 语义经过 2026-10-25 修正，现在**真的会被校验**：
+   *   · `hard` 未标 → **软范围**：越界仍写入，但返回 `warnings[]` 提醒
+   *     （作者要 500 倍质量的行星是设定自由，不该拦）；
+   *   · `hard: true` → **硬边界**：越界直接 400，因为会算出
+   *     Infinity / NaN / 负物理量，下游没法用。
+   *
+   * 哪些参数该标 hard 不是猜的，是实测出来的（见 `test/validation.mjs`）。
+   */
+  range?: { min?: number; max?: number; hard?: boolean }
   /** 是否可为空（空 = 用默认值）。 */
   optional?: boolean
   /** 分组（界面按组排列）。 */
@@ -87,7 +117,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'advanced',
     kind: 'number',
     affects: '决定寿命（∝M^-2.5）与光度（∝M^4）。大质量星亮但短命',
-    range: { min: 0.08, max: 50 },
+    range: { min: 0.08, max: 50, hard: true },
     group: '恒星',
     optional: true,
   },
@@ -111,7 +141,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'advanced',
     kind: 'number',
     affects: '决定光色与宜居带位置。太阳 5778 K（黄白）',
-    range: { min: 2000, max: 50000 },
+    range: { min: 2000, max: 50000, hard: true },
     group: '恒星',
     optional: true,
   },
@@ -125,7 +155,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'basic',
     kind: 'number',
     affects: '决定冷暖与年长。宜居带约 0.95—1.67',
-    range: { min: 0.01, max: 100 },
+    range: { min: 0.01, max: 100, hard: true },
     group: '轨道',
     optional: true,
   },
@@ -151,7 +181,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'basic',
     kind: 'number',
     affects: '决定重力（与半径一起）。质量大则重力大、大气更易保留',
-    range: { min: 0.01, max: 100 },
+    range: { min: 0.01, max: 100, hard: true },
     group: '行星',
     optional: true,
   },
@@ -163,7 +193,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'basic',
     kind: 'number',
     affects: '决定重力与表面积。半径大则重力小',
-    range: { min: 0.1, max: 20 },
+    range: { min: 0.1, max: 20, hard: true },
     group: '行星',
     optional: true,
   },
@@ -175,7 +205,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'basic',
     kind: 'number',
     affects: '决定昼夜与风暴。地球 24；太短科氏力强、风暴猛',
-    range: { min: 0.5, max: 5000 },
+    range: { min: 0.5, max: 5000, hard: true },
     group: '行星',
     optional: true,
   },
@@ -311,7 +341,7 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'advanced',
     kind: 'number',
     affects: '影响潮汐强度。月球 1',
-    range: { min: 0.001, max: 100 },
+    range: { min: 0.001, max: 100, hard: true },
     group: '卫星',
     optional: true,
   },
@@ -323,7 +353,36 @@ export const WORLD_PARAMS: ParamSpec[] = [
     tier: 'advanced',
     kind: 'number',
     affects: '影响潮汐与月视大小。地月 384400 km',
-    range: { min: 0.1, max: 100 },
+    range: { min: 0.1, max: 100, hard: true },
+    group: '卫星',
+    optional: true,
+  },
+  {
+    key: 'moons',
+    label: '逐颗卫星设定',
+    unit: '颗',
+    def: [],
+    tier: 'advanced',
+    kind: 'array',
+    /**
+     * 每颗卫星的字段。
+     *
+     * 与 moonMass/moonDistance 的关系：给了 `moons` 数组就以它为准，
+     * `moonCount` / `moonMass` / `moonDistance` 的数量语义自动失效
+     * （见 `world.ts` 的 `params.moons.length > 0` 分支）。
+     *
+     * `massMoon` 与 `distanceMoon` 标了 hard：零质量会让视星等变 Infinity，
+     * 零距离会让潮汐力变 Infinity（实测）。
+     */
+    itemShape: [
+      { key: 'name', kind: 'string' },
+      { key: 'massMoon', kind: 'number', range: { min: 0.001, max: 100, hard: true } },
+      { key: 'distanceMoon', kind: 'number', range: { min: 0.1, max: 100, hard: true } },
+      { key: 'radiusKm', kind: 'number', range: { min: 1, max: 500000 } },
+      { key: 'albedo', kind: 'number', range: { min: 0, max: 1 } },
+    ],
+    affects: '给了就按逐颗参数推演（洛希极限/希尔球/相邻间距/观感），数量以数组长度为准',
+    range: { min: 0, max: 30 },
     group: '卫星',
     optional: true,
   },

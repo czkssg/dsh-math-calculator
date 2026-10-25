@@ -253,16 +253,37 @@ console.log('-- 7. save-world 的白名单必须与 world-params 一致 --')
   await post('/workspaces/reset-world', {})
   const dropped = []
   for (const key of allowedKeys) {
-    // 按类型给一个合法值（choice/bool 与 number 分开）
+    // 按类型给一个**合法**值：要落在该参数声明的范围内，
+    // 否则会被校验正确拒绝，而那不是「静默丢弃」。
+    const spec = (await get('/world-params')).json.groups
+      .flatMap(function (g) { return g.params || [] })
+      .find(function (item) { return item.key === key })
     let value
-    if (key === 'starClass') value = 'G2V'
-    else if (key === 'hasLiquid') value = true
-    else value = 1
+    if (spec && spec.kind === 'array') {
+      value = [{ name: '甲', massMoon: 1, distanceMoon: 3 }]
+    } else if (spec && spec.kind === 'choice') {
+      value = (spec.choices && spec.choices[0] && spec.choices[0].value) || 'G2V'
+    } else if (spec && spec.kind === 'bool') {
+      value = true
+    } else if (spec && spec.range) {
+      // 取范围中点，保证在 hard 边界内
+      const min = typeof spec.range.min === 'number' ? spec.range.min : 1
+      const max = typeof spec.range.max === 'number' ? spec.range.max : min * 10
+      value = min + (max - min) / 2
+    } else {
+      value = 1
+    }
     await post('/workspaces/reset-world', {})
     const saved = await post('/workspaces/save-world', { world: { [key]: value } })
     const world = await currentWorld()
     const got = world[key]
-    if (saved.status !== 200 || got === undefined) dropped.push(key)
+    const rejectedOnPurpose = saved.status === 400
+    if (rejectedOnPurpose) {
+      // 值是按范围算的，不该被拒；被拒说明 range 与校验脱节
+      dropped.push(key + '(被拒:400)')
+      continue
+    }
+    if (got === undefined) dropped.push(key)
   }
   assert('每个合法基础量都存得进去（无静默丢弃）', dropped.length === 0, dropped.join(',') || '无')
 

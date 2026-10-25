@@ -9,49 +9,82 @@
 - **UI 全部移除**（2026-10-25，`14f6ed0`）。做了三版（目录树 18 节点 → 精简 10 节点 →
   单页工作台）效果始终不好，决定砍掉：`src/client.ts`（2497 行）、`lib/client.js`
   （138.8 KB）、9 个客户端测试套件、`tsconfig.client.json`、`package.json` 的
-  `dsh.client` 与 `exports["./client"]`。**后端 63 个模块一个没动**，能力全部保留，
-  只经 `math_execute`（27 种 operation）与 HTTP 路由（`/derive`、`/summary`、
-  `/world-params`、`/solve-anchor`、`/workspaces/*`）给 AI。见 `docs/ui-removed.md`。
+  `dsh.client` 与 `exports["./client"]`。**后端模块一个没动**，能力全部保留，
+  只经 `math_execute`（27 种 operation）与 HTTP 路由给 AI。见 `docs/ui-removed.md`。
+
+### 新增
+
+- **世界参数校验（三档）**：`world-params.ts` 的 `range` 此前是**纯装饰** ——
+  22 处声明没有任何代码读取，实测 `planetMass=-5`、`planetRadius=0`、`albedo=5`
+  都 200 OK 存进去了。新增 `src/world-validation.ts` 让范围真正生效：
+  - **硬拒绝 400**：`range.hard` 且**低于下界** —— 会算出无穷/非数/负物理量
+    （零半径 → 重力 Infinity、零质量 → 离心比 Infinity、零轨道 → 80 处 Infinity）；
+  - **软警告 200 + `warnings[]`**：越界但仍照设定算（`planetMass=500`、`albedo=1.5`），
+    消息里给出范围与代价。**上界一律走这一档** —— 「质量大得离谱」是设定自由，
+    拦了就违反「不反驳用户设定」；
+  - **静默接受**：在范围内。
+
+  哪些参数标 `hard` 是**实测**出来的（逐个取极端值跑推演、统计产物里 `Infinity`/`NaN`
+  个数），不是拍的。实测还暴露了探针自身的 bug：`planet.surfaceGravity` 其实是
+  显示串（`'Infinity'` 字符串），只看 `typeof === 'number'` 会整片漏判。
+
+- **`invalid` 判定档**（`dead-universe.ts`）：检出物理量非有限/为负时判 `invalid`，
+  与 `dead` 分开 —— `dead` 是「死寂宇宙」这种合法设定，`invalid` 是「参数本身算不出数」。
+  混在一起会让作者以为「世界设得太狠」，实际是把半径写成了 0。渲染措辞仍只讲怎么改，
+  不写「错误/禁止/必须」。
+
+- **逐颗卫星 `moons` 可存档**：`world.ts` 早已支持 `MoonSpec[]`（洛希极限/希尔球/
+  相邻间距/观感），但 `moons` 不在白名单里，导致「多卫星系统」只能直接调 tool、
+  存不进工作区。`ParamSpec.kind` 新增 `'array'` 与 `itemShape`，现在能存能校验。
 
 ### 修复
 
-- **`save-world` 的双白名单事故**（最重要）：该路由曾自带一份 14 键硬编码白名单，
-  而 `world-params.ts` 的 `WORLD_PARAMS` 有 23 个基础量 —— 于是 `starClass`
-  （「我要 G2V 恒星」）、`hasLiquid`、`materialStrength/Density`、`moonCount/Mass/Distance`、
-  `lightPollution`、`galaxyBand` 共 9 个键被**静默丢弃**：返回 200 OK，不报错不提示，
-  存完世界还是原样。现在白名单只留一个真相（直接遍历 `WORLD_PARAMS`），
-  并按 `spec.kind` 分别校验 bool / choice / number。
-  `test/ai-journey.mjs` 会逐个试存全部 23 个键来防回归。
+- **`Infinity`/`NaN` 会流到 AI**（最伤可信度的一条）：`/summary` 的
+  `derived[].value` 曾是裸 `Infinity`（只有 `text` 被格式化成 `—`），
+  `verdict.causes` 里也有 `"表面重力不成立：Infinity m/s²"`。AI 会当成真数字写进结语
+  ——「这颗星球重力是 Infinity」。现在 `deriveAll` 用 `finite()` 统一归一化，
+  `judgeDead` 的原因描述改成中文（不出现字面量），整个响应不含 `Infinity`。
+- **`save-world` 的双白名单事故**：该路由曾自带一份 14 键硬编码白名单，
+  而 `WORLD_PARAMS` 有 23 个基础量 —— 于是 `starClass`（「我要 G2V 恒星」）、
+  `hasLiquid`、`materialStrength/Density`、`moonCount/Mass/Distance`、
+  `lightPollution`、`galaxyBand` 共 9 个键被**静默丢弃**：返回 200 OK，不报错不提示。
+  现在白名单只留一个真相。
+- **类型静默强转**：`Number(true)===1`、`Number([])===0`、`Number(['7'])===7` ——
+  `{planetMass:true}` 曾静默存成 1。现在只接受 `number` 与数字字符串，其余 400。
+- **注入给 AI 的 operation 数量是旧的**：`awareness.ts` 的系统提示写「共 25 个」，
+  实际 27 个（漏了 `derivation` 与 `custom`）。`integration.mjs` 的断言清单同样只有 25 个，
+  现在补齐到 27 并加了**反向断言**（schema 里不许有清单外的名字）。
 - **`npm run preflight` 因 UI 移除而崩溃**：它仍在 `readFileSync('lib/client.js')`，
   文件已删 → `ENOENT`，装机前自检直接非零退出。改为反向断言（客户端产物确实不存在、
   无 `dsh.client`、无 `exports["./client"]`、无 `tsconfig.client.json`），
   与 `test/integration.mjs` 第 5 节互为印证。
-- **`tsconfig.json` 仍排除 `src/client.ts`**：文件早不存在，排除项是无用残留，清掉。
+- **`tsconfig.json` 仍排除 `src/client.ts`**：文件早不存在，排除项清掉。
 
 ### 测试
 
-- 新增 `test/summary.mjs`（37 项），守护 `deriveAll()` 的白名单过滤 —— UI 三版删掉后，
-  它是「**派生量绝不入库**」唯一还在运行的实现点。断言：硬塞 `gravity: 99` 被丢弃、
-  重力仍按 `G·M/R²` 现算成 19.6 m/s²、垃圾键/空串/null/undefined 一律丢弃、
-  基础量与派生量键名不重叠、结论层跟着基础量走、参数元数据表里不许出现派生量。
-- 新增 `test/ai-journey.mjs`（58 项），把「作者说一句话 → AI 该走的那条链」复刻成路由调用：
-  `world-params` → `solve-anchor` → `save-world` → `summary` → `derive/dead`，
-  跑在真派发上（含路由顺序与前缀），断言的终点是**整条链走完世界仍自洽**。
+- 新增 `test/validation.mjs`（82 项）：硬边界拒绝、软范围只警告、类型严格性、
+  逐颗卫星校验、元数据自身完整性（标了 hard 的必须有上下界、array 型必须有 itemShape）。
+- 新增 `test/sanity.mjs`（34 项）：`findPhysicsIssues` 检出能力、`invalid` 与 `dead`
+  分离、渲染不泄 `Infinity`、坏存档兜底、正常链路不受影响。
+- 新增 `test/summary.mjs`（37 项）：`deriveAll()` 的白名单过滤 —— UI 三版删掉后，
+  它是「`派生量绝不入库`」唯一还在运行的实现点。
+- 新增 `test/ai-journey.mjs`（58 项）：把「作者说一句话 → AI 该走的那条链」复刻成路由调用
+  （`world-params` → `solve-anchor` → `save-world` → `summary` → `derive/dead`），
+  跑在真派发上（含路由顺序与前缀）；逐个试存全部 24 个基础量。
   取代了原来「重启 DSH 人肉看」的验证方式。
-- 两个新套件都做过**反向对照**（故意破坏实现确认测试变红），避免装饰性测试。
-- 全量基线：**56 套 / 2232 项 → 58 套 / 2327 项**，全绿。
+- 四个新套件都做过**反向对照**（故意破坏实现确认测试变红），避免装饰性测试。
+- 全量基线：**56 套 / 2232 项 → 60 套 / 2444 项**，全绿。
 
 ### 文档
 
 - 删除 7 篇只描述已删界面的文档（`ui-simplified.md`、`ui-v3-workbench.md`、
   `ui-feedback-fixes.md`、`ui-implementation-status.md`、`ui-v2-panels.md`、
   `client-ui-architecture.md`、`ui-conventions.md`）。
-- 12 篇加了「已作废 / 仍有效」的说明，而不是删掉：`ui-redesign-v3.md`（改题为
-  「参数分层与自洽推演」，因为三层结构与四条自洽规则是领域核心）、`ui-design-v2.md`
-  （用户原始设计稿）、`adr/0002`（历史决策只追加 superseded）、`README.md`
-  （「UI 面板」章改成「AI 调用，没有面板」）、`LIMITS.md`、`code-map.md`、
-  `PUBLISHING.md`、`visualization.md`、`constants-and-layering.md`、
-  `self-audit-2026-10-24.md`、`implementation-status.md`。
+- 另外 12 篇加「已作废 / 仍有效」说明而非删除 —— 它们承载的知识比界面更长久：
+  `ui-redesign-v3.md` 改题为「参数分层与自洽推演」（三层结构与四条自洽规则是领域核心）、
+  `ui-design-v2.md` 是用户原始设计稿、`adr/0002` 是决策历史（只追加 superseded 说明）。
+- `README.md`：UI 章节改为「AI 调用，没有面板」，operation 数量 25 → 27，
+  补「世界参数校验三档」与「逐颗卫星」两节。
 
 ## [2.0.0] — 2026-10-24
 

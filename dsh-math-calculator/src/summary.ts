@@ -87,6 +87,26 @@ function fmt(value: number, digits = 3): string {
 }
 
 /**
+ * 把不可用的数字归一化为 `undefined`。
+ *
+ * 为什么需要：`JSON.stringify(Infinity)` 得到 `null`，但把 `Infinity` 原样放进
+ * 对象里，前端/AI 读到的可能是字符串 `"Infinity"`（取决于序列化路径）。
+ * 实测 `planetRadius=0` 时 `derived[0].value` 就是 `"Infinity"`，
+ * 而只有 `text` 被 `fmt()` 格式化成了 `—`。两个字段不一致会误导消费方。
+ *
+ * @param value - 原始值（可能来自显示串，也可能是数字）
+ * @returns 有限数原样返回，否则 `undefined`
+ */
+function finite(value: unknown): number | undefined {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined
+  if (typeof value === 'string') {
+    const num = Number(value)
+    return Number.isFinite(num) ? num : undefined
+  }
+  return undefined
+}
+
+/**
  * 一次算出界面上要显示的全部内容。
  *
  * @param params - 基础量（只认白名单里的键）
@@ -110,18 +130,20 @@ export function deriveAll(params: Record<string, unknown> = {}): Summary {
   const atm = world.atmosphere || {}
   const stellar = world.stellar || {}
 
-  const gravity = planet.surfaceGravity || 0
-  const radiusM = planet.radiusM || 6.371e6
+  const gravity = finite(planet.surfaceGravity) ?? 0
+  const radiusM = finite(planet.radiusM) ?? 6.371e6
   const escapeVelocity = Math.sqrt(2 * gravity * radiusM)
 
   // ── 派生量：全部现算，一个都不存 ──
+  // value 一律过 finite()：参数不合法时会算出 Infinity/NaN，
+  // 原样给出去会被 AI 当成真数字写进结语（见 test/sanity.mjs）。
   const derived: DerivedValue[] = [
     {
       key: 'gravity',
       label: '表面重力',
       value: gravity,
       unit: 'm/s²',
-      text: fmt(gravity) + ' m/s²（' + fmt(planet.surfaceGravityEarth || 0, 2) + ' g）',
+      text: fmt(gravity) + ' m/s²（' + fmt(finite(planet.surfaceGravityEarth) ?? 0, 2) + ' g）',
     },
     {
       key: 'escapeVelocity',
@@ -133,37 +155,37 @@ export function deriveAll(params: Record<string, unknown> = {}): Summary {
     {
       key: 'dayHours',
       label: '一天',
-      value: planet.dayHours || 0,
+      value: finite(planet.dayHours) ?? 0,
       unit: '小时',
-      text: fmt(planet.dayHours || 0) + ' 小时',
+      text: fmt(finite(planet.dayHours) ?? 0) + ' 小时',
     },
     {
       key: 'yearDays',
       label: '一年',
-      value: orbit.yearDays || 0,
+      value: finite(orbit.yearDays) ?? 0,
       unit: '天',
-      text: fmt(orbit.yearDays || 0) + ' 天',
+      text: fmt(finite(orbit.yearDays) ?? 0) + ' 天',
     },
     {
       key: 'meanTemp',
       label: '年均温',
-      value: temp.surfaceMeanK || 0,
+      value: finite(temp.surfaceMeanK) ?? 0,
       unit: 'K',
-      text: fmt(temp.surfaceMeanK || 0) + ' K（' + fmt((temp.surfaceMeanK || 0) - 273.15) + ' °C）',
+      text: fmt(finite(temp.surfaceMeanK) ?? 0) + ' K（' + fmt((finite(temp.surfaceMeanK) ?? 0) - 273.15) + ' °C）',
     },
     {
       key: 'scaleHeight',
       label: '大气标高',
-      value: atm.scaleHeightM || 0,
+      value: finite(atm.scaleHeightM) ?? 0,
       unit: 'm',
-      text: fmt(atm.scaleHeightM || 0) + ' m',
+      text: fmt(finite(atm.scaleHeightM) ?? 0) + ' m',
     },
     {
       key: 'starLifetime',
       label: '恒星寿命',
-      value: stellar.lifetimeGyr || 0,
+      value: finite(stellar.lifetimeGyr) ?? 0,
       unit: 'Gyr',
-      text: fmt(stellar.lifetimeGyr || 0) + ' Gyr（' + fmt((stellar.lifetimeGyr || 0) * 10) + ' 亿年）',
+      text: fmt(finite(stellar.lifetimeGyr) ?? 0) + ' Gyr（' + fmt((finite(stellar.lifetimeGyr) ?? 0) * 10) + ' 亿年）',
     },
   ]
 
