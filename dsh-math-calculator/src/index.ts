@@ -1944,9 +1944,30 @@ export function runMathTool(rawArguments: unknown): MathResult {
     const variables = scopeSummary(args.variables)
     if (variables !== undefined) result.variables = variables
 
-    // 非有限结果转成结构化错误（对模型更友好）
-    // impact 的结果会包含 Infinity/NaN（分母为 0 的公式），那是评估信息而非错误。
-    if (operation !== 'help' && operation !== 'stats' && operation !== 'impact' && containsNonFinite(result.value)) {
+    /**
+     * 非有限结果的处理：**数值型** operation 才算错误，分析型的不算。
+     *
+     * 这里的判据是「这个 operation 的目的」：
+     *   · 数值型（evaluate/solve/formula…）的目的就是给一个数。
+     *     算出 Infinity/NaN 说明输入越界（除以零、log(0)），那确实是错误，
+     *     转成结构化错误对模型更友好。
+     *   · 分析型（world/derivation/impact/balance…）的目的是给结论。
+     *     结论里出现无穷是**信息本身**：混沌拦截要说「误差已超过 100%、不可预测」，
+     *     热力图要说「这片区域没有解」，impact 要说「这条公式分母为零」。
+     *     把它们判成错误，会让 AI 以为分析失败、把正确结论丢掉。
+     *
+     * 曾经这里是**黑名单**（`help`/`stats`/`impact` 例外），于是每发现一个
+     * 新的分析型 operation 就要补一条 —— `chaos` 就这样被漏了：
+     * 它输出了正确的混沌判定，却因为概率云里的 Infinity 被报成 `[non_finite]` 错误。
+     *
+     * 现在反过来用白名单：只有明确「该给数字」的才算错误。
+     */
+    const STRICT_FINITE_OPERATIONS: MathOperation[] = [
+      'auto', 'evaluate', 'solve', 'system', 'derivative', 'integral',
+      'simplify', 'expand', 'roots', 'matrix', 'eigen', 'dist',
+      'regression', 'ode', 'formula',
+    ]
+    if (STRICT_FINITE_OPERATIONS.includes(operation) && containsNonFinite(result.value)) {
       throw new CalcError(
         'non_finite',
         `计算结果非有限（${outcome.result}）`,

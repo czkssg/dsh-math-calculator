@@ -358,5 +358,18 @@ export function describeFormula(
     lines.push(`* 表示本次调用覆盖了默认值: ${overridden.join(', ')}`)
   }
   if (formula.unit) lines.push(`单位: ${formula.unit}`)
+  /**
+   * 单位提示：公式库一律用 **SI 基本单位**（kg / m / s），
+   * 而 `world` 操作接受的是**地球倍数**（planetMass=1.5 表示 1.5 个地球质量）。
+   *
+   * 两套单位混用会静默算错，而且错得隐蔽：
+   *   escape_velocity 传 M=1.5, r=1（想表达 1.5 地球质量、1 地球半径）
+   *   → 得 1.4e-5 m/s，比正确答案小 6 个数量级，却看着像个正常数字。
+   * 实测踩到过（按 world 的直觉填公式参数）。
+   *
+   * 所以每次都提醒，并直接给出换算常数，省得再去查。
+   */
+  lines.push('单位提示：公式参数用 SI（kg / m / s）。按地球倍数给时先乘：')
+  lines.push('  1 地球质量 = 5.972e24 kg    1 地球半径 = 6.371e6 m')
   return lines.join('\n')
 }

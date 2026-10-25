@@ -166,6 +166,36 @@ console.log('-- 7. help 不能再让作者去找已删的界面 --')
   assert('help 覆盖 29 个 operation', r.text.includes('units') && r.text.includes('balance'), '')
 }
 
+console.log('-- 7b. 其它输出也不许承诺渲染界面 --')
+{
+  // graph / heatmap 曾写「界面会用 SVG / 色块网格渲染这张图」，
+  // 而界面 2026-10-25 已删 —— AI 会以为图已经画好了。
+  const graph = await call({ operation: 'derivation', derivation: 'graph' })
+  assert('graph 可用', graph.ok, '')
+  assert('graph 不承诺界面渲染', !/界面会/.test(graph.text), '')
+  assert('graph 说明没有界面', /没有界面/.test(graph.text), '')
+
+  const heat = await call({ operation: 'derivation', derivation: 'heatmap' })
+  assert('heatmap 可用', heat.ok, '')
+  assert('heatmap 不承诺界面渲染', !/界面会/.test(heat.text), '')
+  assert('heatmap 说明没有界面', /没有界面/.test(heat.text), '')
+}
+
+console.log('-- 7c. 公式求值必须提示 SI 单位（防地球倍数踩坑）--')
+{
+  // 实测踩过：按 world 的直觉传 M=1.5, r=1（地球倍数），
+  // escape_velocity 算出 1.4e-5 m/s —— 小 6 个数量级却看着正常。
+  const r = await call({
+    operation: 'formula', formula: 'escape_velocity', overrides: { M: 8.958e24, r: 6371000 },
+  })
+  assert('公式可用', r.ok, '')
+  assert('提示参数用 SI', /SI/.test(r.text), '')
+  assert('给出地球质量换算常数', r.text.includes('5.972e24'), '')
+  assert('给出地球半径换算常数', r.text.includes('6.371e6'), '')
+  // 正确用法仍要给对答案
+  assert('正确参数算出 13.7 km/s', r.text.includes('13699'), '')
+}
+
 console.log('-- 8. 一个场景串下来，前后自洽 --')
 {
   // 同一组世界参数，跑三个不同操作，重力必须一致

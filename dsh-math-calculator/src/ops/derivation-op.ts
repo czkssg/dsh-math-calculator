@@ -46,6 +46,30 @@ import { FLIP_CLAIMS } from '../flip-claims.js'
 import { toJsonValue } from '../format.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
+/**
+ * 全部 `derivation` 子命令（**唯一真相**）。
+ *
+ * 为什么要有这个常量：报错提示原本是**硬编码的一句话**，只列了 21 个，
+ * 而实现里有 29 个 —— `flip` / `trace` / `impact` / `cost` / `graph` /
+ * `heatmap` / `whitepaper` / `timeline` / `observer` 都不在提示里。
+ * 于是 AI 只知道自己看到的那些，剩下的永远不会被调用（"存在但不可发现"）。
+ *
+ * 加新子命令必须同时加到这个数组里 —— `test/derivation-subcommands.mjs`
+ * 会拿它和实现里的分支逐一比对。
+ */
+export const DERIVATION_SUBCOMMANDS = [
+  // 推演栈
+  'stack', 'cards', 'pipeline', 'checklist',
+  // 判定
+  'dead', 'chaos', 'flip', 'observer',
+  // 求解与对比
+  'anchors', 'backSolve', 'sensitivity', 'phase', 'heatmap', 'graph',
+  'timeline', 'compare', 'diff',
+  // 档案与产出
+  'archive', 'history', 'tables', 'whitepaper', 'trace', 'cost',
+  'fantasy', 'civilization', 'dimensionless', 'inherit', 'units', 'impact',
+] as const
+
 /** 数字格式化（大/小值用科学计数）。 */
 function sci(value: number): string {
   if (!Number.isFinite(value)) return '—'
@@ -462,9 +486,9 @@ export function opDerivation(args: MathArgs): Outcome {
       (layout.maxDepth + 1) + ' 层')
     if (focus) out.push('  焦点：' + focus)
     out.push('')
-    out.push('（界面会用 SVG 渲染这张图。）')
-    // labels：量的中文名对照表（界面给节点加标注用）
-    // allDepths：全部层号（界面画层开关用）
+    out.push('（本插件没有界面。完整坐标在 value.graph，可自行渲染或转成文字。）')
+    // labels：量的中文名对照表（渲染时给节点加标注用）
+    // allDepths：全部层号（渲染时画层开关用）
     value.graph = { ...layout, labels: QUANTITY_LABELS, allDepths: allDepths }
   } else if (sub === 'heatmap') {
     // 相图热力图（方案 5.2）：扫（行星质量 × 轨道距离）
@@ -493,7 +517,7 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('')
     out.push('  ' + narrow.note)
     out.push('')
-    out.push('（界面会用色块网格渲染这张图。）')
+    out.push('（本插件没有界面。完整网格在 value.heatmap，可自行渲染或转成文字。）')
     value.heatmap = { ...map, narrow: narrow }
   } else if (sub === 'whitepaper') {
     // 补丁8：白皮书（给人读）与 Prompt 卡片（给 AI 用）
@@ -645,7 +669,8 @@ export function opDerivation(args: MathArgs): Outcome {
     value.tables = 7
   } else {
     out.push('未知子命令：' + sub)
-    out.push('可用：stack / cards / dimensionless / units / sensitivity / phase / pipeline / anchors / backSolve / fantasy / civilization / dead / chaos / inherit / diff / archive / history / compare / checklist / tables')
+    out.push('可用（共 ' + DERIVATION_SUBCOMMANDS.length + ' 个）：' +
+      DERIVATION_SUBCOMMANDS.join(' / '))
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }

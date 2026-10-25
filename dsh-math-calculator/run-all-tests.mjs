@@ -117,7 +117,11 @@ const SUITES = [
   // 上面那些验「算得对不对」；这一套验「作者拿去能不能用」：
   // 输出里不许让 AI 去找已删的界面、不许有 Infinity/NaN、必须带单位与可信度标签、
   // 措辞不许反驳作者设定，并且一个场景从头推到尾要前后自洽。
-  { file: 'real-usage.mjs', expect: 94, label: '实际使用验收（作者视角的完整场景）' },
+  // 子命令报错提示曾硬编码只列 21 个（实现有 29 个），漏掉的 8 个「存在但不可发现」。
+  { file: 'derivation-subcommands.mjs', expect: 84, label: '推演子命令完整性（清单↔实现一致）' },
+  // 分析型 operation 里的无穷是结论（不可预测/无解），不该报错；数值型仍然要报。
+  { file: 'non-finite.mjs', expect: 30, label: '非有限策略（分析型给结论/数值型报错）' },
+  { file: 'real-usage.mjs', expect: 105, label: '实际使用验收（作者视角的完整场景）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */
