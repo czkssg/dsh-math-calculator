@@ -308,28 +308,31 @@ function tokenizeQuery(query: string): string[] {
 }
 
 /**
- * 查找公式。支持 id 精确匹配、名称子串、关键词、分类、同义词与中文子词。
- * 返回按相关度排序的候选。
+ * 在一组公式里按相关度检索（**检索逻辑的唯一实现**）。
  *
- * 排序优先级：整串精确 > id 精确 > 关键词精确 > id 子串 > 名称精确 > 名称子串 > 描述 > 分类。
- * 注意：分类命中给的分要低，否则搜「重力」会把整个 physics/gravity
- * 分类的公式都挤到最前面，把真正相关的 gravitation 埋掉。
+ * 为什么要单独抽出来：这段逻辑曾经被**复制成两份** ——
+ * `formulas.ts` 里的 `findFormulas` 和 `index.ts` 里的 `findInCurrentWorkspace`。
+ * 于是修好了一份、另一份还是旧的：`formulas` 操作走 `findInCurrentWorkspace`，
+ * 真实工具里查「贷款月供」仍然是 0 条，而单元测试调 `findFormulas` 全部通过。
+ * **测试绿了，工具没修**。现在两边都调这个函数，物理上不可能再不一致。
  *
- * ⚠️ 词元匹配的分数按**词长加权**：命中 4 个字比命中 2 个字更相关。
- * 否则「粮食产量」会把所有含「量」的公式都召回到同一档。
- *
- * @param query - 查询串（关键词 / 同义词 / 中文复合词都行）
- * @param limit - 最多返回条数。宽泛查询给大一点，否则会被截断成 10 条
+ * @param formulas - 待检索的公式集（内置全量，或「工作区叠加后的当前集」）
+ * @param query - 查询串
+ * @param limit - 最多返回条数
  * @returns 按相关度排序的公式
  */
-export function findFormulas(query: string, limit = 20): FormulaDef[] {
+export function scoreFormulas(
+  formulas: readonly FormulaDef[],
+  query: string,
+  limit = 20,
+): FormulaDef[] {
   const text = query.trim().toLowerCase()
   if (text === '') return []
 
   const tokens = tokenizeQuery(query)
   const scored: Array<{ formula: FormulaDef; score: number }> = []
 
-  for (const formula of FORMULAS) {
+  for (const formula of formulas) {
     let score = 0
     const id = formula.id.toLowerCase()
     const name = formula.name
@@ -376,6 +379,66 @@ export function findFormulas(query: string, limit = 20): FormulaDef[] {
     .sort((left, right) => right.score - left.score || left.formula.id.localeCompare(right.formula.id))
     .slice(0, limit)
     .map((entry) => entry.formula)
+}
+
+/**
+ * 查找公式（内置全量集）。支持 id 精确、名称子串、关键词、分类、同义词与中文子词。
+ *
+ * 排序优先级：整串精确 > id 精确 > 关键词精确 > id 子串 > 名称精确 > 名称子串 > 描述 > 分类。
+ * 注意：分类命中给的分要低，否则搜「重力」会把整个 physics/gravity
+ * 分类的公式都挤到最前面，把真正相关的 gravitation 埋掉。
+ *
+ * @param query - 查询串（关键词 / 同义词 / 中文复合词都行）
+ * @param limit - 最多返回条数
+ * @returns 按相关度排序的公式
+ */
+export function findFormulas(query: string, limit = 20): FormulaDef[] {
+  return scoreFormulas(FORMULAS, query, limit)
+}
+
+/**
+ * 严格解析单个公式（不做子词/同义词模糊匹配）。
+ *
+ * 为什么必须与 `scoreFormulas` 分开：
+ *   检索（`formulas` 操作）追求「想得到」，模糊匹配是对的；
+ *   求值（`formula` 操作）追求「指哪儿打哪儿」，模糊匹配是灾难 ——
+ *   传 `'完全不存在的公式xyz'` 时，子词「公式」会命中别的公式，
+ *   于是本该报 `unknown_formula` 的地方变成 `missing_params`，
+ *   模型会以为「公式找到了，只是缺参数」，然后去补一堆无关参数。
+ *
+ * 这里只认四种关系：id 精确、名称精确、id 包含、名称包含。
+ *
+ * @param formulas - 待解析的公式集
+ * @param query - 公式 id 或名称
+ * @returns 唯一命中的公式；没有命中返回 `undefined`
+ */
+export function resolveFormulaStrict(
+  formulas: readonly FormulaDef[],
+  query: string,
+): FormulaDef | undefined {
+  const raw = query.trim()
+  if (raw === '') return undefined
+  const lower = raw.toLowerCase()
+
+  // 1. id 精确
+  const byId = formulas.find(function (f) { return f.id.toLowerCase() === lower })
+  if (byId) return byId
+
+  // 2. 名称精确
+  const byName = formulas.find(function (f) { return f.name === raw })
+  if (byName) return byName
+
+  // 3. id / 名称整串包含（'zzz不存在' 不会命中，因为要求整串被包含）
+  const partial = formulas.filter(function (f) {
+    return f.id.toLowerCase().includes(lower) || f.name.includes(raw)
+  })
+  if (partial.length === 1) return partial[0]
+  // 多个候选时优先名字最短的（更贴近用户输入）
+  if (partial.length > 1) {
+    return [...partial].sort(function (a, b) { return a.name.length - b.name.length })[0]
+  }
+
+  return undefined
 }
 
 // ── 读者视角频次 ──

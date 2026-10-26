@@ -125,6 +125,9 @@ const SUITES = [
   // 分析型 operation 里的无穷是结论（不可预测/无解），不该报错；数值型仍然要报。
   { file: 'non-finite.mjs', expect: 30, label: '非有限策略（分析型给结论/数值型报错）' },
   { file: 'real-usage.mjs', expect: 105, label: '实际使用验收（作者视角的完整场景）' },
+  // 恒星目录只有主序星，且默认是太阳。这两件事以前都是静默发生的：
+  // 传 'F5III'（巨星）会回退成 G2V，提示压在 150 行之后 —— 结论可能从「冰封」翻成「熔融」。
+  { file: 'star-assumptions.mjs', expect: 32, label: '恒星假设显式声明（不静默替换成太阳）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */

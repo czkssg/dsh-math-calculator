@@ -88,6 +88,8 @@ import {
   listFormulaCategories,
   resolveExpression,
   resolveParams,
+  resolveFormulaStrict,
+  scoreFormulas,
   type FormulaDef,
 } from './formulas.js'
 import { BUILTINS } from './formula-builtins.js'
@@ -1394,33 +1396,21 @@ function currentFormulas(): FormulaType[] {
 }
 
 /** 在当前工作区的公式表里检索。 */
+/**
+ * 在当前工作区的公式集里检索。
+ *
+ * ⚠️ 检索逻辑**必须**复用 `scoreFormulas`，不能在这里再写一份。
+ * 曾经这里复制了 `findFormulas` 的旧实现（只做整串子串匹配），
+ * 于是 `formulas.ts` 里的检索修好了，这个走工作区集的副本还是旧的：
+ * 工具里查「贷款月供」0 条，而单元测试直接调 `findFormulas` 全绿 —— 测试骗了自己。
+ * 现在两边共用一份，差异只剩「检索哪一批公式」。
+ *
+ * @param query - 查询串
+ * @param limit - 最多返回条数
+ * @returns 按相关度排序的公式
+ */
 function findInCurrentWorkspace(query: string, limit: number) {
-  const formulas = currentFormulas()
-  const text = query.trim().toLowerCase()
-  if (text === '') return []
-
-  const scored: Array<{ formula: FormulaType; score: number }> = []
-  for (const formula of formulas) {
-    let score = 0
-    const id = formula.id.toLowerCase()
-    if (id === text) score += 5000
-    else if (id.includes(text)) score += 800
-    for (const key of formula.keys ?? []) {
-      const lowered = String(key).toLowerCase()
-      if (lowered === text) score += 2000
-      else if (lowered.includes(text)) score += 400
-    }
-    if (formula.name === query) score += 3000
-    else if (formula.name.includes(query)) score += 700
-    else if (formula.name.toLowerCase().includes(text)) score += 350
-    if (formula.desc.toLowerCase().includes(text)) score += 80
-    if (formula.cat.toLowerCase().includes(text)) score += 20
-    if (score > 0) scored.push({ formula, score })
-  }
-  return scored
-    .sort((left, right) => right.score - left.score || left.formula.id.localeCompare(right.formula.id))
-    .slice(0, limit)
-    .map((entry) => entry.formula)
+  return scoreFormulas(currentFormulas(), query, limit)
 }
 
 function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
@@ -1429,8 +1419,17 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
     throw new CalcError('invalid_argument', '需要 formula 参数', '传公式 id 或名称，例如 "escape_velocity"、"逃逸速度"。用 operation="formulas" 检索。')
   }
 
-  const matches = findInCurrentWorkspace(query, 5)
-  if (matches.length === 0) {
+  /**
+   * 单个公式解析用**严格匹配**，不用模糊检索。
+   *
+   * `formulas`（检索）和 `formula`（求值）的取向相反：
+   *   检索要「想得到」，模糊是对的；
+   *   求值要「指哪儿打哪儿」，模糊会把 `'不存在xyz'` 里的子词「公式」
+   *   匹配到别的公式，于是报 `missing_params` 而不是 `unknown_formula`，
+   *   模型以为公式找到了、只是缺参数，去补一堆无关参数。
+   */
+  const formula = resolveFormulaStrict(currentFormulas(), query)
+  if (!formula) {
     throw new CalcError(
       'unknown_formula',
       `没有匹配 "${query}" 的公式`,
@@ -1438,7 +1437,6 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
     )
   }
 
-  const formula = matches[0]
   const overrides = (args.overrides ?? {}) as Record<string, number | string>
 
   let resolved: { values: Record<string, unknown>; overridden: string[]; missing: string[] }
@@ -1511,9 +1509,6 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 
   const parts = [describeFormula(formula, expression, resolved.values, resolved.overridden)]
   parts.push(`结果: ${formatValue(engine, raw, precision)}${formula.unit ? ` ${formula.unit}` : ''}`)
-  if (matches.length > 1) {
-    parts.push(`（另有 ${matches.length - 1} 条相近公式，可用更精确的 id 指定）`)
-  }
 
   return {
     result: parts.join('\n'),

@@ -260,6 +260,14 @@ export interface WorldProfile {
   warnings: string[]
   /** 读者能直接感知的要点（供主模型二创）。 */
   highlights: string[]
+  /**
+   * 恒星假设说明：哪些地方**替代了用户设定**或**补了默认值**。
+   *
+   * 与 `warnings` 的区别：`warnings` 说「你给的世界有物理问题」，
+   * 这里说「我动了你的输入」。后者更要紧——整份结论都建立在它之上，
+   * 所以必须显式返回、由上层放到输出最前面。
+   */
+  starNotes: string[]
 }
 
 const EARTH = {
@@ -404,6 +412,14 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
   //   a) starClass='M5V' → 按光谱型基准表填充（省去查表）
   //   b) 直接给 starMass/starRadius/starTemp
   // 显式参数优先于 starClass —— 用户想微调时不会被基准值覆盖。
+  //
+  // ⚠️ 目录里**只有主序星（V）**：O5V…M5V 共 9 种，没有巨星（III）、次巨星、白矮星。
+  // 同样光谱字母的巨星比主序星亮 20—100 倍，用主序值顶替会让平衡温度差出几百开。
+  //
+  // 实测踩到过：传 starClass='F5III'（某设定里的 F5-IIIa 巨星）时，旧实现静默回退到
+  // 最近的主序型 G2V（太阳），而那句提示被推到最后一百多行之后——读前 20 行的人永远看不到。
+  // 现在这类替换会记进 starNotes，并被放到输出的**最前面**。
+  const starNotes: string[] = []
   let baseStar: StarClass
   if (typeof params.starClass === 'string' && params.starClass.trim() !== '') {
     const requested = STAR_INDEX.get(params.starClass.trim())
@@ -412,17 +428,40 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
       // 允许简写（如 'G2' → 'G2V'）
       const upper = params.starClass.trim().toUpperCase()
       const prefixed = STAR_CLASSES.find((s) => s.id.startsWith(upper))
-      baseStar = prefixed ?? closestStarClass(num(params.starTemp, 5778))
-      if (!prefixed) {
-        warnings.push(
-          `未找到光谱型 "${params.starClass}"，按给定温度推断为 ${baseStar.id}。` +
+      if (prefixed) {
+        baseStar = prefixed
+      } else {
+        baseStar = closestStarClass(num(params.starTemp, 5778))
+        starNotes.push(
+          `未找到光谱型「${params.starClass}」，已按温度推断为 ${baseStar.id}（主序星）。` +
             `可选值：${STAR_CLASSES.map((s) => s.id).join(', ')}`,
         )
+        // 亮度级 I/II/III/IV = 巨/次巨星：同样的光谱字母，亮度高出一个数量级
+        const lumMatch = params.starClass.trim().match(/(III|II|IV|I)\b/i)
+        const lum = lumMatch ? lumMatch[1].toUpperCase() : undefined
+        if (lum !== undefined && lum !== 'V') {
+          starNotes.push(
+            `⚠ 你给的是「${lum}」级（巨/次巨星），而本模型只支持主序星（V）。` +
+              '同光谱字母的巨星比主序星亮 20—100 倍，因此温度、宜居带、日照量都会显著偏低——' +
+              '这个结果不能直接采信。要接近真实，请显式给 starMass 与 starRadius。',
+          )
+        }
       }
     }
   } else {
     // 没给 starClass：按温度反查最接近的光谱型（用于补全半径/质量）
     baseStar = closestStarClass(num(params.starTemp, 5778))
+    // 完全没给恒星信息 = 默认太阳，这必须说在最前面
+    const gaveAnyStar =
+      params.starMass !== undefined ||
+      params.starRadius !== undefined ||
+      params.starTemp !== undefined
+    if (!gaveAnyStar) {
+      starNotes.push(
+        '没有给任何恒星参数，已默认成太阳（G2V，1 L☉，5778 K）。' +
+          '若这颗行星绕的不是太阳型恒星（例如 K 型橙星或 F 型巨星），温度与宜居带会差很多。',
+      )
+    }
   }
 
   const starMassSun = num(params.starMass, baseStar.massSun)
@@ -937,5 +976,13 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     },
     warnings,
     highlights,
+    /**
+     * 恒星假设说明（替代了用户设定、或用了默认值）。
+     *
+     * 与 `warnings` 分开：`warnings` 是「你给的世界有个物理问题」，
+     * `starNotes` 是「我改了/补了你的输入」。两者性质不同，呈现位置也不同——
+     * `starNotes` 必须出现在输出最前面，因为整份结论都建立在它之上。
+     */
+    starNotes,
   }
 }

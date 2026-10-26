@@ -56,6 +56,24 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   lines.push('══════ 星球体感画像 ══════')
   lines.push('')
 
+  /**
+   * 假设声明放在**最前面**。
+   *
+   * 为什么不能放末尾：默认恒星是太阳时，整份输出看起来一切正常
+   * （14°C、宜居、天空蓝、四季分明）。而"我把你的 K 型星当成了太阳"
+   * 这类消息如果压在一百多行之后，读前 20 行的人和 AI 都看不到 ——
+   * 于是拿着一份基于错误恒星的结论去写设定。
+   *
+   * 凡是**替代了用户设定**或**补了默认值**的，都必须在这里说清。
+   */
+  const starNotes = (profile as unknown as { starNotes?: string[] }).starNotes
+  if (Array.isArray(starNotes) && starNotes.length > 0) {
+    lines.push('【⚠ 先说清楚这些假设】')
+    for (const note of starNotes) lines.push('  · ' + note)
+    lines.push('  以下结论都建立在这些假设之上；换掉假设，结论会变。')
+    lines.push('')
+  }
+
   // 读者最先感知的
   lines.push('【最直观的几件事】')
   for (const item of profile.highlights) lines.push(`  · ${item}`)
@@ -294,6 +312,8 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
+      // 恒星假设必须进结构化输出：AI 读的是 value，不是人读的文本
+      starNotes: profile.starNotes,
       provenance: { summary: provenanceSummary(), constants: MODEL_CONSTANTS },
     }) as { [key: string]: JsonValue }
 
@@ -327,6 +347,8 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
       calendar: profile.calendar,
       warnings: profile.warnings,
       highlights: profile.highlights,
+      // 恒星假设必须进结构化输出：AI 读的是 value，不是人读的文本
+      starNotes: profile.starNotes,
       provenance: { summary: provenanceSummary(), constants: MODEL_CONSTANTS },
     }),
   }
