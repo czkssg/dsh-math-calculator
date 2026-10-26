@@ -207,6 +207,7 @@ import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
 import { opBodies } from './ops/bodies-op.js'
+import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 
 // ────────────────────────────────────────────────────────────────────────────
 // 类型
@@ -1511,6 +1512,30 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 
   const parts = [describeFormula(formula, expression, resolved.values, resolved.overridden)]
   parts.push(`结果: ${formatValue(engine, raw, precision)}${formula.unit ? ` ${formula.unit}` : ''}`)
+
+  /**
+   * 经验公式的适用性提示。
+   *
+   * 为什么要挂在输出里：一批经验式把常数**烘焙进了系数**
+   * （船舶航速 1.34 里藏着 g=9.81、宜居带 1.1 隐含地球温室条件）。
+   * 作者在非地球世界里照抄会算错，而且错得隐蔽——数字看着正常，只是用了地球常数。
+   *
+   * 只对收录过的公式追加，不打扰普通公式。
+   */
+  const empiricalNote = empiricalNoteOf(formula.id)
+  if (empiricalNote) {
+    parts.push('')
+    parts.push('【适用域：' + KIND_LABEL[empiricalNote.kind] + '】')
+    if (empiricalNote.bakedIn) parts.push('  藏了什么：' + empiricalNote.bakedIn)
+    if (empiricalNote.breaksWhen) parts.push('  何时失效：' + empiricalNote.breaksWhen)
+    if (empiricalNote.advice) parts.push('  建议：' + empiricalNote.advice)
+    if (empiricalNote.genericForm) {
+      parts.push('  普适形式：' + empiricalNote.genericForm)
+      if (empiricalNote.needsFrom && empiricalNote.needsFrom.length > 0) {
+        parts.push('  需要这些量：' + empiricalNote.needsFrom.join('、'))
+      }
+    }
+  }
 
   return {
     result: parts.join('\n'),

@@ -32,7 +32,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
-  { file: 'formulas-all.mjs', expect: 395, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 404, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -134,6 +134,9 @@ const SUITES = [
   // 面向宇宙科幻创作的类型学：32 类，含理论预言（中子星/黑洞）与纯思辨（戴森球）。
   // 核心是证据分级——「中子星重力 1e11 g」是物理必然，「戴森球厚 1 公里」只是拍脑袋。
   { file: 'body-taxonomy.mjs', expect: 186, label: '天体类型学（已观测/理论预言/纯思辨分级）' },
+  // 经验公式拆解：把烘焙进系数的常数剥出来（船的 1.34 里藏着 g=9.81、宜居带 1.1
+  // 是地球温室阈值），并分清「可泛化 / 无量纲通用 / 纯拟合不可泛化」。
+  { file: 'empirical-generic.mjs', expect: 96, label: '经验式拆解与普适化（系数里的常数剥出来）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */
