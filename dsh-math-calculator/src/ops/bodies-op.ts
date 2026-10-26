@@ -37,6 +37,15 @@ import {
   type NamedStar,
 } from '../body-catalog.js'
 import {
+  BODY_TYPES,
+  EVIDENCE_LABEL,
+  FAMILY_LABEL,
+  FAMILY_ORDER,
+  findBodyType,
+  typesByEvidence,
+  typesByFamily,
+} from '../body-taxonomy.js'
+import {
   SCALING_RULES,
   describeDependence,
   howToTreatValue,
@@ -116,13 +125,144 @@ function renderBody(body: NamedStar | BodyEntry): string[] {
 }
 
 /**
- * `bodies`：天体目录与常数传导。
+ * 渲染一个天体类型。
+ *
+ * 与具名天体的区别：类型没「精确值」，只有典型值与物理约束。
+ * 所以这里刻意不写小数点——写 `11 km` 而不是 `11.0 km`，
+ * 避免让人以为中子星半径精确到 0.1 公里。
+ *
+ * @param type - 类型条目
+ * @returns 文本行
+ */
+function renderType(type: ReturnType<typeof findBodyType> & object): string[] {
+  const lines: string[] = []
+  const evTag =
+    type.evidence === 'observed' ? '✓已观测'
+      : type.evidence === 'theoretical' ? '~理论预言' : '?纯思辨'
+  lines.push('■ ' + type.name + '（' + type.nameEn + '）  [' + FAMILY_LABEL[type.family] + ' · ' + evTag + ']')
+  if (type.massKg !== undefined) {
+    const inSun = type.massKg / 1.989e30
+    const inEarth = type.massKg / 5.972e24
+    const shown = inSun >= 0.01
+      ? (inSun >= 0.1 ? inSun.toPrecision(3) + ' 太阳质量' : inSun.toExponential(2) + ' 太阳质量')
+      : inEarth >= 0.01
+        ? inEarth.toPrecision(3) + ' 地球质量'
+        : type.massKg.toExponential(2) + ' kg'
+    lines.push('  典型质量      ' + shown)
+  }
+  if (type.radiusKm !== undefined) {
+    lines.push('  典型半径      ' + type.radiusKm.toPrecision(3) + ' km')
+  }
+  if (type.gravityG !== undefined) {
+    lines.push('  典型表面重力   ' + type.gravityG.toExponential(2) + ' g（地球 = 1）')
+  }
+  if (type.densityKgM3 !== undefined) {
+    lines.push('  典型密度      ' + type.densityKgM3.toExponential(2) + ' kg/m³（水 = 1000）')
+  }
+  if (type.tempK !== undefined && type.tempK > 0) {
+    lines.push('  典型温度      ' + type.tempK.toPrecision(3) + ' K')
+  }
+  lines.push('  依据          ' + type.basis)
+  lines.push('  读者感知      ' + type.perception)
+  if (type.lockedBy) {
+    lines.push('  ▶ 物理锁死（编不了）')
+    lines.push('    ' + type.lockedBy)
+  }
+  if (type.freeToAuthor) {
+    lines.push('  ▶ 可自由发挥（编这些不冲突）')
+    lines.push('    ' + type.freeToAuthor)
+  }
+  if (type.pitfall) {
+    lines.push('  ▶ 最容易踩的坑')
+    lines.push('    ' + type.pitfall)
+  }
+  if (type.narrativeUse) {
+    lines.push('  ▶ 科幻用法')
+    lines.push('    ' + type.narrativeUse)
+  }
+  return lines
+}
+
+/**
+ * `bodies`：天体目录、类型学与常数传导。
  *
  * @param args - 工具参数
  * @returns 结果文本与结构化值
  */
 export function opBodies(args: MathArgs): Outcome {
   const lines: string[] = []
+
+  // ── 用法 0：天体类型学（面向宇宙科幻创作，优先于具名天体）──
+  if (args.bodyType !== undefined || args.bodyEvidence !== undefined) {
+    const lines2 = []
+    // 查单个类型
+    if (typeof args.bodyType === 'string' && args.bodyType.trim() !== '') {
+      const hit = findBodyType(args.bodyType)
+      if (!hit) {
+        throw new CalcError(
+          'invalid_argument',
+          '找不到天体类型「' + args.bodyType + '」',
+          '已收录类型：' + BODY_TYPES.map(function (t) { return t.name }).join('、'),
+        )
+      }
+      lines2.push(...renderType(hit as never))
+      return { result: lines2.join('\n'), value: toJsonValue({ type: hit } as never) }
+    }
+
+    // 按证据等级筛
+    if (typeof args.bodyEvidence === 'string' && args.bodyEvidence.trim() !== '') {
+      const level = args.bodyEvidence.trim() as never
+      if (!EVIDENCE_LABEL[level]) {
+        throw new CalcError(
+          'invalid_argument',
+          '不认识的证据等级「' + args.bodyEvidence + '」',
+          '可用：' + Object.keys(EVIDENCE_LABEL).join(' / '),
+        )
+      }
+      const list = typesByEvidence(level)
+      lines2.push('═══ ' + EVIDENCE_LABEL[level] + '（' + list.length + ' 类）═══')
+      lines2.push('')
+      for (const type of list) {
+        lines2.push(...renderType(type as never))
+        lines2.push('')
+      }
+      return {
+        result: lines2.join('\n'),
+        value: toJsonValue({ evidence: level, count: list.length, ids: list.map(function (t) { return t.id }) } as never),
+      }
+    }
+
+    // 列全部类型（按族分组）
+    lines2.push('═══ 天体类型学（' + BODY_TYPES.length + ' 类，面向宇宙科幻创作）═══')
+    lines2.push('')
+    lines2.push('证据等级决定了这些数字有多可信：')
+    lines2.push('  ✓已观测 = 有观测证据；~理论预言 = 物理必然但未直接观测；?纯思辨 = 都没有')
+    lines2.push('')
+    for (const family of FAMILY_ORDER) {
+      const list = typesByFamily(family)
+      if (list.length === 0) continue
+      lines2.push('【' + FAMILY_LABEL[family] + '】（' + list.length + '）')
+      for (const type of list) {
+        const tag = type.evidence === 'observed' ? '✓' : type.evidence === 'theoretical' ? '~' : '?'
+        lines2.push('  ' + tag + ' ' + type.name.padEnd(14) + ' ' + type.nameEn)
+      }
+      lines2.push('')
+    }
+    lines2.push('【用法】')
+    lines2.push('  bodyType="中子星"          查单个类型的物理锁死项与可编项')
+    lines2.push('  bodyEvidence="speculative" 只看纯思辨类')
+    lines2.push('  不带参数                   列出全部类型')
+    return {
+      result: lines2.join('\n'),
+      value: toJsonValue({
+        total: BODY_TYPES.length,
+        families: FAMILY_ORDER.map(function (family) {
+          return { family: family, label: FAMILY_LABEL[family], count: typesByFamily(family).length }
+        }),
+        ids: BODY_TYPES.map(function (t) { return t.id }),
+      } as never),
+    }
+  }
 
   // ── 用法 3：常数传导（最重要）──
   if (typeof args.bodyConstant === 'string' && args.bodyConstant.trim() !== '') {

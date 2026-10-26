@@ -2156,6 +2156,19 @@ const PARAMETER_SPEC = {
     type: 'number',
     description: '常数变化倍数（operation=bodies，默认 2）。',
   },
+  bodyType: {
+    type: 'string',
+    description:
+      '查天体**类型**（operation=bodies）。与 bodyName 的区别：bodyName 查具名天体（火星、木卫二），' +
+      'bodyType 查类型学条目（中子星、热木星、流浪行星、戴森球）。' +
+      '每个类型都标了证据等级，并列明「物理锁死项」（编不了）与「可自由发挥项」。',
+  },
+  bodyEvidence: {
+    type: 'string',
+    description:
+      '按证据等级筛天体类型（operation=bodies）：observed（已观测）/ ' +
+      'theoretical（理论预言，物理必然但未直接观测）/ speculative（纯思辨）。',
+  },
   matrix: {
     type: 'array',
     description: '二维矩阵，例如 [[1,2],[3,4]]。operation=matrix/eigen/system 时使用。',

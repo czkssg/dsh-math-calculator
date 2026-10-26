@@ -223,6 +223,16 @@ export interface MathArgs {
   bodyConstant?: string
   /** 常数变化倍数（默认 2）。 */
   bodyFactor?: number
+  /**
+   * 查天体**类型**（operation=bodies）。
+   *
+   * 与 bodyName 的区别：bodyName 查具名天体（火星、木卫二），
+   * bodyType 查类型学条目（中子星、热木星、戴森球）——
+   * 面向宇宙科幻创作，含理论预言与纯思辨类。
+   */
+  bodyType?: string
+  /** 按证据等级筛类型：observed / theoretical / speculative。 */
+  bodyEvidence?: string
 
   // ── operation=derivation 的逆推与档案 ──
   /** 叙事锚点 id（如 creatureHeight）。 */
