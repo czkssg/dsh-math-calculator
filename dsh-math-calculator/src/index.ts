@@ -1520,20 +1520,26 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
    * （船舶航速 1.34 里藏着 g=9.81、宜居带 1.1 隐含地球温室条件）。
    * 作者在非地球世界里照抄会算错，而且错得隐蔽——数字看着正常，只是用了地球常数。
    *
-   * 只对收录过的公式追加，不打扰普通公式。
+   * 三级标注（2026-10-26 修订）：
+   *   dimensionless         形式与数值都跨世界成立
+   *   scalable-with-caveat  形式可泛化，但系数需重新验证
+   *   earth-only            仅在地球成立，换世界必须换公式
+   *
+   * 关键区分：**形式可泛化 ≠ 系数可直接用**。上一版把两者混为一谈，
+   * 等于宣称 Fr=0.4 换世界也精确成立——那是过度自信。
    */
   const empiricalNote = empiricalNoteOf(formula.id)
   if (empiricalNote) {
     parts.push('')
     parts.push('【适用域：' + KIND_LABEL[empiricalNote.kind] + '】')
+    if (empiricalNote.principle) parts.push('  底层原理：' + empiricalNote.principle)
     if (empiricalNote.bakedIn) parts.push('  藏了什么：' + empiricalNote.bakedIn)
+    if (empiricalNote.genericForm) parts.push('  可沿用的形式：' + empiricalNote.genericForm)
+    if (empiricalNote.retuneNeeded) parts.push('  必须重新标定的：' + empiricalNote.retuneNeeded)
     if (empiricalNote.breaksWhen) parts.push('  何时失效：' + empiricalNote.breaksWhen)
     if (empiricalNote.advice) parts.push('  建议：' + empiricalNote.advice)
-    if (empiricalNote.genericForm) {
-      parts.push('  普适形式：' + empiricalNote.genericForm)
-      if (empiricalNote.needsFrom && empiricalNote.needsFrom.length > 0) {
-        parts.push('  需要这些量：' + empiricalNote.needsFrom.join('、'))
-      }
+    if (empiricalNote.needsFrom && empiricalNote.needsFrom.length > 0) {
+      parts.push('  需要这些量：' + empiricalNote.needsFrom.join('、'))
     }
   }
 
