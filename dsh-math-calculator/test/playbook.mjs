@@ -79,7 +79,17 @@ console.log('-- 6. 动态定制 --')
   assert('完整版含 AI 职责', full.includes('你必须接手的'))
   assert('完整版含判据', full.includes('判据'))
   assert('完整版含工作流', full.includes('工作流'))
-  assert('完整版含两条底线', full.includes('两条底线'))
+  /**
+   * 底线从两条变成三条：新增「不要照抄全精度」。
+   *
+   * 起因：工具输出保留几十位小数（这对计算是对的），但 AI 直接抄给读者就成噪音。
+   * 显示精度该由 AI 按语境判断，而不是代码写死档位——
+   * 代码一刀切会丢信息（`10^20+5` 被截成 `1e20` 就是真丢信息）。
+   */
+  assert('完整版含底线章节', full.includes('底线'))
+  assert('底线含「不要照抄全精度」', full.includes('不要照抄全精度'), '')
+  assert('底线含「不要反驳设定」', full.includes('不要反驳用户的设定'), '')
+  assert('底线含「不要编数字」', full.includes('不要编数字'), '')
   assert('有档案时提醒对比', full.includes('compare'), full.slice(-200))
 }
 

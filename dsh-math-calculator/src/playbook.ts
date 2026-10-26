@@ -281,9 +281,10 @@ export function buildPlaybook(state: {
     out.push('- ' + item.step + '：' + item.do + '（' + item.skip + '）')
   }
   out.push('')
-  out.push('### 两条底线')
+  out.push('### 三条底线')
   out.push('1. **不要反驳用户的设定。** 插件指出「按这个参数会怎样」，你转述，并给出「想保留的话可以怎么调」。')
   out.push('2. **不要编数字。** 算不出来的（混沌、超出现有物理、插件没覆盖的），标待定或问用户。')
+  out.push('3. **不要照抄全精度。** 工具输出保留几十位小数是为了让你按需取用；转述给读者时，物理量给 3—4 位有效数字、账目给到分、坐标按需要。但同时**不要截断该精确的整数**（`10^20+5` 必须精确到个位，不能变成 `1e20`）。判断依据是「这个数在叙事里被拿去做什么」。')
   return out.join(String.fromCharCode(10))
 }
 
@@ -303,6 +304,7 @@ export function buildBriefPlaybook(state: {
   out.push('- 该写的（结语、描写、叙事判断）由你生成，别照抄工具输出')
   out.push('- 硬约束（物质不存在等）如实说；叙事选择（要巨兽、要灵能）不反驳，只讲代价')
   out.push('- 算不出来的别编，标待定或问用户')
+  out.push('- 工具输出是**全精度**（可能几十位小数）。转述时按用处取位：物理量给 3—4 位有效数字、账目给到分、坐标按需要；不要把 60 位小数抄给读者，也不要把该精确的整数（如 10^20+5）截断成科学计数法')
   if ((state.changedConstants ?? []).length > 0) {
     out.push('- 本区改过常数，先跑 dimensionless 确认不是单位重定义')
   }
@@ -420,5 +422,6 @@ export function buildConfiguredPlaybook(state: {
   out.push('### 底线')
   out.push('1. 不要反驳用户的设定——说清「按这个参数会怎样」，并给出「想保留可以怎么调」。')
   out.push('2. 不要编数字——算不出来的标待定或问用户。')
+  out.push('3. 不要照抄全精度——工具输出保留几十位小数是为让你按需取用。转述时物理量给 3—4 位有效数字、账目给到分、坐标按需要；该精确的整数（如 `10^20+5`）不要截断成科学计数法。取位多少由「这个数在叙事里被拿去做什么」决定。')
   return out.join(String.fromCharCode(10))
 }

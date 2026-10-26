@@ -56,7 +56,7 @@ const SUITES = [
   { file: 'dead-universe.mjs', expect: 26, label: '补丁6 死寂态兜底（判定+结语+挽救方向）' },
   { file: 'observer.mjs', expect: 25, label: '补丁7 观测者物理过滤（人择选择效应）' },
   { file: 'ai-brief.mjs', expect: 31, label: 'AI 协作提示（分工/不穷举/结语交给 AI）' },
-  { file: 'playbook.mjs', expect: 41, label: '推演指令集（底座清单/AI职责/判据/动态定制）' },
+  { file: 'playbook.mjs', expect: 44, label: '推演指令集（底座清单/AI职责/判据/动态定制）' },
   { file: 'ecosystem.mjs', expect: 35, label: '目录3.2 生态金字塔 + playbook 可配置化' },
   { file: 'timeline.mjs', expect: 34, label: '补丁1/11 时间轴（快慢解耦+临界点+路径锁定）' },
   { file: 'whitepaper.mjs', expect: 35, label: '补丁8 白皮书 + Prompt 投射' },
