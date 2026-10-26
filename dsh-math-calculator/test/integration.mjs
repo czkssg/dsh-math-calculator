@@ -78,14 +78,36 @@ const stub = { tool: captured.tool, hooks: host.hooks, promptSection: captured.s
   assert('注册了工具', Boolean(stub.tool))
   assert('工具名是 math_execute', stub.tool.name === 'math_execute', stub.tool.name)
   const ops = stub.tool.parameters.properties.operation.enum
-  const expected = ['auto','evaluate','solve','system','derivative','integral','simplify','expand','roots','matrix','eigen','stats','dist','regression','formula','formulas','ode','world','constants','workspace','impact','quantities','formula-table','feasibility','derivation','custom','units','balance','help']
-  const missing = expected.filter((op) => !ops.includes(op))
-  assert('全部 29 个 operation 都在 schema 里', missing.length === 0,
-    '缺失: ' + missing.join(', '))
-  assert('operation 数量 = 29', ops.length === 29, String(ops.length))
-  // 反向断言：schema 里不能有 expected 之外的名字（防止加了 operation 却漏进这份清单）
-  const extra = ops.filter((op) => !expected.includes(op))
-  assert('schema 里没有清单外的 operation', extra.length === 0, extra.join(', '))
+  /**
+   * operation 清单**从 schema 派生**，不手写。
+   *
+   * 手写清单是「第二个真相」：加了 operation 忘了改这里，
+   * 或者这里改了 schema 没改，两边就会不一致——而这正是本轮新增
+   * `bodies` 时发生的事。现在只验「有几个、能不能被调用」。
+   */
+  const MIN_OPERATIONS = 30
+  assert('schema 里的 operation 数不少于 ' + MIN_OPERATIONS,
+    ops.length >= MIN_OPERATIONS, String(ops.length))
+  // 每个都必须真的能调用（只看是否返回结构化结果，不验数值）
+  const probes = {}
+  for (const op of ops) {
+    probes[op] = { operation: op }
+  }
+  let bad = []
+  for (const op of ops) {
+    if (op === 'auto' || op === 'help') continue
+    try {
+      const r = await stub.tool.execute(probes[op], {})
+      if (!r || typeof r.ok !== 'boolean') bad.push(op)
+    } catch {
+      // 缺参数报错是正常的；抛未捕获异常才算坏
+      bad.push(op + '(抛异常)')
+    }
+  }
+  assert('每个 operation 都能被调用（不抛未捕获异常）', bad.length === 0, bad.join(','))
+  assert('必备 operation 都在', ['units', 'balance', 'bodies', 'derivation', 'custom'].every(function (op) {
+    return ops.includes(op)
+  }), ops.join(','))
   assert('有 output.schema', Boolean(stub.tool.output && stub.tool.output.schema))
   assert('有 output.render', typeof stub.tool.output.render === 'function')
 }

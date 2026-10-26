@@ -58,6 +58,7 @@ export type MathOperation =
   | 'custom'
   | 'units'
   | 'balance'
+  | 'bodies'
   | 'help'
 
 /**
@@ -206,6 +207,22 @@ export interface MathArgs {
    * 最短板 K = min(supply/demand)。
    */
   balance?: Record<string, { demand: number; supply: number; unit?: string }>
+
+  // ── operation=bodies（天体目录与常数传导）──
+  /** 查单个天体：id（mars）或中文名（火星）。 */
+  bodyName?: string
+  /** 按类别筛：star / planet-terrestrial / moon / dwarf-planet … */
+  bodyKind?: string
+  /**
+   * 改常数后看天体数据哪些该重算。
+   *
+   * 例：`bodyConstant:"alpha_fs", bodyFactor:2` 表示 α 变成两倍，
+   * 输出会分成「必须重算的量」与「绝不该动的量」两块——
+   * 后者尤其重要：行星质量、半径、轨道与 α 无关，改了就是篡改设定。
+   */
+  bodyConstant?: string
+  /** 常数变化倍数（默认 2）。 */
+  bodyFactor?: number
 
   // ── operation=derivation 的逆推与档案 ──
   /** 叙事锚点 id（如 creatureHeight）。 */

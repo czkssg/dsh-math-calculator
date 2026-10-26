@@ -206,6 +206,7 @@ import { opDerivation } from './ops/derivation-op.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
+import { opBodies } from './ops/bodies-op.js'
 
 // ────────────────────────────────────────────────────────────────────────────
 // 类型
@@ -289,6 +290,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'custom',
   'units',
   'balance',
+  'bodies',
   'help',
 ]
 
@@ -1746,6 +1748,10 @@ function opHelp(): Outcome {
       '  balance       收支盘点：粮/水/能/地/财政/军费/信息 多项一起看，给最短板',
       '                例：balance={grain:{demand:2.7e6,supply:3.1e6,unit:"kg/年"}}',
       '                回答「这个王国养不养得起二十万兵」这类问题（feasibility 只管单项上限）',
+      '  bodies        天体目录：太阳系 8 大行星 + 卫星 + 代表性系外行星 + 各亮度级恒星',
+      '                例：bodyName="mars" / bodyKind="moon" / 不带参数列全部',
+      '                bodyConstant="alpha_fs", bodyFactor=2 → 看改常数后哪些天体数据要重算',
+      '                （关键：行星质量/半径/轨道与 α 无关，绝不跟着改）',
       '',
       '【数据管理】',
       '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
@@ -1921,6 +1927,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'balance':
         outcome = opBalance(args)
+        break
+      case 'bodies':
+        outcome = opBodies(args)
         break
       case 'evaluate':
       default:
@@ -2122,6 +2131,30 @@ const PARAMETER_SPEC = {
       '内置键名 grain/water/energy/land/fiscal/army/info，也可自定。' +
       '给最短板 K=min(supply/demand)，回答「几项一起看这个势力撑不撑得住」。' +
       '只判社会收支；单项生理/工程上限请用 feasibility。',
+  },
+  bodyName: {
+    type: 'string',
+    description:
+      '查单个天体（operation=bodies）。可给 id（mars）或中文名（火星）。' +
+      '已收录太阳系全 8 大行星 + 月球类卫星 + 代表性系外行星 + 矮行星 + 各亮度级恒星。',
+  },
+  bodyKind: {
+    type: 'string',
+    description:
+      '按类别筛天体（operation=bodies）：star / planet-terrestrial / planet-super-earth / ' +
+      'planet-mini-neptune / planet-gas-giant / moon / dwarf-planet / asteroid。',
+  },
+  bodyConstant: {
+    type: 'string',
+    description:
+      '改常数后看天体数据哪些该重算（operation=bodies）。' +
+      '例：bodyConstant="alpha_fs", bodyFactor=2 —— α 变成两倍，' +
+      '输出分「必须重算的量」与「绝不该动的量」两块。' +
+      '后者尤其重要：行星质量、半径、轨道与 α 无关，跟着改就是篡改设定。',
+  },
+  bodyFactor: {
+    type: 'number',
+    description: '常数变化倍数（operation=bodies，默认 2）。',
   },
   matrix: {
     type: 'array',
