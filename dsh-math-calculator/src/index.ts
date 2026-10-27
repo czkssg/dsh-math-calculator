@@ -2575,6 +2575,16 @@ const OUTPUT_SCHEMA = {
     precision: { type: 'integer', required: true, description: '使用的精度' },
     value: { type: 'json', description: '机器可读结果' },
     variables: { type: 'object', additionalProperties: true, description: '本次使用的变量' },
+    /**
+     * 附加提示（渲染时展示，不进 `result`）。
+     *
+     * ⚠️ 必须声明在这里。宿主用 `additionalProperties: false` **校验**工具输出，
+     * 漏一个字段就会让整次调用判为「invalid output」而失败 ——
+     * 实测踩过：加了 notice 却忘了声明，`bodies` 调用直接被宿主拒绝。
+     */
+    notice: { type: 'string', description: '附加提示（显示精度/精度不足等）' },
+    /** 结果来自缓存（未重算）。同样必须声明，否则命中缓存时调用失败。 */
+    cached: { type: 'boolean', description: '是否命中缓存' },
     error: {
       type: 'object',
       additionalProperties: false,

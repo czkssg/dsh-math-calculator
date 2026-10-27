@@ -2,6 +2,36 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.1.1] — 2026-10-28
+
+紧急修复 **2.1.0 会让工具不可用**的问题。
+
+### 修复
+
+- **`notice` / `cached` 未在输出 schema 声明，导致调用失败**。
+
+  宿主用 `additionalProperties: false` **校验**工具输出。2.1.0 的代码会产出
+  `notice`（显示精度提示、精度不足提醒）与 `cached`（缓存命中标记），
+  但 `OUTPUT_SCHEMA` 里没有声明这两个字段，于是宿主拒绝整次调用：
+
+  ```
+  Error: tool "math_execute" returned invalid output:
+         "value.notice" is not a declared property (additionalProperties: false)
+  ```
+
+  触发条件是**任何带小数的结果**（默认 8 位小数下几乎每次都会产出 notice），
+  也就是说 2.1.0 装上去基本不能用。
+
+  **为什么单元测试没发现**：测试直接调 `runMathTool`，拿到的是普通对象，
+  不经过宿主那层 schema 校验 —— 77 套全绿，而真实宿主一调就废。
+  这是「测试走的路径与真实调用路径不同」的典型盲区。
+
+### 新增
+
+- **输出字段声明守卫**（`test/integration.mjs`）：断言 `MathResult` 能产出的
+  每个字段都已在 `output.schema` 声明，并实跑一次会产出 `notice` 与 `cached`
+  的调用。以后再加字段忘了声明，这条会红。
+
 ## [2.1.0] — 2026-10-28
 
 公式库扩到 404 条、新增天体目录与类型学、工具定义瘦身 21%，并把「计算精度」与

@@ -86,7 +86,10 @@ const SUITES = [
   { file: 'workspace.mjs', expect: 38, label: '工作区隔离' },
   { file: 'cleanup.mjs', expect: 35, label: '删除与清理' },
   { file: 'climate.mjs', expect: 48, label: '分层气候（辐照/季节/纬度）' },
-  { file: 'integration.mjs', expect: 43, label: '整合验收（整体装配）' },
+  // 新增守卫：产出字段（notice / cached）必须已在 output.schema 声明。
+  // 宿主用 additionalProperties:false 校验，漏声明会让工具**整次调用失败** ——
+  // 实测踩过（2.1.0 就是这样坏的），而当时单元测试全绿（它们绕过宿主校验）。
+  { file: 'integration.mjs', expect: 46, label: '整合验收（整体装配/输出字段声明）' },
   { file: 'sky.mjs', expect: 43, label: '天空与星空（观测者视角）' },
   { file: 'moons.mjs', expect: 32, label: '多卫星系统（稳定性/观感）' },
   // 这一套专门防「插件在真宿主里装不起来」：桩忠实度 + 路由形状 + 派发行为。

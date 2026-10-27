@@ -47,7 +47,7 @@ npm run build
 
 ```powershell
 npm pack
-& "...\dsh.cmd" plugin --profile desktop add ./dsh-math-calculator-2.1.0.tgz
+& "...\dsh.cmd" plugin --profile desktop add ./dsh-math-calculator-2.1.1.tgz
 ```
 
 ---

@@ -110,6 +110,41 @@ const stub = { tool: captured.tool, hooks: host.hooks, promptSection: captured.s
   }), ops.join(','))
   assert('有 output.schema', Boolean(stub.tool.output && stub.tool.output.schema))
   assert('有 output.render', typeof stub.tool.output.render === 'function')
+
+  /**
+   * ── 输出字段必须在 schema 里声明（系统性守卫）──
+   *
+   * 宿主用 `additionalProperties: false` **校验**工具输出：
+   * 返回一个没声明的字段，整次调用会被判为 "invalid output" 而失败 ——
+   * 不是给个错误提示，而是**工具直接不可用**。
+   *
+   * 实测踩到：加了 `notice`（精度提示）却忘了声明，`bodies` 调用被宿主拒绝：
+   * 「value.notice is not a declared property」。当时单元测试**全绿** ——
+   * 因为它们直接调 `runMathTool`，绕过了宿主那层校验。
+   *
+   * 这条断言把「代码产出的字段」与「schema 声明的字段」对齐：
+   * 以后再加字段忘了声明，这里会红。
+   */
+  const declared = Object.keys(stub.tool.output.schema.properties || {})
+  /**
+   * 代码实际会产出的字段（来自 MathResult 接口）。
+   *
+   * 手写这份清单是有意的：加字段时被迫同时改这里，
+   * 从而被迫去检查 schema —— 比自动推导更能起到提醒作用。
+   */
+  const PRODUCED = ['ok', 'operation', 'input', 'result', 'precision', 'value', 'variables', 'notice', 'cached', 'error']
+  const undeclared = PRODUCED.filter((f) => !declared.includes(f))
+  assert('产出字段全部已在 output.schema 声明', undeclared.length === 0,
+    '未声明: ' + undeclared.join(', '))
+
+  // 跑会产出 notice / cached 的调用，确认它们能通过（这两条以前会被宿主拒）
+  const withNotice = await stub.tool.execute({ operation: 'evaluate', expression: '1/7' }, {})
+  assert('带 notice 的调用成功', Boolean(withNotice && withNotice.ok),
+    JSON.stringify(withNotice).slice(0, 80))
+  await stub.tool.execute({ operation: 'evaluate', expression: '1/7' }, {})
+  const cachedCall = await stub.tool.execute({ operation: 'evaluate', expression: '1/7' }, {})
+  assert('重复调用（可能命中缓存）成功', Boolean(cachedCall && cachedCall.ok),
+    JSON.stringify(cachedCall).slice(0, 80))
 }
 
 console.log('-- 3. 三个提醒层 + UI 路由都按真契约注册了 --')

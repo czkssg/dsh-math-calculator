@@ -1,6 +1,6 @@
 {
   "name": "dsh-math-calculator",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": false,
   "description": "DSH 原生的高精度数学计算器插件：BigNumber 64 位求值、符号微积分、线性代数（秩/零空间/奇异值/特征值）、统计概率与回归、微分方程、单位换算、395 条公式库（三轴标签）、物理常数推演。全部本地执行，不联网。附带一组可选的世界观推演工具。",
   "type": "module",
