@@ -43,7 +43,7 @@ export function isIntegerLike(value: any): boolean {
 }
 
 /**
- * 格式化输出值：**整数完整，小数按显示精度截断**。
+ * 格式化输出值：**整数完整，小数按「小数点后几位」截断**。
  *
  * ## 计算精度 vs 显示精度
  *
@@ -54,6 +54,18 @@ export function isIntegerLike(value: any): boolean {
  *
  * 所以拆成两层：计算永远按 `precision`（默认 64）走，显示用 `displayPrecision`。
  *
+ * ## displayPrecision 的语义是「小数点后几位」，不是「有效数字」
+ *
+ * 这个区别很重要，实测对比：
+ *
+ *   数值              有效数字=8（旧）    小数位=8（现在）
+ *   12345.678901234   12345.679           12345.67890123
+ *   1/7               0.14285714          0.14285714
+ *   2^0.5             1.4142136           1.41421356
+ *
+ * 说「保留 8 位」时想的是小数位 —— 而有效数字语义下，
+ * 数字越大得到的小数位越少，`12345.678901234` 只给 3 位小数，与直觉不符。
+ *
  * ## 整数不做截断
  *
  * `10^20+5`、`50!` 这类整数照原样输出。把 `10^20+5` 写成 `1e20` 是**丢信息**，
@@ -62,7 +74,7 @@ export function isIntegerLike(value: any): boolean {
  * @param math - mathjs 实例
  * @param value - 待格式化的值
  * @param precision - 计算精度（BigNumber 有效位数）
- * @param displayPrecision - 显示有效位数；省略则用计算精度（保持旧行为）
+ * @param displayPrecision - **小数点后保留几位**；省略则输出完整精度
  * @returns 显示串
  */
 export function formatValue(
@@ -80,17 +92,60 @@ export function formatValue(
 
   const isBig = Boolean(value && value.isBigNumber)
   const integer = isIntegerLike(value)
-  // 显示位数只在明确给了、且小于计算精度时才生效
-  const show = typeof displayPrecision === 'number' && Number.isFinite(displayPrecision)
-    ? Math.min(displayPrecision, precision)
-    : precision
 
   try {
+    // 整数：完整输出，不受显示精度影响
     if (isBig && integer) {
       return math.format(value, { notation: 'fixed' })
     }
-    // 显示精度足够高（接近计算精度）时用 auto，避免丢掉整数位的信息
-    return math.format(value, { notation: 'auto', precision: show })
+
+    const numeric = isBig ? Number(value.toString()) : typeof value === 'number' ? value : null
+
+    /**
+     * 没有显式显示精度：保持旧行为（完整精度）。
+     *
+     * 只是把「极长的小数」改用科学计数法，避免一屏六十位。
+     */
+    if (displayPrecision === undefined || !Number.isFinite(displayPrecision)) {
+      return math.format(value, { notation: 'auto', precision })
+    }
+
+    // 有显式显示精度：按**小数位**保留
+    const decimals = Math.max(0, Math.min(64, Math.round(displayPrecision)))
+
+    /**
+     * 大精度（> 15 位小数）必须走 BigNumber 原值，不能先转 Number。
+     *
+     * 双精度只有约 15—17 位有效数字，`Number('0.333...'.repeat)` 之后
+     * 再 toFixed 会得到垃圾尾数。实测 `1/3` 在 precision=30 时应给 30 位，
+     * 转换后只能给 16 位。
+     *
+     * 这条路径直接让 mathjs 格式化原始 BigNumber。
+     */
+    if (decimals > 15 && isBig) {
+      return math.format(value, { notation: 'fixed', precision: Math.min(precision, decimals + 8) })
+    }
+
+    if (numeric === null || !Number.isFinite(numeric)) {
+      return math.format(value, { notation: 'auto', precision })
+    }
+    if (Number.isInteger(numeric)) return String(numeric)
+
+    const abs = Math.abs(numeric)
+    // 量级过大时小数位无意义，改用科学计数法
+    if (abs >= 1e15) return numeric.toExponential(decimals)
+    /**
+     * 极小值：**只要会被四舍五入成 0，就必须改用科学计数法**。
+     *
+     * 踩过：`3.3e-9` 在 8 位小数下 toFixed 得 "0.00000000"，转回数字变成 `0`
+     * —— 那不是「不精确」，是**把非零值显示成零**，属于数据丢失。
+     * 判据用 `10^-decimals` 而不是更保守的阈值，正好卡在「会不会归零」上。
+     */
+    if (abs !== 0 && abs < Math.pow(10, -decimals)) {
+      return numeric.toExponential(Math.max(decimals, 3))
+    }
+    // toFixed 会补尾零（1.5 → "1.50000000"），转回数字去掉
+    return String(Number(numeric.toFixed(decimals)))
   } catch {
     try {
       return String(value)

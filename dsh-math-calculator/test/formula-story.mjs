@@ -68,8 +68,16 @@ console.log('-- 3. 新增公式必须算得对 --')
   assert('20 m/s、45° 射程 ≈ 40.8 m', String(range.result).includes('40.78'), String(range.result).slice(0, 40))
 
   const buckle = call('buckling_euler', { E: 2e11, I: 8e-6, L: 3 })
-  // π²·2e11·8e-6/3² ≈ 1.7546e6 N
-  assert('欧拉屈曲 ≈ 1.7546e6 N', String(buckle.result).includes('1.7545'), String(buckle.result).slice(0, 60))
+  /**
+   * π²·2e11·8e-6/3² ≈ 1.7546e6 N
+   *
+   * 断言按**数值**比较，不再匹配 '1.7545e6' 这种科学计数法字面量：
+   * 显示精度改成「小数点后 8 位」后，大数会写成 1754593.4 而不是 1.7545e6。
+   * 两者都对，只是写法不同，所以比较数值更稳。
+   */
+  const buckleValue = Number(String(buckle.result).match(/(-?[\d.]+(?:e[+-]?\d+)?)\s*N/)?.[1] ?? NaN)
+  assert('欧拉屈曲 ≈ 1.7546e6 N',
+    Math.abs(buckleValue - 1754593.4) < 10, String(buckle.result).slice(0, 60))
 
   const gdd = call('growing_degree_days', { Tmax: 28, Tmin: 16, Tbase: 10 })
   assert('生长度日 = 12', String(gdd.result).includes('12'), String(gdd.result).slice(0, 30))

@@ -71,7 +71,13 @@ console.log('-- 6. 表达式里直接用新函数 --')
   const fac = run({ operation: 'evaluate', expression: 'factorize(360)' })
   assert('factorize(360) 可求值', String(fac.result).includes('5') && String(fac.result).includes('3'), String(fac.result))
 
-  const ns = run({ operation: 'evaluate', expression: 'nsolve("x^2-2", 1)' })
+  /**
+   * 要验 1e-9 级精度，必须显式要够显示位。
+   *
+   * 默认显示精度是「小数点后 8 位」，8 位小数与 √2 的差约 2.4e-9，
+   * 正好卡在 1e-9 容差外 —— 不显式传会误判成算错（实际只是显示截断）。
+   */
+  const ns = run({ operation: 'evaluate', expression: 'nsolve("x^2-2", 1)', displayPrecision: 16 })
   assert('nsolve 求 √2', Math.abs(Number(ns.result) - Math.SQRT2) < 1e-9, String(ns.result))
 
   const svd = run({ operation: 'evaluate', expression: 'svd([[1,2],[3,4]])' })

@@ -565,11 +565,16 @@ export function currentDisplayPrecision(): number | undefined {
 }
 
 /**
- * 数字修剪：去掉浮点噪声，按**显示精度**取位。
+ * 数字修剪：去掉浮点噪声，按**小数点后几位**保留。
+ *
+ * 语义与 `formatValue` 的 `displayPrecision` 保持一致：**小数位**，不是有效数字。
+ *
+ * 为什么统一成小数位：说「保留 8 位」时想的是小数位。
+ * 有效数字语义下 `12345.678901234` 只给 3 位小数（12345.679），与直觉不符。
  *
  * @param value - 数值
- * @param precision - 计算精度（同时作为显示位数的上限）
- * @param displayPrecision - 显示有效位数；省略则用模块级当前值
+ * @param precision - 计算精度（未设显示精度时作为退路）
+ * @param displayPrecision - **小数点后保留几位**；省略则用模块级当前值
  * @returns 显示串
  */
 export function trimNumber(
@@ -581,11 +586,15 @@ export function trimNumber(
   // 整数一律完整输出：`n = 8`、`10^20+5` 都不该被截断
   if (Number.isInteger(value)) return String(value)
   const effective = displayPrecision !== undefined ? displayPrecision : activeDisplayPrecision
-  const wanted = effective !== undefined && Number.isFinite(effective)
-    ? Math.min(effective, precision)
-    : precision
-  const significant = Math.min(Math.max(wanted, 1), 15)
-  return Number(value.toPrecision(significant)).toString()
+  const decimals = effective !== undefined && Number.isFinite(effective)
+    ? Math.max(0, Math.min(15, Math.round(effective)))
+    : Math.min(Math.max(precision, 1), 15)
+  const abs = Math.abs(value)
+  // 极小值：会被四舍五入成 0 时必须用科学计数法（否则非零值显示成 0，是数据丢失）
+  if (abs !== 0 && abs < Math.pow(10, -decimals)) {
+    return value.toExponential(Math.max(decimals, 3))
+  }
+  return String(Number(value.toFixed(decimals)))
 }
 
 /** 把数字安全地塞进 JsonValue（非有限值转字符串）。 */

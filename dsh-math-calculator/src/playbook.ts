@@ -306,7 +306,7 @@ export function buildBriefPlaybook(state: {
   out.push('- 硬约束（物质不存在等）如实说；叙事选择（要巨兽、要灵能）不反驳，只讲代价')
   out.push('- 算不出来的别编，标待定或问用户')
   out.push('- 工具输出默认是**全精度**（可能几十位小数），是供你取舍的原料。**保留几位你来定**：读者只要感觉就少给，要核对就多给，要接着算就管够。别把 60 位抄给读者，也别把该精确的整数（如 10^20+5）截成科学计数法')
-  out.push('- **开工定一次显示精度**：判断这次对话大概需要几位有效数字（创作 6—8、工程核对 10—12、大整数别设），用 `{operation:"workspace", action2:"set", displayPrecision:N}` 固化。之后输出自动变短，你读起来省 token；某次需要更多时那一次单独传 `displayPrecision`。注意 `precision`（计算精度）不要调低，它一低大数就会算错')
+  out.push('- 工具输出默认按**小数点后 8 位**显示（整数永远完整，如 10^20+5 不会被截）。需要更多位就单次传 `displayPrecision`；想全局换一档用 `{operation:"workspace", action2:"set", displayPrecision:N}` 固化一次。注意 `precision`（计算精度）不要调低，它一低大数就会算错')
   if ((state.changedConstants ?? []).length > 0) {
     out.push('- 本区改过常数，先跑 dimensionless 确认不是单位重定义')
   }

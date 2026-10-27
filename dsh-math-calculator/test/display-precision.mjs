@@ -39,6 +39,8 @@ function freshHome(label) {
 freshHome('main')
 const mod = await import(pathToFileURL(join(root, 'lib/index.js')).href)
 const run = mod.runMathTool
+/** 工具定义（用于验渲染层是否展示 notice）。 */
+const tool = mod.mathExecuteTool
 
 let pass = 0
 const fails = []
@@ -47,10 +49,19 @@ function assert(name, cond, detail) {
   else { fails.push({ name, detail }); console.log('  FAIL ' + name + '\n         ' + (detail ?? '')) }
 }
 
-/** 跑一次，返回文本。 */
+/**
+ * 跑一次，返回**纯结果文本**（去掉首次调用附带的「显示精度提示」）。
+ *
+ * 提示只在某个工作区的第一次调用出现一次，但测试会反复调用，
+ * 若不剔除，断言会被那行提示污染（踩过：断言「大数减法得 1」取到了提示行）。
+ */
 async function text(args) {
   const r = await run(args)
   return String(r.result || '')
+    .split('\n')
+    .filter((line) => !line.startsWith('（提示：当前显示精度'))
+    .join('\n')
+    .trim()
 }
 
 /** 数字串里的小数位数。 */
@@ -92,26 +103,28 @@ console.log('-- 2. 整数永不截断 --')
   assert('50! 完整 65 位', f50.length === 65 && f50.startsWith('30414093'), f50.length + ' 位')
 }
 
-console.log('-- 3. 小数按显示精度截断 --')
+console.log('-- 3. 小数按「小数点后几位」截断 --')
 {
   /**
-   * 注意 displayPrecision 是**有效数字**不是小数位。
-   * `0.142857` 是 6 位有效数字 → 6 位小数（整数部分为 0 时不占位）。
-   * `1.41421` 也是 6 位有效数字，但只有 5 位小数。
+   * displayPrecision 的语义是**小数点后几位**，不是有效数字。
+   *
+   * 这个区别是刻意选的：说「保留 8 位」时想的是小数位。
+   * 有效数字语义下 `12345.678901234` 只会给 3 位小数，与直觉不符。
    */
   for (const d of [4, 6, 8]) {
     const got = (await text({ operation: 'evaluate', expression: '1/7', displayPrecision: d })).trim()
-    // 1/7 = 0.142857...，有效数字位数应约等于 d
-    const sigDigits = got.replace(/^0\./, '').replace(/0+$/, '').length
-    assert('1/7 在显示精度 ' + d + ' 下约 ' + d + ' 位有效数字',
-      Math.abs(sigDigits - d) <= 1, got + ' → ' + sigDigits + ' 位')
-    // 不能截得只剩一两位（那样没用了）
-    assert('1/7 在显示精度 ' + d + ' 下仍有意义', sigDigits >= Math.min(d, 3), got)
+    assert('1/7 在 displayPrecision=' + d + ' 时恰为 ' + d + ' 位小数',
+      decimalsOf(got) === d, got + ' → ' + decimalsOf(got) + ' 位')
   }
 
-  // 完整模式（不传）应该很长
-  const full = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
-  assert('不传 displayPrecision 时输出完整', decimalsOf(full) > 20, decimalsOf(full) + ' 位小数')
+  // 关键：大数也要给足小数位（有效数字语义下这里会只剩 3 位）
+  const big = (await text({ operation: 'evaluate', expression: '12345.678901234', displayPrecision: 8 })).trim()
+  assert('12345.678901234 保留 8 位小数（不是 8 位有效数字）',
+    big === '12345.67890123', big)
+
+  // 默认是 8 位小数
+  const dflt = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
+  assert('不传时默认 8 位小数', decimalsOf(dflt) === 8, dflt)
 }
 
 console.log('-- 4. 覆盖到各类 operation（不只 evaluate）--')
@@ -125,17 +138,19 @@ console.log('-- 4. 覆盖到各类 operation（不只 evaluate）--')
     displayPrecision: 6,
   })
   const pick = (s) => (s.split('\n').find((l) => l.startsWith('结果')) || '')
-  assert('formula 完整时小数很多', decimalsOf(pick(formulaFull)) > 20, decimalsOf(pick(formulaFull)) + '')
-  assert('formula 显示精度 6 时变短', decimalsOf(pick(formulaShort)) <= 5,
-    pick(formulaShort).slice(0, 40))
+  // 默认 8 位小数；显式给 6 就应变成 6 位
+  assert('formula 默认 8 位小数', decimalsOf(pick(formulaFull)) === 8,
+    decimalsOf(pick(formulaFull)) + ' 位')
+  assert('formula 指定 6 位时恰为 6 位', decimalsOf(pick(formulaShort)) === 6,
+    pick(formulaShort).slice(0, 50))
 
   // stats（走 trimNumber 路径）
   const statsShort = await text({ operation: 'stats', data: [2, 4, 4, 4, 5, 5, 7, 9], displayPrecision: 6 })
-  // 6 位有效数字 → 小数最多 6 位（如 0.537132）。7 位以上才说明没生效。
+  // 小数位语义：6 位小数 → 最多 6 位，7 位以上才算没生效
   const longs = statsShort.split('\n').filter((l) => /[0-9]\.[0-9]{7,}/.test(l))
-  assert('stats 显示精度 6 时无超长小数', longs.length === 0, longs.slice(0, 2).join(' | '))
+  assert('stats 指定 6 位小数时无超长小数', longs.length === 0, longs.slice(0, 2).join(' | '))
   // 但仍要保留有用精度（标准差不能变成 2）
-  assert('stats 标准差仍保留 2.138', /2\.138/.test(statsShort), '')
+  assert('stats 标准差仍保留 2.138090', /2\.13809/.test(statsShort), '')
 
   // solve（trimNumber 路径）
   const solveShort = await text({ operation: 'solve', expression: 'x^2=2', variable: 'x', displayPrecision: 6 })
@@ -146,30 +161,31 @@ console.log('-- 4. 覆盖到各类 operation（不只 evaluate）--')
 console.log('-- 5. 工作区固化 --')
 {
   const home = freshHome('pin')
-  // 先清空状态
+  // 先清空状态（清除工作区固化值）
   await run({ operation: 'workspace', action2: 'set', displayPrecision: 0 })
 
   const before = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
-  assert('固化前输出完整', decimalsOf(before) > 20, decimalsOf(before) + '')
+  // 未固化时用默认 8 位小数
+  assert('未固化时用默认 8 位小数', decimalsOf(before) === 8, before)
 
   const setResult = await text({ operation: 'workspace', action2: 'set', displayPrecision: 6 })
   assert('固化命令成功', /显示精度 6 位/.test(setResult), setResult.slice(0, 60))
 
   const after = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
-  assert('固化后不传参数也变短', after === '0.142857', after)
+  assert('固化后按 6 位小数', after === '0.142857', after)
 
   // 临时覆盖
   const override = (await text({ operation: 'evaluate', expression: '1/7', displayPrecision: 12 })).trim()
-  assert('单次传显示精度可临时调高', decimalsOf(override) > 5, override)
+  assert('单次传 displayPrecision 可临时调高', decimalsOf(override) === 12, override)
 
   // 覆盖后回到固化值
   const back = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
   assert('临时覆盖不影响固化值', back === '0.142857', back)
 
-  // 清除
+  // 清除后回到默认 8 位
   await run({ operation: 'workspace', action2: 'set', displayPrecision: 0 })
   const cleared = (await text({ operation: 'evaluate', expression: '1/7' })).trim()
-  assert('传 0 可清除，恢复完整输出', decimalsOf(cleared) > 20, decimalsOf(cleared) + '')
+  assert('传 0 清除后回到默认 8 位', decimalsOf(cleared) === 8, cleared)
 
   rmSync(home, { recursive: true, force: true })
 }
@@ -206,9 +222,39 @@ console.log('-- 7. 提示词与 schema 都写明了用法 --')
 
   const playbook = await import(pathToFileURL(join(root, 'lib/playbook.js')).href)
   const brief = playbook.buildBriefPlaybook({})
-  assert('brief 提示开工定一次显示精度', /定一次显示精度/.test(brief), '')
+  assert('brief 说明默认 8 位小数', /小数点后 8 位/.test(brief), '')
   assert('brief 提示不要调低计算精度', /precision.*不要调低|一低大数就会算错/.test(brief), '')
   assert('brief 给了具体例子', /displayPrecision/.test(brief), '')
+}
+
+console.log('-- 8. 精度提示走 notice 字段（不污染 result）--')
+{
+  freshHome('hint')
+
+  /**
+   * 提示放在 `notice`，**不进 `result`**。
+   *
+   * 这是修过的设计：最初把提示拼进 result，结果 `0.1+0.2` 从 `0.3`
+   * 变成「0.3 + 一行提示」，一次跑挂 8 个套件 —— 所有精确相等断言全废。
+   * `result` 是数据通道，必须干净；`notice` 只用于渲染。
+   */
+  const first = await run({ operation: 'evaluate', expression: '1/7' })
+  assert('result 干净（不含提示）', !/显示精度/.test(String(first.result)), String(first.result))
+  assert('notice 字段带提示', /显示精度/.test(String(first.notice || '')), String(first.notice || '').slice(0, 40))
+
+  // 渲染时才出现提示
+  const rendered = tool.output.render({}, first)[0].text
+  assert('渲染文本含提示', /显示精度/.test(rendered), rendered.slice(0, 60))
+
+  // 整数结果不该有提示（没有小数就没有截断问题）
+  const intCase = await run({ operation: 'evaluate', expression: '10^20+5' })
+  assert('整数结果不带提示', !/显示精度/.test(String(intCase.notice || '')), String(intCase.notice || ''))
+
+  // 已固化的工作区不提示
+  freshHome('hint2')
+  await run({ operation: 'workspace', action2: 'set', displayPrecision: 10 })
+  const withPin = await run({ operation: 'evaluate', expression: '1/7' })
+  assert('已固化显示精度时不提示', !/显示精度/.test(String(withPin.notice || '')), String(withPin.notice || ''))
 }
 
 try {

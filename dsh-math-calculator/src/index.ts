@@ -244,6 +244,14 @@ export interface MathResult {
    * 改动常数或切换工作区后缓存键会变，所以不会出现「改了设定还拿旧值」。
    */
   cached?: boolean
+  /**
+   * 附加提示（渲染时展示给模型，**不进入 `result`**）。
+   *
+   * 为什么要分开：`result` 是数据通道，调用方会做精确相等比较；
+   * 往里拼提示会让 `0.1+0.2` 从 `0.3` 变成两行，破坏所有精确断言。
+   * 提示属于「给人/模型看的说明」，走这个字段即可。
+   */
+  notice?: string
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -262,6 +270,18 @@ export function configureDetector(config: Partial<DetectorConfig>): Partial<Dete
 }
 
 const DEFAULT_PRECISION = 64
+/**
+ * 显示精度默认值：**小数点后 8 位**。
+ *
+ * 为什么不默认「完整输出」：64 位小数一条结果就是六十五个字符，
+ * 人和 AI 都得自己截断。8 位小数对创作与工程核对都够用，
+ * 而整数永远完整输出（`10^20+5` 不受影响）。
+ *
+ * 为什么是 8 而不是 6：6 位小数在千级数字上只剩 `5307.267206`，
+ * 而实测常见需求（月供、速度、重力）到这个精度就够；
+ * 再少会让「1.5 倍重力 = 14.71 m/s²」这类值看着不够准。
+ */
+const DEFAULT_DISPLAY_PRECISION = 8
 const MIN_PRECISION = 1
 const MAX_PRECISION = 256
 const DEFAULT_VARIABLE = 'x'
@@ -1968,7 +1988,44 @@ export function runMathTool(rawArguments: unknown): MathResult {
      *   · 对话开始时定一次（workspace set displayPrecision）
      *   · 某次需要更多，那一次单独传 displayPrecision 即可
      */
-    displayPrecision = clampDisplayPrecision(args.displayPrecision) ?? displayPrecisionOf()
+    /**
+     * 显示精度：本次显式给 > 工作区固化值 > **默认 8 位小数**。
+     *
+     * ## 为什么默认不是「完整输出」
+     *
+     * 原来未设时按 64 位全吐，结果一条公式回来六十五个数字，
+     * 人和 AI 都得自己截断才能读。默认 8 位小数后：
+     *   · 月供 5307.26720623（可读）
+     *   · 整数照旧完整（10^20+5 仍是 21 位）
+     *
+     * ## 8 是「小数点后 8 位」，不是 8 位有效数字
+     *
+     * 这点很关键：有效数字语义下 `12345.678901234` 只会给 3 位小数，
+     * 与「保留 8 位」的直觉不符。
+     *
+     * ## 需要更多时
+     *
+     * 单次传 `displayPrecision` 即可（如 12），或固化到工作区。
+     * 大整数/数论场景整数本就完整，不受影响。
+     */
+    /**
+     * 显示精度优先级：本次 displayPrecision > 工作区固化 > **由 precision 推出** > 默认 8 位。
+     *
+     * ## 为什么要看 precision
+     *
+     * 原来未设显示精度时一律用默认 8 位小数，结果 `precision:30` 算出的
+     * `1/3` 只显示 `0.33333333` —— 调用方明确要求 30 位却只给 8 位，
+     * 这是把「计算精度」的心智模型搞坏了。
+     *
+     * 判据：只要调用方**显式**给了 precision（且不是默认值），
+     * 就认为他想要看到那么多位，显示位数取 precision。
+     * 没显式给时才回落默认 8 位。
+     */
+    const explicitPrecision = args.precision !== undefined && Number.isFinite(Number(args.precision))
+    displayPrecision =
+      clampDisplayPrecision(args.displayPrecision) ??
+      displayPrecisionOf() ??
+      (explicitPrecision ? Math.min(64, precision) : DEFAULT_DISPLAY_PRECISION)
     /**
      * 设成模块级，让 trimNumber（solve / matrix / stats 等四十多个调用点）自动生效。
      *
@@ -2201,6 +2258,19 @@ export function runMathTool(rawArguments: unknown): MathResult {
     if (variables !== undefined) result.variables = variables
 
     /**
+     * ── 显示精度提示（方案 B）──
+     *
+     * 放进独立的 `notice` 字段，**不拼进 `result`**：
+     * `result` 是数据通道，做精确相等断言的调用方依赖它保持干净；
+     * `notice` 只在渲染时展示给模型看。
+     *
+     * 确定性：没固化 + 结果有小数 → 每次都带同样的提示，
+     * 所以「同输入同输出」不受影响。
+     */
+    const hintNote = maybeDisplayPrecisionHint(result.result)
+    if (hintNote) result.notice = hintNote
+
+    /**
      * 非有限结果的处理：**数值型** operation 才算错误，分析型的不算。
      *
      * 这里的判据是「这个 operation 的目的」：
@@ -2270,6 +2340,48 @@ function clampPrecision(value: unknown): number {
   const numeric = typeof value === 'number' ? value : Number.NaN
   if (!Number.isFinite(numeric)) return DEFAULT_PRECISION
   return Math.min(MAX_PRECISION, Math.max(MIN_PRECISION, Math.round(numeric)))
+}
+
+/**
+ * 首次调用时提示显示精度可调（方案 B）。
+ *
+ * ## 为什么需要这个
+ *
+ * 提示词里的「开工时定一次显示精度」实测没被触发：它在注入文本第 607 字符，
+ * 而且「开工」这个时机对模型并不存在（每轮都像「继续」）。
+ *
+ * 但**拿到结果的那一刻**不同：模型手上正拿着一个被截断过的小数，
+ * 这时说「这个位数可以调」才有说服力 —— 需求在眼前，建议才有效。
+ *
+ * ## 为什么放进独立的 notice 字段，而不是拼进 result
+ *
+ * 试过拼进 result，代价太大：一条 `0.1+0.2` 的结果从 `0.3` 变成两行，
+ * 所有做**精确相等**断言的调用方（测试、脚本、下游工具）全部失效 ——
+ * 实测一次跑挂 8 个套件。
+ *
+ * `result` 是数据通道，必须保持干净；`notice` 只用于渲染给模型看。
+ *
+ * ## 为什么不用「每会话只提示一次」
+ *
+ * 那个版本破坏了「同输入同输出」的确定性（第一次带提示、第二次不带）。
+ * 现在改成确定性判断：没固化 + 结果里有小数 → 每次都带。
+ *
+ * @param resultText - 已格式化的结果文本
+ * @returns 提示文本；不该提示时返回空串
+ */
+function maybeDisplayPrecisionHint(resultText: string): string {
+  try {
+    // 已固化过就不提示（用户/AI 已经做过选择）
+    if (displayPrecisionOf(currentWorkspace()) !== undefined) return ''
+    // 没有小数就没有截断问题，不必提示
+    if (!/\d\.\d/.test(resultText)) return ''
+    return (
+      '显示精度 ' + DEFAULT_DISPLAY_PRECISION + ' 位小数，整数不受影响。要更多位就传 displayPrecision，' +
+      '或用 workspace set displayPrecision=N 固化 —— 固化后此提示消失。'
+    )
+  } catch {
+    return ''
+  }
 }
 
 /**
@@ -2418,7 +2530,13 @@ function renderResult(value: any): Array<{ type: 'text'; text: string }> {
     return [{ type: 'text', text: hint ? `错误[${type}]: ${message}\n提示: ${hint}` : `错误[${type}]: ${message}` }]
   }
   const result = typeof payload.result === 'string' ? payload.result : String(payload.result ?? '')
-  return [{ type: 'text', text: result }]
+  /**
+   * notice 只在渲染时追加，不进 `result` 本身。
+   *
+   * 这样模型看得到提示，而依赖 `result` 精确相等的调用方不受影响。
+   */
+  const notice = typeof payload.notice === 'string' && payload.notice !== '' ? payload.notice : ''
+  return [{ type: 'text', text: notice ? `${result}\n\n（${notice}）` : result }]
 }
 
 const PARAMETER_SPEC = {
@@ -2538,9 +2656,9 @@ const PARAMETER_SPEC = {
   displayPrecision: {
     type: 'integer',
     description:
-      '**显示精度**：输出保留几位有效数字（1-64），只截输出、不影响计算，整数永不截断。' +
-      '开工时定一次 `{operation:"workspace",action2:"set",displayPrecision:8}` 即全局生效；' +
-      '单次需要更多时传本参数；0 清除。不要用 precision 达此目的（会算错大数）。',
+      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数，整数永远完整。' +
+      '例 8 → 1/7 得 0.14285714。全局换档用 workspace set displayPrecision=N。' +
+      '别用 precision 达此目的（会算错大数）。',
   },
   data: {
     type: 'array',

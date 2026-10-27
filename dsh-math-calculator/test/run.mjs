@@ -24,7 +24,14 @@ function assert(name, condition, detail = '') {
 
 async function call(args) {
   const value = await tool.execute(args, {})
-  const text = tool.output.render(args, value)[0].text
+  const rendered = tool.output.render(args, value)[0].text
+  /**
+   * 渲染文本会带上 `notice`（如「显示精度为 8 位小数…」），那是给模型看的说明，
+   * 不属于计算输出。本文件的断言针对计算结果，所以剥掉它 ——
+   * 否则 `0.1+0.2` 的结果会从 `0.3` 变成「0.3 + 一行提示」，精确相等断言会误判。
+   */
+  const notice = typeof value?.notice === 'string' ? value.notice : ''
+  const text = notice ? rendered.replace('\n\n（' + notice + '）', '') : rendered
   return { value, text }
 }
 

@@ -38,7 +38,14 @@ console.log('-- 2. 扩展函数在表达式里可用 --')
   assert('nullspace', String(run({ operation: 'evaluate', expression: 'nullspace([[1,2],[2,4]])' }).result).includes('-2'))
   assert('svd', String(run({ operation: 'evaluate', expression: 'svd([[1,2],[3,4]])' }).result).includes('5.46'))
   assert('factorize', String(run({ operation: 'evaluate', expression: 'factorize(360)' }).result).includes('5'))
-  const nsolve = run({ operation: 'evaluate', expression: 'nsolve("x^2-2", 1)' })
+  /**
+   * nsolve 要验的是 1e-9 级精度，所以**必须显式要更多显示位**。
+   *
+   * 默认显示精度是「小数点后 8 位」，8 位小数与 √2 的差约 2.4e-9，
+   * 正好卡在 1e-9 容差之外 —— 不显式传就会误判成算错。
+   * （这不是精度不够，是显示层截断了。）
+   */
+  const nsolve = run({ operation: 'evaluate', expression: 'nsolve("x^2-2", 1)', displayPrecision: 16 })
   assert('nsolve', Math.abs(Number(nsolve.result) - Math.SQRT2) < 1e-9, String(nsolve.result))
 }
 
