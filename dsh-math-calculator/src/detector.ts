@@ -36,6 +36,14 @@ export interface DetectionResult {
   signals: string[]
   /** 提取到的候选表达式（供参考，不自动执行）。 */
   candidates: string[]
+  /**
+   * 分流档位：simple（不提醒）/ forced（必须用工具）/ fuzzy（按阈值）。
+   *
+   * 与 `score` 的区别：score 只回答「数学需求强不强」，
+   * 而档位回答「该心算还是该用工具」——
+   * `2+2` 得分很高但该心算，`20 个数字求和` 得分低但最该用工具。
+   */
+  demandClass?: DemandClass
 }
 
 /** 检测配置。 */
@@ -130,11 +138,94 @@ const NEGATIVE_PATTERNS: Array<{ pattern: RegExp; weight: number; label: string 
   { pattern: /\bv?\d+\.\d+\.\d+\b/, weight: -0.3, label: '版本号' },
   // URL / 路径
   { pattern: /https?:\/\/|\/[\w-]+\/[\w-]+/, weight: -0.3, label: 'URL或路径' },
-  // 纯列表编号
-  { pattern: /^\s*\d+[.、)]\s*/m, weight: -0.1, label: '列表编号' },
+  // 纯列表编号。注意必须**排除小数**：`1.5倍` 里的 `1.` 不是列表编号，
+  // 而 `^.` 只匹配行首、后面跟数字加点的形式容易误伤。改用「行首 + 数字 + 点/顿号 + 空格或中文」
+  { pattern: /^\s*\d+[.、)]\s+[^\d.]/m, weight: -0.1, label: '列表编号' },
   // 明确说不算
   { pattern: /不用计算|不需要算|只是描述|只是设定/, weight: -0.5, label: '明确排除' },
 ]
+
+/**
+ * 数据/汇总类信号 —— **强**信号，出现就该走插件。
+ *
+ * 为什么单独列一类：这类需求的特点是「数字多、要精确、人工算会错」，
+ * 而原来的意图词表里**完全没有它们**，导致实测漏判：
+ *   「把这20个数字求和」     → 0.30（不提醒）❌
+ *   「这份CSV里所有销售额加起来」→ 0.00（不提醒）❌
+ *
+ * 这两个恰恰是最该用工具的场合：20 个数求和，AI 心算出错的概率不低，
+ * 而且错了没人能发现。
+ */
+const DATA_SIGNAL_PATTERNS: Array<{ pattern: RegExp; weight: number; label: string }> = [
+  { pattern: /求和|总和|加总|合计|累加|汇总/, weight: 0.6, label: '求和汇总' },
+  { pattern: /平均|均值|中位数|众数|方差|标准差/, weight: 0.55, label: '统计量' },
+  { pattern: /表格|表单|CSV|csv|附件|文件里|这份数据|这批数据/, weight: 0.55, label: '结构化数据' },
+  { pattern: /精确|核对|校验|验证一下|准确计算/, weight: 0.5, label: '要求精确' },
+  { pattern: /批量|逐条|每一[条行个]|全部算|都算一遍/, weight: 0.5, label: '批量计算' },
+  { pattern: /分组|分类汇总|按.{1,6}统计/, weight: 0.5, label: '分组统计' },
+  { pattern: /复利|利息|月供|还款|摊销|日期差|相差多少天|本利|年息|利率|本金|年化/, weight: 0.5, label: '金融/日期计算' },
+  { pattern: /多步|先.{1,10}再.{1,10}然后|链式|逐级换算/, weight: 0.45, label: '多步依赖' },
+]
+
+/**
+ * 「简单到可以心算」的判据 —— 用于**不提醒**，不是禁止。
+ *
+ * 文档建议「简单算式让 AI 心算」。采纳其判据思路，但有一个重要差异：
+ *
+ *   这里判定为 simple 只表示**不主动提醒**，不禁止调用工具。
+ *
+ * 为什么不做成禁止：心算给的是数字，工具给的是**带约束的数字**。
+ * 实测过：`1.5 倍重力下花岗岩山能长多高`——
+ *   心算「大概 3000 米」看着合理，但没有任何约束校验；
+ *   工具给 3262 米，并提示「已接近花岗岩极限，再高会塌」。
+ * 差别不在精度，在于是否知道「这个数意味着什么」。
+ *
+ * 判据（全部满足才算简单）：
+ *   · 长度短（< 50 字符）
+ *   · 数字个数 ≤ 3
+ *   · 只有四则运算与括号
+ *   · 没有任何数据/汇总类信号
+ *   · 没有物理推演意图（那些一律不算简单）
+ */
+function isSimpleArithmetic(text: string): boolean {
+  const compact = text.replace(/\s+/g, '')
+  if (compact.length > 50) return false
+
+  // 数字个数。放宽到 5：`(3+4)*5/2` 这类纯算术有 4 个数字，
+  // 仍然一望可算，不该因为多一个数就被当成复杂需求。
+  const numbers = text.match(/\d+(?:\.\d+)?/g) ?? []
+  if (numbers.length > 5) return false
+
+  // 必须含运算符（纯数字不是计算需求）
+  if (!/[+\-*/^%×÷]/.test(text)) return false
+
+  // 只允许数字、运算符、括号、小数点和空白
+  const stripped = text.replace(/\d+(?:\.\d+)?/g, '').replace(/[+\-*/^%×÷()（）\s=？?。，,]/g, '')
+  if (stripped.length > 0) return false
+
+  // 有任何数据/汇总信号就不是简单算术
+  for (const signal of DATA_SIGNAL_PATTERNS) {
+    if (signal.pattern.test(text)) return false
+  }
+
+  // 物理推演类一律不算简单（这类是工具的核心价值，即便形式像算术）
+  if (/重力|逃逸|轨道|宜居|潮汐|恒星|行星|气压|海拔|密度|温度|硬度|强度/.test(text)) {
+    return false
+  }
+
+  return true
+}
+
+/**
+ * 分流结论。
+ *
+ * | 档位 | 含义 | 处置 |
+ * |---|---|---|
+ * | `simple` | 短、少数字、纯四则、无数据信号 | **不提醒**（AI 自己算即可，想用工具仍可用） |
+ * | `forced` | 有数据/汇总/多步信号 | **强提醒**：这类务必用工具 |
+ * | `fuzzy` | 其它数学需求 | 一般提醒 |
+ */
+export type DemandClass = 'simple' | 'forced' | 'fuzzy'
 
 /**
  * 计算数字密度。
@@ -190,9 +281,37 @@ export function detectMathNeed(text: string): DetectionResult {
     }
   }
 
+  /**
+   * ── 3b. 数据/汇总信号（强信号）──
+   *
+   * 这类需求一旦出现就该走插件：数字多、要精确、人工算容易错。
+   * 原来的词表里完全没有它们，实测「20 个数字求和」只得 0.30（不提醒）。
+   */
+  let dataSignalHit = false
+  for (const signal of DATA_SIGNAL_PATTERNS) {
+    if (signal.pattern.test(text)) {
+      score += signal.weight
+      signals.push('数据信号:' + signal.label)
+      dataSignalHit = true
+    }
+  }
+
   // ── 4. 减分项（防误报）──
   for (const negative of NEGATIVE_PATTERNS) {
     if (negative.pattern.test(text)) {
+      /**
+       * 数据信号存在时，**弱**排除项一律不生效。
+       *
+       * 实测踩到：`1.5 倍重力下，花岗岩山能长多高` 里的 `1.`
+       * 被「列表编号」规则（-0.1）误伤，把 0.15 又压低，导致漏判。
+       * 这类误伤的特点是「排除项权重很轻、但足以翻越阈值」。
+       *
+       * 弱排除的定义：|weight| ≤ 0.15（列表编号 -0.1、章节编号 -0.2 不算弱）。
+       * 强排除（明确说不算 -0.5、版本号/URL -0.3）仍然生效 ——
+       * 那些是真正「这不是计算需求」的信号。
+       */
+      const isWeakNegative = Math.abs(negative.weight) <= 0.15
+      if (dataSignalHit && isWeakNegative) continue
       score += negative.weight // weight 是负数
       signals.push(`排除:${negative.label}`)
     }
@@ -201,14 +320,42 @@ export function detectMathNeed(text: string): DetectionResult {
   // 归一化到 0-1
   const normalized = Math.max(0, Math.min(1, score))
 
-  // 注意：这里用默认阈值只是为了单独调用时有合理行为。
-  // 真正的阈值判断在 shouldPromptNow 里按传入的 config 做 —— 
-  // 否则外部调高/调低 threshold 会失效（之前的 bug）。
+  /**
+   * ── 5. 分流 ──
+   *
+   * 为什么单一阈值不够：它只能回答「数学需求强不强」，
+   * 回答不了「该心算还是该用工具」。实测两个反例：
+   *   `2+2`            → 0.95（强）但它该心算
+   *   `20 个数字求和`   → 0.30（弱）但它最该用工具
+   * 前者的「强」来自表达式模式，后者的「弱」来自缺少数据信号词 ——
+   * 两者都被阈值判反了。
+   */
+  const simple = isSimpleArithmetic(text)
+  const demandClass: DemandClass = simple
+    ? 'simple'
+    : dataSignalHit
+      ? 'forced'
+      : 'fuzzy'
+
+  /**
+   * 各档的提醒决策：
+   *   simple → 不提醒（AI 自己算；想用工具仍然可以用）
+   *   forced → 一定提醒（数据多、要精确，这类出错代价高）
+   *   fuzzy  → 按阈值（保留原来的防打扰行为）
+   */
+  const shouldPromptByClass =
+    demandClass === 'simple'
+      ? false
+      : demandClass === 'forced'
+        ? true
+        : normalized >= DEFAULT_DETECTOR_CONFIG.threshold
+
   return {
-    shouldPrompt: normalized >= DEFAULT_DETECTOR_CONFIG.threshold,
+    shouldPrompt: shouldPromptByClass,
     score: normalized,
-    signals,
+    signals: simple ? [...signals, '分流:简单算术(不提醒)'] : signals,
     candidates: [...new Set(candidates)].slice(0, 5),
+    demandClass,
   }
 }
 
@@ -253,8 +400,25 @@ export function shouldPromptNow(
   }
 
   const detection = detectMathNeed(text)
-  // 关键：只看 score，不用 detection.shouldPrompt ——
-  // 那个字段是按**默认**阈值算出来的，会让传入的 config.threshold 失效。
+  /**
+   * 按**档位**决策，而不是只看 score。
+   *
+   * 为什么必须分流：score 只回答「数学需求强不强」，
+   * 回答不了「该心算还是该用工具」。实测两个方向都判反过：
+   *   `2+2`          score 0.95 → 按阈值会提醒，但它该心算
+   *   `20 个数字求和` score 0.30 → 按阈值不提醒，但它最该用工具
+   *
+   * 分档规则：
+   *   simple → 不提醒（AI 自己算；想用工具仍然可以用）
+   *   forced → 一定提醒（数据多、要精确，这类出错代价高）
+   *   fuzzy  → 按阈值（保留原来的防打扰行为）
+   */
+  if (detection.demandClass === 'simple') {
+    return { ...detection, shouldPrompt: false, reason: '简单算术，不打断' }
+  }
+  if (detection.demandClass === 'forced') {
+    return { ...detection, shouldPrompt: true, reason: '涉及数据/汇总，建议用工具' }
+  }
   if (detection.score < merged.threshold) {
     return {
       ...detection,
@@ -279,13 +443,33 @@ export function recordPrompt(sessionKey: string, step: number): void {
  * 语气要克制：不打断创作流，只提示一句。
  */
 export function buildReminderMessage(detection: DetectionResult): string {
-  const lines: string[] = [
-    '【系统提示 · 数学计算器可用】',
-    '',
-    '检测到这一段可能涉及数值计算。建议直接调用 math_execute 工具，而不是心算或估算：',
+  /**
+   * 按档位说不同的话。
+   *
+   * 为什么不能一视同仁：`forced` 档是「数据多、要精确、人工算会错」，
+   * 语气该更明确；`fuzzy` 档只是「可能涉及计算」，说重了就是打扰。
+   *
+   * 注意措辞不出现「禁止」「必须」这类硬指令 —— 本插件的风格是
+   * 「说明代价」，把选择权留给作者。
+   */
+  const forced = detection.demandClass === 'forced'
+  const lines: string[] = forced
+    ? [
+        '【系统提示 · 这类计算建议用 math_execute】',
+        '',
+        '检测到涉及数据汇总/精确计算的需求。这类内容人工推容易出错，',
+        '而且错了通常看不出来 —— 建议直接调用 math_execute：',
+      ]
+    : [
+        '【系统提示 · 数学计算器可用】',
+        '',
+        '检测到这一段可能涉及数值计算。可以用 math_execute 而不是心算或估算：',
+      ]
+  lines.push(
     '它能做高精度求值、解方程、符号微积分、矩阵运算、统计与概率、',
-    '270 条自然科学公式、物理常数推演、星球与气候模拟。',
-  ]
+    '自然科学的公式求值、物理常数推演、星球与气候模拟。',
+  )
+  lines.push('批量算多条用 expressions 参数，一次往返即可。')
   if (detection.candidates.length > 0) {
     lines.push('')
     lines.push('检测到的算式片段（可参考）：' + detection.candidates.map((c) => '`' + c + '`').join('、'))
