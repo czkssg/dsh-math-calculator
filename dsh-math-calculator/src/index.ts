@@ -197,6 +197,12 @@ import {
   type MathOperation,
   type Outcome,
 } from './ops/shared.js'
+import {
+  PRECISION_LOSS_THRESHOLD,
+  consumePrecisionLoss,
+  isDisplayPrecisionExplicit,
+  setDisplayPrecisionExplicit,
+} from './precision-report.js'
 import { opOde } from './ops/ode-op.js'
 import { opWorld } from './ops/world-op.js'
 import { opConstants } from './ops/constants-op.js'
@@ -2022,10 +2028,21 @@ export function runMathTool(rawArguments: unknown): MathResult {
      * 没显式给时才回落默认 8 位。
      */
     const explicitPrecision = args.precision !== undefined && Number.isFinite(Number(args.precision))
+    const explicitDisplay = clampDisplayPrecision(args.displayPrecision) !== undefined
     displayPrecision =
       clampDisplayPrecision(args.displayPrecision) ??
       displayPrecisionOf() ??
       (explicitPrecision ? Math.min(64, precision) : DEFAULT_DISPLAY_PRECISION)
+    /**
+     * 记录「显示精度是否由调用方显式指定」。
+     *
+     * 用途：只有用默认值时才提醒「精度可能不够」。
+     * 调用方自己写 `displayPrecision:2` 时，截断是他的意图，再提醒就啰嗦了。
+     *
+     * 另外每次调用开头都要清空损失统计，否则上一轮的误差会挂到本轮结果上。
+     */
+    setDisplayPrecisionExplicit(explicitDisplay)
+    consumePrecisionLoss()
     /**
      * 设成模块级，让 trimNumber（solve / matrix / stats 等四十多个调用点）自动生效。
      *
@@ -2116,10 +2133,21 @@ export function runMathTool(rawArguments: unknown): MathResult {
          * 代价是多算几次字符串，与「算错」比起来不值一提。
          */
         const { displayPrecision: _dp, promptMode: _pm, ...restForCache } = args as Record<string, unknown>
+        /**
+         * 键里要带「显示精度是否显式」这一位。
+         *
+         * 踩过：显式传 `displayPrecision:8` 与用默认值 8 是**同一个数值**，
+         * 键就撞了 —— 显式调用命中了默认调用的缓存，连带返回那条
+         * 「精度不足」提示（默认调用才该有）。结果作者自己指定了精度，
+         * 却被告知「精度不够，请调高」，自相矛盾。
+         *
+         * 两者的输出确实不同（提示有无），所以键必须区分。
+         */
         const key = cacheKey([
           operation,
           precision,
           displayPrecision ?? -1,
+          explicitDisplay ? 'explicit' : 'default',
           stableArgs(restForCache),
           activeWorkspaceNameForCache(),
           constantsFingerprint(),
@@ -2271,6 +2299,42 @@ export function runMathTool(rawArguments: unknown): MathResult {
     if (hintNote) result.notice = hintNote
 
     /**
+     * ── 精度不足提醒 ──
+     *
+     * 与上面那条「可以调精度」不同：这条是**具体的**——本次结果真的因为位数不够
+     * 而丢了精度。判据是相对误差超过万分之一。
+     *
+     * ## 什么时候该提醒
+     *
+     * 例：`0.00000123456789` 在 8 位小数下变成 `0.00000123`，
+     * 相对误差约 0.3%。作者看到这个数会以为是精确值，实际已经偏了。
+     * 而 `1/7` 在 8 位小数下误差约 1e-9，完全不用提。
+     *
+     * ## 什么时候不提醒
+     *
+     * 调用方自己指定了 `displayPrecision` 时不提 —— 那是他的选择。
+     *
+     * 取「两条提示取更强的」：精度损失提示优先于泛泛的「可以调」提示。
+     */
+    if (!isDisplayPrecisionExplicit()) {
+      const loss = consumePrecisionLoss()
+      if (loss > PRECISION_LOSS_THRESHOLD) {
+        /*
+         * 建议的位数：在当前基础上再加 8 位，上限 64。
+         * 这样「8 → 16」「16 → 24」都合理，且不会建议一个超范围的值。
+         */
+        const suggested = Math.min(64, displayPrecision + 8)
+        result.notice =
+          '注意：本次结果按 ' + displayPrecision + ' 位小数截断后，相对误差约 ' +
+          (loss * 100).toFixed(loss > 0.1 ? 0 : 2) + '%。' +
+          '若需要精确值，请传 displayPrecision:' + suggested + '（或更高）。'
+      }
+    } else {
+      // 显式指定时也要清空，避免残留到下轮
+      consumePrecisionLoss()
+    }
+
+    /**
      * 非有限结果的处理：**数值型** operation 才算错误，分析型的不算。
      *
      * 这里的判据是「这个 operation 的目的」：
@@ -2371,6 +2435,8 @@ function clampPrecision(value: unknown): number {
  */
 function maybeDisplayPrecisionHint(resultText: string): string {
   try {
+    // 调用方自己指定了精度就不必再教他怎么指定
+    if (isDisplayPrecisionExplicit()) return ''
     // 已固化过就不提示（用户/AI 已经做过选择）
     if (displayPrecisionOf(currentWorkspace()) !== undefined) return ''
     // 没有小数就没有截断问题，不必提示

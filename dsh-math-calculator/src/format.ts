@@ -8,6 +8,8 @@
  * @module dsh-math-calculator/format
  */
 
+import { reportPrecisionLoss } from './precision-report.js'
+
 /** 可无损 JSON 化的值。 */
 export type JsonValue =
   | null
@@ -123,7 +125,18 @@ export function formatValue(
      * 这条路径直接让 mathjs 格式化原始 BigNumber。
      */
     if (decimals > 15 && isBig) {
-      return math.format(value, { notation: 'fixed', precision: Math.min(precision, decimals + 8) })
+      const formatted = math.format(value, {
+        notation: 'fixed',
+        precision: Math.min(precision, decimals + 8),
+      })
+      /**
+       * 去掉尾随零：`notation:'fixed'` 会补齐到位数，
+       * 于是 `1.23456789e-6` 在 16 位下变成 `0.000001234567890000000000`。
+       * 尾随零不携带信息，去掉后更易读。
+       */
+      return formatted.includes('.')
+        ? formatted.replace(/0+$/, '').replace(/\.$/, '')
+        : formatted
     }
 
     if (numeric === null || !Number.isFinite(numeric)) {
@@ -144,8 +157,31 @@ export function formatValue(
     if (abs !== 0 && abs < Math.pow(10, -decimals)) {
       return numeric.toExponential(Math.max(decimals, 3))
     }
-    // toFixed 会补尾零（1.5 → "1.50000000"），转回数字去掉
-    return String(Number(numeric.toFixed(decimals)))
+    // toFixed 会补尾零（1.5 → "1.50000000"），用**文本**去掉，不要转 Number 再转回
+    const fixed = numeric.toFixed(decimals)
+    const trimmed = fixed.includes('.')
+      ? fixed.replace(/0+$/, '').replace(/\.$/, '')
+      : fixed
+    /**
+     * 为什么要保留 fixed 文本、不用 `String(Number(fixed))`：
+     *
+     * `Number("0.00000081")` 再 `String()` 会得到 `"8.1e-7"` ——
+     * 数值没错，但**看起来只有两位有效数字**，读者会以为精度很低。
+     * 保留定点文本既忠实于位数设定，也不会让人误判精度。
+     */
+    const normalizedText = trimmed === '-0' ? '0' : trimmed
+    /**
+     * 顺手记录相对误差（供「精度不够就提醒」用）。
+     *
+     * 为什么要上报：截断是**悄悄**发生的。8 位小数对 `1/7` 毫无影响，
+     * 但对 `0.00000123456789` 只留下 3 位有效数字 —— 作者看到
+     * `0.00000123` 不会意识到相对误差已有 0.3%。
+     */
+    const shown = Number(normalizedText)
+    if (abs > 0 && Number.isFinite(shown)) {
+      reportPrecisionLoss(Math.abs(shown - numeric) / abs)
+    }
+    return normalizedText
   } catch {
     try {
       return String(value)

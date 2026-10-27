@@ -15,6 +15,7 @@
 import { create, all } from 'mathjs'
 
 import type { JsonValue } from '../format.js'
+import { reportPrecisionLoss } from '../precision-report.js'
 import type { TerrainParams } from '../terrain.js'
 import type { WorldParams } from '../world.js'
 
@@ -76,7 +77,7 @@ export interface MathArgs {
   vector?: number[]
   precision?: number
   /**
-   * **显示**有效数字位数（与计算精度分开）。
+   * **显示**精度：**小数点后几位**（与计算精度分开）。
    *
    * ## 为什么要分开
    *
@@ -89,14 +90,21 @@ export interface MathArgs {
    * 所以它不能为了让输出好看而调低。而 `displayPrecision` 只影响**写出来的位数**，
    * 计算仍然按 `precision`（默认 64）进行 —— 大数运算照样精确，只是显示得短些。
    *
+   * ## 语义是「小数点后几位」，不是「有效数字」
+   *
+   * 这个区别很大：
+   *   8 位小数   → 12345.678901234 得 12345.67890123
+   *   8 位有效数字 → 同一个数得 12345.679（只剩 3 位小数）
+   *
+   * 说「保留 8 位」时想的是小数位，所以按小数位实现。
+   *
    * ## 怎么用
    *
    * 一次设定即固化到当前工作区（后续调用自动沿用），也可每次覆盖：
    *   { operation:'workspace', action2:'set', displayPrecision:8 }  ← 固化
    *   { operation:'evaluate', expression:'1/7', displayPrecision:6 }  ← 临时
    *
-   * 建议：对话开始时按用途定一次（文学创作 6—8 位够用，工程核对 10—12 位，
-   * 数论/大整数仍保持默认 64），需要更多时再单独调高。
+   * 默认 8 位小数；工程核对可给 12—16；整数永远完整，不受此参数影响。
    */
   displayPrecision?: number
   /**
@@ -594,7 +602,16 @@ export function trimNumber(
   if (abs !== 0 && abs < Math.pow(10, -decimals)) {
     return value.toExponential(Math.max(decimals, 3))
   }
-  return String(Number(value.toFixed(decimals)))
+  const fixed = value.toFixed(decimals)
+  // 用文本去掉尾随 0（不要 `Number()` 再 `String()`，否则 0.00000081 会变 "8.1e-7"）
+  const trimmed = fixed.includes('.') ? fixed.replace(/0+$/, '').replace(/\.$/, '') : fixed
+  const text = trimmed === '-0' ? '0' : trimmed
+  const shown = Number(text)
+  // 顺手记录相对误差，供「精度不够就提醒」使用
+  if (abs > 0 && Number.isFinite(shown)) {
+    reportPrecisionLoss(Math.abs(shown - value) / abs)
+  }
+  return text
 }
 
 /** 把数字安全地塞进 JsonValue（非有限值转字符串）。 */
