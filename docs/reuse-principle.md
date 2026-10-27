@@ -22,7 +22,7 @@ const mWater = 0.018 / NA
 | 逃逸速度 | 公式 `escape_velocity`（√(2GM/r)） | 直接用 world 给的值 |
 | 黑体峰值波长 | 公式 `wien_displacement`（b/T） | 直接用 world 给的值 |
 | kB / NA / c / G / h | 常数表 43 个（含 7 个 SI 定义常数） | 抄了一堆数字进 pipeline |
-| 395 条公式 | 公式库 | 完全没用上 |
+| 404 条公式 | 公式库 | 完全没用上 |
 
 这就是**第二份真相**：公式改了，推演层不跟着变。
 
@@ -97,7 +97,7 @@ const realAlpha = (REAL.e ** 2) / (4 * Math.PI * REAL.epsilon0 * REAL.hbar * REA
 ```
 45 套 / 1887 项全绿（新增 reuse.mjs 18 项）
 pipeline 里已无物理常数硬编码 ✓
-公式库 395 条被真正复用 ✓
+公式库 404 条被真正复用 ✓
 常数表 43 个（含 7 个 SI 定义常数）被读取 ✓
 ```
 

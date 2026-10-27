@@ -1,6 +1,6 @@
 # 公式库完整清单
 
-> 共 **342** 条，**51** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
+> 共 **404** 条，**58** 个分类。由 `node test/formulas-list.mjs` 从代码导出。
 
 调用方式：`{ "operation": "formula", "formula": "<id>", "overrides": {...} }`
 
@@ -10,12 +10,12 @@
 
 | 层级 | rank | 含义 | 条数 |
 |---|---|---|---|
-| 基本规则（fundamental） | 1 | 守恒律、相对论、量子、热力学定律——自然律本身 | 12 |
+| 基本规则（fundamental） | 1 | 守恒律、相对论、量子、热力学定律——自然律本身 | 15 |
 | 数学基础（mathematical） | 1 | 公理、定义与纯数学定律（几何、级数、增长）——与基本规则同属最底层 | 14 |
-| 导出规律（derived） | 2 | 由基本规则推出、有闭合形式的经典关系 | 156 |
-| 经验规律（phenomenological） | 3 | 带实验拟合系数，量级可信、具体数字有误差 | 41 |
-| 工程换算（engineering） | 4 | 几何、配比、剂量、补给——由定义与算术决定 | 82 |
-| 社会约定（conventional） | 5 | 货币、制度、统计口径——由人类约定而非自然律 | 37 |
+| 导出规律（derived） | 2 | 由基本规则推出、有闭合形式的经典关系 | 181 |
+| 经验规律（phenomenological） | 3 | 带实验拟合系数，量级可信、具体数字有误差 | 50 |
+| 工程换算（engineering） | 4 | 几何、配比、剂量、补给——由定义与算术决定 | 104 |
+| 社会约定（conventional） | 5 | 货币、制度、统计口径——由人类约定而非自然律 | 40 |
 
 > rank 相同表示同级：**数学基础与基本规则同属最底层**。
 
@@ -23,19 +23,19 @@
 
 | 领域 | 条数 |
 |---|---|
-| 物理（physics） | 191 |
-| 化学（chemistry） | 10 |
-| 生物（biology） | 54 |
-| 材料（materials） | 27 |
+| 物理（physics） | 209 |
+| 化学（chemistry） | 19 |
+| 生物（biology） | 56 |
+| 材料（materials） | 29 |
 | 地球（earth） | 12 |
-| 天文（astronomy） | 27 |
-| 工程（engineering） | 48 |
+| 天文（astronomy） | 31 |
+| 工程（engineering） | 54 |
 | 军事（military） | 14 |
 | 农业（agriculture） | 16 |
 | 医学（medicine） | 18 |
-| 经济（economics） | 16 |
+| 经济（economics） | 27 |
 | 社会（social） | 20 |
-| 数学（math） | 14 |
+| 数学（math） | 22 |
 
 > 注意：`cat` 只是旧的路径字段；分类请用「规则层级 + 学科领域」。
 > `frequency` 指**主角视角**感知频率，不是世界观推导常用度。
@@ -43,22 +43,24 @@
 ## 目录
 
 - [biology/ecology](#biologyecology) — 6 条
-- [biology/physiology](#biologyphysiology) — 18 条
+- [biology/physiology](#biologyphysiology) — 20 条
 - [chemistry/acid](#chemistryacid) — 1 条
 - [chemistry/electro](#chemistryelectro) — 1 条
 - [chemistry/kinetics](#chemistrykinetics) — 2 条
-- [chemistry/mole](#chemistrymole) — 2 条
-- [chemistry/solution](#chemistrysolution) — 3 条
+- [chemistry/mole](#chemistrymole) — 4 条
+- [chemistry/nuclear](#chemistrynuclear) — 1 条
+- [chemistry/solution](#chemistrysolution) — 8 条
 - [chemistry/thermo](#chemistrythermo) — 1 条
-- [econ/finance](#econfinance) — 7 条
+- [econ/finance](#econfinance) — 17 条
 - [econ/growth](#econgrowth) — 2 条
 - [econ/io](#econio) — 1 条
 - [econ/macro](#econmacro) — 2 条
 - [econ/micro](#econmicro) — 2 条
 - [econ/production](#econproduction) — 1 条
 - [econ/utility](#econutility) — 1 条
-- [materials/structures](#materialsstructures) — 11 条
-- [math/geometry](#mathgeometry) — 7 条
+- [engineering/mechanics](#engineeringmechanics) — 3 条
+- [materials/structures](#materialsstructures) — 13 条
+- [math/geometry](#mathgeometry) — 15 条
 - [math/growth](#mathgrowth) — 3 条
 - [math/scales](#mathscales) — 2 条
 - [math/series](#mathseries) — 2 条
@@ -70,20 +72,25 @@
 - [perception/horizon](#perceptionhorizon) — 5 条
 - [perception/senses](#perceptionsenses) — 14 条
 - [perception/technology](#perceptiontechnology) — 4 条
-- [perception/travel](#perceptiontravel) — 12 条
+- [perception/travel](#perceptiontravel) — 13 条
 - [perception/weather](#perceptionweather) — 7 条
-- [physics/astronomy](#physicsastronomy) — 12 条
-- [physics/em](#physicsem) — 22 条
-- [physics/fluid](#physicsfluid) — 4 条
+- [physics/astronomy](#physicsastronomy) — 16 条
+- [physics/em](#physicsem) — 29 条
+- [physics/fluid](#physicsfluid) — 6 条
 - [physics/gravity](#physicsgravity) — 8 条
-- [physics/mechanics](#physicsmechanics) — 45 条
+- [physics/mechanics](#physicsmechanics) — 46 条
 - [physics/nuclear](#physicsnuclear) — 4 条
 - [physics/optics](#physicsoptics) — 7 条
 - [physics/quantum](#physicsquantum) — 3 条
 - [physics/relativity](#physicsrelativity) — 5 条
 - [physics/scaling](#physicsscaling) — 5 条
-- [physics/thermo](#physicsthermo) — 16 条
+- [physics/thermo](#physicsthermo) — 17 条
 - [physics/waves](#physicswaves) — 8 条
+- [power/diffusion](#powerdiffusion) — 2 条
+- [power/energy](#powerenergy) — 3 条
+- [power/fiscal](#powerfiscal) — 3 条
+- [power/food](#powerfood) — 3 条
+- [power/information](#powerinformation) — 2 条
 - [social/demography](#socialdemography) — 2 条
 - [social/development](#socialdevelopment) — 1 条
 - [social/ecology](#socialecology) — 2 条
@@ -392,6 +399,31 @@ ld50_per_kg * weight
 
 把 LD50 换算成具体体重下的剂量；毒理量级判断用，个体差异很大。
 
+### metabolic_generic
+
+**代谢率（普适幂律，系数可换）** · 层级 derived · 领域 生物 · 主角频率 high · 单位 kcal/day
+
+```
+k * mass^exponent
+```
+
+必填：`mass` (体重 kg)
+可选：`k`=70 (代谢系数，单位 kcal/day·kg^0.75（地球哺乳类约 70）)、`exponent`=0.75 (标度指数（分形输运网络 → 0.75）)
+
+克莱伯定律的显式形式 BMR = k·M^0.75。**注意 k 的量纲含 kg^0.75**：k=70 时，70 kg 的人得 1694 kcal/day（约 70×70^0.75），不是 70 kcal —— 70 这个数常被误读成「人的代谢率」，其实是「1 kg 基准下的系数」。**指数 0.75 是无量纲的、跨世界应成立**（分形输运网络的最优标度）；系数 k 是地球生物标定，会因生物化学与体温不同而变。异星生物改 k 即可，不必改指数。这比 Mifflin 那种线性拟合式通用得多。
+
+### convective_cooling_generic
+
+**对流散热系数（普适版，含大气密度）** · 层级 derived · 领域 物理、生物 · 主角频率 medium · 单位 W/(m²·K)
+
+```
+10 * sqrt(v) * (density / 1.225)^0.8
+```
+
+可选：`v`=1 (风速 m/s)、`density`=1.225 (大气密度 kg/m³（地球 1.225；0.1 atm 约 0.12）)
+
+对流换热系数的量级估计。**这是「风寒/酷热感」的物理内核**：经验公式（风寒指数）把人体与地球大气烘焙进了系数，换世界就失效；而这个幂律形式 h ∝ v^0.5 · ρ^0.8 是流体力学标度，跨世界成立。稀薄大气（0.1 atm）里散热系数只有地球的约 15% —— 这就是「真空里不觉得冷」的原因。
+
 ## chemistry/acid
 
 ### ph_from_pka
@@ -476,6 +508,44 @@ M / rho
 
 V_m = M/ρ。
 
+### gas_volume_stp
+
+**标准状况气体体积** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 L
+
+```
+moles * 22.414
+```
+
+必填：`moles` (气体摩尔数 mol)
+
+STP（273.15 K, 1 atm）下 1 mol 理想气体约 22.414 L。非标准状况用 PV=nRT（operation="evaluate" 可直接算）。
+
+### particles_from_moles
+
+**摩尔数换算粒子数** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 个
+
+```
+n * 6.02214076e23
+```
+
+必填：`n` (摩尔数 mol)
+
+阿伏伽德罗常数取 2019 SI 定义值。反向除一下即得摩尔数。
+
+## chemistry/nuclear
+
+### radioactive_remaining
+
+**放射性剩余量** · 层级 derived · 领域 化学、物理 · 主角频率 high · 单位 与 N0 同单位
+
+```
+N0 * (1 / 2)^(t / half_life)
+```
+
+必填：`N0` (初始量（质量/摩尔数/活度都可）)、`t` (经过时间)、`half_life` (半衰期（与 t 同单位）)
+
+每过一个半衰期剩一半。⚠️ t 与 half_life 必须同单位。习惯上 10 个半衰期后视为衰尽（剩 0.1%）。
+
 ## chemistry/solution
 
 ### molarity
@@ -513,6 +583,67 @@ x_solvent * P0
 必填：`x_solvent` (溶剂摩尔分数)、`P0` (纯溶剂蒸气压 Pa)
 
 P = x·P₀。
+
+### solubility_product
+
+**溶度积 Ksp** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 (mol/L)^(m+n)
+
+```
+cation^m * anion^n
+```
+
+必填：`cation` (阳离子浓度 mol/L)、`anion` (阴离子浓度 mol/L)
+可选：`m`=1 (阳离子计量数)、`n`=1 (阴离子计量数)
+
+难溶盐的溶解平衡常数。离子积 Q > Ksp 时沉淀析出，Q < Ksp 时会继续溶解。计量数按化学式：CaCl₂ 的 m=1, n=2。
+
+### titration_moles
+
+**滴定所需体积** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 mL
+
+```
+C1 * V1 / C2
+```
+
+必填：`C1` (已知液浓度 mol/L)、`V1` (已知液体积 mL)、`C2` (待测液浓度 mol/L)
+
+C₁V₁ = C₂V₂。1:1 反应的等当点。计量比不是 1:1 时先把 C₁ 除以计量比。
+
+### molality
+
+**质量摩尔浓度** · 层级 derived · 领域 化学 · 主角频率 medium · 单位 mol/kg
+
+```
+moles / kg_solvent
+```
+
+必填：`moles` (溶质摩尔数 mol)、`kg_solvent` (**溶剂**质量 kg（不是溶液质量）)
+
+与体积摩尔浓度不同，它不受温度影响（体积会热胀冷缩）。凝固点降低、沸点升高的公式用的是这个。
+
+### mass_percent
+
+**质量百分比浓度** · 层级 engineering · 领域 化学 · 主角频率 high · 单位 %
+
+```
+solute_mass / solution_mass * 100
+```
+
+必填：`solute_mass` (溶质质量)、`solution_mass` (**溶液**总质量)
+
+实验室最常见的浓度表达。注意分母是溶液不是溶剂。
+
+### ppm_concentration
+
+**百万分浓度 ppm** · 层级 engineering · 领域 化学 · 主角频率 medium · 单位 ppm
+
+```
+solute_mass / solution_mass * 1e6
+```
+
+必填：`solute_mass` (溶质质量)、`solution_mass` (溶液总质量)
+
+稀溶液常用。水溶液中 1 ppm ≈ 1 mg/L。饮用水余氯、重金属限值都用这个口径。
 
 ## chemistry/thermo
 
@@ -614,6 +745,130 @@ amount / (1 + rate)^t
 必填：`gain` (收益)、`cost` (成本)
 
 ROI = (收益-成本)/成本。
+
+### loan_payment
+
+**等额本息月供** · 层级 engineering · 领域 经济 · 主角频率 high · 单位 每期还款额（与本金同币种）
+
+```
+P * (annual_rate / 12) * (1 + annual_rate / 12)^months / ((1 + annual_rate / 12)^months - 1)
+```
+
+必填：`P` (贷款本金)、`months` (还款月数（30 年 = 360）)
+可选：`annual_rate`=0.049 (年利率（小数，4.9% 写 0.049）)
+
+房贷 / 车贷的标准算法。⚠️ 年利率为 0 时会除零 —— 那种情况直接 本金 / 月数。总利息 = 月供 × 月数 − 本金。
+
+### simple_interest
+
+**单利终值** · 层级 engineering · 领域 经济 · 主角频率 high · 单位 与本金同币种
+
+```
+P * (1 + r * t)
+```
+
+必填：`P` (本金)、`r` (年利率（小数）)、`t` (年数)
+
+只对本金计息。对比 compound_interest 看复利差多少。
+
+### annuity_present_value
+
+**年金现值** · 层级 engineering · 领域 经济 · 主角频率 medium · 单位 现值（与每期金额同币种）
+
+```
+pmt * (1 - (1 + r)^(-n)) / r
+```
+
+必填：`pmt` (每期金额)、`r` (每期利率（小数）)、`n` (期数)
+
+未来每期收一笔钱，折算到今天的价值。「这份年金现在值多少」。r 为 0 时直接 pmt × n。
+
+### npv_simple
+
+**净现值 NPV（等额现金流）** · 层级 engineering · 领域 经济 · 主角频率 high · 单位 与现金流同币种
+
+```
+cf * (1 - (1 + r)^(-n)) / r - initial
+```
+
+必填：`cf` (每期净现金流)、`r` (每期折现率（小数）)、`n` (期数)
+可选：`initial`=0 (初始投入)
+
+大于 0 表示这项投资按该折现率划算。
+
+### depreciation_straight_line
+
+**直线折旧（年折旧额）** · 层级 conventional · 领域 经济 · 主角频率 medium · 单位 每年折旧额
+
+```
+(cost - salvage) / years
+```
+
+必填：`cost` (购置成本)、`years` (使用年限)
+可选：`salvage`=0 (残值)
+
+最简单的折旧法。余额递减法等会计方法不在此列。
+
+### break_even_units
+
+**盈亏平衡销量** · 层级 engineering · 领域 经济 · 主角频率 medium · 单位 件
+
+```
+fixed_cost / (price - unit_cost)
+```
+
+必填：`fixed_cost` (固定成本总额)、`price` (单件售价)、`unit_cost` (单件变动成本)
+
+卖多少件才不亏。售价 ≤ 变动成本时无解（每卖一件都在亏），此时会算出负数或无穷 —— 那本身就是结论。
+
+### effective_annual_rate
+
+**实际年利率 EAR** · 层级 engineering · 领域 经济 · 主角频率 medium · 单位 小数（× 100 得百分比）
+
+```
+(1 + nominal_rate / n)^n - 1
+```
+
+可选：`nominal_rate`=0.049 (名义年利率（小数）)、`n`=12 (每年复利次数（12 = 月复利）)
+
+月复利的名义 4.9% 不等于实际 4.9%。n 越大越接近连续复利 e^r − 1。对比信用卡与房贷时看这个，不看名义利率。
+
+### compound_growth_time
+
+**复利翻倍所需年数** · 层级 engineering · 领域 经济 · 主角频率 high · 单位 年
+
+```
+log(target / P) / log(1 + r)
+```
+
+必填：`P` (本金)、`target` (目标金额)、`r` (年利率（小数）)
+
+「多久能翻倍」直接用它。约等于 72/r(%) 的「72 法则」，但这是精确解。⚠️ mathjs 的 log 是自然对数，这里两处都是，所以比值正确。
+
+### purchasing_power
+
+**通胀后的购买力** · 层级 engineering · 领域 经济 · 主角频率 high · 单位 相当于今天的购买力
+
+```
+P / (1 + inflation)^years
+```
+
+必填：`P` (今天的金额)、`years` (年数)
+可选：`inflation`=0.03 (年通胀率（小数）)
+
+「三十年后这笔钱还值多少」。反向问「到时候要多少钱才有同等购买力」用 P × (1+inflation)^years。
+
+### markup_margin
+
+**毛利率** · 层级 conventional · 领域 经济 · 主角频率 medium · 单位 小数（× 100 得百分比）
+
+```
+(price - cost) / price
+```
+
+必填：`price` (售价)、`cost` (成本)
+
+注意与「加价率」(price−cost)/cost 不同：成本 60 卖 100，毛利率 40%、加价率 66.7%。谈生意时这两个常被混用。
 
 ## econ/growth
 
@@ -736,6 +991,44 @@ c^(1 - gamma) / (1 - gamma)
 必填：`c` (消费)、`gamma` (相对风险厌恶系数 γ ≠ 1)
 
 常数相对风险厌恶效用，γ=1 时退化为 ln c。
+
+## engineering/mechanics
+
+### gear_ratio
+
+**齿轮传动比** · 层级 engineering · 领域 工程 · 主角频率 high · 单位 倍
+
+```
+N2 / N1
+```
+
+必填：`N1` (主动轮齿数)、`N2` (从动轮齿数)
+
+转速比 = N₁/N₂（与齿数比相反）；扭矩比 = N₂/N₁。大于 1 表示减速增扭。多级传动把各级比值乘起来。
+
+### hydraulic_force
+
+**液压推力** · 层级 derived · 领域 物理、工程 · 主角频率 high · 单位 N
+
+```
+pressure * area
+```
+
+必填：`pressure` (液压 Pa)、`area` (活塞面积 m²)
+
+帕斯卡原理：压力处处相等，所以小活塞小力 → 大活塞大力。这正是液压千斤顶、挖掘机、刹车系统的原理。
+
+### pulley_ratio
+
+**皮带轮转速比** · 层级 engineering · 领域 工程 · 主角频率 medium · 单位 倍
+
+```
+D1 / D2
+```
+
+必填：`D1` (主动轮直径)、`D2` (从动轮直径)
+
+从动轮转速 = 主动轮转速 × (D₁/D₂)。与齿轮不同，皮带轮靠摩擦，从动轮直径大则转得慢。
 
 ## materials/structures
 
@@ -873,6 +1166,31 @@ W * L / (8 * h)
 
 由失重换算年腐蚀深度；经验公式，实际速率随环境大幅变化。
 
+### thermal_stress
+
+**热应力** · 层级 derived · 领域 材料 · 主角频率 medium · 单位 Pa
+
+```
+E * alpha * dT
+```
+
+必填：`E` (弹性模量 Pa（钢约 2e11）)、`alpha` (线膨胀系数 1/K（钢约 1.2e-5）)、`dT` (温差 K（也等于 °C 差）)
+
+完全约束下温度变化产生的应力。这就是铁轨留缝、桥梁装伸缩缝的原因。与材料抗压强度比较即可判断会不会开裂。
+
+### hardness_yield_generic
+
+**硬度估屈服强度（普适版，可换重力）** · 层级 phenomenological · 领域 材料 · 主角频率 medium · 单位 MPa
+
+```
+k * hardness * g
+```
+
+必填：`hardness` (布氏/维氏硬度（kgf/mm²）)
+可选：`k`=3 (硬度-强度比例系数（经验，约 3）)、`g`=9.80665 (地表重力 m/s²（地球 9.81）)
+
+σy ≈ k·HB（比例 π 是无量纲经验），单位换算里含 g。原式的 9.80665e6 就是「kgf/mm² → Pa」的换算，含地球重力。换重力时这 9.8 要跟着变（1.5 g 世界同样硬度值对应 1.5 倍 Pa）。σy≈3HB 本身误差可达 30%，只作量级估算。
+
 ## math/geometry
 
 ### circle_area
@@ -958,6 +1276,102 @@ sqrt(a^2 + b^2)
 必填：`a` (直角边 a)、`b` (直角边 b)
 
 c = √(a²+b²)。
+
+### law_of_cosines
+
+**余弦定理（求第三边）** · 层级 engineering · 领域 数学 · 主角频率 high · 单位 与输入长度同单位
+
+```
+sqrt(a^2 + b^2 - 2 * a * b * cos(angle_c))
+```
+
+必填：`a` (第一边)、`b` (第二边)、`angle_c` (两边的夹角（**弧度**）)
+
+已知两边及夹角求第三边。⚠️ 夹角用弧度；给角度时先乘 π/180。也用于「已知三边求角」的反向解：cosC = (a²+b²−c²)/(2ab)。
+
+### law_of_sines
+
+**正弦定理** · 层级 engineering · 领域 数学 · 主角频率 high · 单位 与输入长度同单位
+
+```
+a * sin(angle_b) / sin(angle_a)
+```
+
+必填：`a` (已知边)、`angle_a` (该边对角（**弧度**）)、`angle_b` (待求边对角（**弧度**）)
+
+a/sinA = b/sinB。已知一边两角求另一边，测距与航海常用。
+
+### sector_area
+
+**扇形面积** · 层级 engineering · 领域 数学 · 主角频率 medium · 单位 面积（与半径单位平方一致）
+
+```
+0.5 * r^2 * theta
+```
+
+必填：`r` (半径)、`theta` (圆心角（**弧度**）)
+
+θ 用弧度。弧长用 r × θ。整圆 θ = 2π。
+
+### spherical_cap_volume
+
+**球冠体积** · 层级 engineering · 领域 数学 · 主角频率 medium · 单位 体积
+
+```
+pi * h^2 * (3 * r - h) / 3
+```
+
+必填：`r` (球半径)、`h` (球冠高度)
+
+被平面切下的那部分球体。h = r 时退化为半球（2πr³/3），h = 2r 时是整个球（4πr³/3）—— 可用来验算。
+
+### trapezoid_area
+
+**梯形面积** · 层级 engineering · 领域 数学 · 主角频率 high · 单位 面积
+
+```
+(a + b) * h / 2
+```
+
+必填：`a` (上底)、`b` (下底)、`h` (高)
+
+「上底加下底乘高除以二」。a = b 时退化为矩形。
+
+### ellipse_area
+
+**椭圆面积** · 层级 engineering · 领域 数学 · 主角频率 medium · 单位 面积
+
+```
+pi * a * b
+```
+
+必填：`a` (半长轴)、`b` (半短轴)
+
+a = b 时退化为圆。椭圆周长没有初等闭式，需椭圆积分。
+
+### torus_volume
+
+**圆环体体积** · 层级 engineering · 领域 数学 · 主角频率 low · 单位 体积
+
+```
+2 * pi^2 * R * r^2
+```
+
+必填：`R` (环中心半径（大半径）)、`r` (管半径（小半径）)
+
+甜甜圈形状的体积。R 必须大于 r，否则管子自相交。
+
+### regular_polygon_area
+
+**正多边形面积** · 层级 engineering · 领域 数学 · 主角频率 low · 单位 面积
+
+```
+n * s^2 / (4 * tan(pi / n))
+```
+
+必填：`n` (边数)、`s` (边长)
+
+n = 4 且 s 为边长时得正方形面积 —— 可用来验算。
 
 ## math/growth
 
@@ -2324,6 +2738,19 @@ sqrt(2 * g * h)
 
 忽略空气阻力；10 米约 14 m/s，相当于 50 km/h 撞墙。
 
+### hull_speed_generic
+
+**船舶极限航速（普适版，可换重力）** · 层级 derived · 领域 物理、工程 · 主角频率 high · 单位 kn（节）
+
+```
+froude * sqrt(g * length) * 1.944
+```
+
+必填：`length` (水线长 m)
+可选：`froude`=0.4 (兴波极限 Froude 数（无量纲，约 0.4）)、`g`=9.80665 (地表重力 m/s²（由 world 给出；地球 9.81）)
+
+排水型船的兴波极限速度。**这是 hull_speed 的普适版**：那个版本的 1.34 把 g=9.81 烘焙进了系数，只在 1 g 世界成立。1.5 g 世界里同一艘 100 m 的船极限航速是 29.8 节而非 24.4 节（快 22%）。Froude ≈ 0.4 是经验值，再快就得上滑行艇或水翼。
+
 ## perception/weather
 
 ### wind_chill
@@ -2565,6 +2992,54 @@ R = √(L/(4πσT⁴))。
 可选：`G`=6.6743e-11 (引力常数)
 
 M = 4π²r³/(GT²)。
+
+### main_sequence_lifetime
+
+**主序星寿命** · 层级 phenomenological · 领域 天文 · 主角频率 high · 单位 Gyr（十亿年）
+
+```
+10 * M^(-2.5)
+```
+
+必填：`M` (恒星质量（**太阳质量**为单位）)
+
+τ ≈ 10 Gyr × M⁻²·²⁵（M 以太阳质量计）。大质量星亮但短命：10 M☉ 只有约 3200 万年 —— 不够演化出复杂生命。此式只在主序阶段成立，且对极端质量有偏差。
+
+### habitable_zone_generic
+
+**宜居带边界（普适版，显式用辐照阈值）** · 层级 derived · 领域 天文 · 主角频率 high · 单位 AU
+
+```
+sqrt(luminosity / flux_ratio)
+```
+
+可选：`luminosity`=1 (恒星光度（太阳 = 1）)、`flux_ratio`=1.1 (内边界处的辐照阈值（地球温室条件下约 1.1 倍地球辐照）)
+
+innerAU = sqrt(L / f)，其中 f 是「该边界处的辐照是地球的几倍」。原式 `sqrt(L/1.1)` 的 1.1 就是 f —— 现在它是可替换参数。强温室行星（如金星式）的 f 可以远小于 1.1；真空岩石行星则要大得多。**solar_flux_at_1au** 用来把 W/m² 换算成 f。
+
+### solar_flux_at_1au
+
+**太阳常数（由光度与距离推出）** · 层级 derived · 领域 天文 · 主角频率 medium · 单位 W/m²
+
+```
+luminosity * 1361
+```
+
+可选：`luminosity`=1 (恒星光度（太阳 = 1）)
+
+太阳常数 1361 W/m² 是「1 L☉ 在 1 AU 处的辐照」——可由 L☉/(4π·AU²) 严格算出（得 1362 W/m²，观测值 1361，差 0.07%）。换成任意距离用 inverse_square_flux。
+
+### inverse_square_flux
+
+**辐照随距离的平方反比** · 层级 fundamental · 领域 物理、天文 · 主角频率 high · 单位 W/m²
+
+```
+flux0 * (distance0 / distance)^2
+```
+
+必填：`flux0` (参考点辐照 W/m²)、`distance0` (参考距离（可与 distance 同单位）)、`distance` (目标距离)
+
+同一颗恒星在不同距离的辐照。这是「为什么热木星会被烧」的第一性依据，也是宜居带宽度 ∝ √L 的来源（辐照 ∝ 1/r²，所以要维持同样辐照，r ∝ √L）。
 
 ## physics/em
 
@@ -2839,6 +3314,90 @@ I^2 * R
 
 P = I²R。
 
+### capacitive_reactance
+
+**容抗** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Ω
+
+```
+1 / (2 * pi * f * C)
+```
+
+必填：`f` (频率 Hz)、`C` (电容 F（1 µF = 1e-6）)
+
+电容对交流的「等效电阻」。频率越高容抗越小（直流下相当于断路）。⚠️ 电容单位是法拉，微法要乘 1e-6。
+
+### inductive_reactance
+
+**感抗** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Ω
+
+```
+2 * pi * f * L
+```
+
+必填：`f` (频率 Hz)、`L` (电感 H（1 mH = 1e-3）)
+
+电感对交流的阻抗。频率越高感抗越大（直流下相当于短路）。
+
+### lc_resonance
+
+**LC 谐振频率** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 Hz
+
+```
+1 / (2 * pi * sqrt(L * C))
+```
+
+必填：`L` (电感 H)、`C` (电容 F)
+
+LC 回路自振频率。此频率下容抗与感抗相等、相互抵消。
+
+### voltage_divider
+
+**分压电路输出** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 V
+
+```
+Vin * R2 / (R1 + R2)
+```
+
+必填：`Vin` (输入电压 V)、`R1` (上臂电阻 Ω)、`R2` (下臂电阻 Ω（输出取在它两端）)
+
+两个电阻串联取中间电压。R2 越大输出越接近 Vin。
+
+### energy_kwh
+
+**用电量（度）** · 层级 engineering · 领域 物理、经济 · 主角频率 high · 单位 kWh（度）
+
+```
+power * hours / 1000
+```
+
+必填：`power` (功率 W)、`hours` (时长 小时)
+
+1000 W 用 1 小时 = 1 度。电费 = 度数 × 电价。注意功率是 W 不是 kW，否则差 1000 倍。
+
+### battery_runtime
+
+**电池续航时间** · 层级 engineering · 领域 物理 · 主角频率 high · 单位 小时
+
+```
+capacity / load
+```
+
+必填：`capacity` (电池容量 mAh)、`load` (负载电流 mA)
+
+理想值。实际受放电曲线、温度、内阻影响，通常只有 70—85%。升压/降压电路还有效率损失。
+
+### transformer_turns
+
+**变压器匝数比** · 层级 derived · 领域 物理 · 主角频率 medium · 单位 次级匝数
+
+```
+N1 * V2 / V1
+```
+
+必填：`N1` (初级匝数)、`V1` (初级电压 V)、`V2` (次级电压 V)
+
+N₁/N₂ = V₁/V₂。升压则次级匝数多。⚠️ 电流反向：电压升几倍，电流就降到几分之一（功率守恒）。
+
 ## physics/fluid
 
 ### pressure_depth
@@ -2890,6 +3449,31 @@ rho * v * D / mu
 必填：`rho` (密度 kg/m³)、`v` (流速 m/s)、`D` (特征长度 m)、`mu` (动力粘度 Pa·s)
 
 Re > 4000 通常为湍流。
+
+### reynolds_number
+
+**雷诺数** · 层级 derived · 领域 物理、工程 · 主角频率 medium · 单位 无量纲
+
+```
+rho * v * D / mu
+```
+
+必填：`rho` (流体密度 kg/m³)、`v` (流速 m/s)、`D` (特征长度 m（管径等）)、`mu` (动力黏度 Pa·s（20°C 水约 1e-3）)
+
+判断层流还是湍流。圆管中 Re < 2300 层流、> 4000 湍流、中间过渡。⚠️ 用的是动力黏度 μ，不是运动黏度 ν（ν = μ/ρ）。
+
+### froude_number
+
+**Froude 数** · 层级 fundamental · 领域 物理、工程 · 主角频率 medium · 单位 无量纲
+
+```
+v / sqrt(g * length)
+```
+
+必填：`v` (特征速度 m/s)、`length` (特征长度 m)
+可选：`g`=9.80665 (重力 m/s²)
+
+惯性力与重力之比。船舶 Fr < 0.4 为排水航行，> 0.4 进入过渡态，> 1 才可能滑行（需要极大功率）。这是判断「这艘船能不能更快」的核心无量纲数。
 
 ## physics/gravity
 
@@ -3554,6 +4138,18 @@ rho * g * h
 
 ρgh，不含大气压。深海世界的结构强度需求。
 
+### spring_energy
+
+**弹簧储能** · 层级 derived · 领域 物理 · 主角频率 high · 单位 J
+
+```
+0.5 * k * x^2
+```
+
+必填：`k` (弹性系数 N/m)、`x` (形变量 m)
+
+压缩或拉伸储存的能量。这正是弓弩、投石机、钟表发条的储能原理：能量与形变量的**平方**成正比，所以拉两倍距离储能四倍。
+
 ## physics/nuclear
 
 ### decay_constant
@@ -4063,6 +4659,19 @@ kB * T / e_charge
 
 V_T = kT/e ≈ 25.85mV @ 300K。
 
+### evaporation_saturation_generic
+
+**饱和蒸气压（Clausius-Clapeyron，可换溶剂）** · 层级 fundamental · 领域 物理、化学 · 主角频率 high · 单位 Pa
+
+```
+p0 * exp(-latent / R * (1 / T - 1 / T0))
+```
+
+必填：`T` (温度 K)
+可选：`p0`=101325 (参考温度下的饱和蒸气压 Pa)、`latent`=40650 (汽化潜热 J/mol（水 40650；氨约 23400）)、`R`=8.31446261815324 (气体常数 J/(mol·K))、`T0`=373.15 (参考温度 K（水的常压沸点）)
+
+饱和蒸气压的普适形式。**这是露点、沸点、蒸发的底层物理**：Magnus 经验式（243.04 那些数）只是把这个式子在水附近拟合的近似；而本式换溶剂只需改 latent（氨、甲烷、硫酸都有各自的值）。这也是「为什么高海拔沸点低」的第一性解释。
+
 ## physics/waves
 
 ### wave_speed
@@ -4163,6 +4772,180 @@ abs(f1 - f2)
 必填：`L` (弦/管长 m)、`n` (谐波次数)
 
 λ = 2L/n。
+
+## power/diffusion
+
+### diffusion_s_curve
+
+**技术扩散 S 曲线（当前渗透率）** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 0—1
+
+```
+1 / (1 + exp(-rate * (t - t_mid)))
+```
+
+必填：`t` (已过时间（年）)、`t_mid` (达到半数渗透的时点（年）)
+可选：`rate`=0.5 (扩散速率（每年）)
+
+新事物（铁器、印刷、火药、蒸汽机）的采纳曲线。rate 越大越陡：0.3 约需 20 年过半，1.0 约需 7 年。**这是地球经验值，不同社会差距极大**——收窄或放大 rate 就能表达你的世界。
+
+### diffusion_half_life
+
+**技术扩散达到半数所需时间** · 层级 derived · 领域 society · 主角频率 medium · 单位 年
+
+```
+log(1 / 0.01 - 1) / rate
+```
+
+可选：`rate`=0.5 (扩散速率（每年）)
+
+从 1% 到 50% 渗透的时间。用来回答「这项技术多久普及」。rate = 0.5 时约 9 年；rate = 0.1 时约 46 年。
+
+## power/energy
+
+### eroi
+
+**能源投资回报率 EROI** · 层级 phenomenological · 领域 物理、society · 主角频率 high · 单位 倍
+
+```
+energy_out / energy_invested
+```
+
+必填：`energy_out` (获取到的可用能量 J)、`energy_invested` (为获取它而投入的能量 J)
+
+社会能维持的复杂度上限。EROI < 5 时难以支撑城市与专业分工，> 20 才有富余供养军队、艺术与科研。这是「文明能有多复杂」的硬门槛。
+
+### eroi_surplus
+
+**能源净剩余** · 层级 derived · 领域 物理、society · 主角频率 medium · 单位 J
+
+```
+energy_out * (1 - 1 / eroi)
+```
+
+必填：`energy_out` (总产出能量 J)
+可选：`eroi`=20 (EROI（倍）)
+
+扣掉「为了拿到这些能量而消耗的能量」之后，真正能拿去干别的事的部分。EROI = 1 时剩余为 0——再多能源也养不活非生产人口。
+
+### kardashev_scale
+
+**卡尔达肖夫指数** · 层级 conventional · 领域 society · 主角频率 medium · 单位 级
+
+```
+(log10(power) - 6) / 10
+```
+
+必填：`power` (文明总功率 W)
+
+文明的能源量级。地球当前约 1.8e13 W → 0.73 级；I 型（地球全部日照约 1.7e17 W）→ 1.1（教材常写 1.0，按此式实为 1.1，差异来自「全部日照」与「教材定义」的口径不同）；II 型（恒星约 3.8e26 W）→ 2.0。公式即 (log10 P − 6) / 10。
+
+## power/fiscal
+
+### fiscal_revenue
+
+**财政收入** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 同上口径
+
+```
+population * output_per_capita * tax_rate
+```
+
+必填：`population` (人口)
+可选：`output_per_capita`=3000 (人均年产出（折粮 kg 或等价货币）)、`tax_rate`=0.1 (实际征税率 0—1)
+
+前工业国家的实际征税率通常只有 5%—10%（名义税率可以高得多，但收不上来）。这是「国家能干什么」的真实上限。
+
+### army_pay_cost
+
+**军饷与给养成本** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 同上口径
+
+```
+soldiers * pay_per_soldier_year
+```
+
+必填：`soldiers` (兵员数)
+可选：`pay_per_soldier_year`=1500 (每兵年成本（同财政口径）)
+
+养常备军是前工业国家最贵的开支。兵员成本约为普通劳动力产出的 1.5—3 倍，因为脱产、装备、训练都要摊进去。
+
+### fiscal_burden_ratio
+
+**军费占财政比例** · 层级 derived · 领域 society · 主角频率 high · 单位 倍
+
+```
+army_cost / revenue
+```
+
+必填：`army_cost` (军费)、`revenue` (财政收入)
+
+> 1 表示打不起（要么加税要么借债要么裁军）。历史上长期 0.5 以上的国家往往在几十年内崩一次。这是「帝国能不能维持」的直接判据。
+
+## power/food
+
+### grain_yield_total
+
+**粮食总产** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 kg/年
+
+```
+area_hectare * kg_per_hectare * 0.9
+```
+
+必填：`area_hectare` (耕地面积 公顷)
+可选：`kg_per_hectare`=3000 (每公顷年产 kg)
+
+「0.9」是收后损耗与留种。传统农业 1000—3000 kg/公顷，现代农业 6000—8000。这是「能养多少人」的起点。
+
+### population_fed_by_grain
+
+**粮食能供养的人口** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 人
+
+```
+grain_kg * kcal_per_kg * 4184 / (kcal_per_person_day * 365 * 4184)
+```
+
+必填：`grain_kg` (可用粮食 kg/年)
+可选：`kcal_per_kg`=3500 (每公斤热量 kcal)、`kcal_per_person_day`=2200 (人均日需热量 kcal)
+
+纯口粮口径的供养上限。实际要打折——还要饲料、酿酒、纺织、储备。人均 2200 kcal 是温饱线，不是舒适线。
+
+### arable_land_needed
+
+**供养人口所需耕地** · 层级 derived · 领域 society · 主角频率 high · 单位 公顷
+
+```
+population * kcal_per_person_day * 365 / (kg_per_hectare * kcal_per_kg * 0.9)
+```
+
+必填：`population` (人口)
+可选：`kcal_per_person_day`=2200 (人均日需热量 kcal)、`kg_per_hectare`=3000 (每公顷年产 kg)、`kcal_per_kg`=3500 (每公斤热量 kcal)
+
+反向问法：先有一个人口数，反推需要多少耕地。「这个王国养得起两百万人口吗」直接用它。
+
+## power/information
+
+### info_delivery_time
+
+**信息传递耗时** · 层级 phenomenological · 领域 society · 主角频率 high · 单位 天
+
+```
+distance / speed_km_per_day
+```
+
+必填：`distance` (距离 km)
+可选：`speed_km_per_day`=200 (传信速度 km/天)
+
+驿马接力约 200—400 km/天，步行信使约 40 km/天，烽火几乎瞬时但只能传固定信号。这是「政令能不能及时到达」的物理基础。
+
+### admin_radius_from_info
+
+**可有效统治的半径** · 层级 derived · 领域 society · 主角频率 high · 单位 km
+
+```
+speed_km_per_day * max_days / 2
+```
+
+可选：`speed_km_per_day`=200 (传信速度 km/天)、`max_days`=20 (可容忍的单程延迟（天）)
+
+「往返一趟还在可控范围内」的半径。除以 2 是因为要算来回。骑马帝国约 2000 km，正是历史上大帝国尺寸相近的原因——不是巧合，是通信速度决定的。
 
 ## social/demography
 

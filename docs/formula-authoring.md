@@ -9,7 +9,7 @@
 | **全局公式包** | `$DSH_HOME/math-calc/formula-packs/global.json` | 所有工作区 | 这套设定里反复用、值得沉淀的公式 |
 | **工作区临时公式** | 工作区 JSON 的 `formulaTable.custom` | 只有当前世界观 | 一次性试算、还没想清楚的公式 |
 
-内置 270 条公式改的是**代码**（`src/formula-library*.ts`）；这两级都不需要改代码、不需要重装。
+内置 404 条公式改的是**代码**（`src/formula-library*.ts`）；这两级都不需要改代码、不需要重装。
 
 ## 全局公式包：文件格式
 

@@ -1,8 +1,15 @@
 {
   "id": "dsh-math-calculator",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "lib/index.js",
   "description": "DSH 原生数学与架空世界推演插件：高精度计算、342 条公式、常数与星球推演。",
-  "engines": { "dsh": ">=0.1.1-rc.2 <0.4.0" },
-  "contributes": { "tools": ["math_execute"], "skills": [] }
+  "engines": {
+    "dsh": ">=0.1.1-rc.2 <0.4.0"
+  },
+  "contributes": {
+    "tools": [
+      "math_execute"
+    ],
+    "skills": []
+  }
 }
