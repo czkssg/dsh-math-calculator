@@ -68,6 +68,19 @@ export interface WorkspaceData {
    * 用发行前的量纲检查发现「公式算出来的不是想要的量」。
    */
   customConstants?: CustomConstant[]
+  /**
+   * 本工作区的**显示**有效位数（不影响计算精度）。
+   *
+   * 为什么存在这里：AI 在对话里读到的每个数字都带着几十位小数，
+   * 逐个自己截断既费 token 又容易出错。定一次、存下来、后续沿用，
+   * 是「让 AI 估计一个够用的精度并固化」的实现方式。
+   *
+   * 计算仍然按 `precision`（默认 64）走，只有输出被截断 ——
+   * 所以 `(10^20+1)-(10^20)` 照样得 1，不会因为显示短了就算错。
+   *
+   * 未设置时沿用计算精度（即完整输出，旧行为）。
+   */
+  displayPrecision?: number
   /** 创建时间。 */
   createdAt: string
   /** 最后修改时间。 */
@@ -874,4 +887,25 @@ export function bindHostWorkspace(
   }
 
   return { bound: true, name, workspaceId: hostId, created: !existed, workspace: data }
+}
+
+/**
+ * 读取当前工作区的显示精度（未设置返回 undefined = 沿用计算精度）。
+ *
+ * 为什么单独做一个函数：工具入口每轮都要问一次「现在显示几位」，
+ * 而这里要吸收掉「工作区文件损坏 / 不存在」等各种异常 ——
+ * 读取失败不该让整个计算挂掉，退回完整输出即可。
+ *
+ * @param name - 工作区名；省略用当前活动工作区
+ * @returns 显示有效位数；未设置返回 undefined
+ */
+export function displayPrecisionOf(name?: string): number | undefined {
+  try {
+    const data = loadWorkspace(name ?? activeWorkspaceName)
+    const value = data.displayPrecision
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined
+    return value
+  } catch {
+    return undefined
+  }
 }

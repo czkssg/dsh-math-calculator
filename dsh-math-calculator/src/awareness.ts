@@ -74,7 +74,13 @@ export const TOOL_DESCRIPTION = [
   '  · 【跨模块一致性】✓/⚠/✗，看到 ✗ 先修正设定；',
   '  · 【模型可信度】标出哪些数只是地球标定，常数偏离现实时会失真。',
   '',
-  '精度默认 64 位（precision 可调 1-256）。失败返回 ok=false + error.hint，按提示修正。',
+  '精度分两层，别混：',
+  '  · precision（计算，默认 64）——调低会算错大数，不要为好看而动；',
+  '  · displayPrecision（显示）——只截输出，不影响计算。整数永远完整。',
+  '  开工时定一次 `workspace action2=set displayPrecision=8` 即可全局变短，',
+  '  省钱省 token；某次要看更多就那一次单独传。',
+  '',
+  '失败返回 ok=false + error.hint，按提示修正。',
 ].join('\n')
 
 /**

@@ -213,10 +213,30 @@ export function opWorkspace(args: MathArgs): Outcome {
             next.variables = { ...next.variables, ...args.workspaceVariables }
           }
           if (args.description) next.description = args.description
+          /**
+           * 显示精度固化。
+           *
+           * 这是「让 AI 自己选一个够用的精度并在对话里固定下来」的入口：
+           * 定一次，后续所有调用自动沿用，不必每轮重传。
+           * 传 0 或 null 表示清除（回到完整输出）。
+           */
+          if (args.displayPrecision !== undefined) {
+            const raw = Number(args.displayPrecision)
+            if (!Number.isFinite(raw) || raw < 0 || raw > 64) {
+              throw new CalcError(
+                'invalid_argument',
+                'displayPrecision 要在 0—64 之间（0 = 清除，恢复完整输出）',
+                '建议值：文学创作 6—8；工程核对 10—12；数论/大整数保持不设（64）',
+              )
+            }
+            if (raw === 0) delete next.displayPrecision
+            else next.displayPrecision = Math.round(raw)
+          }
           return next
         })
         return {
-          result: `✓ 已更新工作区 "${name}"（星球参数 ${Object.keys(data.world).length} 项，变量 ${Object.keys(data.variables).length} 个）`,
+          result: `✓ 已更新工作区 "${name}"（星球参数 ${Object.keys(data.world).length} 项，变量 ${Object.keys(data.variables).length} 个）` +
+            (data.displayPrecision ? `，显示精度 ${data.displayPrecision} 位` : ''),
           value: toJsonValue({ action: 'set', workspace: data }),
         }
       }

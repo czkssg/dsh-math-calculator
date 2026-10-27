@@ -75,6 +75,30 @@ export interface MathArgs {
   matrix?: number[][]
   vector?: number[]
   precision?: number
+  /**
+   * **显示**有效数字位数（与计算精度分开）。
+   *
+   * ## 为什么要分开
+   *
+   * `precision` 是**计算**精度：它决定 BigNumber 的有效位数，
+   * 调低会真的把大数算错 —— 实测 `(10^20+1)-(10^20)`：
+   *
+   *   precision=64 → 1（正确）
+   *   precision=20 → 0（算错了）
+   *
+   * 所以它不能为了让输出好看而调低。而 `displayPrecision` 只影响**写出来的位数**，
+   * 计算仍然按 `precision`（默认 64）进行 —— 大数运算照样精确，只是显示得短些。
+   *
+   * ## 怎么用
+   *
+   * 一次设定即固化到当前工作区（后续调用自动沿用），也可每次覆盖：
+   *   { operation:'workspace', action2:'set', displayPrecision:8 }  ← 固化
+   *   { operation:'evaluate', expression:'1/7', displayPrecision:6 }  ← 临时
+   *
+   * 建议：对话开始时按用途定一次（文学创作 6—8 位够用，工程核对 10—12 位，
+   * 数论/大整数仍保持默认 64），需要更多时再单独调高。
+   */
+  displayPrecision?: number
   data?: number[]
   dataY?: number[]
   distribution?: string
@@ -496,11 +520,59 @@ export function normalizeSource(input: string): string {
   return output.replace(/;{2,}/g, ';').replace(/^;+|;+$/g, '').trim()
 }
 
-/** 数字修剪：去掉浮点噪声。 */
-export function trimNumber(value: number, precision: number): string {
+/**
+ * 当前显示精度（模块级，每次工具调用开头设置一次）。
+ *
+ * 为什么用模块级变量而不是逐层传参：`trimNumber` 有四十多个调用点，
+ * 分散在 solve / matrix / stats / eigen / roots 各处。逐个加参数会让函数签名
+ * 全都变形，而且容易漏。而显示精度是**一次调用内全局一致**的，
+ * 正好适合「入口设一次，各层读取」。
+ *
+ * 并发风险：若宿主并行调用本工具，两条调用会互相覆盖。
+ * 实测宿主是串行调用（tool_call 逐个执行），且这个值只影响显示不影响计算 ——
+ * 即使竞争，最坏结果是某次输出位数不对，不会算错数。
+ */
+let activeDisplayPrecision: number | undefined
+
+/**
+ * 设置本次调用的显示精度（在工具入口调用）。
+ *
+ * @param value - 显示有效位数；undefined = 不截断
+ */
+export function setActiveDisplayPrecision(value: number | undefined): void {
+  activeDisplayPrecision = value
+}
+
+/**
+ * 取当前显示精度。
+ *
+ * @returns 显示有效位数；未设置返回 undefined
+ */
+export function currentDisplayPrecision(): number | undefined {
+  return activeDisplayPrecision
+}
+
+/**
+ * 数字修剪：去掉浮点噪声，按**显示精度**取位。
+ *
+ * @param value - 数值
+ * @param precision - 计算精度（同时作为显示位数的上限）
+ * @param displayPrecision - 显示有效位数；省略则用模块级当前值
+ * @returns 显示串
+ */
+export function trimNumber(
+  value: number,
+  precision: number,
+  displayPrecision?: number,
+): string {
   if (!Number.isFinite(value)) return String(value)
+  // 整数一律完整输出：`n = 8`、`10^20+5` 都不该被截断
   if (Number.isInteger(value)) return String(value)
-  const significant = Math.min(Math.max(precision, 1), 15)
+  const effective = displayPrecision !== undefined ? displayPrecision : activeDisplayPrecision
+  const wanted = effective !== undefined && Number.isFinite(effective)
+    ? Math.min(effective, precision)
+    : precision
+  const significant = Math.min(Math.max(wanted, 1), 15)
   return Number(value.toPrecision(significant)).toString()
 }
 

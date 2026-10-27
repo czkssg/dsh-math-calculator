@@ -43,12 +43,34 @@ export function isIntegerLike(value: any): boolean {
 }
 
 /**
- * 选择一个能暴露出完整精度的格式化方式。
+ * 格式化输出值：**整数完整，小数按显示精度截断**。
  *
- * - 整数 → `notation:'fixed'`（否则 `50!` 会显示成科学计数法，看着像近似值）
- * - 其余 → `notation:'auto'` + 指定有效数字
+ * ## 计算精度 vs 显示精度
+ *
+ * `precision` 是计算精度（BigNumber 的有效位数），拿它直接当显示位数有两个毛病：
+ *   · 64 位全吐出来，一行里六十个数字，人和 AI 都读不下去
+ *   · 真调低 precision 又会**算错大数** —— 实测 `(10^20+1)-(10^20)`
+ *     在 precision=20 时得 0（应为 1）
+ *
+ * 所以拆成两层：计算永远按 `precision`（默认 64）走，显示用 `displayPrecision`。
+ *
+ * ## 整数不做截断
+ *
+ * `10^20+5`、`50!` 这类整数照原样输出。把 `10^20+5` 写成 `1e20` 是**丢信息**，
+ * 不是简洁 —— 作者问「等于多少」，答案就该精确到个位。
+ *
+ * @param math - mathjs 实例
+ * @param value - 待格式化的值
+ * @param precision - 计算精度（BigNumber 有效位数）
+ * @param displayPrecision - 显示有效位数；省略则用计算精度（保持旧行为）
+ * @returns 显示串
  */
-export function formatValue(math: any, value: any, precision: number): string {
+export function formatValue(
+  math: any,
+  value: any,
+  precision: number,
+  displayPrecision?: number,
+): string {
   if (value === undefined) return 'undefined'
   if (value === null) return 'null'
   if (typeof value === 'function') return '[function]'
@@ -58,12 +80,17 @@ export function formatValue(math: any, value: any, precision: number): string {
 
   const isBig = Boolean(value && value.isBigNumber)
   const integer = isIntegerLike(value)
+  // 显示位数只在明确给了、且小于计算精度时才生效
+  const show = typeof displayPrecision === 'number' && Number.isFinite(displayPrecision)
+    ? Math.min(displayPrecision, precision)
+    : precision
 
   try {
     if (isBig && integer) {
       return math.format(value, { notation: 'fixed' })
     }
-    return math.format(value, { notation: 'auto', precision })
+    // 显示精度足够高（接近计算精度）时用 auto，避免丢掉整数位的信息
+    return math.format(value, { notation: 'auto', precision: show })
   } catch {
     try {
       return String(value)

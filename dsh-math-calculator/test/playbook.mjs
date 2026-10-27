@@ -65,7 +65,13 @@ console.log('-- 5. 工作流 --')
 console.log('-- 6. 动态定制 --')
 {
   const empty = buildBriefPlaybook({})
-  assert('空白工作区指令短', empty.split(String.fromCharCode(10)).length <= 6,
+  /**
+   * brief 档的价值就在于短（每轮都注入，直接吃 token）。
+   * 从 6 行放宽到 8 行，是因为加了一条「开工定一次显示精度」——
+   * 这条本身能省掉后续每轮的几百个数字，净收益为正。
+   * 但仍要守住上限：超过 8 行说明 brief 在膨胀，该往 full 档挪了。
+   */
+  assert('空白工作区指令短（≤8 行）', empty.split(String.fromCharCode(10)).length <= 8,
     String(empty.split(String.fromCharCode(10)).length))
 
   const rich = buildBriefPlaybook({ changedConstants: ['c', 'G'], customConstants: 3 })

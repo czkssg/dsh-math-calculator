@@ -128,6 +128,7 @@ import {
   bindHostWorkspace,
   cwdOfExec,
   cwdOfSession,
+  displayPrecisionOf,
   scopeFromCwd,
   setLastExecShape,
   switchWorkspace,
@@ -186,9 +187,11 @@ import {
 import {
   CalcError,
   bignum,
+  currentDisplayPrecision,
   fast,
   normalizeSource,
   safeNumberForJson,
+  setActiveDisplayPrecision,
   trimNumber,
   type MathArgs,
   type MathOperation,
@@ -523,7 +526,7 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
 
   const value = unwrapResult(raw)
   return {
-    result: formatValue(engine, value, precision),
+    result: formatValue(engine, value, precision, currentDisplayPrecision()),
     value: toJsonValue(value),
   }
 }
@@ -987,7 +990,7 @@ function opMatrix(expression: string, engine: any, precision: number, args: Math
     throw translateError(error)
   }
   return {
-    result: formatValue(engine, raw, precision),
+    result: formatValue(engine, raw, precision, currentDisplayPrecision()),
     value: toJsonValue(raw),
   }
 }
@@ -1511,7 +1514,7 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
   }
 
   const parts = [describeFormula(formula, expression, resolved.values, resolved.overridden)]
-  parts.push(`结果: ${formatValue(engine, raw, precision)}${formula.unit ? ` ${formula.unit}` : ''}`)
+  parts.push(`结果: ${formatValue(engine, raw, precision, currentDisplayPrecision())}${formula.unit ? ` ${formula.unit}` : ''}`)
 
   /**
    * 经验公式的适用性提示。
@@ -1840,9 +1843,26 @@ export function runMathTool(rawArguments: unknown): MathResult {
 
   let operation: MathOperation = 'auto'
   let precision = DEFAULT_PRECISION
+  /** 显示有效位数；undefined = 未设定（沿用计算精度，即完整输出）。 */
+  let displayPrecision: number | undefined
 
   try {
     precision = clampPrecision(args.precision)
+    /**
+     * 显示精度：本次显式给 > 工作区固化值 > 沿用计算精度。
+     *
+     * 优先级这样排，是为了让「临时想看更多」不必改工作区设置：
+     *   · 对话开始时定一次（workspace set displayPrecision）
+     *   · 某次需要更多，那一次单独传 displayPrecision 即可
+     */
+    displayPrecision = clampDisplayPrecision(args.displayPrecision) ?? displayPrecisionOf()
+    /**
+     * 设成模块级，让 trimNumber（solve / matrix / stats 等四十多个调用点）自动生效。
+     *
+     * 不逐个改函数签名，是因为「显示精度在一次调用内全局一致」——
+     * 入口设一次即可，各层读同一个值。
+     */
+    setActiveDisplayPrecision(displayPrecision)
     const variable = normalizeVariable(args.variable)
     const requested = normalizeOperation(args.operation)
     const known = knownNumbers(args.variables)
@@ -2043,6 +2063,24 @@ function clampPrecision(value: unknown): number {
   return Math.min(MAX_PRECISION, Math.max(MIN_PRECISION, Math.round(numeric)))
 }
 
+/**
+ * 解析**显示**精度。
+ *
+ * 与 `clampPrecision` 的区别：这个不影响计算，只影响写出来的位数，
+ * 所以允许更宽的范围（1—64）并且**允许返回 undefined**（= 不截断）。
+ *
+ * 传 0 视为「清除」，与工作区的约定一致。
+ *
+ * @param value - 原始参数
+ * @returns 显示位数；未给或非法返回 undefined
+ */
+function clampDisplayPrecision(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const numeric = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return undefined
+  return Math.min(64, Math.max(1, Math.round(numeric)))
+}
+
 function normalizeVariable(value: unknown): string {
   if (typeof value !== 'string' || value.trim() === '') return DEFAULT_VARIABLE
   const trimmed = value.trim()
@@ -2210,7 +2248,21 @@ const PARAMETER_SPEC = {
   },
   precision: {
     type: 'integer',
-    description: 'BigNumber 有效数字位数，默认 64，范围 1-256。',
+    description:
+      '**计算精度**：BigNumber 有效数字位数，默认 64，范围 1-256。' +
+      '⚠️ 不要为了「输出好看」调低它——它决定计算的正确性：' +
+      '`(10^20+1)-(10^20)` 在 precision=20 时会得 0（应为 1）。' +
+      '只想让输出短一些，用 displayPrecision。',
+  },
+  displayPrecision: {
+    type: 'integer',
+    description:
+      '**显示精度**：输出保留几位有效数字（1-64）。只影响写出来的位数，**不影响计算**。' +
+      '整数（如 10^20+5、50!）永远完整输出，不会被截断。' +
+      '建议先估计一个「够用但不大」的值并在对话开始时固化一次：' +
+      '`{operation:"workspace", action2:"set", displayPrecision:8}`，' +
+      '之后所有调用自动沿用；某次需要更多时单独传本参数即可；传 0 清除。' +
+      '参考：文学/设定创作 6-8；工程核对 10-12；数论/大整数运算不要设（保持完整）。',
   },
   data: {
     type: 'array',
