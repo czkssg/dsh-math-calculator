@@ -99,6 +99,18 @@ export interface MathArgs {
    * 数论/大整数仍保持默认 64），需要更多时再单独调高。
    */
   displayPrecision?: number
+  /**
+   * 批量表达式（operation=evaluate 的批量模式）。
+   *
+   * 一次算多条，省掉多次工具往返的开销。每条独立报错，
+   * 不会因为一条失败就中断整批。
+   *
+   * 例：`{operation:'evaluate', expressions:['1/7','2^0.5','log(10)']}`
+   *
+   * 为什么值得：每次工具调用都有固定开销（往返 + 结果文本进入上下文），
+   * 算 5 条就多付 5 次。批量把 5 次往返压成 1 次。
+   */
+  expressions?: string[]
   data?: number[]
   dataY?: number[]
   distribution?: string

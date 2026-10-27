@@ -50,37 +50,34 @@ export function getPromptMode(): PromptMode {
 /**
  * 第一层：工具描述。
  *
- * 这是模型**每次**看工具清单时都会读到的内容，所以必须：
- *   - 完整列出 operation（漏一个，模型就不知道它存在）
- *   - 写「何时使用」而不是只写「是什么」
- *   - 给出触发关键词，让模型在遇到这类问题时想起它
+ * 这是模型**每次**看工具清单时都会读到的内容 —— 属于每轮固定成本，
+ * 所以要跟 parameters schema 一样抠字数。
+ *
+ * 压缩原则：
+ *   · **不重复 enum**：operation 的取值已在 schema 的 enum 里列全（300 字符），
+ *     这里再列一遍是纯重复。只保留「怎么选」的判断线索。
+ *   · **能移到 help 的就移**：详细字段表、单位清单等只在用到时才需要，
+ *     放 help 里不占每轮成本。
+ *   · **保留行为约束**：如「必须调本工具」「精度分两层」这类会改变模型行为的，
+ *     不能砍 —— 它们省下的重算远多于自身开销。
  */
 export const TOOL_DESCRIPTION = [
   '本地数学与物理推演引擎（BigNumber 64 位 + 符号代数 + 架空世界推演）。',
   '',
   '⚠️ 数值计算必须调用本工具：不要心算、不要用 bash 拼凑算术。',
-  '触发：算术/三角、解方程、求导积分、矩阵、统计、单位换算、公式求值、',
-  '改常数看后果、推演星球/恒星/卫星/生命、势力收支与承压。',
+  '触发场景：算术/三角、解方程、微积分、线代、统计、单位换算、公式求值、',
+  '改常数看后果、推演星球/恒星/卫星/生命、势力收支。',
   '',
-  'operation（共 30 个；不填=auto，含等号判为方程；完整说明用 help）：',
-  '  求值 evaluate | 方程 solve system | 微积分 derivative integral | 代数 simplify expand roots',
-  '  线代 matrix eigen | 统计 stats dist regression | 微分方程 ode',
-  '  公式 formula formulas | 世界 world | 常数 constants quantities impact',
-  '  单位 units | 收支 balance | 天体 bodies | 推演 derivation（pipeline/dead/flip 等）',
-  '  自创量 custom | 设定校验 feasibility | 数据 workspace formula-table | 自查 help',
+  'operation 见参数 enum（30 个）；不确定用 help。选法：一条式子用 evaluate，',
+  '数据用 stats/dist，改设定后用 world/derivation。',
   '',
   '读输出约定：',
   '  · [精确]/[标度]/[量级]/[仅方向] 是可信度标签，引用时保留；',
   '  · 【跨模块一致性】✓/⚠/✗，看到 ✗ 先修正设定；',
   '  · 【模型可信度】标出哪些数只是地球标定，常数偏离现实时会失真。',
   '',
-  '精度分两层，别混：',
-  '  · precision（计算，默认 64）——调低会算错大数，不要为好看而动；',
-  '  · displayPrecision（显示）——只截输出，不影响计算。整数永远完整。',
-  '  开工时定一次 `workspace action2=set displayPrecision=8` 即可全局变短，',
-  '  省钱省 token；某次要看更多就那一次单独传。',
-  '',
-  '失败返回 ok=false + error.hint，按提示修正。',
+  '精度分两层：precision（计算，默认 64，调低会算错大数）不要为好看而动；',
+  'displayPrecision（显示，只截输出，不影响计算）。整数永远完整输出，不会被截断。',
 ].join('\n')
 
 /**

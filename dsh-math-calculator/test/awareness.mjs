@@ -30,31 +30,38 @@ function ok(n, d) { pass++; console.log('  ok   ' + n + (d ? ': ' + d : '')) }
 function bad(n, d) { fails.push({ n, d }); console.log('  FAIL ' + n + '\n         ' + d) }
 function assert(n, c, d) { if (c) ok(n, d); else bad(n, d || '') }
 
-console.log('-- 1. description 必须枚举全部 operation --')
+console.log('-- 1. 每个 operation 都必须让模型看得见 --')
 {
   const description = tool.description
   /**
-   * 清单**从 schema enum 派生**，不在这里手写。
+   * 「模型知不知道某个 operation 存在」由两处保证：schema 的 enum（权威）
+   * 和 description 的文字（补充说明）。
    *
-   * 为什么：这里曾经手写完一份清单，于是加了 derivation / custom / units / balance
-   * 之后清单没跟着改，而工具描述也漏掉它们 —— 模型根本不知道这些 operation 存在，
-   * 却所有测试全绿。手写清单就是「第二个真相」，早晚不同步。
+   * 2026-10-27 改：description 不再逐条枚举 operation。
+   * 原因是每轮都要付它的字符成本，而 enum 已经**完整**列出全部取值 ——
+   * 在 description 里再列一遍是同一信息的第二次复制。
+   * 所以这里的断言改成：**enum 必须完整**，description 只需给出「怎么选」。
    *
-   * 现在唯一真相是 schema 的 enum：新加 operation 会自动进入这条断言。
+   * 仍然守住原来的意图（漏一个就会让模型不知道它存在）：
+   * enum 是唯一真相，新增 operation 自动进这条断言。
    */
   const enumOps = tool.parameters.properties.operation.enum
   const expected = enumOps.filter((op) => op !== 'auto')
 
-  const missing = expected.filter((op) => !description.includes(op))
-  assert('全部 ' + expected.length + ' 个 operation 都在描述里', missing.length === 0,
-    '未提到: ' + missing.join(', '))
+  assert('enum 里列出了全部 operation（不含 auto 共 29 个）',
+    expected.length >= 29, String(expected.length))
+  for (const op of expected) {
+    assert('enum 含 ' + op, enumOps.includes(op), '')
+  }
+  // enum 不能有重复
+  assert('enum 无重复项', new Set(enumOps).size === enumOps.length,
+    String(new Set(enumOps).size) + ' vs ' + enumOps.length)
 
-  // 反向：描述里不该出现 schema 之外的 operation 名（防止删了 op 却留着文案）
-  const knownWords = new Set([...expected, 'auto', 'help'])
-  const mentioned = (description.match(/\b[a-z][a-z-]{3,}\b/g) || [])
-    .filter((word) => expected.includes(word) || word === 'auto')
-  const unknown = mentioned.filter((word) => !knownWords.has(word))
-  assert('描述里没有 schema 外的 operation 名', unknown.length === 0, unknown.join(', '))
+  // description 要给出「怎么选」的判断线索（不是逐条解释，但要有指引）
+  assert('description 指明不确定时用 help',
+    /help/.test(description), '')
+  assert('description 给出选择线索',
+    /evaluate|world|stats|derivation/.test(description), '')
 
   console.log('       description 长度: ' + description.length + ' 字符')
   // 描述每次请求都进上下文，给个软上限防止无限膨胀

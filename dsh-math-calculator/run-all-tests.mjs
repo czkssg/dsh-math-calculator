@@ -77,7 +77,7 @@ const SUITES = [
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
   { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
   { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
-  { file: 'awareness.mjs', expect: 31, label: '模型感知（提示注入）' },
+  { file: 'awareness.mjs', expect: 62, label: '模型感知（提示注入）' },
   { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
   { file: 'hook.mjs', expect: 25, label: 'agent/pre-step 钩子' },
   { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
@@ -144,6 +144,9 @@ const SUITES = [
   // 核心不变量：降低显示精度**绝不改变计算结果**（(10^20+1)-(10^20) 永远是 1），
   // 且整数永不截断（10^20+5、50! 一位不少）。
   { file: 'display-precision.mjs', expect: 46, label: '显示精度（AI 自选位数/可固化/不改计算）' },
+  // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
+  // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
+  { file: 'slim-and-cache.mjs', expect: 60, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
 ]
 
 /** 跑一个测试文件，返回 stdout 与退出码。 */

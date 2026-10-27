@@ -211,6 +211,7 @@ import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
+import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
 
 // ────────────────────────────────────────────────────────────────────────────
 // 类型
@@ -235,6 +236,14 @@ export interface MathResult {
   value?: JsonValue
   variables?: { [key: string]: JsonValue }
   error?: { type: string; message: string; hint?: string }
+  /**
+   * 本次结果来自缓存（未重新计算）。
+   *
+   * 为什么要暴露：AI 需要知道「这个数是刚算的还是回忆的」——
+   * 若它以为自己刚验证过而实际只是缓存，会把「没改过设定」误当成「验证通过」。
+   * 改动常数或切换工作区后缓存键会变，所以不会出现「改了设定还拿旧值」。
+   */
+  cached?: boolean
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -264,6 +273,14 @@ const MAX_INPUT_LENGTH = 4_000
  * 留给「世界观推演」足够大的复杂网络。再大就接近 1~2 秒，性价比下降。
  */
 const MAX_MATRIX_SIZE = 200
+/**
+ * 批量求值的条数上限。
+ *
+ * 为什么不设很大：批量是为了省往返，不是拿来跑百万条数据的。
+ * 100 条已能覆盖「一个表格的几列」这类常见需求；再多应该走
+ * 代码沙箱/数据引用（本插件不做），否则结果文本本身就把上下文撑满了。
+ */
+const MAX_BATCH_EXPRESSIONS = 100
 
 const OPERATIONS: readonly MathOperation[] = [
   'auto',
@@ -528,6 +545,81 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   return {
     result: formatValue(engine, value, precision, currentDisplayPrecision()),
     value: toJsonValue(value),
+  }
+}
+
+/**
+ * 批量求值（operation=evaluate 的批量模式）。
+ *
+ * ## 为什么要批量
+ *
+ * 每次工具调用都有固定开销：一次往返 + 结果文本进入上下文。
+ * 算 5 个式子的代价是 5 次往返；批量把 5 次压成 1 次。
+ *
+ * ## 设计要点
+ *
+ * 1. **逐条独立报错**：一条失败不影响其它条 —— 作者常常一次问五件事，
+ *    其中一条写错不该让另外四条白算。
+ * 2. **失败也占用输出行**：明确写出哪条错了、错在哪，而不是静默跳过
+ *    （静默跳过会让人以为「这条没算」而不是「这条错了」）。
+ * 3. **结果紧凑**：一行一条 `表达式 = 值`，不逐条输出完整诊断块。
+ *
+ * @param engine - mathjs 实例
+ * @param expressions - 待算的表达式数组
+ * @param scope - 变量作用域
+ * @param precision - 计算精度
+ * @returns 结果文本与结构化值
+ */
+function opEvaluateBatch(
+  engine: any,
+  expressions: string[],
+  scope: Record<string, any>,
+  precision: number,
+): Outcome {
+  const items = expressions.slice(0, MAX_BATCH_EXPRESSIONS)
+  if (items.length === 0) {
+    throw new CalcError('invalid_argument', 'expressions 为空', '例如 ["1/7","2^0.5"]')
+  }
+
+  const shown: string[] = []
+  const values: Array<{ expression: string; ok: boolean; result?: string; error?: string }> = []
+  let successCount = 0
+  let failCount = 0
+
+  for (const raw of items) {
+    const expression = typeof raw === 'string' ? raw.trim() : String(raw ?? '')
+    if (expression === '') {
+      values.push({ expression, ok: false, error: 'empty' })
+      shown.push('  （空表达式）→ 跳过')
+      failCount++
+      continue
+    }
+    try {
+      const node = engine.parse(expression)
+      guardAst(node)
+      guardComplexity(node)
+      const value = unwrapResult(node.evaluate(scope))
+      const text = formatValue(engine, value, precision, currentDisplayPrecision())
+      values.push({ expression, ok: true, result: text })
+      shown.push('  ' + expression + ' = ' + text)
+      successCount++
+    } catch (error) {
+      const translated = translateError(error)
+      values.push({ expression, ok: false, error: translated.type })
+      // 失败要显眼，但不能长篇大论 —— 一行说清哪条、什么类型
+      shown.push('  ' + expression + ' → 失败[' + translated.type + ']' +
+        (translated.hint ? '：' + translated.hint : ''))
+      failCount++
+    }
+  }
+
+  const header = items.length < expressions.length
+    ? `═══ 批量求值（前 ${items.length} 条，共给了 ${expressions.length} 条）═══`
+    : `═══ 批量求值（${items.length} 条）═══`
+
+  return {
+    result: [header, '', ...shown, '', `成功 ${successCount}，失败 ${failCount}`].join('\n'),
+    value: toJsonValue({ count: items.length, success: successCount, failed: failCount, items: values } as never),
   }
 }
 
@@ -1727,6 +1819,8 @@ function opHelp(): Outcome {
       '【求值与代数】',
       '  evaluate      任意 mathjs 表达式；BigNumber 64 位精度',
       '                例：10^20+5、factorial(50)、(1+2i)*(3-i)、5 cm to inch、sin(30 deg)',
+      '                批量：给 expressions=["1/7","2^0.5","log(10)"] 一次算多条，',
+      '                      逐条独立报错；比多次调用省往返',
       '  solve         解方程。多方程逗号分隔 = 方程组',
       '                例：3x + 2y = 10, x - y = 1  /  x^2 - 5x + 6 = 0',
       '  system        显式线性系统（matrix + vector）',
@@ -1772,7 +1866,26 @@ function opHelp(): Outcome {
       '【世界观推演】',
       '  world         输入星球参数 → 体感画像：重力/昼夜/季节/纬度气候/地形上限 +',
       '                天空配色/恒星结构与寿命/卫星系统/化学窗口/生命闸门/跨模块一致性检查',
+      '                【world 完整字段表】（全部可选，默认地球）',
+      '                  恒星：starMass(太阳质量)、starRadius(太阳半径)、starTemp(K,默认5778)',
+      '                  轨道：orbitAU(AU,默认1)、eccentricity(默认0.0167)',
+      '                  行星：planetMass(地球质量)、planetRadius(地球半径)、rotationHours(默认23.93)、',
+      '                        obliquityDeg(默认23.44)、albedo(默认0.306)',
+      '                  大气：pressure(Pa,默认101325)、molarMass(kg/mol,默认0.02896)、',
+      '                        gamma(默认1.4)、greenhouse(增温K,默认33)',
+      '                  地表：materialStrength(Pa,默认1.3e8花岗岩)、materialDensity(默认2700)',
+      '                  地形 terrain（附带）：kind=coastal/plain/plateau/mountain/valley/desert/',
+      '                        forest/tundra/island/lake；elevation(海拔m)、distanceToSea(km)、',
+      '                        latitudeDeg、annualPrecipMm、humidity(0-1)、windward(1迎风/-1背风)、',
+      '                        reliefHeight(m)、oceanCurrent=warm/cold/none、',
+      '                        surface=soil/sand/rock/ice/water/vegetation',
       '  constants     改变物理常数，自动推导派生量并评估世界偏离度',
+      '                【可改的基础旋钮】c(光速) / G(引力常数) / h(普朗克) / kB(玻尔兹曼) /',
+      '                  e_charge(元电荷) / me(电子质量) / mp(质子质量) / NA(阿伏伽德罗) /',
+      '                  epsilon0(真空介电常数)',
+      '                【派生量，自动跟随，不能直接改】hbar / R / mu0 / kCoulomb / sigma /',
+      '                  bWien / alpha_fs / Ry / muB',
+      '                例：{c:1.5e8} → mu0/sigma/alpha_fs 等自动重算并评估偏离度',
       '  quantities    看哪些物理量该跟着常数变、哪些不该（量纲分析 + 缩放指数）',
       '  impact        改常数后跑全部公式并与现实对比，算每条偏差',
       '  units         单位换算：把「三里」「两丈」「五百斤」换成标准单位',
@@ -1896,7 +2009,95 @@ export function runMathTool(rawArguments: unknown): MathResult {
       }
     }
 
+    /**
+     * ── 缓存查询 ──
+     *
+     * 只缓存**纯计算型** operation：它们的结果只取决于参数、常数与工作区，
+     * 不随时间变化。`world`/`derivation`/`impact`/`bodies` 这类也确定，
+     * 但输出较长、不是高频重复对象，缓存收益低于占位成本，故不纳入。
+     *
+     * `workspace` / `formula-table` / `promptMode` 有**副作用**（会改状态），
+     * 绝不能缓存 —— 命中会跳过副作用，行为就变了。
+     *
+     * 键里必须含常数与工作区指纹：改常数后同一式子结果不同，
+     * 漏了这条会静默返回「改之前」的数。
+     */
+    const CACHEABLE: MathOperation[] = [
+      'auto', 'evaluate', 'solve', 'system', 'derivative', 'integral',
+      'simplify', 'expand', 'roots', 'matrix', 'eigen', 'stats', 'dist',
+      'regression', 'ode', 'formula', 'units',
+    ]
+    /**
+     * 状态变更类操作：先清空缓存，再走正常流程。
+     *
+     * 为什么必须在**查询之前**清：这些操作会改变后续计算的结果
+     * （改公式表覆盖、切工作区、改常数、改显示精度），
+     * 而其自身不在 CACHEABLE 里，所以不会被缓存命中 ——
+     * 但它们影响过的**下游计算**仍在缓存里，不清就会拿到旧值。
+     *
+     * 实测踩到：先覆盖 kinetic_energy 公式算出 18，移除覆盖后
+     * 再算同一公式仍得 18（缓存命中），而正确答案是 9。
+     * 这类错很隐蔽——两个数都是「算出来的」，只是后者属于旧公式表。
+     */
+    const MUTATING: MathOperation[] = ['workspace', 'formula-table']
+    if (MUTATING.includes(operation)) {
+      clearCache()
+    }
+
+    let cacheHitKey: string | undefined
+    if (CACHEABLE.includes(operation)) {
+      try {
+        /**
+         * 缓存键用**整个 args 的稳定序列化**，而不是手动列举几个参数。
+         *
+         * 为什么改（踩过）：最初只列了 expression/formula/overrides/data 等几项，
+         * 结果 `dist` 的 `distribution`/`params`/`x` 没进键 ——
+         * 先算正态分布、再算二项分布时**命中了正态的结果**，
+         * 二项 PMF 返回了正态的 PDF。这类串键的错最难发现（结果看着像个正常的数）。
+         *
+         * 现在把 args 全量序列化（排除纯显示选项），漏一个参数的可能性归零。
+         * 代价是多算几次字符串，与「算错」比起来不值一提。
+         */
+        const { displayPrecision: _dp, promptMode: _pm, ...restForCache } = args as Record<string, unknown>
+        const key = cacheKey([
+          operation,
+          precision,
+          displayPrecision ?? -1,
+          stableArgs(restForCache),
+          activeWorkspaceNameForCache(),
+          constantsFingerprint(),
+        ])
+        const cached = getCached(key)
+        if (cached !== undefined) {
+          cacheHitKey = key
+          // 命中：直接返回，但仍标注是缓存结果，便于观察
+          return { ...(cached as MathResult), cached: true }
+        }
+        cacheHitKey = key
+      } catch {
+        /* 缓存键构造失败不影响计算（可能含不可序列化的参数） */
+      }
+    }
+
     let outcome: Outcome
+    /**
+     * 批量模式优先：给了 expressions 就走批量，忽略单条 expression。
+     *
+     * 不缓存批量结果：批量通常是一次性探查（同一批式子很少重复出现），
+     * 缓存它们只会挤占单条计算的位置。
+     */
+    if (Array.isArray(args.expressions) && args.expressions.length > 0) {
+      outcome = opEvaluateBatch(engine, args.expressions, scope, precision)
+      const batchResult: MathResult = {
+        ok: true,
+        operation: 'evaluate',
+        input: args.expressions.join(' ; ').slice(0, 200),
+        result: outcome.result,
+        precision,
+      }
+      if (outcome.value !== undefined) batchResult.value = outcome.value
+      return batchResult
+    }
     switch (operation) {
       case 'help':
         outcome = opHelp()
@@ -2029,6 +2230,14 @@ export function runMathTool(rawArguments: unknown): MathResult {
         '常见于除以零、tan(π/2)、log(0)。若要符号形式可改用 operation="simplify"。',
       )
     }
+    // 写缓存（只在成功路径；错误不缓存，否则同一个错会一直被命中）
+    if (cacheHitKey !== undefined) {
+      try {
+        setCached(cacheHitKey, result)
+      } catch {
+        /* 写入失败不影响返回 */
+      }
+    }
     return result
   } catch (error) {
     const translated = translateError(error)
@@ -2061,6 +2270,74 @@ function clampPrecision(value: unknown): number {
   const numeric = typeof value === 'number' ? value : Number.NaN
   if (!Number.isFinite(numeric)) return DEFAULT_PRECISION
   return Math.min(MAX_PRECISION, Math.max(MIN_PRECISION, Math.round(numeric)))
+}
+
+/**
+ * 常数指纹：把当前生效的常数压成一个稳定字符串，用于缓存键。
+ *
+ * 为什么必须有它：改了 c 之后，同样的表达式结果不同。
+ * 若缓存键不含常数，命中时会返回「改之前」的数 —— 那是静默错误，
+ * 而且是本插件最不能出的那种错（作者以为看到的是新宇宙的结果）。
+ *
+ * 只取**基础旋钮**就够：派生量由它们唯一决定。
+ *
+ * @returns 指纹字符串
+ */
+function constantsFingerprint(): string {
+  try {
+    const active = getActiveConstants() as Record<string, unknown>
+    const keys = Object.keys(active).sort()
+    return keys.map(function (key) {
+      const value = active[key]
+      return key + '=' + (typeof value === 'number' ? value.toPrecision(15) : String(value))
+    }).join(';')
+  } catch {
+    // 读不到就返回随机值，等于禁用缓存（宁可慢，不可错）
+    return 'unknown-' + Math.random()
+  }
+}
+
+/**
+ * 当前工作区名（缓存键用）。
+ *
+ * 不同工作区有各自的公式表、自定义常数与变量，
+ * 同一个表达式可能给出不同结果，所以必须进键。
+ *
+ * @returns 工作区名
+ */
+function activeWorkspaceNameForCache(): string {
+  try {
+    return currentWorkspace()
+  } catch {
+    return 'unknown-' + Math.random()
+  }
+}
+
+/**
+ * 把参数对象序列化成稳定字符串（缓存键用）。
+ *
+ * 与 `stableStringify` 的区别：这个专为「可能含各种嵌套」的调用参数而写，
+ * 遇到不可序列化的值就退化成类型标记 —— 宁可少命中，不可串键。
+ *
+ * @param value - 参数值
+ * @returns 稳定字符串
+ */
+function stableArgs(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  const kind = typeof value
+  if (kind === 'number') {
+    return Number.isFinite(value as number) ? (value as number).toPrecision(15) : String(value)
+  }
+  if (kind === 'string' || kind === 'boolean') return String(value)
+  if (Array.isArray(value)) return '[' + value.map(stableArgs).join(',') + ']'
+  if (kind === 'object') {
+    const object = value as Record<string, unknown>
+    const keys = Object.keys(object).sort()
+    return '{' + keys.map(function (key) {
+      return key + ':' + stableArgs(object[key])
+    }).join(',') + '}'
+  }
+  return '?' + kind
 }
 
 /**
@@ -2151,6 +2428,12 @@ const PARAMETER_SPEC = {
       '数学表达式、方程或待处理数据。多方程用逗号分隔（3x + 2y = 10, x - y = 1）。' +
       '例：10^20 + 5、factorial(50)、x^3 * sin(x)、[[1,2],[3,4]] * [[5],[6]]、[1,2,3,4]。operation=help 时可空。',
   },
+  expressions: {
+    type: 'array',
+    description:
+      '批量求值（operation=evaluate）：一次算多条，省多次往返。' +
+      '逐条独立报错，一条失败不影响其它条。例：["1/7","2^0.5","log(10)"]。',
+  },
   variables: {
     type: 'object',
     additionalProperties: true,
@@ -2159,10 +2442,11 @@ const PARAMETER_SPEC = {
   operation: {
     type: 'string',
     enum: OPERATIONS,
+    // 不逐个解释每个 operation 名称：enum 里已经列全，而 `help` 有完整说明。
+    // 这里只给「怎么选」的判断线索，那才是 AI 真正需要的。
     description:
-      '默认 auto。evaluate=求值，solve=解方程（多方程自动识别为线性方程组），system=显式线性系统，' +
-      'derivative=求导，integral=符号积分，simplify=化简，expand=展开，roots=多项式求根，' +
-      'matrix=矩阵运算，eigen=特征值/特征向量，stats=描述统计，dist=概率分布，regression=回归，help=能力清单。',
+      '默认 auto。简易算式用 evaluate；数据用 stats/dist/regression；' +
+      '改动设定后用 world/derivation；不确定就调 help 看全表。',
   },
   variable: {
     type: 'string',
@@ -2189,17 +2473,14 @@ const PARAMETER_SPEC = {
     type: 'array',
     description:
       '项目自定义单位，可覆盖内置（如把「里」定成 576 m）。' +
-      '每项 {name, dimension, factor, aliases?, note?}，factor 是换成该量纲基准单位的系数。' +
-      'dimension 可用：length/mass/time/area/volume/energy/power/temperature/speed。',
+      '每项 {name, dimension, factor}；dimension 见 help。',
   },
   balance: {
     type: 'object',
     additionalProperties: true,
     description:
-      '收支盘点（operation=balance）。每项 {demand: 需求量, supply: 能提供多少, unit?: 单位}。' +
-      '内置键名 grain/water/energy/land/fiscal/army/info，也可自定。' +
-      '给最短板 K=min(supply/demand)，回答「几项一起看这个势力撑不撑得住」。' +
-      '只判社会收支；单项生理/工程上限请用 feasibility。',
+      '收支盘点（operation=balance）：每项 {demand, supply, unit?}，给最短板。' +
+      '只判社会收支；单项生理/工程上限用 feasibility。',
   },
   bodyName: {
     type: 'string',
@@ -2257,12 +2538,9 @@ const PARAMETER_SPEC = {
   displayPrecision: {
     type: 'integer',
     description:
-      '**显示精度**：输出保留几位有效数字（1-64）。只影响写出来的位数，**不影响计算**。' +
-      '整数（如 10^20+5、50!）永远完整输出，不会被截断。' +
-      '建议先估计一个「够用但不大」的值并在对话开始时固化一次：' +
-      '`{operation:"workspace", action2:"set", displayPrecision:8}`，' +
-      '之后所有调用自动沿用；某次需要更多时单独传本参数即可；传 0 清除。' +
-      '参考：文学/设定创作 6-8；工程核对 10-12；数论/大整数运算不要设（保持完整）。',
+      '**显示精度**：输出保留几位有效数字（1-64），只截输出、不影响计算，整数永不截断。' +
+      '开工时定一次 `{operation:"workspace",action2:"set",displayPrecision:8}` 即全局生效；' +
+      '单次需要更多时传本参数；0 清除。不要用 precision 达此目的（会算错大数）。',
   },
   data: {
     type: 'array',
@@ -2338,14 +2616,12 @@ const PARAMETER_SPEC = {
   world: {
     type: 'object',
     additionalProperties: true,
+    // 字段清单不写在 schema 里：schema 每轮都要付费，而这些字段只在
+    // 真用 world 时才需要。全文见 help（operation="help", query="world"）。
     description:
-      'operation="world" 的世界参数，**全部可选，默认地球**。只改你想改的那几个即可。\n' +
-      '恒星：starMass(太阳质量)、starRadius(太阳半径)、starTemp(K,默认5778)\n' +
-      '轨道：orbitAU(AU,默认1)、eccentricity(默认0.0167)\n' +
-      '行星：planetMass(地球质量,默认1)、planetRadius(地球半径,默认1)、rotationHours(默认23.93)、obliquityDeg(默认23.44)、albedo(默认0.306)\n' +
-      '大气：pressure(Pa,默认101325)、molarMass(kg/mol,默认0.02896)、gamma(默认1.4)、greenhouse(增温K,默认33)\n' +
-      '地表：materialStrength(Pa,默认1.3e8花岗岩)、materialDensity(默认2700)\n' +
-      '例：{"planetRadius":1.4,"rotationHours":40,"obliquityDeg":45,"greenhouse":10}',
+      '星球参数（operation=world），全部可选，默认地球。' +
+      '常用键：planetMass/planetRadius（地球倍数）、starMass/starTemp、rotationHours、obliquityDeg、greenhouse。' +
+      '完整字段表见 help 的 world 条目。',
   },
   planetRadius: {
     type: 'number',
@@ -2366,24 +2642,18 @@ const PARAMETER_SPEC = {
   terrain: {
     type: 'object',
     additionalProperties: true,
+    // 同上：地形字段有九项，逐项列在 schema 里太贵。
     description:
-      'operation="world" 的局部地形推演。给了就会额外输出该地点的气候细节。\n' +
-      'kind: coastal/plain/plateau/mountain/valley/desert/forest/tundra/island/lake\n' +
-      'elevation: 海拔 m | distanceToSea: 距海 km | latitudeDeg: 纬度\n' +
-      'annualPrecipMm: 基准年降水 mm | humidity: 0-1\n' +
-      'windward: 1=迎风坡, -1=背风坡 | reliefHeight: 山峰相对高度 m\n' +
-      'oceanCurrent: warm/cold/none | surface: soil/sand/rock/ice/water/vegetation\n' +
-      '例：{"kind":"coastal","elevation":20,"distanceToSea":5,"latitudeDeg":60,"oceanCurrent":"warm"}',
+      '局部地形（operation=world 附带），给了就额外输出该地点气候细节。' +
+      '常用键：kind、elevation、latitudeDeg、oceanCurrent。完整键表见 help。',
   },
   constants: {
     type: 'object',
     additionalProperties: true,
+    // 旋钮清单移进 help：只有要改常数时才需要，不该每轮付费
     description:
-      'operation="constants" 要改的物理常数（**只能改基础旋钮**，派生量会自动重算）。\n' +
-      '基础旋钮: c(光速) / G(引力常数) / h(普朗克) / kB(玻尔兹曼) / e_charge(元电荷) / ' +
-      'me(电子质量) / mp(质子质量) / NA(阿伏伽德罗) / epsilon0(真空介电常数)\n' +
-      '派生量（会自动跟随，不能直接改）: hbar, R, mu0, kCoulomb, sigma, bWien, alpha_fs, Ry, muB\n' +
-      '例：{"c": 1.5e8} 会让 mu0/sigma/alpha_fs 等自动重算，并评估世界偏离程度。',
+      '要改的物理常数（operation=constants），只能改基础旋钮，派生量自动重算。' +
+      '例：{c:1.5e8}。可用旋钮清单见 help 的 constants 条目。',
   },
 } as const
 
