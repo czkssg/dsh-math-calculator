@@ -163,7 +163,16 @@ console.log('-- 7. 提醒文案按档位区分 --')
   const forced = d.buildReminderMessage(d.detectMathNeed('把CSV里所有销售额加起来'))
   assert('forced 文案强调「容易出错」', /容易出错|看不出来/.test(forced), forced.slice(0, 40))
 
-  const fuzzy = d.buildReminderMessage(d.detectMathNeed('这颗星球逃逸速度多少'))
+  /**
+   * fuzzy 档要用**确实落在 fuzzy** 的句子。
+   *
+   * 原来这里用「这颗星球逃逸速度多少」—— 但盲测后物理/天文词已升级为强信号，
+   * 那条现在归 forced。改用一条只有疑问词、不含强信号的句子。
+   */
+  const fuzzyText = '这条路线大概要花多少时间'
+  const fuzzyDetection = d.detectMathNeed(fuzzyText)
+  assert('选用的句子确实在 fuzzy 档', fuzzyDetection.demandClass === 'fuzzy', fuzzyDetection.demandClass)
+  const fuzzy = d.buildReminderMessage(fuzzyDetection)
   assert('fuzzy 文案更温和', /可以用/.test(fuzzy), fuzzy.slice(0, 40))
 
   // 两档不该完全相同
