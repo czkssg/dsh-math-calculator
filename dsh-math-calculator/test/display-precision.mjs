@@ -227,7 +227,7 @@ console.log('-- 7. 提示词与 schema 都写明了用法 --')
   assert('brief 给了具体例子', /displayPrecision/.test(brief), '')
 }
 
-console.log('-- 8. 精度提示走 notice 字段（不污染 result）--')
+console.log('-- 8. 提示只在真丢精度时出现（不污染 result）--')
 {
   freshHome('hint')
 
@@ -237,24 +237,37 @@ console.log('-- 8. 精度提示走 notice 字段（不污染 result）--')
    * 这是修过的设计：最初把提示拼进 result，结果 `0.1+0.2` 从 `0.3`
    * 变成「0.3 + 一行提示」，一次跑挂 8 个套件 —— 所有精确相等断言全废。
    * `result` 是数据通道，必须干净；`notice` 只用于渲染。
+   *
+   * 2026-11-02 再改：**普通计算不再带通用提示**。
+   * 实测反馈——一次 60+ 次调用的会话里，那条「显示精度 8 位小数…」
+   * 出现了 60+ 次，是纯噪音。现在只在**真的丢精度**（相对误差 > 万分之一）
+   * 时才提示，且内容具体。
    */
-  const first = await run({ operation: 'evaluate', expression: '1/7' })
-  assert('result 干净（不含提示）', !/显示精度/.test(String(first.result)), String(first.result))
-  assert('notice 字段带提示', /显示精度/.test(String(first.notice || '')), String(first.notice || '').slice(0, 40))
+  const ordinary = await run({ operation: 'evaluate', expression: '1/7' })
+  assert('普通计算 result 干净', !/显示精度|科学计数法/.test(String(ordinary.result)),
+    String(ordinary.result))
+  assert('普通计算不带提示（1/7 误差 1e-9）', ordinary.notice === undefined,
+    String(ordinary.notice || '(无)'))
+
+  // 整数结果同样不带提示
+  const intCase = await run({ operation: 'evaluate', expression: '10^20+5' })
+  assert('整数结果不带提示', intCase.notice === undefined, String(intCase.notice || '(无)'))
+
+  // 真正丢精度时（σ 在 8 位小数下误差 5.8%）才提示
+  const tiny = await run({ operation: 'evaluate', expression: '5.670374419e-8' })
+  assert('极小值带提示', /科学计数法/.test(String(tiny.notice || '')), String(tiny.notice || '').slice(0, 46))
+  assert('提示只在 notice 里，result 仍干净',
+    !/科学计数法/.test(String(tiny.result)), String(tiny.result))
 
   // 渲染时才出现提示
-  const rendered = tool.output.render({}, first)[0].text
-  assert('渲染文本含提示', /显示精度/.test(rendered), rendered.slice(0, 60))
+  const rendered = tool.output.render({}, tiny)[0].text
+  assert('渲染文本含提示', /科学计数法/.test(rendered), rendered.slice(0, 60))
 
-  // 整数结果不该有提示（没有小数就没有截断问题）
-  const intCase = await run({ operation: 'evaluate', expression: '10^20+5' })
-  assert('整数结果不带提示', !/显示精度/.test(String(intCase.notice || '')), String(intCase.notice || ''))
-
-  // 已固化的工作区不提示
+  // 已固化的工作区里，普通计算仍不提示
   freshHome('hint2')
   await run({ operation: 'workspace', action2: 'set', displayPrecision: 10 })
   const withPin = await run({ operation: 'evaluate', expression: '1/7' })
-  assert('已固化显示精度时不提示', !/显示精度/.test(String(withPin.notice || '')), String(withPin.notice || ''))
+  assert('已固化时普通计算不提示', withPin.notice === undefined, String(withPin.notice || '(无)'))
 }
 
 try {

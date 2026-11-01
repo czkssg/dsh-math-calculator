@@ -79,18 +79,43 @@ console.log('-- 2. 精度足够时不提醒（相对误差小）--')
   }
 }
 
-console.log('-- 3. 相对误差大时必须提醒 --')
+console.log('-- 3. 相对误差大时：自动改用科学计数法 + 说明 --')
 {
   /**
    * 小数值是重灾区：8 位小数只留下很少的有效数字。
    */
-  const RISKY = ['0.00000123456789', '0.000000123456789']
-  for (const expr of RISKY) {
+  /**
+   * 小数值是重灾区：8 位小数只留下很少的有效数字。
+   *
+   * 2026-11-02 起不再只是「提醒」，而是**自动换成科学计数法**保住数据 ——
+   * 提醒只能让读者警觉，换格式才是真的不丢精度。
+   */
+  const RISKY = [
+    ['0.00000123456789', '1.23456789e-6'],
+    ['0.000000123456789', '1.23456789e-7'],
+  ]
+  for (const [expr, expected] of RISKY) {
     const r = await call({ operation: 'evaluate', expression: expr })
-    assert(expr + ' 报精度不足', /相对误差/.test(r.notice), r.notice.slice(0, 50))
-    assert(expr + ' 提示里给了建议位数', /displayPrecision:\d+/.test(r.notice),
-      r.notice.slice(0, 60))
+    assert(expr + ' 自动改用科学计数法', r.result === expected, r.result + '（期望 ' + expected + '）')
+    assert(expr + ' 提示说明原因', /科学计数法/.test(r.notice), r.notice.slice(0, 50))
+    assert(expr + ' 提示给了建议位数', /displayPrecision:\d+/.test(r.notice), r.notice.slice(0, 66))
   }
+}
+
+console.log('-- 3b. 文档 P0-1 的核心案例：σ 不能丢精度 --')
+{
+  /**
+   * 实测反馈里最危险的一条：斯特藩-玻尔兹曼常数 σ = 5.670374419e-8。
+   *
+   * 旧行为在 8 位小数下显示成  —— 相对误差 **5.8%**，
+   * 而那个数字看起来完全正常，不会引起怀疑。
+   */
+  const sigma = await call({ operation: 'evaluate', expression: '5.670374419e-8' })
+  assert('σ 不再显示成 0.00000006', sigma.result !== '0.00000006', sigma.result)
+  assert('σ 用科学计数法', /e-8$/.test(sigma.result), sigma.result)
+  const shown = Number(sigma.result)
+  const rel = Math.abs(shown - 5.670374419e-8) / 5.670374419e-8
+  assert('σ 显示值的相对误差 < 1e-6', rel < 1e-6, rel.toExponential(2))
 }
 
 console.log('-- 4. 关键判据：用相对误差而非绝对小数位 --')
@@ -102,18 +127,19 @@ console.log('-- 4. 关键判据：用相对误差而非绝对小数位 --')
    * 如果实现改用「小数位数绝对值」判断，这条就会误报。
    */
   const big = await call({ operation: 'evaluate', expression: '123456.789012345' })
-  assert('大数 8 位小数不误报', !/相对误差/.test(big.notice), big.notice.slice(0, 40))
+  assert('大数 8 位小数不提示（相对误差仅 4e-14）', !/科学计数法/.test(big.notice), big.notice.slice(0, 40))
   assert('大数确实保留了 8 位小数', /123456\.\d{8}/.test(big.result), big.result)
 }
 
-console.log('-- 5. 显式指定 displayPrecision 时不提醒 --')
+console.log('-- 5. 显式指定时尊重用户（不擅自改格式）--')
 {
   const explicit = await call({
     operation: 'evaluate',
     expression: '0.00000123456789',
     displayPrecision: 8,
   })
-  assert('显式指定时无精度提示', explicit.notice === '', explicit.notice || '(无)')
+  assert('显式指定时结果按该位数给出（0.37% 损失不改格式）', explicit.result === '0.00000123', explicit.result)
+  assert('显式且损失 < 1% 时不提示', explicit.notice === '', explicit.notice || '(无)')
 
   // 但传够位数后结果应准确
   const enough = await call({
@@ -124,15 +150,16 @@ console.log('-- 5. 显式指定 displayPrecision 时不提醒 --')
   assert('16 位小数给出完整值', enough.result === '0.00000123456789', enough.result)
 }
 
-console.log('-- 6. 提醒内容有实际指导性 --')
+console.log('-- 6. 提示内容有实际指导性 --')
 {
   const r = await call({ operation: 'evaluate', expression: '0.00000123456789' })
-  assert('说明是「按几位小数截断」', /按 8 位小数截断/.test(r.notice), r.notice.slice(0, 40))
-  assert('给出具体误差百分比', /相对误差约 [\d.]+%/.test(r.notice), r.notice.slice(0, 50))
+  assert('说明已改用科学计数法', /已改用科学计数法/.test(r.notice), r.notice.slice(0, 40))
+  assert('说明是按几位小数定点会丢精度', /按 8 位小数定点/.test(r.notice), r.notice.slice(0, 50))
+  assert('给出具体误差百分比', /丢约 [\d.]+% 的精度/.test(r.notice), r.notice.slice(0, 54))
   assert('建议值比当前大', (() => {
     const m = r.notice.match(/displayPrecision:(\d+)/)
     return m && Number(m[1]) > 8
-  })(), r.notice.slice(0, 60))
+  })(), r.notice.slice(0, 70))
   // 措辞不反驳作者
   assert('措辞不出现「错误/禁止/必须」', !/错误|禁止|必须/.test(r.notice), '')
 }

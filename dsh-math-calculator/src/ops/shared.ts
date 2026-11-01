@@ -15,7 +15,11 @@
 import { create, all } from 'mathjs'
 
 import type { JsonValue } from '../format.js'
-import { reportPrecisionLoss } from '../precision-report.js'
+import {
+  PRECISION_LOSS_THRESHOLD,
+  isDisplayPrecisionExplicit,
+  reportPrecisionLoss,
+} from '../precision-report.js'
 import type { TerrainParams } from '../terrain.js'
 import type { WorldParams } from '../world.js'
 
@@ -600,16 +604,27 @@ export function trimNumber(
   const abs = Math.abs(value)
   // 极小值：会被四舍五入成 0 时必须用科学计数法（否则非零值显示成 0，是数据丢失）
   if (abs !== 0 && abs < Math.pow(10, -decimals)) {
-    return value.toExponential(Math.max(decimals, 3))
+    reportPrecisionLoss(1)
+    return value.toExponential(Math.min(Math.max(decimals, 6), 12))
   }
   const fixed = value.toFixed(decimals)
   // 用文本去掉尾随 0（不要 `Number()` 再 `String()`，否则 0.00000081 会变 "8.1e-7"）
   const trimmed = fixed.includes('.') ? fixed.replace(/0+$/, '').replace(/\.$/, '') : fixed
   const text = trimmed === '-0' ? '0' : trimmed
   const shown = Number(text)
-  // 顺手记录相对误差，供「精度不够就提醒」使用
-  if (abs > 0 && Number.isFinite(shown)) {
-    reportPrecisionLoss(Math.abs(shown - value) / abs)
+  const rel = abs > 0 && Number.isFinite(shown) ? Math.abs(shown - value) / abs : 0
+  /**
+   * 与 `formatValue` 同一条判据：定点截断丢精度超过阈值就改用科学计数法。
+   *
+   * 两处必须一致 —— 否则 `evaluate` 与 `stats`/`solve` 会给同一个小数值
+   * 不同的显示形式，那比一个地方错更让人困惑。
+   */
+  if (rel > PRECISION_LOSS_THRESHOLD) {
+    reportPrecisionLoss(rel)
+    // 与 formatValue 一致：显式指定时尊重调用方的位数选择，不擅自改格式
+    if (!isDisplayPrecisionExplicit()) {
+      return value.toExponential(Math.min(Math.max(decimals, 6), 12))
+    }
   }
   return text
 }

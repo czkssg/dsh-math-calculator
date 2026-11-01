@@ -2316,22 +2316,37 @@ export function runMathTool(rawArguments: unknown): MathResult {
      *
      * 取「两条提示取更强的」：精度损失提示优先于泛泛的「可以调」提示。
      */
-    if (!isDisplayPrecisionExplicit()) {
-      const loss = consumePrecisionLoss()
-      if (loss > PRECISION_LOSS_THRESHOLD) {
-        /*
-         * 建议的位数：在当前基础上再加 8 位，上限 64。
-         * 这样「8 → 16」「16 → 24」都合理，且不会建议一个超范围的值。
-         */
-        const suggested = Math.min(64, displayPrecision + 8)
-        result.notice =
-          '注意：本次结果按 ' + displayPrecision + ' 位小数截断后，相对误差约 ' +
-          (loss * 100).toFixed(loss > 0.1 ? 0 : 2) + '%。' +
-          '若需要精确值，请传 displayPrecision:' + suggested + '（或更高）。'
-      }
-    } else {
-      // 显式指定时也要清空，避免残留到下轮
-      consumePrecisionLoss()
+    /**
+     * ── 精度损失：只在**真的丢精度**时提示一句 ──
+     *
+     * 与旧实现的关键区别：旧版只要「未固化 + 结果有小数」就附一段说明，
+     * 一次 60+ 次调用的会话里出现 60+ 次（用户实测反馈：纯噪音）。
+     * 现在判据是**相对误差超过万分之一**，普通计算（`1/7` 误差 1e-9）不提示。
+     *
+     * 两种情况的说法不同：
+     *   · 未显式指定 → 已自动改用科学计数法，说明为什么换格式
+     *   · 显式指定   → 格式按你要求的保留，但告知这个位数丢了精度
+     */
+    const loss = consumePrecisionLoss()
+    /**
+     * 显式指定时用**更宽松**的提示阈值。
+     *
+     * 理由：调用方既然写了 `displayPrecision:4`，就已经接受「4 位小数的精度」。
+     * `1/7` → `0.1429` 的相对误差是 0.03% —— 那是他要求的结果，不值得提示。
+     * 只有丢到 1% 以上（如 `disp:4` 下的 σ 直接归零）才该说一句。
+     *
+     * 未显式指定时保持万分之一：那时代码替用户做了取舍，要说明。
+     */
+    const noticeThreshold = isDisplayPrecisionExplicit() ? 1e-2 : PRECISION_LOSS_THRESHOLD
+    if (loss > noticeThreshold) {
+      const percent = loss >= 1 ? '>100' : (loss * 100).toFixed(loss > 0.1 ? 0 : 2)
+      result.notice = isDisplayPrecisionExplicit()
+        ? '按你指定的 ' + displayPrecision + ' 位小数定点显示会丢约 ' + percent +
+          '% 的精度，结果已按该位数给出。需要精确值请传 displayPrecision:' +
+          Math.min(64, displayPrecision + 8) + '。'
+        : '本次结果已改用科学计数法：按 ' + displayPrecision + ' 位小数定点显示会丢约 ' +
+          percent + '% 的精度。要定点显示请传 displayPrecision:' +
+          Math.min(64, displayPrecision + 8) + '。'
     }
 
     /**
@@ -2435,16 +2450,23 @@ function clampPrecision(value: unknown): number {
  */
 function maybeDisplayPrecisionHint(resultText: string): string {
   try {
-    // 调用方自己指定了精度就不必再教他怎么指定
-    if (isDisplayPrecisionExplicit()) return ''
-    // 已固化过就不提示（用户/AI 已经做过选择）
-    if (displayPrecisionOf(currentWorkspace()) !== undefined) return ''
-    // 没有小数就没有截断问题，不必提示
-    if (!/\d\.\d/.test(resultText)) return ''
-    return (
-      '显示精度 ' + DEFAULT_DISPLAY_PRECISION + ' 位小数，整数不受影响。要更多位就传 displayPrecision，' +
-      '或用 workspace set displayPrecision=N 固化 —— 固化后此提示消失。'
-    )
+    /**
+     * ── 这条通用提示已被移除（2026-11-02，依据实测反馈）──
+     *
+     * 原实现：「未固化显示精度 + 结果里有小数」就附一行说明。
+     * 实测代价：一次 60+ 次调用的会话里，这条提示出现 **60+ 次** —— 纯噪音。
+     *
+     * 为什么不能改成「只提示前 3 次」：那会破坏「同输入同输出」的确定性
+     * （第一次带提示、第二次不带，输出不再字节一致），本项目把它当硬不变量。
+     *
+     * 现在改为**只在真的丢精度时**提示一句具体的说明（见下方的精度损失分支），
+     * 而且格式本身已自动换成科学计数法，所以那种情况也很少出现。
+     *
+     * 「显示精度可调」这件事已经写在工具描述、系统提示与 playbook 三处，
+     * 不需要每次调用重复提醒。
+     */
+    void resultText
+    return ''
   } catch {
     return ''
   }

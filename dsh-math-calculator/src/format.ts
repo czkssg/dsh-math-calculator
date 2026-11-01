@@ -8,7 +8,36 @@
  * @module dsh-math-calculator/format
  */
 
-import { reportPrecisionLoss } from './precision-report.js'
+import {
+  PRECISION_LOSS_THRESHOLD,
+  isDisplayPrecisionExplicit,
+  reportPrecisionLoss,
+} from './precision-report.js'
+
+/**
+ * 科学计数法该保留几位有效数字，并裁掉尾随零。
+ *
+ * 位数取 `displayPrecision`（用户设定的位数）与 6 的下限、12 的上限之间：
+ *   · 下限 6：太少会显得不精确（`5.6704e-8` 只给 5 位）
+ *   · 上限 12：太多又回到「一行几十位」的老问题
+ *
+ * 裁尾随零是因为 `toExponential` 会补齐位数：
+ *   `5.67e-8` 在 8 位下得 `"5.67000000e-8"` —— 那八个 0 不携带信息，
+ *   而且会让读者以为「精度很低，只有两位有效数字」。
+ *
+ * @param value - 数值
+ * @param decimals - 用户设定的小数位
+ * @returns 科学计数法字符串
+ */
+function toScientific(value: number, decimals: number): string {
+  const digits = Math.min(Math.max(decimals, 6), 12)
+  const raw = value.toExponential(digits)
+  const [mantissa, exponent] = raw.split('e')
+  const trimmed = mantissa.includes('.')
+    ? mantissa.replace(/0+$/, '').replace(/\.$/, '')
+    : mantissa
+  return trimmed + 'e' + exponent
+}
 
 /** 可无损 JSON 化的值。 */
 export type JsonValue =
@@ -146,16 +175,17 @@ export function formatValue(
 
     const abs = Math.abs(numeric)
     // 量级过大时小数位无意义，改用科学计数法
-    if (abs >= 1e15) return numeric.toExponential(decimals)
+    if (abs >= 1e15) return toScientific(numeric, decimals)
     /**
      * 极小值：**只要会被四舍五入成 0，就必须改用科学计数法**。
      *
      * 踩过：`3.3e-9` 在 8 位小数下 toFixed 得 "0.00000000"，转回数字变成 `0`
      * —— 那不是「不精确」，是**把非零值显示成零**，属于数据丢失。
-     * 判据用 `10^-decimals` 而不是更保守的阈值，正好卡在「会不会归零」上。
      */
     if (abs !== 0 && abs < Math.pow(10, -decimals)) {
-      return numeric.toExponential(Math.max(decimals, 3))
+      const rel = 1
+      reportPrecisionLoss(rel)
+      return toScientific(numeric, decimals)
     }
     // toFixed 会补尾零（1.5 → "1.50000000"），用**文本**去掉，不要转 Number 再转回
     const fixed = numeric.toFixed(decimals)
@@ -170,16 +200,43 @@ export function formatValue(
      * 保留定点文本既忠实于位数设定，也不会让人误判精度。
      */
     const normalizedText = trimmed === '-0' ? '0' : trimmed
-    /**
-     * 顺手记录相对误差（供「精度不够就提醒」用）。
-     *
-     * 为什么要上报：截断是**悄悄**发生的。8 位小数对 `1/7` 毫无影响，
-     * 但对 `0.00000123456789` 只留下 3 位有效数字 —— 作者看到
-     * `0.00000123` 不会意识到相对误差已有 0.3%。
-     */
     const shown = Number(normalizedText)
-    if (abs > 0 && Number.isFinite(shown)) {
-      reportPrecisionLoss(Math.abs(shown - numeric) / abs)
+    const rel = abs > 0 && Number.isFinite(shown) ? Math.abs(shown - numeric) / abs : 0
+
+    /**
+     * ── 定点截断丢精度时，自动改用科学计数法 ──
+     *
+     * 这是本文件最重要的一条判据，实测代价很具体：
+     *
+     *   斯特藩-玻尔兹曼常数 σ = 5.670374419e-8
+     *     8 位小数定点 → 0.00000006   相对误差 5.8%
+     *     科学计数法   → 5.6703744e-8  相对误差 1e-9
+     *
+     * 前者让 σ 变成 6.0e-8，散热链整条偏移 6%，而且**数字看起来很正常**——
+     * 一份报告里 `0.00000006` 不会引起任何人怀疑。
+     *
+     * 判据用**相对误差**而不是「会不会归零」：`3.3e-9` 归零是明显的事，
+     * 而 `5.67e-8` 不归零却已经错了 5.8%，后者更隐蔽。
+     *
+     * 注意这不违背「displayPrecision 表示小数点后几位」的设定 ——
+     * 绝大多数数仍按小数位显示（`1/7` → 0.14285714 误差 1e-9，走定点），
+     * 只有定点表达会**丢数据**的极小值才换格式。用户要的是「8 位小数」，
+     * 不是「一个读错 5.8% 的数」。
+     */
+    if (rel > PRECISION_LOSS_THRESHOLD) {
+      reportPrecisionLoss(rel)
+      /**
+       * 只在**未显式指定**精度时才擅自改格式。
+       *
+       * 为什么区分：调用方写 `displayPrecision:4` 是明确要求 4 位小数，
+       * `1/7` → `0.1429` 正是他要的（相对误差 0.03%，可接受）。
+       * 若替他改成 `1.4286e-1`，那是**违背明确指令**。
+       *
+       * 代价改由工具层提示告知（「你选的位数丢了 X% 精度」），而不是悄悄改掉。
+       */
+      if (!isDisplayPrecisionExplicit()) {
+        return toScientific(numeric, decimals)
+      }
     }
     return normalizedText
   } catch {
