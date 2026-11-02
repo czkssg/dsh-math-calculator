@@ -736,9 +736,10 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
  */
 function opEvaluateBatch(
   engine: any,
-  expressions: string[],
+  expressions: Array<string | { label?: string; expr?: string }>,
   scope: Record<string, any>,
   precision: number,
+  terse = false,
 ): Outcome {
   const items = expressions.slice(0, MAX_BATCH_EXPRESSIONS)
   if (items.length === 0) {
@@ -746,14 +747,30 @@ function opEvaluateBatch(
   }
 
   const shown: string[] = []
-  const values: Array<{ expression: string; ok: boolean; result?: string; error?: string }> = []
+  const values: Array<{ expression: string; label?: string; ok: boolean; result?: string; error?: string }> = []
   let successCount = 0
   let failCount = 0
 
   for (const raw of items) {
-    const rawExpression = typeof raw === 'string' ? raw.trim() : String(raw ?? '')
+    /**
+     * 两种条目形态：
+     *   字符串 `"1/7"`
+     *   带标签对象 `{label:"储耗比-中值", expr:"139e8/152e4"}`
+     *
+     * ## 为什么要 label
+     *
+     * 实测反馈：同一批算两个口径（`["139e8/1743500","139e8/152e4"]` → 7972 / 9144），
+     * 输出里**只有顺序号区分**。后续引用时得回翻表达式原文，
+     * 报告里「一次差点引错」。
+     *
+     * 批内条目一多（该会话单批最多 14 条），纯靠位置对齐的心智负担很大。
+     */
+    const entry = typeof raw === 'string' ? { expr: raw } : (raw as { label?: string; expr?: string }) ?? {}
+    const label = typeof entry.label === 'string' ? entry.label.trim() : ''
+    const rawExpression = String(entry.expr ?? '').trim()
+
     if (rawExpression === '') {
-      values.push({ expression: rawExpression, ok: false, error: 'empty' })
+      values.push({ expression: rawExpression, label, ok: false, error: 'empty' })
       shown.push('  （空表达式）→ 跳过')
       failCount++
       continue
@@ -766,7 +783,20 @@ function opEvaluateBatch(
      */
     const expression = normalizeSource(rawExpression)
     try {
-      const node = engine.parse(expression)
+      /**
+       * 解析单独包一层：给 `translateError` 传 `'syntax'` 作为兜底类型。
+       *
+       * 为什么：单条求值里写的是 `translateError(error, 'syntax')`，
+       * 而批量这里原来是 `translateError(error)` —— 默认兜底是 `internal`。
+       * 于是 `不存在xyz(1)` 在单条里报 syntax、在批量里报 internal。
+       * `internal` 的含义是「工具自己坏了」，会误导人去重试同一个错，必须对齐。
+       */
+      let node: any
+      try {
+        node = engine.parse(expression)
+      } catch (error) {
+        throw translateError(error, 'syntax')
+      }
       guardAst(node)
       guardComplexity(node)
 
@@ -774,17 +804,38 @@ function opEvaluateBatch(
       guardBareUnitSymbols(node, scope)
       const value = unwrapResult(node.evaluate(scope))
       const text = formatValue(engine, value, precision, currentDisplayPrecision())
-      values.push({ expression, ok: true, result: text })
-      // 回显用户原文（`π` 而不是 `pi`），结果才是归一化后算出的
-      shown.push('  ' + rawExpression + ' = ' + text)
+      values.push({ expression, label: label || undefined, ok: true, result: text })
+      /**
+       * 回显格式：有 label 用 label，否则用用户原文。
+       *
+       * 回显原文（`π` 而不是 `pi`）是刻意的 —— 否则用户会怀疑「我传的到底被改成了什么」。
+       */
+      const echo = label ? label : rawExpression
+      shown.push('  ' + echo + (label ? '（' + rawExpression + '）' : '') + ' = ' + text)
       successCount++
     } catch (error) {
       const translated = translateError(error)
-      values.push({ expression, ok: false, error: translated.type })
+      values.push({ expression, label: label || undefined, ok: false, error: translated.type })
       // 失败要显眼，但不能长篇大论 —— 一行说清哪条、什么类型
-      shown.push('  ' + rawExpression + ' → 失败[' + translated.type + ']' +
+      const echo = label ? label : rawExpression
+      shown.push('  ' + echo + ' → 失败[' + translated.type + ']' +
         (translated.hint ? '：' + translated.hint : ''))
       failCount++
+    }
+  }
+
+  /**
+   * `terse` 模式：只回「表达式 = 结果」，去掉标题与统计。
+   *
+   * 实测反馈：批量 8—14 条时，标题与统计行本身也是固定开销；
+   * 报告估算「若全程 terse，省 40%+ 工具输出 token」。
+   *
+   * 但**失败信息不能省**：省掉失败行会让调用方以为「全成功了」。
+   */
+  if (terse) {
+    return {
+      result: shown.map((s) => s.trim()).join('\n'),
+      value: toJsonValue({ count: items.length, success: successCount, failed: failCount, items: values } as never),
     }
   }
 
@@ -2429,7 +2480,7 @@ export function runMathTool(rawArguments: unknown): MathResult {
      * 缓存它们只会挤占单条计算的位置。
      */
     if (Array.isArray(args.expressions) && args.expressions.length > 0) {
-      outcome = opEvaluateBatch(engine, args.expressions, scope, precision)
+      outcome = opEvaluateBatch(engine, args.expressions, scope, precision, args.terse === true)
       const batchResult: MathResult = {
         ok: true,
         operation: 'evaluate',
