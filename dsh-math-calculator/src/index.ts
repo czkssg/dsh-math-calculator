@@ -190,6 +190,7 @@ import {
   currentDisplayPrecision,
   fast,
   normalizeSource,
+  rational,
   safeNumberForJson,
   setActiveDisplayPrecision,
   trimNumber,
@@ -398,6 +399,21 @@ function translateError(raw: unknown, fallbackType = 'internal'): CalcError {
 
   if (/Undefined symbol/i.test(text)) {
     return new CalcError('unknown_symbol', text, '先定义变量，或通过 variables 参数传入，例如 {"m": 500}。')
+  }
+  /**
+   * 未定义的函数也归 `unknown_symbol`，不归 `internal`。
+   *
+   * 实测反馈：`nosuchfunc(1)` 报 `internal`，而 `internal` 的含义是
+   * 「工具自己坏了」—— 会误导用户去重试同一个错。函数名打错是**输入问题**，
+   * 该给可操作的提示。
+   */
+  if (/Undefined function/i.test(text)) {
+    const name = text.match(/Undefined function\s+(\S+)/i)?.[1] ?? ''
+    return new CalcError(
+      'unknown_symbol',
+      name ? '没有名为 "' + name + '" 的函数' : text,
+      '可用 operation="help" 查看支持的全部函数与公式。',
+    )
   }
   if (/Unexpected end of expression|Value expected|Parenthesis|Invalid left hand side|SyntaxError|Unexpected operator/i.test(text)) {
     return new CalcError('syntax', text, '检查括号是否配对、运算符是否连续。')
@@ -656,6 +672,17 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   if (expression === '') {
     throw new CalcError('invalid_argument', '表达式为空')
   }
+  /**
+   * 数学记号归一化（`**` → `^`、`π` → `pi`、`ln(` → `log(`、`×`/`÷`）。
+   *
+   * 为什么必须在这里：其它 op（derivative / integral / stats / solve…）
+   * 都在内部调了 `normalizeSource`，**只有 evaluate 漏了** ——
+   * 于是 `2**10`、`π`、`2 × 3` 这些直觉写法在 evaluate 上全部报错，
+   * 而同一套写法在 formula 的 overrides 里却能过（实测反馈的语法糖问题）。
+   *
+   * 幂等：这些替换重复执行结果不变，所以不会因多次归一化而出错。
+   */
+  expression = normalizeSource(expression)
   if (expression.length > MAX_INPUT_LENGTH) {
     throw new CalcError('too_large', `表达式过长（${expression.length} > ${MAX_INPUT_LENGTH}）`)
   }
@@ -724,13 +751,20 @@ function opEvaluateBatch(
   let failCount = 0
 
   for (const raw of items) {
-    const expression = typeof raw === 'string' ? raw.trim() : String(raw ?? '')
-    if (expression === '') {
-      values.push({ expression, ok: false, error: 'empty' })
+    const rawExpression = typeof raw === 'string' ? raw.trim() : String(raw ?? '')
+    if (rawExpression === '') {
+      values.push({ expression: rawExpression, ok: false, error: 'empty' })
       shown.push('  （空表达式）→ 跳过')
       failCount++
       continue
     }
+    /**
+     * 归一化只用于**计算**，回显仍用用户原文。
+     *
+     * 否则用户写 `π`、`2**10` 会看到自己被回显成 `pi`、`2^10` ——
+     * 那会让人怀疑「我传的到底被改成了什么」。
+     */
+    const expression = normalizeSource(rawExpression)
     try {
       const node = engine.parse(expression)
       guardAst(node)
@@ -741,13 +775,14 @@ function opEvaluateBatch(
       const value = unwrapResult(node.evaluate(scope))
       const text = formatValue(engine, value, precision, currentDisplayPrecision())
       values.push({ expression, ok: true, result: text })
-      shown.push('  ' + expression + ' = ' + text)
+      // 回显用户原文（`π` 而不是 `pi`），结果才是归一化后算出的
+      shown.push('  ' + rawExpression + ' = ' + text)
       successCount++
     } catch (error) {
       const translated = translateError(error)
       values.push({ expression, ok: false, error: translated.type })
       // 失败要显眼，但不能长篇大论 —— 一行说清哪条、什么类型
-      shown.push('  ' + expression + ' → 失败[' + translated.type + ']' +
+      shown.push('  ' + rawExpression + ' → 失败[' + translated.type + ']' +
         (translated.hint ? '：' + translated.hint : ''))
       failCount++
     }
@@ -788,10 +823,86 @@ function opDerivative(expression: string, variable: string, precision: number): 
   return { result: symbolic, value: symbolic }
 }
 
-function opIntegral(expression: string, variable: string, precision: number): Outcome {
+function opIntegral(
+  expression: string,
+  variable: string,
+  precision: number,
+  from?: number,
+  to?: number,
+): Outcome {
   const text = normalizeSource(expression)
   if (text === '') throw new CalcError('invalid_argument', '表达式为空')
+
+  // 只给一端是含糊的输入：要么两端都给，要么都不给
+  if ((from === undefined) !== (to === undefined)) {
+    throw new CalcError(
+      'invalid_argument',
+      '定积分需要同时给 from 与 to',
+      '需要同时给两端（如 from=0, to=3）；只给一端无法确定积分区间。',
+    )
+  }
+
   const primitive = symbolicIntegral(text, variable)
+
+  /**
+   * ── 给了上下限：算定积分 ──
+   *
+   * 实测反馈（P1-3）：以前传 `from`/`to` 会被**静默忽略**，
+   * 只返回不定积分 `1/3*x^3 + C` —— 调用者以为拿到了定积分。
+   * 文档的原话：「绝不要静默忽略已传入的参数，这是最伤信任的行为。」
+   *
+   * 现在按 Newton-Leibniz 算 F(to) − F(from)。
+   */
+  if (from !== undefined && to !== undefined) {
+    const engine = bignum(precision)
+    /**
+     * 用**有理数引擎**代入，而不是 BigNumber。
+     *
+     * 实测对比（原函数 1/3·x³ 在 x=3 处）：
+     *   BigNumber → 8.99999999999999999999999999999999999999…
+     *   Fraction  → 9
+     *
+     * BigNumber 的 `1/3` 是截断小数，乘 27 回不到整数。
+     * 定积分出现的多半是有理系数多项式，Fraction 能约分回精确值。
+     */
+    const rationalEngine = rational()
+    let exact: any
+    try {
+      const F = rationalEngine.parse(primitive)
+      const upper = F.evaluate({ [variable]: to })
+      const lower = F.evaluate({ [variable]: from })
+      exact = rationalEngine.subtract(upper, lower)
+    } catch (error) {
+      throw new CalcError(
+        'unsupported',
+        '原函数 ' + primitive + ' 无法代入上下限求值',
+        '这是符号引擎的能力边界。可改用 operation="evaluate" 自己做数值积分（如黎曼和）。',
+      )
+    }
+
+    /**
+     * 显示：优先精确形式（整数或分数），并给出 BigNumber 小数近似。
+     *
+     * 为什么两个都给：`1/3` 这种系数在定积分里很常见，
+     * 化为 `6.75` 会丢「精确等于 27/4」这个信息；而工程场景又常需要小数。
+     */
+    const exactTextRaw = rationalEngine.format(exact)
+    // 分母为 1 时不该写成 `9/1`（mathjs 的 ratio 格式会保留 /1）
+    const exactText = exactTextRaw.replace(/\/1$/, '')
+    const asNumber = Number(rationalEngine.number(exact))
+    const decimalText = Number.isFinite(asNumber)
+      ? formatValue(engine, engine.bignumber(String(asNumber)), precision, currentDisplayPrecision())
+      : exactText
+    const isFraction = exactText.includes('/')
+    return {
+      result:
+        '原函数：' + primitive + ' + C\n' +
+        '定积分 ∫[' + from + '→' + to + '] ' + text + ' d' + variable + ' = ' +
+        exactText + (isFraction ? '（= ' + decimalText + '）' : ''),
+      value: toJsonValue(exactText),
+    }
+  }
+
   return { result: `${primitive} + C`, value: primitive }
 }
 
@@ -2305,7 +2416,13 @@ export function runMathTool(rawArguments: unknown): MathResult {
         outcome = opDerivative(input, variable, precision)
         break
       case 'integral':
-        outcome = opIntegral(input, variable, precision)
+        outcome = opIntegral(
+          input,
+          variable,
+          precision,
+          typeof args.from === 'number' ? args.from : undefined,
+          typeof args.to === 'number' ? args.to : undefined,
+        )
         break
       case 'simplify':
         outcome = opSimplify(input)

@@ -446,7 +446,7 @@ import { factorizeInt, makeNsolve, nullspaceOf, rankOf, singularValuesOf } from 
  * **不能**删 typed/parse/evaluate —— derivative/simplify 依赖它们。
  * 自定义函数（rank/nsolve…）在删除 import **之前**注册，顺序不能反。
  */
-export function buildMath(numberMode: 'BigNumber' | 'number', precision: number): any {
+export function buildMath(numberMode: 'BigNumber' | 'number' | 'Fraction', precision: number): any {
   const instance: any = create(all as any, {
     number: numberMode,
     precision,
@@ -510,6 +510,33 @@ export function fast(): any {
   return fastCache
 }
 
+/** 有理数引擎缓存。 */
+let rationalCache: any | undefined
+
+/**
+ * 取**有理数**引擎（Fraction 模式）。
+ *
+ * ## 为什么需要它
+ *
+ * 定积分要按 Newton-Leibniz 代入上下限。用 BigNumber 引擎会出这种事：
+ *
+ *     原函数 1/3·x³，在 x=3 处
+ *     BigNumber → 8.99999999999999999999999999999999999999…
+ *     Fraction  → 9
+ *
+ * 因为 BigNumber 的 `1/3` 是**截断的小数**，乘 27 后回不到整数。
+ * 而 Fraction 保留精确分数，代入后能约分成整数 —— 结果 9 就是 9。
+ *
+ * 三角函数等无理性结果 Fraction 会退化成浮点，这是可接受的：
+ * 那些结果本来就不是有理数。
+ *
+ * @returns mathjs 实例（Fraction 模式）
+ */
+export function rational(): any {
+  if (!rationalCache) rationalCache = buildMath('Fraction', 64)
+  return rationalCache
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // 输入处理 / 数字格式化
 // ────────────────────────────────────────────────────────────────────────────
@@ -539,9 +566,45 @@ export function normalizeSource(input: string): string {
       output += ';'
       continue
     }
+    /**
+     * 数学记号归一化（**只在引号外做**）。
+     *
+     * 实测反馈：理工科用户的直觉写法直接报错，且报错类型还不一致：
+     *   `2 × 3`  → unknown symbol ×
+     *   `6 ÷ 2`  → unknown symbol ÷
+     *   `π`      → unknown symbol π
+     *   `ln(10)` → **internal**（Undefined function ln）
+     *
+     * 这些替换没有语义风险（× ÷ 在数学里就是乘除，π 就是圆周率），
+     * 但必须跳过引号内 —— `5 cm to "inch"` 的单位名不能被改。
+     */
+    if (char === '×' || char === '·') {
+      output += '*'
+      continue
+    }
+    if (char === '÷') {
+      output += '/'
+      continue
+    }
+    // U+2212 减号，字形与 ASCII '-' 不同，肉眼难辨
+    if (char === '\u2212') {
+      output += '-'
+      continue
+    }
+    if (char === 'π') {
+      output += 'pi'
+      continue
+    }
     output += char
   }
-  return output.replace(/;{2,}/g, ';').replace(/^;+|;+$/g, '').trim()
+  return output
+    .replace(/;{2,}/g, ';')
+    .replace(/^;+|;+$/g, '')
+    .trim()
+    // 幂运算：Python / JS 用户习惯写 `**`；mathjs 只认 `^`，而两者都是右结合，无歧义
+    .replace(/\*\*/g, '^')
+    // 自然对数别名：mathjs 的 `log` 本就是自然对数，但用户直觉会写 `ln`
+    .replace(/\bln\s*\(/g, 'log(')
 }
 
 /**
