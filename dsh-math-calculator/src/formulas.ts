@@ -121,12 +121,41 @@ export function resolveParams(
   formula: FormulaDef,
   overrides: Overrides,
   extraConstants: Record<string, number | string> = {},
-): { values: Record<string, unknown>; overridden: string[]; missing: string[] } {
+): {
+  values: Record<string, unknown>
+  overridden: string[]
+  missing: string[]
+  /** 传了但公式里没有的参数名 —— 会被忽略，必须上报。 */
+  unknownKeys: string[]
+} {
   const values: Record<string, unknown> = {}
   const overridden: string[] = []
   const missing: string[] = []
   // 当前生效的世界常数（由 operation=constants 设定）
   const active = getActiveConstants()
+
+  /**
+   * ── 收集「传了但用不上」的参数名 ──
+   *
+   * 实测反馈：`overrides` 的 key 与公式参数名不匹配时**静默忽略**，
+   * 于是结果「合理但错误」。报告原话：
+   *
+   *   「本会话中焦土能量账曾因参数拼写问题导致一次『236 倍缺口』误判」
+   *
+   * 这类错最隐蔽：公式照常出数，只是那个没生效的参数用了默认值。
+   * 所以要把它明确回给调用方，而不是悄悄丢掉。
+   *
+   * 判定：既不在公式 params 里、也不是常数表里的名字 —— 后者是**合法**的
+   * （公式可以引用 g / c / G 这类世界常数），不能算错拼。
+   */
+  const unknownKeys: string[] = []
+  const declaredNames = new Set(Object.keys(formula.params))
+  for (const key of Object.keys(overrides ?? {})) {
+    if (declaredNames.has(key)) continue
+    if (Object.prototype.hasOwnProperty.call(active, key)) continue
+    if (Object.prototype.hasOwnProperty.call(extraConstants, key)) continue
+    unknownKeys.push(key)
+  }
 
   for (const [name, spec] of Object.entries(formula.params)) {
     const arrayLike = isArrayParam(spec.desc)
@@ -174,7 +203,7 @@ export function resolveParams(
     missing.push(name)
   }
 
-  return { values, overridden, missing }
+  return { values, overridden, missing, unknownKeys }
 }
 
 /**

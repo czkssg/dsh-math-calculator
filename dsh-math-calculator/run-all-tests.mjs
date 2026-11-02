@@ -155,6 +155,8 @@ const SUITES = [
   { file: 'bare-unit-symbols.mjs', expect: 55, label: '单字母标识符（变量 vs 单位，防静默错算）' },
   // 语法糖（** / ln / π / × / ÷）与定积分（含有理数精确代入）。
   { file: 'syntax-and-integral.mjs', expect: 41, label: '语法糖与定积分（直觉写法可用/参数不静默忽略）' },
+  // overrides 里拼错的 key 必须点名（实测：曾导致「236 倍缺口」误判且看不出来）。
+  { file: 'overrides-unknown-keys.mjs', expect: 12, label: '未知参数名上报（错拼不静默忽略）' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
   { file: 'slim-and-cache.mjs', expect: 60, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },

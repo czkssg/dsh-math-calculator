@@ -1788,7 +1788,12 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 
   const overrides = (args.overrides ?? {}) as Record<string, number | string>
 
-  let resolved: { values: Record<string, unknown>; overridden: string[]; missing: string[] }
+  let resolved: {
+    values: Record<string, unknown>
+    overridden: string[]
+    missing: string[]
+    unknownKeys: string[]
+  }
   try {
     resolved = resolveParams(formula, overrides)
   } catch (error) {
@@ -1805,6 +1810,17 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
       `完整参数表 —— ${required.join('；')}。用 overrides 传入，例如 {"${resolved.missing[0]}": 100}。`,
     )
   }
+
+  /**
+   * ── 未知参数名：明确告知，不静默丢弃 ──
+   *
+   * 实测反馈：overrides 的 key 拼错时公式**照常出数**，只是那个参数用了默认值。
+   * 报告里那次「236 倍缺口」误判就是这么来的 —— 而结果看着完全正常。
+   *
+   * 这里不抛错（可能是调用方故意传常数名，或用法上无伤），
+   * 而是把「你没生效的参数」写成一条提示，让调用方能自己判断。
+   */
+  const unknownOverrideKeys = resolved.unknownKeys ?? []
 
   const expression = resolveExpression(formula, args.customExpression)
   const scope = buildFormulaScope(engine, resolved.values)
@@ -1858,6 +1874,22 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 
   const parts = [describeFormula(formula, expression, resolved.values, resolved.overridden)]
   parts.push(`结果: ${formatValue(engine, raw, precision, currentDisplayPrecision())}${formula.unit ? ` ${formula.unit}` : ''}`)
+
+  /**
+   * 未知参数名提示：把「你没生效的 key」明确说出来。
+   *
+   * 紧跟在结果后面（而不是压到输出末尾），因为这类问题会直接改变结论，
+   * 读者必须第一眼就看到。
+   */
+  if (unknownOverrideKeys.length > 0) {
+    parts.push('')
+    parts.push(
+      '⚠ 以下 overrides 的 key 不在公式「' + formula.name + '」的参数里，**已被忽略**：' +
+        unknownOverrideKeys.join('、') +
+        '。该公式的参数是：' + Object.keys(formula.params).join('、') +
+        '。若这是拼写笔误，结果可能已偏离——请核对后重算。',
+    )
+  }
 
   /**
    * 经验公式的适用性提示。
