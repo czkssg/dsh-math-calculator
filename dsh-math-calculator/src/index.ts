@@ -427,6 +427,114 @@ function translateError(raw: unknown, fallbackType = 'internal'): CalcError {
 // AST 安全校验
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * mathjs 内置的**单字母单位符号**。
+ *
+ * 实测确认的完整清单（`math.evaluate('1 X')` 能得到 Unit 的那些）。
+ * 注意 `i`（虚数单位）与 `e`（自然常数）**不在**此列 —— 它们是常量不是单位。
+ */
+const BARE_UNIT_LETTERS = new Set('ABCFHJKLNSTVWbghlmst'.split(''))
+
+/**
+ * 拦下「未定义的单字母变量被当成单位」这一类**静默错误**。
+ *
+ * ## 为什么这是最危险的一类
+ *
+ * 实测反馈（`math_execute_实测问题与改进建议.md` 的 P0-2）：
+ *
+ * ```
+ * rho=2035; rho*V   → 2.035 kV     ← V 被当成伏特
+ * rho=2035; rho*m   → 2.035 km     ← m 被当成米
+ * rho=2035; rho*g   → 2.035 kg     ← g 被当成克
+ * ```
+ *
+ * 不报错、不警告，而且数字看着正常（2.035 是个"合理"的数）。
+ * 而物理推演里最规范的变量名恰恰都是单字母：m/V/W/T/L/P/A/C/h/g。
+ * **工具在惩罚最规范的命名习惯。**
+ *
+ * ## 为什么不能简单地「未定义就报错」
+ *
+ * 因为 mathjs 把 `5 V`（单位）与 `rho*V`（变量）解析成**完全相同**的 AST：
+ *
+ * ```
+ * 5 V    → OperatorNode(*) [ConstantNode(5), SymbolNode(V)]
+ * rho*V  → OperatorNode(*) [SymbolNode(rho), SymbolNode(V)]
+ * ```
+ *
+ * 语法层无法区分，只能看**上下文**。所以判据是：
+ *
+ * · 放行：符号处「单位位置」—— 父是乘法且兄弟里有数字（`5 V`、`9.81 m`），
+ *   或父是幂且指数是数字（`s^2`）。这些是真单位用法。
+ * · 报错：符号与**已定义变量同级**（`rho*V` 的兄弟 rho 已定义），
+ *   或它**单独出现**（`V` 一个字母单独求值，语义含糊）。
+ * · 其它：放行（如纯单位表达式 `9.81 m/s^2`）。
+ *
+ * ## 已知的取舍
+ *
+ * 批内混用「变量 + 单位」会被拦（`["v=30", "9.81 m/s^2 * v"]` 里的 m/s）。
+ * 这是有意的：那种写法本身含糊，报错比猜更安全，且提示会说明两种写法。
+ *
+ * @param node - 已解析的 AST
+ * @param scope - 当前作用域（含已定义变量）
+ */
+function guardBareUnitSymbols(node: any, scope: Record<string, unknown>): void {
+  if (!node || typeof node !== 'object') return
+  const defined = new Set(Object.keys(scope ?? {}))
+  const problems: string[] = []
+
+  const visit = (current: any, parent: any): void => {
+    if (!current || typeof current !== 'object') return
+    if (current.type === 'SymbolNode') {
+      const name = String(current.name ?? '')
+      if (name.length === 1 && !defined.has(name) && BARE_UNIT_LETTERS.has(name)) {
+        const siblings: any[] = Array.isArray(parent?.args) ? parent.args : []
+        const others = siblings.filter((a) => a !== current)
+        const hasConstantSibling = others.some((a) => a?.type === 'ConstantNode')
+        const hasDefinedSibling = others.some(
+          (a) => a?.type === 'SymbolNode' && defined.has(String(a.name)),
+        )
+        // 单位位置：数字 × 单位、或 单位的幂
+        const isUnitPosition =
+          (parent?.type === 'OperatorNode' && parent.op === '*' && hasConstantSibling) ||
+          (parent?.type === 'OperatorNode' && parent.op === '^' && hasConstantSibling)
+        if (!isUnitPosition) {
+          if (hasDefinedSibling) problems.push(name)
+          else if (parent === null) problems.push(name)
+        }
+      }
+      return
+    }
+    for (const key of ['args', 'items']) {
+      const list = current[key]
+      if (Array.isArray(list)) for (const child of list) visit(child, current)
+    }
+    if (current.content) visit(current.content, current)
+    if (current.object) visit(current.object, current)
+    if (current.index) visit(current.index, current)
+  }
+
+  visit(node, null)
+
+  if (problems.length > 0) {
+    const uniq = [...new Set(problems)]
+    const list = uniq.map((n) => '"' + n + '"').join('、')
+    /**
+     * 「为什么报错」这句写在 `hint` 里，不写 `message`。
+     *
+     * 批量模式的失败行格式是 `失败[type]：<hint>`，**只显示 hint**；
+     * 单条模式两者都回。把「既是变量名也是单位符号」放进 hint，
+     * 两种模式都能看到 —— 这是用户理解报错原因的唯一线索。
+     */
+    throw new CalcError(
+      'unknown_symbol',
+      '未定义的标识符 ' + list,
+      list + ' 既是变量名也是单位符号。若要当单位用，请写成带数字的形式（如 "5 V"）；' +
+        '若要当变量，请先在本次调用里赋值，或通过 variables 参数传入（如 {"' +
+        uniq[0] + '": 100}）。',
+    )
+  }
+}
+
 function guardAst(node: any): void {
   if (!node || typeof node.traverse !== 'function') return
   node.traverse((current: any) => {
@@ -560,6 +668,9 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   guardAst(node)
   guardComplexity(node)
 
+  // 拦「未定义单字母被当单位」的静默错误（实测反馈 P0-2）
+  guardBareUnitSymbols(node, scope)
+
   let raw: any
   try {
     raw = node.evaluate(scope)
@@ -624,6 +735,9 @@ function opEvaluateBatch(
       const node = engine.parse(expression)
       guardAst(node)
       guardComplexity(node)
+
+      // 拦「未定义单字母被当单位」的静默错误（实测反馈 P0-2）
+      guardBareUnitSymbols(node, scope)
       const value = unwrapResult(node.evaluate(scope))
       const text = formatValue(engine, value, precision, currentDisplayPrecision())
       values.push({ expression, ok: true, result: text })
