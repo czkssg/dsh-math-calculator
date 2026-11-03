@@ -24,6 +24,7 @@ import { STORY2_FORMULAS } from './formula-library-story2.js'
 import { POWER_FORMULAS } from './formula-library-power.js'
 import { BASIC_FORMULAS } from './formula-library-basic.js'
 import { GENERIC_FORMULAS } from './formula-library-generic.js'
+import { EM_OPTICAL_NUCLEAR_FORMULAS } from './formula-library-em.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 
@@ -40,6 +41,7 @@ export const FORMULAS: FormulaDef[] = [
   ...POWER_FORMULAS,
   ...BASIC_FORMULAS,
   ...GENERIC_FORMULAS,
+  ...EM_OPTICAL_NUCLEAR_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */

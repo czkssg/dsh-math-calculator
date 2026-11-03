@@ -32,7 +32,8 @@ const root = dirname(fileURLToPath(import.meta.url))
 const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
-  { file: 'formulas-all.mjs', expect: 404, label: '全部公式可求值' },
+  // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
+  { file: 'formulas-all.mjs', expect: 442, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -180,6 +181,9 @@ const SUITES = [
   // 电学/光学/化学/核物理：补齐 18 个新量纲（原来只有 4 个 SI 基本单位，这些领域无法换算）。
   // 第 3 节守 rad 撞名、第 4 节守欧姆两个 Unicode 码位 —— 这两处最容易静默出错。
   { file: 'si-units.mjs', expect: 97, label: 'SI 电学/光学/化学/核物理（32 量纲/rad 不撞名/双码位）' },
+  // 公式库补齐：原空白 8 个量纲（磁通密度/立体角/照度/活度/剂量/催化活度…）现在都有公式产出。
+  // 第 6 节守「公式表达式不许用 ln」——公式库不经 evaluate 的归一化层，用 ln 会全部报错。
+  { file: 'em-formulas.mjs', expect: 43, label: '电/光/核/化学计量公式（38 条/量纲全覆盖/不许用 ln）' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
   { file: 'slim-and-cache.mjs', expect: 60, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
