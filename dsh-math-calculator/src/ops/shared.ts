@@ -195,6 +195,13 @@ export interface MathArgs {
   terrainName?: string
   /** 工作区里要设的变量。 */
   workspaceVariables?: { [key: string]: number }
+  /**
+   * 工作区开关：命名变量是否参与计算（默认关闭）。
+   *
+   * 打开后，缓存键会把变量内容算进去（否则改了变量会命中旧缓存）；
+   * 关闭时行为与未引入该功能时完全一致。
+   */
+  useWorkspaceVariables?: boolean
   /** operation=feasibility：待校验的设定（约束 id → 值）。 */
   claims?: { [constraintId: string]: number }
   /** operation=feasibility：只列出约束上限而不校验。 */

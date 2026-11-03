@@ -63,8 +63,8 @@ console.log('-- 1. 工具定义已瘦身（每轮成本）--')
 console.log('-- 2. 参数一个都没少（功能未缩水）--')
 {
   const props = Object.keys(tool.parameters.properties)
-  // 41 个原有 + expressions（批量求值）+ terse（批量省 token）= 43
-  assert('参数仍有 43 个', props.length === 43, String(props.length))
+  // 41 个原有 + expressions + terse + workspaceVariables + useWorkspaceVariables = 45
+  assert('参数仍有 45 个', props.length === 45, String(props.length))
   // 关键参数必须都在
   for (const name of ['world', 'terrain', 'constants', 'balance', 'customUnits',
     'precision', 'displayPrecision', 'formula', 'overrides', 'bodyType']) {

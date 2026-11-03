@@ -214,6 +214,16 @@ export function opWorkspace(args: MathArgs): Outcome {
           }
           if (args.description) next.description = args.description
           /**
+           * 命名变量是否参与计算（默认关闭）。
+           *
+           * 单独一个开关而不是「存了就用」，是为了让这条状态变化是**显式的一次动作**：
+           * 打开它会让同一个调用在不同工作区状态下给出不同结果，
+           * 调用方应当知道自己在换掉什么。
+           */
+          if (args.useWorkspaceVariables !== undefined) {
+            next.useWorkspaceVariables = Boolean(args.useWorkspaceVariables)
+          }
+          /**
            * 显示精度固化。
            *
            * 这是「让 AI 自己选一个够用的精度并在对话里固定下来」的入口：

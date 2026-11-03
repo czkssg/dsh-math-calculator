@@ -134,6 +134,7 @@ import {
   switchWorkspace,
   updateWorkspace,
   workspaceDirectory,
+  workspaceVariablesOf,
   type SavedTerrain,
   type WorkspaceData,
 } from './workspace.js'
@@ -697,6 +698,59 @@ function guardComplexity(node: any): void {
 // ────────────────────────────────────────────────────────────────────────────
 
 /** 把 variables 字典转成 mathjs 可用的 scope。 */
+/**
+ * 是否把工作区里登记的命名变量并入作用域。
+ *
+ * ## 这是显式开关，默认关闭
+ *
+ * 打开后同一个调用在不同工作区状态下会给出不同结果 ——
+ * 那会削弱「同输入同输出」。所以：
+ *   · 默认关闭，**不改变任何现有调用的行为**
+ *   · 要开就在工作区里固化：`{action2:"set", useWorkspaceVariables:true}`
+ *
+ * 关掉后 `workspaceVariables` 里存的东西仍然存着（能 show、能 remove），
+ * 只是不参与计算 —— 与旧版行为完全一致。
+ *
+ * @param name - 工作区名；省略用当前工作区
+ * @returns 是否启用
+ */
+function useWorkspaceVariables(name?: string): boolean {
+  try {
+    const data = loadWorkspace(name ?? activeWorkspaceNameForCache())
+    return data.useWorkspaceVariables === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 把工作区变量与本次传入的变量合成最终作用域输入。
+ *
+ * ## 优先级：本次参数 > 工作区
+ *
+ * 临时覆盖长期，符合「显式优先」。同名的键以本次传入为准 ——
+ * 这样「临时想换个值算一下」不必先去改工作区。
+ *
+ * ## 两个来源都要规范化
+ *
+ * `buildScope` 会校验变量名与取值，所以这里不能只做浅合并：
+ * 否则工作区里存了非法名字（历史上可能写进去过），
+ * 会绕过校验直接进 mathjs 作用域。
+ *
+ * @param passed - 本次调用传的 `variables` 参数
+ * @returns 合并后的变量字典；开关关闭时原样返回 passed
+ */
+function mergeWorkspaceVariables(passed: unknown): unknown {
+  if (!useWorkspaceVariables()) return passed
+  const stored = workspaceVariablesOf()
+  const incoming =
+    passed && typeof passed === 'object' && !Array.isArray(passed)
+      ? (passed as Record<string, unknown>)
+      : {}
+  if (Object.keys(stored).length === 0 && Object.keys(incoming).length === 0) return passed
+  return { ...stored, ...incoming }
+}
+
 function buildScope(engine: any, variables: unknown): Record<string, any> {
   const scope: Record<string, any> = {}
   if (!variables || typeof variables !== 'object' || Array.isArray(variables)) return scope
@@ -2343,6 +2397,9 @@ function opHelp(): Outcome {
       '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
       '                action2: list/show/create/switch/save/set/add-terrain/delete/reset',
       '                stats/cleanup 可查看存储与清理；不同工作区完全隔离',
+      '                命名变量：{action2:"set", workspaceVariables:{BTU_LB:1260000}} 存进去',
+      '                  默认**不参与计算**；要生效再传 useWorkspaceVariables:true（逐工作区）',
+      '                  打开后本次 variables 参数优先于工作区值；改变量会让缓存失效',
       '                注意：本插件没有图形界面（2026-10-25 已移除），全部经工具与 HTTP 路由操作',
       '',
       '【其他】',
@@ -2431,6 +2488,7 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'world', 'terrain', 'constants', 'derivation', 'layer',
   // 工作区
   'action2', 'workspace', 'name', 'description', 'terrainName', 'workspaceVariables',
+  'useWorkspaceVariables',
   // 设定一致性
   'claims', 'listConstraints',
   // 单位
@@ -2604,9 +2662,21 @@ export function runMathTool(rawArguments: unknown): MathResult {
     setActiveDisplayPrecision(displayPrecision)
     const variable = normalizeVariable(args.variable)
     const requested = normalizeOperation(args.operation)
-    const known = knownNumbers(args.variables)
+    /**
+     * 作用域输入按「本次参数 > 工作区变量」合并。
+     *
+     * 合并只发生在**计算路径**（这一处），且受工作区开关 `useWorkspaceVariables` 控制；
+     * 开关关闭时 `mergeWorkspaceVariables` 原样返回 `args.variables`，
+     * 行为与旧版完全一致。
+     *
+     * 为什么只在这一处合并、而不是每个 operation 各自去读工作区：
+     * 那样每个 op 都要自己处理「合并 + 优先级 + 缓存指纹」，
+     * 迟早有一处漏掉（缓存指纹漏掉就是静默返回旧值）。
+     */
+    const scopeVariables = mergeWorkspaceVariables(args.variables)
+    const known = knownNumbers(scopeVariables)
     const engine = bignum(precision)
-    const scope = buildScope(engine, args.variables)
+    const scope = buildScope(engine, scopeVariables)
 
     operation = requested === 'auto' ? detectOperation(input, args) : requested
 
@@ -2703,6 +2773,11 @@ export function runMathTool(rawArguments: unknown): MathResult {
           stableArgs(restForCache),
           activeWorkspaceNameForCache(),
           constantsFingerprint(),
+          /**
+           * 变量内容必须进键：见 `workspaceVariablesFingerprint` 的说明。
+           * 开关关闭时这一项是常量 'disabled'，等价于旧行为。
+           */
+          workspaceVariablesFingerprint(),
         ])
         const cached = getCached(key)
         if (cached !== undefined) {
@@ -3056,6 +3131,43 @@ function constantsFingerprint(): string {
 }
 
 /**
+ * 工作区变量指纹（缓存键用）。
+ *
+ * ## 为什么必须有这一条
+ *
+ * 缓存键原本只含**工作区名**与**常数指纹**，不含变量内容。于是：
+ *
+ * ```
+ *   存 BTU_LB=1260000 → 算 30*BTU_LB → 得数，进缓存
+ *   改成 BTU_LB=126000   → 再算 → 命中旧缓存 → 还是按 1260000 的数
+ * ```
+ *
+ * 这是**静默返回改之前的数**，比不缓存危险得多 ——
+ * 与「改常数后必须失效」是同一条道理，只是状态源换成了变量。
+ *
+ * ## 开关关闭时返回固定串（而不是空）
+ *
+ * 空串与「有变量但指纹为空」无法区分。返回一个明确的常量，
+ * 让键的行为在「开关关闭」这件事上也保持稳定。
+ *
+ * @returns 稳定的指纹字符串
+ */
+function workspaceVariablesFingerprint(): string {
+  if (!useWorkspaceVariables()) return 'disabled'
+  try {
+    const stored = workspaceVariablesOf()
+    const keys = Object.keys(stored).sort()
+    if (keys.length === 0) return 'empty'
+    return keys
+      .map(function (key) { return key + '=' + stored[key].toPrecision(15) })
+      .join(';')
+  } catch {
+    // 读不到就给随机值 —— 宁可慢，不可错（与 constantsFingerprint 同策略）
+    return 'unknown-' + Math.random()
+  }
+}
+
+/**
  * 当前工作区名（缓存键用）。
  *
  * 不同工作区有各自的公式表、自定义常数与变量，
@@ -3207,6 +3319,7 @@ type KnownKeyUnion =
   | 'world' | 'planetRadius' | 'planetMass' | 'rotationHours' | 'obliquityDeg'
   | 'terrain' | 'constants' | 'derivation' | 'layer'
   | 'action2' | 'workspace' | 'name' | 'description' | 'terrainName' | 'workspaceVariables'
+  | 'useWorkspaceVariables'
   | 'claims' | 'listConstraints'
   | 'unitValue' | 'unitFrom' | 'unitTo' | 'customUnits' | 'unitScales'
   | 'balance'
@@ -3271,7 +3384,16 @@ const PARAMETER_SPEC = {
   variables: {
     type: 'object',
     additionalProperties: true,
-    description: '变量字典，注入表达式求值的环境。例：{"m": 500, "v": 30, "c": 299792458}。值可为数字或数字字符串（大数）。',
+    description: '变量字典，注入表达式求值的环境。例：{"m": 500, "v": 30}。值可为数字或数字字符串。',
+  },
+  workspaceVariables: {
+    type: 'object',
+    additionalProperties: true,
+    description: 'workspace/action2=set：把命名常数存进工作区，免去重打。默认不参与计算。',
+  },
+  useWorkspaceVariables: {
+    type: 'boolean',
+    description: 'workspace/action2=set：命名变量是否参与计算（默认 false）。详见 help。',
   },
   operation: {
     type: 'string',
@@ -3325,16 +3447,13 @@ const PARAMETER_SPEC = {
   bodyKind: {
     type: 'string',
     description:
-      '按类别筛天体（operation=bodies）：star / planet-terrestrial / planet-super-earth / ' +
-      'planet-mini-neptune / planet-gas-giant / moon / dwarf-planet / asteroid。',
+      'bodies：按类别筛。star / planet-terrestrial / planet-gas-giant / moon / dwarf-planet 等，全文见 help。',
   },
   bodyConstant: {
     type: 'string',
     description:
-      '改常数后看天体数据哪些该重算（operation=bodies）。' +
-      '例：bodyConstant="alpha_fs", bodyFactor=2 —— α 变成两倍，' +
-      '输出分「必须重算的量」与「绝不该动的量」两块。' +
-      '后者尤其重要：行星质量、半径、轨道与 α 无关，跟着改就是篡改设定。',
+      'bodies：改常数后看哪些天体数据该重算。例 bodyConstant="alpha_fs", bodyFactor=2。' +
+      '输出分「必须重算」与「绝不该动」两块（行星质量/半径/轨道与 α 无关）。',
   },
   bodyFactor: {
     type: 'number',
@@ -3343,9 +3462,7 @@ const PARAMETER_SPEC = {
   bodyType: {
     type: 'string',
     description:
-      '查天体**类型**（operation=bodies）。与 bodyName 的区别：bodyName 查具名天体（火星、木卫二），' +
-      'bodyType 查类型学条目（中子星、热木星、流浪行星、戴森球）。' +
-      '每个类型都标了证据等级，并列明「物理锁死项」（编不了）与「可自由发挥项」。',
+      'bodies：查天体类型学条目（中子星/热木星/戴森球等）。每类标证据等级与「物理锁死项」。',
   },
   bodyEvidence: {
     type: 'string',
@@ -3372,10 +3489,9 @@ const PARAMETER_SPEC = {
   displayPrecision: {
     type: 'integer',
     description:
-      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数，整数永远完整。' +
-      '例 8 → 1/7 得 0.14285714；0 → 只留整数。' +
-      '全局换档用 workspace set displayPrecision=N（那里的 0 = 清除）。' +
-      '别用 precision 达此目的（会算错大数）。',
+      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数，整数永远完整；0 = 只留整数。' +
+      '换档可传单次值，或用 workspace set displayPrecision=N 固化（那里的 0 = 清除）。' +
+      '别用 precision 达此目的。',
   },
   data: {
     type: 'array',
@@ -3455,8 +3571,8 @@ const PARAMETER_SPEC = {
     // 真用 world 时才需要。全文见 help（operation="help", query="world"）。
     description:
       '星球参数（operation=world），全部可选，默认地球。' +
-      '常用键：planetMass/planetRadius（地球倍数）、starMass/starTemp、rotationHours、obliquityDeg、greenhouse。' +
-      '完整字段表见 help 的 world 条目。',
+      '常用键：planetMass/planetRadius、starMass/starTemp、rotationHours、obliquityDeg。' +
+      '完整字段表见 help。',
   },
   planetRadius: {
     type: 'number',

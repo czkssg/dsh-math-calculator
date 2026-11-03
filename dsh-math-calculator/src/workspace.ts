@@ -81,6 +81,19 @@ export interface WorkspaceData {
    * 未设置时沿用计算精度（即完整输出，旧行为）。
    */
   displayPrecision?: number
+  /**
+   * 是否让 `variables` 里的命名变量**参与计算**。
+   *
+   * ## 为什么默认关闭
+   *
+   * 打开后，同一个调用在不同工作区状态下会给出不同结果 ——
+   * 那会削弱「同输入同输出」，而后者是本项目做 hash 复现与回归对比的基础。
+   * 所以这是一个**显式的、逐工作区的**选择，不默认生效。
+   *
+   * 关闭时 `variables` 仍然照常存着（能 show、能 remove），
+   * 只是不参与计算 —— 与未引入这个功能时的行为完全一致。
+   */
+  useWorkspaceVariables?: boolean
   /** 创建时间。 */
   createdAt: string
   /** 最后修改时间。 */
@@ -898,6 +911,58 @@ export function bindHostWorkspace(
  *
  * @param name - 工作区名；省略用当前活动工作区
  * @returns 显示有效位数；未设置返回 undefined
+ */
+/**
+ * 读出当前工作区里登记的命名变量（`variables` 字段）。
+ *
+ * ## 这个函数为什么存在
+ *
+ * 工作区的 `variables` 字段、写入路径（`action2:"set"` + `workspaceVariables`）、
+ * 删除路径（`remove-variable`）、显示（`show`）**都已经有了**，
+ * 唯独**读取路径缺**——存进去的变量在计算里根本用不到。
+ *
+ * 实测：
+ *
+ * ```
+ *   {action2:"set", workspaceVariables:{BTU_LB:1260000}}  → 变量 2 个   ✓ 存住了
+ *   {expression:"BTU_LB/1000"}                            → Undefined symbol  ✗ 用不了
+ * ```
+ *
+ * 也就是说这是「能删不能加、加了用不了」的半成品，不是需要从头设计的新能力。
+ *
+ * ## 失败时返回空对象，不抛异常
+ *
+ * 读工作区失败（文件损坏、目录不可写）不该让一次正常计算失败。
+ * 但**空对象与「真的没有变量」无法区分**，所以缓存指纹那边
+ * 不能只靠这个函数的返回值 —— 见 `index.ts` 里的 `workspaceVariablesFingerprint`。
+ *
+ * @param name - 工作区名；省略则用当前工作区
+ * @returns 变量字典（数字形态）；读不到时为空对象
+ */
+export function workspaceVariablesOf(name?: string): Record<string, number> {
+  try {
+    const data = loadWorkspace(name ?? activeWorkspaceName)
+    const source = data.variables
+    if (!source || typeof source !== 'object') return {}
+    const result: Record<string, number> = {}
+    for (const [key, value] of Object.entries(source)) {
+      const numeric = typeof value === 'number' ? value : Number(value)
+      if (Number.isFinite(numeric)) result[key] = numeric
+    }
+    return result
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * 读当前工作区固化的**显示**精度（小数点后几位）。
+ *
+ * 未设或读到 0 时返回 undefined，调用方据此回落默认值。
+ * 语义与「本次调用传入的 displayPrecision」一致：都是小数点后位数。
+ *
+ * @param name - 工作区名；省略则用当前工作区
+ * @returns 显示位数；未设或读不到返回 undefined
  */
 export function displayPrecisionOf(name?: string): number | undefined {
   try {
