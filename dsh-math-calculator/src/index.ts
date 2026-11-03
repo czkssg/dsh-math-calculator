@@ -605,13 +605,44 @@ function guardBareUnitSymbols(node: any, scope: Record<string, unknown>): void {
         const hasDefinedSibling = others.some(
           (a) => a?.type === 'SymbolNode' && defined.has(String(a.name)),
         )
-        // 单位位置：数字 × 单位、或 单位的幂
+        /**
+         * ★ 顺序是判据的一部分，不能只看「同级有没有数字」。
+         *
+         * mathjs 保留了书写顺序，于是：
+         *
+         *   2 b   → OperatorNode(*) [0:ConstantNode(2), 1:SymbolNode(b)]   ← 单位
+         *   b*2   → OperatorNode(*) [0:SymbolNode(b), 1:ConstantNode(2)]   ← 变量
+         *
+         * 两者兄弟都含数字，旧判据一律放过 —— 结果 `b*2` 被算成
+         * 「2 b（单位）」，静默给出 `2 b`。实测踩到过：
+         * 批量里 `b=oops*2` 失败之后，后续 `d=b*2` 不报错、算出 `2 b`，
+         * 一个依赖失败步骤的下游悄悄变成了合法结果（虚成功）。
+         *
+         * 单位写法是「数字在前、符号在后」；符号在前是**变量乘数字**。
+         */
+        const symbolIndex = siblings.indexOf(current)
+        const constantIndex = siblings.findIndex((a) => a?.type === 'ConstantNode')
+        const constantBefore = constantIndex >= 0 && constantIndex < symbolIndex
+        // 单位位置：数字 × 单位（数字在前）、或 数字 × 单位的幂
         const isUnitPosition =
-          (parent?.type === 'OperatorNode' && parent.op === '*' && hasConstantSibling) ||
+          (parent?.type === 'OperatorNode' && parent.op === '*' && constantBefore) ||
           (parent?.type === 'OperatorNode' && parent.op === '^' && hasConstantSibling)
+        /**
+         * 三个条件里**任一**成立就报：都不是「数字在前的单位写法」时，
+         * 这个单字母就不该被静默当成单位。
+         *
+         * 踩过的坑：旧版只报了「有已定义兄弟」与「单独出现」两种情况，
+         * 于是 `b*2`（符号在前、没有已定义兄弟、又不是根）三条全不命中，
+         * 被放过去算成 `2 b` —— 批量里一个失败步骤的下游就这样变成了
+         * 「成功」，而且是合法单位结果，最难看出来的那种。
+         */
         if (!isUnitPosition) {
-          if (hasDefinedSibling) problems.push(name)
-          else if (parent === null) problems.push(name)
+          const isBareSymbolChild =
+            parent?.type === 'OperatorNode' &&
+            parent.op === '*' &&
+            siblings.length === 2 &&
+            siblings.every((a) => a === current || a?.type === 'ConstantNode')
+          if (hasDefinedSibling || parent === null || isBareSymbolChild) problems.push(name)
         }
       }
       return
@@ -623,6 +654,17 @@ function guardBareUnitSymbols(node: any, scope: Record<string, unknown>): void {
     if (current.content) visit(current.content, current)
     if (current.object) visit(current.object, current)
     if (current.index) visit(current.index, current)
+    /**
+     * ★ 赋值语句的右半部分挂在 `value` 上，不在 `args` 里。
+     *
+     * 踩过的坑：`d=b*2` 的 AST 是 `AssignmentNode(name=d, value=OperatorNode(*))`，
+     * 而这里原本只走 `args/items/content/object/index` —— 赋值右侧**整个不被遍历**。
+     * 于是批量里 `b=oops*2` 失败之后，`d=b*2` 从未被判据看到，
+     * 直接被 mathjs 当成「2 b」算出一个合法单位结果。
+     *
+     * 这类「下游悄悄变成虚成功」比报错难发现得多：批量汇总里它是「成功」。
+     */
+    if (current.value && typeof current.value === 'object') visit(current.value, current)
   }
 
   visit(node, null)
