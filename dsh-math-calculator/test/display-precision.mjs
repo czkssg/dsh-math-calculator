@@ -220,11 +220,21 @@ console.log('-- 7. 提示词与 schema 都写明了用法 --')
   assert('工具描述提醒不要为好看调低 precision', /不要为好看而动|会算错大数/.test(desc), '')
   assert('工具描述说明整数永远完整', /整数永远完整/.test(desc), '')
 
-  const playbook = await import(pathToFileURL(join(root, 'lib/playbook.js')).href)
-  const brief = playbook.buildBriefPlaybook({})
-  assert('brief 说明默认 8 位小数', /小数点后 8 位/.test(brief), '')
-  assert('brief 提示不要调低计算精度', /precision.*不要调低|一低大数就会算错/.test(brief), '')
-  assert('brief 给了具体例子', /displayPrecision/.test(brief), '')
+  /**
+   * 精度说明的位置变过：原来放在 `buildBriefPlaybook` 里，
+   * 现在挪到注入正文的独立小节（因为它是**中频但重要**的内容，
+   * 不该和低频的世界推演分工混在一段）。
+   *
+   * 所以这里改为检查**完整注入正文**——断言意图不变（精度两层要说清楚），
+   * 只是取样位置跟着内容搬走。
+   */
+  const awForPrompt = await import(pathToFileURL(join(root, 'lib/awareness.js')).href)
+  awForPrompt.setPromptMode('brief')
+  const brief = awForPrompt.buildSystemPromptSection()
+  assert('brief 说明默认 8 位小数', /默认 8/.test(brief), '')
+  assert('brief 提示不要调低计算精度', /调低会算错大数|一低大数|不要为好看动/.test(brief), '')
+  assert('brief 给了具体用法', /displayPrecision/.test(brief), '')
+  assert('brief 写明语义是小数点后几位', /小数点后几位/.test(brief), '')
 }
 
 console.log('-- 8. 提示只在真丢精度时出现（不污染 result）--')

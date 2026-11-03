@@ -34,7 +34,11 @@ import {
 import { CalcError, safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
 
 /** 量纲的展示顺序（先写日常用的）。 */
-const ORDER: Dimension[] = ['length', 'mass', 'time', 'area', 'volume', 'energy', 'power', 'temperature', 'speed']
+const ORDER: Dimension[] = [
+  'length', 'mass', 'time', 'area', 'volume',
+  'energy', 'power', 'temperature', 'speed', 'pressure',
+  'force', 'angle', 'data', 'frequency',
+]
 
 /**
  * 把作者传来的自定义单位规范化。
@@ -144,8 +148,30 @@ export function opUnits(args: MathArgs): Outcome {
   }
 
   // ── 情形 A：列清单 ──
+  /**
+   * ## 为什么默认只给摘要
+   *
+   * 单位收到 287 条后，全量展开一次是 17000+ 字符 —— 那是**每轮对话都占上下文**的东西，
+   * 而调用方通常只想确认「有没有我要的那条」。
+   *
+   * 所以默认给「每个量纲几条约数 + 几个样例」，要看全表就传 `unitScale`
+   * （如 `unitScale:"length"`）。这与 help 的取向一致：**用到时才读**。
+   */
   if (!hasFrom && !hasTo) {
-    lines.push('══════ 可用单位 ══════')
+    const wantedDimension = typeof args.unitScale === 'string' ? args.unitScale.trim().toLowerCase() : ''
+    const expandDimension =
+      wantedDimension === ''
+        ? null
+        : ORDER.find(function (d) { return d === wantedDimension || DIMENSION_LABEL[d] === wantedDimension }) ?? null
+    if (wantedDimension !== '' && expandDimension === null) {
+      throw new CalcError(
+        'invalid_argument',
+        '不认识的量纲「' + wantedDimension + '」',
+        '可用: ' + ORDER.map(function (d) { return d + '(' + DIMENSION_LABEL[d] + ')' }).join(' / '),
+      )
+    }
+
+    lines.push('══════ 可用单位（共 ' + (UNITS.length + custom.length) + ' 条）══════')
     lines.push('')
     if (custom.length > 0) {
       lines.push('【本项目的自定义单位】')
@@ -161,23 +187,39 @@ export function opUnits(args: MathArgs): Outcome {
     for (const dimension of ORDER) {
       const items = [...custom.filter(function (u) { return u.dimension === dimension }), ...UNITS.filter(function (u) { return u.dimension === dimension })]
       if (items.length === 0) continue
-      lines.push('【' + DIMENSION_LABEL[dimension] + '】（基准单位 ' + BASE_UNIT[dimension] + '）')
-      for (const unit of items) {
-        const aliases = (unit.aliases || []).length > 0 ? '（别名：' + unit.aliases!.join('、') + '）' : ''
+      /** 展开只针对点名的那一维；其余给计数与样例。 */
+      if (expandDimension === dimension) {
+        lines.push('【' + DIMENSION_LABEL[dimension] + '】（基准单位 ' + BASE_UNIT[dimension] + '）共 ' + items.length + ' 条')
+        for (const unit of items) {
+          const aliases = (unit.aliases || []).length > 0 ? '（别名：' + unit.aliases!.join('、') + '）' : ''
+          lines.push(
+            '  ' + unit.name.padEnd(12) + ' = ' + showFactor(unit.factor).padEnd(22) +
+            BASE_UNIT[dimension] + aliases,
+          )
+          if (unit.note) lines.push('      · ' + unit.note)
+        }
+        lines.push('')
+      } else {
+        const sample = items.slice(0, 6).map(function (u) { return u.name }).join('/')
         lines.push(
-          '  ' + unit.name.padEnd(10) + ' = ' + showFactor(unit.factor).padEnd(22) +
-          BASE_UNIT[dimension] + aliases,
+          '  ' + DIMENSION_LABEL[dimension].padEnd(4) + BASE_UNIT[dimension].padEnd(5) +
+          '共 ' + String(items.length).padEnd(4) + '条   例：' + sample + (items.length > 6 ? '/…' : ''),
         )
-        if (unit.note) lines.push('      · ' + unit.note)
       }
-      lines.push('')
     }
+    if (expandDimension === null) {
+      lines.push('【看某一类的全部单位】')
+      lines.push('  传 unitScale:"length" / "mass" / "volume" / …（也可用中文名如 "长度"）')
+    }
+    lines.push('')
     lines.push('【怎么换算】')
     lines.push('  {operation:"units", unitValue:30, unitFrom:"里", unitTo:"km"}')
     lines.push('  → 30 里 = 15 km')
     lines.push('')
     lines.push('注：中文古制单位历朝不同，内置值取最常见近似；要精确到某朝代，')
     lines.push('    用 customUnits 覆盖（如 {name:"里",dimension:"length",factor:576}）。')
+    lines.push('    同一名字在两套体系里数值不同的（加仑、担、石、马力），')
+    lines.push('    已分两类收（gal/gal_uk、hp/hp_metric），按 note 区分。')
     return {
       result: lines.join('\n'),
       value: toJsonValue({

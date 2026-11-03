@@ -35,6 +35,8 @@
  * @module dsh-math-calculator/units
  */
 
+import { ALL_UNITS } from './units-data.js'
+
 /** 一个单位。 */
 export interface UnitDef {
   /** 单位名（作者会写的写法）。 */
@@ -49,7 +51,13 @@ export interface UnitDef {
   note?: string
 }
 
-/** 支持的量纲。 */
+/**
+ * 支持的量纲。
+ *
+ * 分两层：**物理量纲**（长/质/时/面/体/能/功/温/速/压）与**扩展量纲**
+ * （数据量/角度/力/频率）—— 后者是写小说时同样会撞上的（「这段代码多大」
+ * 「转三十度」「拉弓要多少牛」），它们各自的公制基准也定义在 units-data。
+ */
 export type Dimension =
   | 'length'
   | 'mass'
@@ -61,34 +69,23 @@ export type Dimension =
   | 'temperature'
   | 'speed'
   | 'pressure'
+  | 'data'
+  | 'angle'
+  | 'force'
+  | 'frequency'
 
-/** 每个量纲的基准单位（factor = 1 的那个）。 */
-export const BASE_UNIT: Record<Dimension, string> = {
-  length: 'm',
-  mass: 'kg',
-  time: 's',
-  area: 'm²',
-  volume: 'm³',
-  energy: 'J',
-  power: 'W',
-  temperature: 'K',
-  speed: 'm/s',
-  pressure: 'Pa',
-}
+/**
+ * 每个量纲的基准单位（factor = 1 的那个）—— 即「公制中转点」。
+ *
+ * 定义在 `units-data.ts`，这里再导出，保持旧的导入路径可用。
+ */
+import { DIMENSION_BASE, DIMENSION_LABEL, DIMENSION_ORDER } from './units-data.js'
+
+/** 每个量纲的基准单位 —— 即「公制中转点」。 */
+export const BASE_UNIT = DIMENSION_BASE
 
 /** 量纲的中文名。 */
-export const DIMENSION_LABEL: Record<Dimension, string> = {
-  length: '长度',
-  mass: '质量',
-  time: '时间',
-  area: '面积',
-  volume: '体积',
-  energy: '能量',
-  power: '功率',
-  temperature: '温度',
-  speed: '速度',
-  pressure: '压强',
-}
+export { DIMENSION_LABEL, DIMENSION_ORDER }
 
 /**
  * 内置单位表。
@@ -96,142 +93,13 @@ export const DIMENSION_LABEL: Record<Dimension, string> = {
  * ⚠️ 中文古制的换算**历朝不同**，这里用最常见的近似值并在 note 里标注。
  * 作者若需要精确到某个朝代，用 `customUnits` 覆盖。
  */
-export const UNITS: UnitDef[] = [
-  // ── 长度 ──
-  { name: 'm', dimension: 'length', factor: 1, note: '基准单位' },
-  { name: 'km', dimension: 'length', factor: 1000 },
-  { name: 'cm', dimension: 'length', factor: 0.01 },
-  { name: 'mm', dimension: 'length', factor: 0.001 },
-  {
-    name: '里',
-    dimension: 'length',
-    factor: 500,
-    note: '市里 = 500 m。周制约 415 m、汉制约 415 m、清制 576 m——写古代按朝代覆盖',
-  },
-  { name: '丈', dimension: 'length', factor: 3.2, note: '市丈 = 3.2 m（10 尺）' },
-  { name: '尺', dimension: 'length', factor: 0.32, note: '市尺 ≈ 32 cm。汉尺约 23 cm、明清营造尺约 32 cm' },
-  { name: '寸', dimension: 'length', factor: 0.032, note: '市寸 = 1/10 尺' },
-  { name: '步', dimension: 'length', factor: 1.6, note: '古代一步 ≈ 5 尺 ≈ 1.6 m（「百步穿杨」约 160 m）' },
-  { name: 'mile', aliases: ['英里', 'mi'], dimension: 'length', factor: 1609.344 },
-  { name: 'ft', aliases: ['英尺'], dimension: 'length', factor: 0.3048 },
-  { name: 'in', aliases: ['英寸'], dimension: 'length', factor: 0.0254 },
-  { name: 'nmi', aliases: ['海里'], dimension: 'length', factor: 1852 },
-  { name: 'AU', aliases: ['天文单位'], dimension: 'length', factor: 1.495978707e11, note: '日地平均距离' },
-  { name: 'ly', aliases: ['光年'], dimension: 'length', factor: 9.4607304725808e15 },
-  { name: 'pc', aliases: ['秒差距'], dimension: 'length', factor: 3.0856775814913673e16 },
-  { name: 'Rearth', aliases: ['地球半径'], dimension: 'length', factor: 6.371e6 },
-  { name: 'Rsun', aliases: ['太阳半径'], dimension: 'length', factor: 6.957e8 },
-
-  // ── 质量 ──
-  { name: 'kg', dimension: 'mass', factor: 1, note: '基准单位' },
-  { name: 'g', dimension: 'mass', factor: 0.001 },
-  { name: 't', aliases: ['吨'], dimension: 'mass', factor: 1000 },
-  { name: '斤', dimension: 'mass', factor: 0.5, note: '市斤 = 500 g（10 两）' },
-  { name: '两', dimension: 'mass', factor: 0.05, note: '市两 = 50 g' },
-  { name: '石', dimension: 'mass', factor: 60, note: '容量/重量混用单位，此处按「一石米约 60 kg」估' },
-  { name: 'lb', aliases: ['磅'], dimension: 'mass', factor: 0.45359237 },
-  { name: 'oz', aliases: ['盎司'], dimension: 'mass', factor: 0.028349523125 },
-  /**
-   * 英制的「吨」有三种，互相差 1.6%——写蒸汽朋克/航海题材时会撞上。
-   * 单说「一吨」在英制语境的原文里通常是长吨，所以 longton 也认 tons。
-   */
-  { name: 'longton', aliases: ['长吨', 'LT', 'gross ton'], dimension: 'mass', factor: 1016.0469088,
-    note: '英制长吨 = 2240 磅 ≈ 1016 kg。航运「载重吨」用这个' },
-  { name: 'shortton', aliases: ['短吨', 'ST', '净吨'], dimension: 'mass', factor: 907.18474,
-    note: '美制短吨 = 2000 磅 ≈ 907 kg。比长吨小 1.6%' },
-  { name: 'cwt', aliases: ['英担'], dimension: 'mass', factor: 50.80234544,
-    note: '英制英担 = 112 磅 ≈ 50.8 kg（美制英担 100 磅，差 12%）' },
-  { name: 'stone', aliases: ['英石'], dimension: 'mass', factor: 6.35029318, note: '1 英石 = 14 磅' },
-  { name: 'Mearth', aliases: ['地球质量'], dimension: 'mass', factor: 5.972e24 },
-  { name: 'Msun', aliases: ['太阳质量'], dimension: 'mass', factor: 1.989e30 },
-
-  // ── 时间 ──
-  { name: 's', dimension: 'time', factor: 1, note: '基准单位' },
-  { name: 'min', aliases: ['分钟'], dimension: 'time', factor: 60 },
-  { name: 'h', aliases: ['小时'], dimension: 'time', factor: 3600, note: '与普朗克常数 h 同名，单位换算里按小时理解' },
-  { name: 'day', aliases: ['天', '日'], dimension: 'time', factor: 86400 },
-  { name: 'year', aliases: ['年'], dimension: 'time', factor: 3.15576e7, note: '儒略年 = 365.25 天' },
-  { name: 'Gyr', aliases: ['十亿年'], dimension: 'time', factor: 3.15576e16 },
-  { name: '刻', dimension: 'time', factor: 900, note: '古代一刻 ≈ 15 分钟（百刻制一天）' },
-  { name: '时辰', dimension: 'time', factor: 7200, note: '一个时辰 = 2 小时（十二时辰制）' },
-  { name: '更', dimension: 'time', factor: 7200, note: '一夜五更，每更约 2 小时' },
-
-  // ── 面积 ──
-  { name: 'm²', dimension: 'area', factor: 1, note: '基准单位' },
-  { name: 'km²', dimension: 'area', factor: 1e6 },
-  { name: 'ha', aliases: ['公顷'], dimension: 'area', factor: 1e4 },
-  { name: '亩', dimension: 'area', factor: 666.6666666666666, note: '市亩 ≈ 666.7 m²（15 亩 = 1 公顷）' },
-  { name: '顷', dimension: 'area', factor: 66666.66666666667, note: '一顷 = 100 亩' },
-  { name: 'acre', aliases: ['英亩'], dimension: 'area', factor: 4046.8564224 },
-
-  // ── 体积 ──
-  { name: 'm³', dimension: 'volume', factor: 1, note: '基准单位' },
-  { name: 'L', aliases: ['升'], dimension: 'volume', factor: 0.001 },
-  { name: '斗', dimension: 'volume', factor: 0.01, note: '市斗 = 10 L；古代一斗约 2—20 L，差异极大' },
-  { name: 'gal', aliases: ['加仑'], dimension: 'volume', factor: 0.003785411784, note: '美制加仑' },
-
-  // ── 能量 ──
-  { name: 'J', dimension: 'energy', factor: 1, note: '基准单位' },
-  { name: 'kJ', dimension: 'energy', factor: 1000 },
-  { name: 'MJ', dimension: 'energy', factor: 1e6 },
-  { name: 'GJ', dimension: 'energy', factor: 1e9 },
-  { name: 'kWh', aliases: ['度'], dimension: 'energy', factor: 3.6e6, note: '一度电 = 3.6 MJ' },
-  { name: 'cal', aliases: ['卡'], dimension: 'energy', factor: 4.184 },
-  { name: 'kcal', aliases: ['大卡', '千卡'], dimension: 'energy', factor: 4184, note: '营养学的「卡路里」其实是大卡' },
-  /**
-   * BTU 是英热单位。实测反馈里它被手打过 8+ 次（1260000 BTU/磅 这种写法），
-   * 每次重打都是一次记错系数的机会 —— 收进表里让「记错数」变成「打错名」。
-   */
-  { name: 'BTU', aliases: ['英热单位', 'btu'], dimension: 'energy', factor: 1055.05585262,
-    note: '英热单位。1055 J；「1260000 BTU/磅」这类换算以前全靠手打' },
-  { name: 'therm', aliases: ['色姆'], dimension: 'energy', factor: 1.05434184e8, note: '1 therm = 100000 BTU（天然气计价单位）' },
-  { name: 'TNT', dimension: 'energy', factor: 4.184e9, note: '1 吨 TNT 当量' },
-  { name: 'eV', dimension: 'energy', factor: 1.602176634e-19 },
-  { name: 'eVperBond', aliases: [], dimension: 'energy', factor: 1.602176634e-19 },
-
-  // ── 功率 ──
-  { name: 'W', dimension: 'power', factor: 1, note: '基准单位' },
-  { name: 'kW', dimension: 'power', factor: 1000 },
-  { name: 'MW', dimension: 'power', factor: 1e6 },
-  { name: 'GW', dimension: 'power', factor: 1e9 },
-  { name: 'TW', dimension: 'power', factor: 1e12 },
-  { name: 'hp', aliases: ['马力'], dimension: 'power', factor: 745.6998715822702,
-    note: '英制机械马力 = 550 ft·lbf/s ≈ 745.7 W。公制马力 735 W，差 1.4%' },
-  { name: 'ftlb', aliases: ['ft·lbf/s', '英尺磅每秒'], dimension: 'power', factor: 1.3558179483314004, note: '1 ft·lbf/s ≈ 1.356 W' },
-  { name: '人', aliases: ['人力'], dimension: 'power', factor: 75, note: '一个成年人持续体力输出约 75—100 W（长时间）' },
-  { name: '畜', aliases: ['畜力'], dimension: 'power', factor: 500, note: '一头上等役畜持续输出约 500 W' },
-
-  // ── 温度 ──
-  // 温度是仿射换算（有偏移），不能只用系数；见 convert() 里的专门分支
-  { name: 'K', dimension: 'temperature', factor: 1, note: '基准单位，无偏移' },
-  { name: '°C', aliases: ['℃', '摄氏度'], dimension: 'temperature', factor: 1, note: 'K = °C + 273.15' },
-  { name: '°F', aliases: ['℉', '华氏度'], dimension: 'temperature', factor: 5 / 9, note: 'K = (°F + 459.67) × 5/9' },
-
-  // ── 速度 ──
-  { name: 'm/s', dimension: 'speed', factor: 1, note: '基准单位' },
-  { name: 'km/h', dimension: 'speed', factor: 1 / 3.6 },
-  { name: 'mph', aliases: ['英里每小时'], dimension: 'speed', factor: 0.44704 },
-  { name: 'mach', aliases: ['马赫'], dimension: 'speed', factor: 340.29, note: '按海平面 15°C 声速折算；高空声速更低' },
-  { name: 'c', aliases: ['光速'], dimension: 'speed', factor: 299792458 },
-
-  /**
-   * ── 压强 ──
-   *
-   * 为什么补这个量纲：实测反馈里「psi」「mmHg」「巴」反复出现在工程验算里，
-   * 而单位表完全没有压力量纲 —— 于是这些换算只能手打系数，
-   * 正是文档批评过的「靠调用者脑内存系数」。
-   */
-  { name: 'Pa', aliases: ['帕', '帕斯卡'], dimension: 'pressure', factor: 1, note: '基准单位' },
-  { name: 'kPa', dimension: 'pressure', factor: 1e3 },
-  { name: 'MPa', dimension: 'pressure', factor: 1e6 },
-  { name: 'bar', aliases: ['巴'], dimension: 'pressure', factor: 1e5, note: '1 bar = 100 kPa ≈ 1 个大气压' },
-  { name: 'atm', aliases: ['大气压', '标准大气压'], dimension: 'pressure', factor: 101325, note: '海平面标准大气压 = 101325 Pa' },
-  { name: 'psi', aliases: ['磅每平方英寸'], dimension: 'pressure', factor: 6894.757293168,
-    note: '1 psi ≈ 6.895 kPa。英制工程常用，与 bar 差 14.5 倍' },
-  { name: 'mmHg', aliases: ['毫米汞柱', '托'], dimension: 'pressure', factor: 133.322387415,
-    note: '1 mmHg ≈ 133.3 Pa。医学与真空常用；760 mmHg = 1 atm' },
-  { name: 'Torr', dimension: 'pressure', factor: 133.32236842105263, note: '与 mmHg 差 0.000014%，工程上可视为同一个' },
-]
+/**
+ * 内置单位表 —— 从 `units-data.ts` 导入（那里按体系分节，便于查阅与扩充）。
+ *
+ * 现在是 **288 条**：公制（含 SI 词头）、中国市制与古制、英制与美制、
+ * 航海、天文、日本、俄国、印度、古希腊罗马，外加数据量/角度/力/频率。
+ */
+export const UNITS: UnitDef[] = ALL_UNITS
 
 /**
  * 按名字查单位（含别名）。

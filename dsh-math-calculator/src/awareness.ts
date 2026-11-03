@@ -134,24 +134,44 @@ export function buildSystemPromptSection(): string {
     /* 读不到就按 0 */
   }
 
+  /**
+   * brief 档：默认档，每轮下发。
+   *
+   * ## 分区按「频率 × 重要度」排
+   *
+   * 原来这一段是 817 字符，其中「能力清单」占 200 字符（罗列 12 类能力），
+   * 而最常问的「该用哪个 operation」一句都没写 —— 比例完全反了。
+   *
+   * 现在的取舍：
+   *   ① **行为约束**放最前（40 字符）—— 它决定「调不调」，最重要
+   *   ② **选哪个 operation**（70 字符）—— 高频且原先缺失
+   *   ③ **可信度标签**（60 字符）—— 决定「数能不能引用」，最重要之一
+   *   ④ **精度两层**（50 字符）—— 中频
+   *   ⑤ **世界推演分工**（80 字符）—— 低频，压到极限
+   *   ⑥ **能力全清单**不再列出 —— 已在 schema 的 enum 与 help 里，
+   *      同一份信息付两次钱是浪费（这条有实测依据：省 21% 定义长度）
+   */
   if (promptMode === 'brief') {
     return [
       '## 数学计算工具（math_execute）',
       '',
-      '涉及任何数值计算时**必须**调用 math_execute，不要心算、不要用 bash 拼凑。',
+      '涉及数值计算时**必须**调用，不要心算、不要用 bash 拼凑。',
       '',
-      '能算：高精度求值、解方程、符号微积分、矩阵/特征值/秩/奇异值、统计与分布、回归、',
-      '微分方程、' + FORMULAS.length + ' 条自然科学公式、物理常数推演、星球/天空/恒星/卫星/生命推演、',
-      '宏观文明极限（能量/材料/交通/技术树）、观测者体感、逆推校准、混沌概率云。',
+      '**选哪个 operation**：一条式子 → `evaluate`（多条用 `expressions` 批量，可带 label）；',
+      '解方程 → `solve`；数据 → `stats`/`dist`/`regression`；公式 → `formula`（' + FORMULAS.length + ' 条，参数可覆盖）；',
+      '单位 → `units`；改设定 → `world`/`constants`/`derivation`；不确定 → `help`。',
       '',
-      '读输出：',
-      '· [精确]/[标度]/[量级]/[仅方向] 是可信度标签——引用结论时请保留；',
-      '· 【跨模块一致性】的 ✗ 表示设定自相矛盾，先修正再写；',
-      '· 【模型可信度】标出哪些数字只是地球标定。',
+      '**读输出的约定**：',
+      '· `[精确]/[标度]/[量级]/[仅方向]` 是可信度标签，引用时保留，别当装饰；',
+      '· 【跨模块一致性】✗ 表示设定自相矛盾，先修正再写；',
+      '· 【模型可信度】标出哪些数只是地球标定 —— 常数偏离现实时它会失真。',
       '',
-      buildBriefPlaybook({ changedConstants: changedConstants, customConstants: customConstantCount }),
+      '**精度分两层**：`precision`（计算，默认 64）调低会算错大数，不要为好看动它；',
+      '`displayPrecision`（**小数点后几位**，默认 8）只截小数，整数永远完整。',
+      '要更多位就单次传，或 `{operation:"workspace", action2:"set", displayPrecision:N}` 固化。',
       '',
-      '不确定能力边界时先调 operation="help"。' + changedNote + tableNote,
+      buildBriefPlaybook({ changedConstants: changedConstants, customConstants: customConstantCount })
+        + changedNote + tableNote,
     ].join('\n')
   }
 

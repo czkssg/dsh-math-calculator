@@ -214,6 +214,13 @@ export interface MathArgs {
   layer?: string
   /** 单位缩放因子，检测「单位重定义陷阱」，如 { mass: 2 }。 */
   unitScales?: Record<string, number>
+  /**
+   * 列单位清单时展开哪一维（`"length"` / `"长度"` 等）。
+   *
+   * 单位表收到近三百条后，全量展开一次是一万七千多字符；
+   * 默认只给各量纲的计数与样例，点名才展开。这与 help 的「用到时才读」一致。
+   */
+  unitScale?: string
   /** 敏感性分析的基线值。 */
   sensitivityBase?: number
   /** 敏感性分析的幂次（结果 = 输入^幂）。 */

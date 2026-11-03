@@ -112,20 +112,41 @@ console.log('-- 5. 缺参数要说清缺什么 --')
   assert('三个都给 → 成功', r3.ok === true, r3.ok ? '' : r3.message)
 }
 
-console.log('-- 6. 不带参数 → 列出全部单位 --')
+console.log('-- 6. 不带参数 → 先给摘要，点名才展开（省上下文）--')
 {
+  /**
+   * 单位收到近三百条后，全量展开一次是 17000+ 字符。
+   * 默认改成「每个量纲的计数 + 样例」，要看全表传 unitScale ——
+   * 与 help 的「用到时才读」同一取向。
+   */
   const r = run({})
   assert('列清单成功', r.ok === true, r.ok ? '' : r.message)
-  assert('含中文古制「里」', r.text.includes('里'), '')
-  assert('含天文单位 AU', r.text.includes('AU'), '')
-  assert('含温度 °C', r.text.includes('°C'), '')
-  assert('按量纲分组标题', r.text.includes('【长度】') && r.text.includes('【温度】'), '')
+  assert('给出总量', /共 \d+ 条/.test(r.text), r.text.split('\n')[0])
+  assert('按量纲逐行列出（含长度与温度）', r.text.includes('长度') && r.text.includes('温度'), '')
+  assert('每行带基准单位', r.text.includes('m') && r.text.includes('K'), '')
+  assert('给了展开方式（unitScale）', r.text.includes('unitScale'), '')
   assert('给了用法示例', r.text.includes('unitFrom'), '')
-  // 结构化值也要有
+  assert('默认不展开明细（长度受控）', r.text.length < 1500, String(r.text.length))
+  // 结构化值仍要完整（下游可以自己取）
   assert('value.mode = list', r.value && r.value.mode === 'list', r.value && r.value.mode)
   assert('每个量纲都带基准单位',
     r.value && r.value.dimensions.every((d) => typeof d.base === 'string' && d.base !== ''),
     '')
+
+  // 点名展开：能查到具体条目
+  const len = run({ unitScale: 'length' })
+  assert('unitScale=length 可展开', len.ok === true, len.ok ? String(len.text.length) : len.message)
+  assert('展开后含中文古制「里」', len.text.includes('里'), '')
+  assert('展开后含天文单位 AU', len.text.includes('AU'), '')
+  const temp = run({ unitScale: 'temperature' })
+  assert('unitScale=temperature 含 °C', temp.ok && temp.text.includes('°C'), '')
+  // 中文名也认
+  const zh = run({ unitScale: '长度' })
+  assert('中文量纲名也认', zh.ok === true, '')
+  // 写错要报错且列出可选项，不静默
+  const bad = run({ unitScale: 'bogus' })
+  assert('错误量纲被拒', bad.ok === false, bad.ok ? '' : '')
+  assert('报错列出可用量纲', bad.ok === false && bad.hint && bad.hint.includes('length'), bad.ok ? '' : bad.hint)
 }
 
 console.log('-- 7. 自定义单位：项目可以覆盖内置 --')

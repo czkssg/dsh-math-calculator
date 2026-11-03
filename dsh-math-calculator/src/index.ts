@@ -2534,7 +2534,7 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   // 设定一致性
   'claims', 'listConstraints',
   // 单位
-  'unitValue', 'unitFrom', 'unitTo', 'customUnits', 'unitScales',
+  'unitValue', 'unitFrom', 'unitTo', 'customUnits', 'unitScales', 'unitScale',
   // 收支
   'balance',
   // 天体
@@ -3363,7 +3363,7 @@ type KnownKeyUnion =
   | 'action2' | 'workspace' | 'name' | 'description' | 'terrainName' | 'workspaceVariables'
   | 'useWorkspaceVariables'
   | 'claims' | 'listConstraints'
-  | 'unitValue' | 'unitFrom' | 'unitTo' | 'customUnits' | 'unitScales'
+  | 'unitValue' | 'unitFrom' | 'unitTo' | 'customUnits' | 'unitScales' | 'unitScale'
   | 'balance'
   | 'bodyName' | 'bodyKind' | 'bodyConstant' | 'bodyFactor' | 'bodyType' | 'bodyEvidence'
   | 'anchor' | 'anchorValue' | 'compareFrom' | 'compareTo'

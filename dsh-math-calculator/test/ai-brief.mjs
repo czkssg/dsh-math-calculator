@@ -58,7 +58,7 @@ console.log('-- 4. 系统提示已含分工说明 --')
   setPromptMode('brief')
   const brief = buildSystemPromptSection()
   assert('brief 含分工说明', brief.includes('底座算数'), brief.slice(-120))
-  assert('brief 说明该算的调工具', brief.includes('该算的'))
+  assert('brief 说明该算的调工具', brief.includes('该算') || brief.includes('算：'))
   assert('brief 含「不反驳」', brief.includes('不反驳'))
   assert('brief 含「别编」', brief.includes('别编'))
 

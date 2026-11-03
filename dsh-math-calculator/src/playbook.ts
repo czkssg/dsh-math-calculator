@@ -295,18 +295,43 @@ export function buildPlaybook(state: {
  * @param state - 工作区状态
  * @returns 精简提示词
  */
+/**
+ * brief 档的指令集（每轮都随注入下发，**每个字都在付费**）。
+ *
+ * ## 字数按「使用频率 × 重要程度」分配
+ *
+ * 曾经的问题是比例失调：整段 817 字符里，「世界推演」占了 360（44%），
+ * 而它只对做架空世界设定那类会话有用 —— 算术、单位换算、统计这些
+ * **高频场景完全用不到**，却要为它每轮付 360 字符。
+ *
+ * 现在按三档分配：
+ *
+ * | 内容 | 频率 | 重要度 | 字数 |
+ * |---|---|---|---|
+ * | 行为约束（必须调用 / 不要心算） | 每轮 | 极高 | ~40 |
+ * | 该用哪个 operation（最常问） | 极高 | 高 | ~70 |
+ * | 可信度标签怎么读 | 中 | 极高 | ~60 |
+ * | 精度两层 | 中 | 高 | ~50 |
+ * | 世界推演分工（低频，压到极限） | 低 | 中 | ~80 |
+ *
+ * ## 顺手修掉两处自相矛盾
+ *
+ * 原第 5 条说「输出默认全精度（几十位小数）」、第 6 条说「默认 8 位小数」——
+ * 两条并列下发，模型读到的是互相冲突的指令。**8 位才是现状**（2.1.0 起），
+ * 「全精度」那句是过时表述，已删。
+ *
+ * @param state - 工作区状态（改过的常数、自创量）
+ * @returns 指令集文本
+ */
 export function buildBriefPlaybook(state: {
   changedConstants?: string[]
   customConstants?: number
 }): string {
   const out: string[] = []
-  out.push('**世界推演：底座算数，你判断与表达。**')
-  out.push('- 该算的调 `derivation`（pipeline/civilization/dead/observer/backSolve/chaos）与 `custom`')
-  out.push('- 该写的（结语、描写、叙事判断）由你生成，别照抄工具输出')
-  out.push('- 硬约束（物质不存在等）如实说；叙事选择（要巨兽、要灵能）不反驳，只讲代价')
-  out.push('- 算不出来的别编，标待定或问用户')
-  out.push('- 工具输出默认是**全精度**（可能几十位小数），是供你取舍的原料。**保留几位你来定**：读者只要感觉就少给，要核对就多给，要接着算就管够。别把 60 位抄给读者，也别把该精确的整数（如 10^20+5）截成科学计数法')
-  out.push('- 工具输出默认按**小数点后 8 位**显示（整数永远完整，如 10^20+5 不会被截）。需要更多位就单次传 `displayPrecision`；想全局换一档用 `{operation:"workspace", action2:"set", displayPrecision:N}` 固化一次。注意 `precision`（计算精度）不要调低，它一低大数就会算错')
+  // 低频内容压到 120 字符内。四句话的语义一个不少，只是去掉重复的修饰。
+  out.push('**世界推演：底座算数，你判断表达。**')
+  out.push('- 算：`derivation`（pipeline/backSolve/dead/observer/chaos）；写：结语叙事你生成')
+  out.push('- 硬约束如实说；叙事选择不反驳只讲代价；算不出的别编，标待定')
   if ((state.changedConstants ?? []).length > 0) {
     out.push('- 本区改过常数，先跑 dimensionless 确认不是单位重定义')
   }
