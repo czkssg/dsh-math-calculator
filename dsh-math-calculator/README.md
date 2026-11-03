@@ -13,11 +13,23 @@ DSH（DeepSeek Harness）原生的**高精度数学计算器**插件，附带可
 |---|---|---|
 | 高精度计算 | 心算 / bash 拼 | BigNumber 64 位，整数输出完整定点 |
 | 符号运算 | 查表或近似 | 求导/积分/化简/展开，符号精确 |
-| 单位换算 | 自己查系数 | 73 个单位，温度按仿射换算 |
+| 单位换算 | 自己查系数 | 88 个单位 / 10 个量纲，温度按仿射换算 |
 | 写公式 | 每次都重推 | 404 条公式库，参数全可覆盖 |
 | 改物理常数 | 无法验证 | 自动推导派生量 + 全公式偏差 |
 | 多项目数据 | 互相污染 | 工作区隔离，各持一套常数表与公式表 |
 | *（可选）* 架空世界设定 | 凭感觉 | 输入星球参数 → 出重力/气候/地形上限 |
+
+---
+
+## 文档
+
+| 文档 | 内容 |
+|---|---|
+| 本文件 | 速查：装什么、有多少能力、命令怎么用 |
+| [**功能详解**](docs/功能详解.md) | 每个 operation 怎么用、结果怎么读、什么时候会被拒绝、能力边界 |
+| [ADR-0002](../docs/adr/0002-plugin-ai-facing.md) | 面向 AI 的三层提示设计 |
+| [docs/formula-authoring.md](../docs/formula-authoring.md) | 怎么加一条公式 |
+| [docs/ui-removed.md](docs/ui-removed.md) | 界面为什么被移除 |
 
 ---
 
@@ -91,7 +103,7 @@ npm pack
 | `feasibility` | 设定一致性校验 | `{"world":{"planetMass":2},"claims":{"creatureHeight":50},"operation":"feasibility"}` |
 | `bodies` | 天体目录与类型学（26 具名天体 + 32 类型） | `{"bodyName":"mars"}` / `{"bodyType":"中子星"}` / `{"bodyConstant":"alpha_fs","bodyFactor":2}` |
 | `balance` | 收支盘点（多项一起看，给最短板） | `{"balance":{"grain":{"demand":2.7e6,"supply":3.1e6}}}` |
-| `units` | 单位换算（73 个单位，含中文古制） | `{"unitValue":30,"unitFrom":"里","unitTo":"km"}` |
+| `units` | 单位换算（88 个单位 / 10 个量纲，含中文古制与英制） | `{"unitValue":30,"unitFrom":"里","unitTo":"km"}` |
 | `custom` | 自创常数/新物理量 | `{"operation":"custom","action2":"add"}` |
 
 ### 恒星结构（S3）
