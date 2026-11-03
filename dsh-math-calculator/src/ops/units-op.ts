@@ -35,9 +35,18 @@ import { CalcError, safeNumberForJson, type MathArgs, type Outcome } from './sha
 
 /** 量纲的展示顺序（先写日常用的）。 */
 const ORDER: Dimension[] = [
+  // 力学与几何
   'length', 'mass', 'time', 'area', 'volume',
   'energy', 'power', 'temperature', 'speed', 'pressure',
   'force', 'angle', 'data', 'frequency',
+  // 电学
+  'current', 'charge', 'voltage', 'capacitance', 'resistance',
+  'conductance', 'magnetic_flux', 'magnetic_flux_density', 'inductance',
+  // 光学
+  'solid_angle', 'luminous_intensity', 'luminous_flux', 'illuminance',
+  // 化学与核物理
+  'amount_of_substance', 'activity', 'absorbed_dose',
+  'dose_equivalent', 'catalytic_activity',
 ]
 
 /**

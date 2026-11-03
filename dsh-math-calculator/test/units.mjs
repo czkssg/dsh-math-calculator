@@ -126,7 +126,12 @@ console.log('-- 6. 不带参数 → 先给摘要，点名才展开（省上下�
   assert('每行带基准单位', r.text.includes('m') && r.text.includes('K'), '')
   assert('给了展开方式（unitScale）', r.text.includes('unitScale'), '')
   assert('给了用法示例', r.text.includes('unitFrom'), '')
-  assert('默认不展开明细（长度受控）', r.text.length < 1500, String(r.text.length))
+  /**
+   * 量纲从 14 增到 32（补电学/光学/化学/核物理）后，摘要自然变长 ——
+   * 上限从 1500 调到 2000。仍然远小于全量展开的 17000+，
+   * 这条断言守的意图（默认给摘要、不展开明细）没有变。
+   */
+  assert('默认不展开明细（长度受控）', r.text.length < 2000, String(r.text.length))
   // 结构化值仍要完整（下游可以自己取）
   assert('value.mode = list', r.value && r.value.mode === 'list', r.value && r.value.mode)
   assert('每个量纲都带基准单位',

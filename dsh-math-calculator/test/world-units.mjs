@@ -56,7 +56,11 @@ console.log('-- 1. 规模与覆盖 --')
 {
   assert('单位总数超过 400', UNITS.length > 400, String(UNITS.length))
   const dims = new Set(UNITS.map(function (u) { return u.dimension }))
-  assert('量纲覆盖 14 个', dims.size === 14, Array.from(dims).join(','))
+  /**
+   * 量纲从 14 扩到 32（电学 9 / 光学 4 / 化学与核物理 5）。
+   * 本套只守「力学与几何那几个」的条目量，量纲总数的断言交给 si-units.mjs。
+   */
+  assert('量纲覆盖不少于 32 个', dims.size >= 32, String(dims.size))
   for (const d of ['length', 'mass', 'volume', 'area']) {
     const count = UNITS.filter(function (u) { return u.dimension === d }).length
     assert('量纲 ' + d + ' 条目 > 25', count > 25, String(count))

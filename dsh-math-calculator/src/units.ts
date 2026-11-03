@@ -92,6 +92,7 @@ export interface UnitDef {
  * 「转三十度」「拉弓要多少牛」），它们各自的公制基准也定义在 units-data。
  */
 export type Dimension =
+  // ── 力学与几何（14 个原有）──
   | 'length'
   | 'mass'
   | 'time'
@@ -106,6 +107,27 @@ export type Dimension =
   | 'angle'
   | 'force'
   | 'frequency'
+  // ── 电学（8 个）──
+  | 'current'
+  | 'charge'
+  | 'voltage'
+  | 'capacitance'
+  | 'resistance'
+  | 'conductance'
+  | 'magnetic_flux'
+  | 'magnetic_flux_density'
+  | 'inductance'
+  // ── 光学（3 个）──
+  | 'solid_angle'
+  | 'luminous_intensity'
+  | 'luminous_flux'
+  | 'illuminance'
+  // ── 化学与核物理（5 个）──
+  | 'amount_of_substance'
+  | 'activity'
+  | 'absorbed_dose'
+  | 'dose_equivalent'
+  | 'catalytic_activity'
 
 /**
  * 每个量纲的基准单位（factor = 1 的那个）—— 即「公制中转点」。

@@ -859,6 +859,132 @@ export const SEA_OTHER_UNITS: UnitDef[] = [
  *
  * 条数见 `ALL_UNITS.length`（当前 429：度量衡 398 + 科学 31）。
  */
+
+/**
+ * 电学、光学、化学与核物理的 SI 单位（补齐量纲断层）。
+ *
+ * ## 为什么必须补这一批
+ *
+ * 原来的单位表只有 4 个 SI 基本单位（m / kg / s / K），缺安培、摩尔、坎德拉 ——
+ * 于是**整个电学、光学、化学、核物理领域无法换算**：
+ * 写「十二伏电池」「三毫居里放射源」「0.5 戈瑞剂量」时工具一律不认识。
+ *
+ * 这一批把 7 个 SI 基本单位补全，并把 22 个具名导出单位落地，
+ * 连带 18 个新量纲（电流/电荷/电压/电容/电阻/电导/磁通/磁通密度/电感/
+ * 立体角/发光强度/光通量/照度/物质的量/活度/吸收剂量/剂量当量/催化活度）。
+ *
+ * ## 溯源
+ *
+ * 全部按 BIPM《SI Brochure》第 9 版（2019）Table 2/3/5。
+ * 非 SI 单位（Ci、rad、U、gauss）按 NIST SP 811 与 ISO 80000 系列。
+ *
+ * ## 一处同名冲突
+ *
+ * 辐射吸收剂量的 `rad` 与平面角弧度 `rad` 同名（插件已收弧度）。
+ * 辐射那条主名用 `rad_dose`，别名写 `rad (dose)` —— 两个都是正式写法，
+ * 但主名不能撞，否则查表时永远命中弧度。
+ */
+export const SI_ELECTRO_OPTICAL_UNITS: UnitDef[] = [
+  // ── SI 七个基本单位中此前缺失的三个 ──
+  { name: 'A', aliases: ['安培', 'ampere', 'amp'], dimension: 'current', factor: 1, category: 'science',
+    note: 'SI 基本单位，电流基准。2019 修订后由元电荷 e 定义。源：BIPM SI Brochure 9th (2019) Table 2' },
+  { name: 'mol', aliases: ['摩尔', 'mole'], dimension: 'amount_of_substance', factor: 1, category: 'science',
+    note: 'SI 基本单位，物质的量基准。2019 修订后由阿伏伽德罗常数 NA 定义。源：BIPM SI Brochure 9th (2019) Table 2' },
+  { name: 'cd', aliases: ['坎德拉', 'candela'], dimension: 'luminous_intensity', factor: 1, category: 'science',
+    note: 'SI 基本单位，发光强度基准。2019 修订后由光视效能 Kcd 定义。源：BIPM SI Brochure 9th (2019) Table 2' },
+
+  // ── SI 具名导出单位（22 个）──
+  { name: 'sr', aliases: ['球面度', 'steradian'], dimension: 'solid_angle', factor: 1, category: 'science',
+    note: '1 sr = 1 m²/m²，无量纲导出单位。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'C', aliases: ['库仑', 'coulomb'], dimension: 'charge', factor: 1, category: 'science',
+    note: '1 C = 1 A·s。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'V', aliases: ['伏', '伏特', 'volt'], dimension: 'voltage', factor: 1, category: 'science',
+    note: '1 V = 1 W/A = 1 kg·m²/(s³·A)。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'F', aliases: ['法拉', 'farad'], dimension: 'capacitance', factor: 1, category: 'science',
+    note: '1 F = 1 C/V = 1 A²·s⁴/(kg·m²)。源：BIPM SI Brochure 9th (2019) Table 3' },
+  /**
+   * 欧姆：主名用 U+03A9（希腊字母 Omega）。**U+2126（欧姆符号）必须同时收进别名** ——
+   * 从不同来源粘贴的文字会带不同码位，只收一个就有一半认不出。
+   */
+  /** 主名是 U+03A9（希腊 Omega），别名另收 U+2126（欧姆符号）与「欧姆」。 */
+  { name: 'Ω', aliases: ['Ω', '欧姆', 'ohm'], dimension: 'resistance', factor: 1, category: 'science',
+    note: '1 Ω = 1 V/A = 1 kg·m²/(s³·A²)。U+03A9 与 U+2126 两个码位都收。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'S', aliases: ['西门子', 'siemens'], dimension: 'conductance', factor: 1, category: 'science',
+    note: '1 S = 1 A/V = 1 Ω⁻¹。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'Wb', aliases: ['韦伯', 'weber'], dimension: 'magnetic_flux', factor: 1, category: 'science',
+    note: '1 Wb = 1 V·s = 1 kg·m²/(s²·A)。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'T', aliases: ['特斯拉', 'tesla'], dimension: 'magnetic_flux_density', factor: 1, category: 'science',
+    note: '1 T = 1 Wb/m² = 1 kg/(s²·A)。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'H', aliases: ['亨利', 'henry'], dimension: 'inductance', factor: 1, category: 'science',
+    note: '1 H = 1 Wb/A = 1 kg·m²/(s²·A²)。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'lm', aliases: ['流明', 'lumen'], dimension: 'luminous_flux', factor: 1, category: 'science',
+    note: '1 lm = 1 cd·sr。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'lx', aliases: ['勒克斯', 'lux'], dimension: 'illuminance', factor: 1, category: 'science',
+    note: '1 lx = 1 lm/m² = 1 cd·sr/m²。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'Bq', aliases: ['贝可', '贝可勒尔', 'becquerel'], dimension: 'activity', factor: 1, category: 'science',
+    note: '1 Bq = 1 s⁻¹，每秒一次衰变。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'Gy', aliases: ['戈瑞', 'gray'], dimension: 'absorbed_dose', factor: 1, category: 'science',
+    note: '1 Gy = 1 J/kg，吸收剂量。源：BIPM SI Brochure 9th (2019) Table 3' },
+  { name: 'Sv', aliases: ['希沃特', 'sievert'], dimension: 'dose_equivalent', factor: 1, category: 'science',
+    note: '1 Sv = 1 J/kg，剂量当量（与 Gy 同量纲但含义不同）。源：BIPM SI Brochure 9th (2019) Table 3' },
+  /**
+   * 物质的量的常用细分：mmol / µmol / nmol。
+   *
+   * 生化、药学、临床检验里几乎只用这几个 —— 「血糖 5.5 mmol/L」
+   * 「酶活 10 µmol/min」都是日常表述，所以归 measure 不归 science。
+   */
+  { name: 'mmol', aliases: ['毫摩尔', 'millimole'], dimension: 'amount_of_substance', factor: 0.001, category: 'measure',
+    note: '1 mmol = 10⁻³ mol。临床检验（血糖/血脂）与生化实验常用。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'µmol', aliases: ['μmol', '微摩尔', 'micromole'], dimension: 'amount_of_substance', factor: 1e-6, category: 'measure',
+    note: '1 µmol = 10⁻⁶ mol。酶活与微量分析常用。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'nmol', aliases: ['纳摩尔', 'nanomole'], dimension: 'amount_of_substance', factor: 1e-9, category: 'measure',
+    note: '1 nmol = 10⁻⁹ mol。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'kat', aliases: ['开特', 'katal'], dimension: 'catalytic_activity', factor: 1, category: 'science',
+    note: '1 kat = 1 mol/s，催化活度。源：BIPM SI Brochure 9th (2019) Table 3' },
+
+  // ── 常用非 SI / 词头单位 ──
+  { name: 'Ah', aliases: ['安时', 'ampere-hour', 'A·h'], dimension: 'charge', factor: 3600, category: 'measure',
+    note: '1 Ah = 1 A·3600 s = 3600 C。电池容量必用。源：ISO 80000-6 (2008)' },
+  { name: 'mAh', aliases: ['毫安时', 'milliampere-hour'], dimension: 'charge', factor: 3.6, category: 'measure',
+    note: '1 mAh = 3.6 C，手机电池常用。源：ISO 80000-6 (2008)' },
+  { name: 'mV', aliases: ['毫伏', 'millivolt'], dimension: 'voltage', factor: 0.001, category: 'measure',
+    note: 'SI 词头单位，1 mV = 10⁻³ V。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'kV', aliases: ['千伏', 'kilovolt'], dimension: 'voltage', factor: 1000, category: 'measure',
+    note: 'SI 词头单位，1 kV = 10³ V。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'kΩ', aliases: ['千欧', 'kiloohm', 'kohm'], dimension: 'resistance', factor: 1000, category: 'measure',
+    note: 'SI 词头单位，1 kΩ = 10³ Ω。源：BIPM SI Brochure 9th (2019) Table 5' },
+  { name: 'MΩ', aliases: ['兆欧', 'megaohm', 'mohm'], dimension: 'resistance', factor: 1000000, category: 'measure',
+    note: 'SI 词头单位，1 MΩ = 10⁶ Ω。源：BIPM SI Brochure 9th (2019) Table 5' },
+  /** CGS 制磁通密度。1 G = 10⁻⁴ T 是**精确定义**，不是近似，不许为好看写成 0.0001 之外的数。 */
+  { name: 'gauss', aliases: ['高斯', 'G', 'Gs'], dimension: 'magnetic_flux_density', factor: 0.0001, category: 'science',
+    note: '1 G = 10⁻⁴ T（精确），CGS 制磁通密度。源：ISO 80000-6 (2008)' },
+  /** 整球立体角 4π sr。含 π 的值给足 double 位数，note 写精确式子。 */
+  { name: 'sphere', aliases: ['整球', '球面'], dimension: 'solid_angle', factor: 12.566370614359172, category: 'science',
+    note: '整球立体角 = 4π sr ≈ 12.566370614359172 sr。源：BIPM SI Brochure 9th (2019) §5.2' },
+  { name: 'deg²', aliases: ['平方度', 'square degree', 'sqdeg'], dimension: 'solid_angle', factor: 0.00030461741978670857, category: 'science',
+    note: '1 deg² = (π/180)² sr ≈ 3.0461741978670857×10⁻⁴ sr，天区面积常用。源：ISO 80000-3 (2019)' },
+  { name: 'Ci', aliases: ['居里', 'curie'], dimension: 'activity', factor: 37000000000, category: 'science',
+    note: '1 Ci = 3.7×10¹⁰ Bq（精确，定义为 1 g 镭-226 的活度）。源：NIST SP 811 (2008) B.8' },
+  /** 辐射 rad：主名 rad_dose，**不能**用 rad —— 弧度已占用，撞名会导致查表永远命中角度。 */
+  { name: 'rad_dose', aliases: ['rad (dose)', '拉德'], dimension: 'absorbed_dose', factor: 0.01, category: 'science',
+    note: '1 rad = 0.01 Gy（精确），CGS 制吸收剂量。注意与平面角弧度 rad 同名，故主名用 rad_dose。源：NIST SP 811 (2008) B.8' },
+  /** 酶单位：1 U = 1 µmol/min。60 s 不是整数秒，所以 factor 是循环小数的 double 近似。 */
+  { name: 'U', aliases: ['酶单位', 'enzyme unit', 'IU'], dimension: 'catalytic_activity', factor: 1.6666666666666667e-8, category: 'science',
+    note: '1 U = 1 µmol/min = 10⁻⁶ mol / 60 s ≈ 1.6666666666666667×10⁻⁸ kat。源：NC-IUB 酶单位定义 / ISO 18153' },
+]
+
+/**
+ * 全部单位：公制（含 SI 词头）、中国市制与历代、日本尺贯法、
+ * 俄/德/法/西/葡/意/荷/北欧传统单位、印度/阿拉伯/奥斯曼、
+ * 英美制、航海与天文、电学/光学/化学/核物理的 SI 单位，
+ * 以及数据量/角度/力/频率。
+ *
+ * 每个条目只声明「等于多少**公制基准单位**」，因此任意两者都能互换 ——
+ * 这就是「公制做换算中转」的实现方式。
+ *
+ * 条数见 `ALL_UNITS.length`：462 条 / 32 个量纲
+ * （度量衡与科学两类，见 `UnitDef.category`）。
+ */
 export const ALL_UNITS: UnitDef[] = [
   ...LENGTH_UNITS,
   ...MASS_UNITS,
@@ -883,6 +1009,7 @@ export const ALL_UNITS: UnitDef[] = [
   ...INDIA_UNITS,
   ...ARABIA_UNITS,
   ...SEA_OTHER_UNITS,
+  ...SI_ELECTRO_OPTICAL_UNITS,
 ]
 
 /** 各量纲的基准（公制中转点）。换算永远「先乘到基准、再除以目标」。 */
@@ -901,6 +1028,27 @@ export const DIMENSION_BASE: Record<Dimension, string> = {
   angle: 'rad',
   force: 'N',
   frequency: 'Hz',
+  // ── 电学 ──
+  current: 'A',
+  charge: 'C',
+  voltage: 'V',
+  capacitance: 'F',
+  resistance: 'Ω',
+  conductance: 'S',
+  magnetic_flux: 'Wb',
+  magnetic_flux_density: 'T',
+  inductance: 'H',
+  // ── 光学 ──
+  solid_angle: 'sr',
+  luminous_intensity: 'cd',
+  luminous_flux: 'lm',
+  illuminance: 'lx',
+  // ── 化学与核物理 ──
+  amount_of_substance: 'mol',
+  activity: 'Bq',
+  absorbed_dose: 'Gy',
+  dose_equivalent: 'Sv',
+  catalytic_activity: 'kat',
 }
 
 /** 量纲的中文名。 */
@@ -919,11 +1067,41 @@ export const DIMENSION_LABEL: Record<Dimension, string> = {
   angle: '角度',
   force: '力',
   frequency: '频率',
+  // ── 电学 ──
+  current: '电流',
+  charge: '电荷量',
+  voltage: '电压',
+  capacitance: '电容',
+  resistance: '电阻',
+  conductance: '电导',
+  magnetic_flux: '磁通量',
+  magnetic_flux_density: '磁通密度',
+  inductance: '电感',
+  // ── 光学 ──
+  solid_angle: '立体角',
+  luminous_intensity: '发光强度',
+  luminous_flux: '光通量',
+  illuminance: '照度',
+  // ── 化学与核物理 ──
+  amount_of_substance: '物质的量',
+  activity: '放射性活度',
+  absorbed_dose: '吸收剂量',
+  dose_equivalent: '剂量当量',
+  catalytic_activity: '催化活度',
 }
 
 /** 量纲排列顺序（列单位时分组的顺序）。 */
 export const DIMENSION_ORDER: Dimension[] = [
+  // 力学与几何（日常最常用，排前面）
   'length', 'mass', 'time', 'area', 'volume',
   'energy', 'power', 'temperature', 'speed', 'pressure',
   'force', 'angle', 'data', 'frequency',
+  // 电学
+  'current', 'charge', 'voltage', 'capacitance', 'resistance',
+  'conductance', 'magnetic_flux', 'magnetic_flux_density', 'inductance',
+  // 光学
+  'solid_angle', 'luminous_intensity', 'luminous_flux', 'illuminance',
+  // 化学与核物理
+  'amount_of_substance', 'activity', 'absorbed_dose',
+  'dose_equivalent', 'catalytic_activity',
 ]
