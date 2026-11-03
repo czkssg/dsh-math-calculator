@@ -78,12 +78,17 @@ export const LENGTH_UNITS: UnitDef[] = [
   // ── 公制基本 ──
   { name: 'm', aliases: ['米', '公尺'], dimension: 'length', factor: 1, note: '基准单位' },
   { name: 'km', aliases: ['千米', '公里'], dimension: 'length', factor: 1e3 },
+  { name: 'dm', aliases: ['分米'], dimension: 'length', factor: 0.1 },
+  { name: 'cm', aliases: ['厘米', '公分'], dimension: 'length', factor: 0.01 },
+  { name: 'mm', aliases: ['毫米', '公厘'], dimension: 'length', factor: 0.001 },
+  { name: 'µm', aliases: ['微米', 'μm'], dimension: 'length', factor: 1e-6 },
+  { name: 'nm', aliases: ['纳米'], dimension: 'length', factor: 1e-9 },
 
   // ── 中国市制（1929 年定制，现大陆通用）──
   { name: '里', dimension: 'length', factor: 500,
     note: '市里 = 500 m。古代差异极大：周制约 415 m、秦汉约 415 m、清制 576 m' },
   { name: '丈', dimension: 'length', factor: 3.2, note: '市丈 = 10 市尺 = 3.2 m' },
-  { name: '尺', dimension: 'length', factor: 0.32,
+  { name: '市尺', aliases: ['尺'], dimension: 'length', factor: 0.32,
     note: '市尺 ≈ 32 cm。历代不同：商制约 16 cm、汉制约 23 cm、明清营造尺约 32 cm' },
   { name: '寸', dimension: 'length', factor: 0.032, note: '市寸 = 1/10 市尺 ≈ 3.2 cm' },
   { name: '分', dimension: 'length', factor: 0.0032, note: '市分 = 1/10 市寸（注意与「分」作为质量/面积单位区分）' },
@@ -116,15 +121,15 @@ export const LENGTH_UNITS: UnitDef[] = [
   { name: 'AU', aliases: ['天文单位'], dimension: 'length', factor: 1.495978707e11, note: '日地平均距离' },
   { name: 'ly', aliases: ['光年', 'lightyear'], dimension: 'length', factor: 9.4607304725808e15 },
   { name: 'pc', aliases: ['秒差距', 'parsec'], dimension: 'length', factor: 3.0856775814913673e16, note: '1 pc ≈ 3.26 ly' },
-  { name: 'kpc', dimension: 'length', factor: 3.0856775814913673e19 },
-  { name: 'Mpc', dimension: 'length', factor: 3.0856775814913673e22 },
-  { name: 'Rearth', aliases: ['地球半径'], dimension: 'length', factor: 6.371e6 },
-  { name: 'Rsun', aliases: ['太阳半径'], dimension: 'length', factor: 6.957e8 },
-  { name: 'Ls', aliases: ['光秒'], dimension: 'length', factor: 299792458, note: '光在一秒内走的距离' },
+  { name: 'kpc', category: 'science', dimension: 'length', factor: 3.0856775814913673e19 },
+  { name: 'Mpc', category: 'science', dimension: 'length', factor: 3.0856775814913673e22 },
+  { name: 'Rearth', category: 'science', aliases: ['地球半径'], dimension: 'length', factor: 6.371e6 },
+  { name: 'Rsun', category: 'science', aliases: ['太阳半径'], dimension: 'length', factor: 6.957e8 },
+  { name: 'Ls', aliases: ['光秒'], dimension: 'length', factor: 299792458, category: 'science', note: '光在一秒内走的距离' },
 
   // ── 微观与专业 ──
-  { name: 'Å', aliases: ['埃', 'angstrom'], dimension: 'length', factor: 1e-10, note: '1 Å = 0.1 nm，原子尺度' },
-  { name: 'bohr', aliases: ['玻尔半径'], dimension: 'length', factor: 5.29177210903e-11 },
+  { name: 'Å', aliases: ['埃', 'angstrom'], dimension: 'length', factor: 1e-10, category: 'science', note: '1 Å = 0.1 nm，原子尺度' },
+  { name: 'bohr', category: 'science', aliases: ['玻尔半径'], dimension: 'length', factor: 5.29177210903e-11 },
 
   // ── 其它地域/历史单位 ──
   { name: '日里', aliases: ['里日本', 'ri'], dimension: 'length', factor: 3927.27,
@@ -151,6 +156,9 @@ export const MASS_UNITS: UnitDef[] = [
   { name: 'kg', aliases: ['千克', '公斤'], dimension: 'mass', factor: 1, note: '基准单位' },
   { name: 't', aliases: ['吨', '公吨'], dimension: 'mass', factor: 1e3, note: '公制吨 = 1000 kg' },
   { name: 'g', aliases: ['克'], dimension: 'mass', factor: 1e-3 },
+  { name: 'mg', aliases: ['毫克'], dimension: 'mass', factor: 1e-6 },
+  { name: 'µg', aliases: ['微克', 'mcg'], dimension: 'mass', factor: 1e-9 },
+  { name: 'ng', aliases: ['纳克'], dimension: 'mass', factor: 1e-12 },
 
   // ── 中国市制 ──
   { name: '斤', dimension: 'mass', factor: 0.5,
@@ -179,7 +187,7 @@ export const MASS_UNITS: UnitDef[] = [
   { name: 'cwt', aliases: ['英担'], dimension: 'mass', factor: 50.80234544,
     note: '英制英担 = 112 磅 ≈ 50.8 kg（美制英担 100 磅，差 12%）' },
   { name: 'stone', aliases: ['英石'], dimension: 'mass', factor: 6.35029318, note: '1 英石 = 14 磅（英国人量体重常用）' },
-  { name: 'slug', dimension: 'mass', factor: 14.5939029372, note: '英制工程质量单位 ≈ 14.59 kg（1 lbf·s²/ft）' },
+  { name: 'slug', dimension: 'mass', factor: 14.5939029372, category: 'science', note: '英制工程质量单位 ≈ 14.59 kg（1 lbf·s²/ft）' },
 
   // ── 金衡（贵金属）──
   { name: 'ozt', aliases: ['金衡盎司', 'troy ounce'], dimension: 'mass', factor: 0.0311034768,
@@ -198,9 +206,9 @@ export const MASS_UNITS: UnitDef[] = [
   { name: 'kin', aliases: ['日本斤'], dimension: 'mass', factor: 0.6, note: '日本「斤」= 600 g，与中国市斤 500 g 不同' },
 
   // ── 天文/微观 ──
-  { name: 'Mearth', aliases: ['地球质量'], dimension: 'mass', factor: 5.972e24 },
-  { name: 'Msun', aliases: ['太阳质量'], dimension: 'mass', factor: 1.989e30 },
-  { name: 'amu', aliases: ['原子质量单位', '道尔顿', 'Da'], dimension: 'mass', factor: 1.66053906660e-27 },
+  { name: 'Mearth', category: 'science', aliases: ['地球质量'], dimension: 'mass', factor: 5.972e24 },
+  { name: 'Msun', category: 'science', aliases: ['太阳质量'], dimension: 'mass', factor: 1.989e30 },
+  { name: 'amu', category: 'science', aliases: ['原子质量单位', '道尔顿', 'Da'], dimension: 'mass', factor: 1.66053906660e-27 },
 ]
 
 
@@ -290,7 +298,7 @@ export const AREA_UNITS: UnitDef[] = [
   { name: '畳', aliases: ['叠', '榻榻米'], dimension: 'area', factor: 1.62, note: '一张榻榻米 ≈ 1.62 m²（各地规格略差）' },
 
   // ── 其它 ──
-  { name: 'barn', aliases: ['靶恩'], dimension: 'area', factor: 1e-28, note: '核物理截面单位 = 1e-28 m²' },
+  { name: 'barn', aliases: ['靶恩'], dimension: 'area', factor: 1e-28, category: 'science', note: '核物理截面单位 = 1e-28 m²' },
 ]
 
 
@@ -378,30 +386,30 @@ export const ENERGY_UNITS: UnitDef[] = [
   { name: 'BTU', aliases: ['英热单位', 'btu'], dimension: 'energy', factor: 1055.05585262,
     note: '英热单位 ≈ 1055 J。实测反馈里它被手打过 8+ 次（1260000 BTU/磅 这类）' },
   { name: 'therm', aliases: ['色姆'], dimension: 'energy', factor: 1.05434184e8, note: '1 therm = 100000 BTU（天然气计价）' },
-  { name: 'quad', aliases: ['夸德'], dimension: 'energy', factor: 1.05505585e18, note: '1 quad = 10^15 BTU，美国能源统计用' },
+  { name: 'quad', aliases: ['夸德'], dimension: 'energy', factor: 1.05505585e18, category: 'science', note: '1 quad = 10^15 BTU，美国能源统计用' },
 
   // ── 燃料与大尺度 ──
-  { name: 'toe', aliases: ['吨油当量'], dimension: 'energy', factor: 4.1868e10, note: '1 吨石油当量 = 41.87 GJ，能源统计标准单位' },
-  { name: 'tce', aliases: ['吨煤当量'], dimension: 'energy', factor: 2.93076e10, note: '1 吨标准煤当量 = 29.31 GJ（中国统计口径）' },
+  { name: 'toe', aliases: ['吨油当量'], dimension: 'energy', factor: 4.1868e10, category: 'science', note: '1 吨石油当量 = 41.87 GJ，能源统计标准单位' },
+  { name: 'tce', aliases: ['吨煤当量'], dimension: 'energy', factor: 2.93076e10, category: 'science', note: '1 吨标准煤当量 = 29.31 GJ（中国统计口径）' },
   { name: 'tTNT', aliases: ['吨TNT'], dimension: 'energy', factor: 4.184e9, note: '1 吨 TNT 当量 = 4.184 GJ' },
   { name: 'ktTNT', aliases: ['千吨TNT'], dimension: 'energy', factor: 4.184e12, note: '战术核武量级' },
   { name: 'MtTNT', aliases: ['百万吨TNT', 'megaton'], dimension: 'energy', factor: 4.184e15, note: '战略核武量级（沙皇炸弹约 50 Mt）' },
   { name: 'GtTNT', aliases: ['十亿吨TNT'], dimension: 'energy', factor: 4.184e18, note: '超级火山与陨击量级' },
 
   // ── 微观 ──
-  { name: 'eV', aliases: ['电子伏'], dimension: 'energy', factor: 1.602176634e-19 },
-  { name: 'keV', aliases: ['千电子伏'], dimension: 'energy', factor: 1.602176634e-16 },
-  { name: 'MeV', aliases: ['兆电子伏'], dimension: 'energy', factor: 1.602176634e-13 },
-  { name: 'GeV', aliases: ['吉电子伏'], dimension: 'energy', factor: 1.602176634e-10 },
-  { name: 'TeV', aliases: ['太电子伏'], dimension: 'energy', factor: 1.602176634e-7 },
-  { name: 'Ry', aliases: ['里德伯'], dimension: 'energy', factor: 2.1798723611035e-18, note: '里德伯能量 ≈ 13.6 eV，氢原子电离能' },
-  { name: 'hartree', aliases: ['哈特里'], dimension: 'energy', factor: 4.3597447222071e-18, note: '原子单位制能量基准 ≈ 27.2 eV' },
-  { name: 'eVperBond', aliases: ['每键电子伏'], dimension: 'energy', factor: 1.602176634e-19, note: '化学键能量常用口径' },
+  { name: 'eV', category: 'science', aliases: ['电子伏'], dimension: 'energy', factor: 1.602176634e-19 },
+  { name: 'keV', category: 'science', aliases: ['千电子伏'], dimension: 'energy', factor: 1.602176634e-16 },
+  { name: 'MeV', category: 'science', aliases: ['兆电子伏'], dimension: 'energy', factor: 1.602176634e-13 },
+  { name: 'GeV', category: 'science', aliases: ['吉电子伏'], dimension: 'energy', factor: 1.602176634e-10 },
+  { name: 'TeV', category: 'science', aliases: ['太电子伏'], dimension: 'energy', factor: 1.602176634e-7 },
+  { name: 'Ry', aliases: ['里德伯'], dimension: 'energy', factor: 2.1798723611035e-18, category: 'science', note: '里德伯能量 ≈ 13.6 eV，氢原子电离能' },
+  { name: 'hartree', aliases: ['哈特里'], dimension: 'energy', factor: 4.3597447222071e-18, category: 'science', note: '原子单位制能量基准 ≈ 27.2 eV' },
+  { name: 'eVperBond', aliases: ['每键电子伏'], dimension: 'energy', factor: 1.602176634e-19, category: 'science', note: '化学键能量常用口径' },
 
   // ── 其它 ──
-  { name: 'erg', aliases: ['尔格'], dimension: 'energy', factor: 1e-7, note: 'CGS 制能量单位 = 1e-7 J' },
-  { name: 'Ryd', dimension: 'energy', factor: 2.1798723611035e-18, note: '同 Ry，兼容写法' },
-  { name: 'foe', aliases: ['foe_energy'], dimension: 'energy', factor: 1e44,
+  { name: 'erg', aliases: ['尔格'], dimension: 'energy', factor: 1e-7, category: 'science', note: 'CGS 制能量单位 = 1e-7 J' },
+  { name: 'Ryd', dimension: 'energy', factor: 2.1798723611035e-18, category: 'science', note: '同 Ry，兼容写法' },
+  { name: 'foe', aliases: ['foe_energy'], dimension: 'energy', factor: 1e44, category: 'science',
     note: '超新星能量单位，1 foe = 10^44 J（"Fifty-One Erg" 的缩写）' },
 ]
 
@@ -430,7 +438,7 @@ export const POWER_UNITS: UnitDef[] = [
   { name: 'ftlb', aliases: ['ft·lbf/s', '英尺磅每秒'], dimension: 'power', factor: 1.3558179483314004, note: '1 ft·lbf/s ≈ 1.356 W' },
   { name: 'ton_refrig', aliases: ['冷吨', 'RT'], dimension: 'power', factor: 3516.8528420667,
     note: '制冷吨 ≈ 3.517 kW（空调冷量常用，与重量「吨」无关）' },
-  { name: 'cal_per_s', aliases: ['卡每秒'], dimension: 'power', factor: 4.184 },
+  { name: 'cal_per_s', category: 'science', aliases: ['卡每秒'], dimension: 'power', factor: 4.184 },
 
   // ── 人力畜力（古代/工程题材的核心）──
   { name: '人', aliases: ['人力', '人力持续'], dimension: 'power', factor: 75,
@@ -441,8 +449,8 @@ export const POWER_UNITS: UnitDef[] = [
   { name: '马持续', dimension: 'power', factor: 735, note: '一匹马持续工作约 0.7—1 马力' },
 
   // ── 天体与声学 ──
-  { name: 'Lsun', aliases: ['太阳光度'], dimension: 'power', factor: 3.828e26, note: '太阳总辐射功率 ≈ 3.83e26 W' },
-  { name: 'erg_per_s', aliases: ['尔格每秒'], dimension: 'power', factor: 1e-7 },
+  { name: 'Lsun', aliases: ['太阳光度'], dimension: 'power', factor: 3.828e26, category: 'science', note: '太阳总辐射功率 ≈ 3.83e26 W' },
+  { name: 'erg_per_s', category: 'science', aliases: ['尔格每秒'], dimension: 'power', factor: 1e-7 },
 ]
 
 
@@ -520,7 +528,7 @@ export const PRESSURE_UNITS: UnitDef[] = [
   { name: 'kgf/cm²', aliases: ['工程大气压', 'at'], dimension: 'pressure', factor: 98066.5,
     note: '1 kgf/cm² ≈ 98.07 kPa（旧工程制，与 atm 差 3%）' },
   { name: 'kgf/mm²', aliases: [], dimension: 'pressure', factor: 9806650 },
-  { name: 'Ba', aliases: ['巴（CGS）'], dimension: 'pressure', factor: 1e-5, note: 'CGS 制压强单位 = 1 dyn/cm²（与 bar 的「巴」同名但差 10 个量级）' },
+  { name: 'Ba', aliases: ['巴（CGS）'], dimension: 'pressure', factor: 1e-5, category: 'science', note: 'CGS 制压强单位 = 1 dyn/cm²（与 bar 的「巴」同名但差 10 个量级）' },
 ]
 
 
@@ -571,7 +579,7 @@ export const FORCE_UNITS: UnitDef[] = [
   { name: 'N', aliases: ['牛顿'], dimension: 'force', factor: 1, note: '基准单位' },
   { name: 'kN', aliases: ['千牛'], dimension: 'force', factor: 1e3 },
   { name: 'MN', aliases: ['兆牛'], dimension: 'force', factor: 1e6, note: '火箭推力与建筑荷载常用量级' },
-  { name: 'dyn', aliases: ['达因'], dimension: 'force', factor: 1e-5, note: 'CGS 制力单位 = 1e-5 N' },
+  { name: 'dyn', aliases: ['达因'], dimension: 'force', factor: 1e-5, category: 'science', note: 'CGS 制力单位 = 1e-5 N' },
   { name: 'kgf', aliases: ['千克力', '公斤力'], dimension: 'force', factor: 9.80665, note: '1 kgf = 9.80665 N（1 kg 重量）' },
   { name: 'lbf', aliases: ['磅力'], dimension: 'force', factor: 4.4482216152605, note: '1 lbf ≈ 4.448 N' },
   { name: 'tonf', aliases: ['吨力'], dimension: 'force', factor: 9806.65, note: '1 吨力 = 1000 kgf ≈ 9.81 kN' },
@@ -612,6 +620,245 @@ export function withPrefixes(base: string, dimension: Dimension, baseFactor: num
  * 每个条目只声明「等于多少**公制基准单位**」，因此任意两者都能互换 ——
  * 这就是「公制做换算中转」的实现方式。
  */
+
+/**
+ * 中国古制与市制的细分单位。
+ *
+ * ## 为什么这么多条
+ *
+ * 中文里长度、重量、容量三套都是**十进制细分**（尺寸分厘毫丝忽），
+ * 而且历代数值不同。写小说时「一厘银」「三忽」这类说法会出现，
+ * 但换算系数从来没人记得住 —— 这正是该收进表的理由。
+ *
+ * ⚠ 历代数值差异极大，表内统一用**市制（1929 年定制）**为基准，
+ * 古制差异写在 note 里；要精确到某朝代用 `customUnits` 覆盖。
+ */
+export const CHINA_EXTRA_UNITS: UnitDef[] = [
+  // ── 长度：市制十进制细分（尺寸分厘毫丝忽）──
+  { name: '丝_长度', aliases: ['市丝'], dimension: 'length', factor: 3.2e-5, note: '市丝 = 1/10 市毫 ≈ 32 µm' },
+  { name: '忽_长度', aliases: ['市忽'], dimension: 'length', factor: 3.2e-6, note: '市忽 = 1/10 市丝 ≈ 3.2 µm（长度最小单位）' },
+  { name: '咫', dimension: 'length', factor: 0.256, note: '周制八寸为一咫 ≈ 25.6 cm（「咫尺天涯」的咫）' },
+  { name: '庹', dimension: 'length', factor: 1.6, note: '两臂平伸的长度 ≈ 1.6 m（口语量绳用）' },
+  { name: '市尺_古', aliases: ['营造尺'], dimension: 'length', factor: 0.32, note: '明清营造尺 ≈ 32 cm（与市尺数值相同，但用途是建筑）' },
+  { name: '汉尺', dimension: 'length', factor: 0.231, note: '汉制一尺 ≈ 23.1 cm（出土汉尺实测）' },
+  { name: '商尺', dimension: 'length', factor: 0.158, note: '商制一尺 ≈ 15.8 cm' },
+  { name: '周尺', dimension: 'length', factor: 0.199, note: '周制一尺 ≈ 19.9 cm' },
+  { name: '清里', dimension: 'length', factor: 576, note: '清制一里 = 180 丈 ≈ 576 m（与市里 500 m 差 15%）' },
+  { name: '周里', dimension: 'length', factor: 415.8, note: '周制一里 = 300 步 ≈ 415.8 m' },
+  { name: '丈_汉', aliases: ['汉丈'], dimension: 'length', factor: 2.31, note: '汉制一丈 = 10 汉尺 ≈ 2.31 m' },
+
+  // ── 容量：石斗升合勺撮圭（十进制细分）──
+  { name: '勺', dimension: 'volume', factor: 1e-5, note: '市勺 = 1/10 市合 ≈ 10 mL' },
+  { name: '撮', dimension: 'volume', factor: 1e-6, note: '市撮 = 1/10 市勺 ≈ 1 mL（「一撮盐」）' },
+  { name: '圭', dimension: 'volume', factor: 1e-7, note: '市圭 = 1/10 市撮 ≈ 0.1 mL（容量最小单位）' },
+  { name: '粟_容量', aliases: ['市粟'], dimension: 'volume', factor: 1e-8, note: '一圭 = 10 粟，古制容量最小粒度' },
+  { name: '龠', dimension: 'volume', factor: 5e-5, note: '古制一龠 = 半合 ≈ 50 mL（周礼量制基本单位）' },
+  { name: '升_古', aliases: ['汉升'], dimension: 'volume', factor: 0.000198, note: '汉制一升 ≈ 198 mL（出土汉量实测），与市升 1 L 差 5 倍' },
+  { name: '斗_汉', aliases: ['汉斗'], dimension: 'volume', factor: 0.00198, note: '汉制一斗 = 10 汉升 ≈ 1.98 L' },
+  { name: '石_汉', aliases: ['汉石'], dimension: 'volume', factor: 0.0198, note: '汉制一石 = 10 汉斗 ≈ 19.8 L' },
+
+  // ── 重量：担斤两钱分厘毫丝（十进制细分）──
+  { name: '毫_质量', aliases: ['市毫质量'], dimension: 'mass', factor: 5e-8, note: '市毫 = 1/10 市厘 = 0.05 mg' },
+  { name: '丝_质量', aliases: ['市丝质量'], dimension: 'mass', factor: 5e-9, note: '市丝 = 1/10 市毫' },
+  { name: '忽_质量', aliases: ['市忽质量'], dimension: 'mass', factor: 5e-10, note: '市忽 = 1/10 市丝（重量最小单位）' },
+  { name: '镒', dimension: 'mass', factor: 0.315, note: '秦制二十两为一镒 ≈ 315 g（「黄金百镒」）' },
+  { name: '汉斤', dimension: 'mass', factor: 0.258, note: '汉制一斤 = 16 汉两 ≈ 258 g（与市斤 500 g 差近一倍）' },
+  { name: '汉两', dimension: 'mass', factor: 0.016125, note: '汉制一两 = 1/16 汉斤 ≈ 16.1 g' },
+  { name: '清斤', dimension: 'mass', factor: 0.5968, note: '清制一斤 ≈ 596.8 g（库平制），比市斤重 19%' },
+  { name: '库平两', aliases: ['关平两'], dimension: 'mass', factor: 0.037301, note: '库平一两 ≈ 37.3 g，清代海关与国库用' },
+  { name: '漕平两', dimension: 'mass', factor: 0.036664, note: '漕平一两 ≈ 36.66 g，漕运系统用（各地平砝不同）' },
+
+  // ── 面积：亩分厘毫 + 弓 ──
+  { name: '毫_面积', aliases: ['市毫面积'], dimension: 'area', factor: 0.0666667, note: '市毫 = 1/10 市厘面积 ≈ 0.067 m²' },
+  { name: '弓', aliases: ['步弓'], dimension: 'area', factor: 2.56, note: '丈量单位，一弓 = 5 尺见方 = 25 平方尺 ≈ 2.56 m²' },
+  { name: '方步', dimension: 'area', factor: 2.56, note: '一平方步 ≈ 2.56 m²（「田若干步」的口径）' },
+  { name: '畹', dimension: 'area', factor: 2020, note: '古制三十亩为一畹（一说十二亩），差异大，仅作量级参考' },
+
+  // ── 时间：古制补充 ──
+  { name: '漏刻', dimension: 'time', factor: 864, note: '百刻制中一刻的细分，约 14.4 分钟（与「刻」同源，此处按一昼夜 100 等分）' },
+  { name: '一炷香细', aliases: ['香'], dimension: 'time', factor: 1800, note: '同「炷香」的口语简称' },
+  { name: '一盅茶', dimension: 'time', factor: 900, note: '约 15 分钟（无标准，与「盏茶」同族）' },
+  { name: '周岁', aliases: ['实岁'], dimension: 'time', factor: 3.1556926e7, note: '生日周期，按回归年计' },
+]
+
+/**
+ * 欧洲列强的传统单位（工业革命前后，写蒸汽朋克/历史题材的刚需）。
+ *
+ * ## 为什么这些必须收
+ *
+ * 公制是 1795 年法国才立、1875 年才国际化的。在此之前**每个国家各有一套**，
+ * 而且同一国不同行业还不一样（例如英国有常衡/金衡/药衡三套重量）。
+ *
+ * 写 1700—1900 年的故事时，人物说的「一普特面粉」「三十维尔斯特」是真的，
+ * 换算系数却没人记得住。这些数值来自当时的官方定义或学界通行近似。
+ */
+
+/** 俄制（沙俄，16—20 世纪初）。 */
+export const RUSSIA_UNITS: UnitDef[] = [
+  { name: 'sazhen', aliases: ['沙绳', '俄丈'], dimension: 'length', factor: 2.1336, note: '俄丈 = 7 英尺 ≈ 2.134 m' },
+  { name: 'arshin', aliases: ['阿尔申', '俄尺'], dimension: 'length', factor: 0.7112, note: '俄尺 = 16 维尔肖克 ≈ 71.1 cm' },
+  { name: 'vershok', aliases: ['维尔肖克'], dimension: 'length', factor: 0.04445, note: '1 维尔肖克 = 1/16 俄尺 ≈ 4.45 cm（量身高用）' },
+  { name: 'funt', aliases: ['俄磅'], dimension: 'mass', factor: 0.40951241, note: '俄磅 ≈ 409.5 g，比国际磅重 9.7%' },
+  { name: 'zolotnik', aliases: ['佐洛特尼克'], dimension: 'mass', factor: 0.0042662, note: '1 佐洛特尼克 = 1/96 俄磅 ≈ 4.27 g（金饰用）' },
+  { name: 'dolya', aliases: ['多利亚'], dimension: 'mass', factor: 4.4429e-5, note: '1 多利亚 = 1/96 佐洛特尼克 ≈ 44.4 mg（最小单位）' },
+  { name: 'vedro', aliases: ['维德罗'], dimension: 'volume', factor: 0.012299, note: '俄制液量单位 ≈ 12.3 L（一桶酒）' },
+  { name: 'shtof', aliases: ['什托夫'], dimension: 'volume', factor: 0.0012299, note: '1 什托夫 = 1/10 维德罗 ≈ 1.23 L（伏特加瓶）' },
+  { name: 'charka', aliases: ['恰尔卡'], dimension: 'volume', factor: 0.00012299, note: '1 恰尔卡 = 1/100 维德罗 ≈ 123 mL（一杯酒）' },
+]
+
+/** 德制（普鲁士/各邦，1872 年统一前）。 */
+export const GERMANY_UNITS: UnitDef[] = [
+  { name: 'rhein_fuss', aliases: ['莱茵尺'], dimension: 'length', factor: 0.3138, note: '普鲁士莱茵尺 ≈ 31.4 cm（1816 年定）' },
+  { name: 'rute', aliases: ['鲁特'], dimension: 'length', factor: 3.766, note: '普鲁士路特 = 12 莱茵尺 ≈ 3.77 m（丈量用）' },
+  { name: 'meile', aliases: ['德里'], dimension: 'length', factor: 7539.6, note: '普鲁士里 ≈ 7.54 km（比英制里长 4.7 倍）' },
+  { name: 'zoll_de', aliases: ['德寸'], dimension: 'length', factor: 0.026154, note: '普鲁士寸 = 1/12 莱茵尺 ≈ 2.62 cm' },
+  { name: 'pfund_de', aliases: ['德磅'], dimension: 'mass', factor: 0.4676, note: '普鲁士磅 ≈ 467.6 g（各邦 460—510 g 不等）' },
+  { name: 'zentner', aliases: ['德担'], dimension: 'mass', factor: 51.4, note: '普鲁士担 = 110 德磅 ≈ 51.4 kg（一说 100 磅 = 46.8 kg）' },
+  { name: 'lot', aliases: ['洛特'], dimension: 'mass', factor: 0.014606, note: '1 洛特 = 1/32 德磅 ≈ 14.6 g（药剂与贵金属）' },
+  { name: 'quint', aliases: ['昆特'], dimension: 'mass', factor: 0.014606, note: '同洛特的旧写，各邦数值略异' },
+  { name: 'scheffel', aliases: ['舍费尔'], dimension: 'volume', factor: 0.054961, note: '普鲁士谷量单位 ≈ 55 L（量谷物用）' },
+  { name: 'eimer', aliases: ['艾默'], dimension: 'volume', factor: 0.0687, note: '德制液量单位 ≈ 68.7 L（各地 60—75 L）' },
+  { name: 'mass_de', aliases: ['德马克'], dimension: 'mass', factor: 0.2338, note: '德制马克（重量）≈ 233.8 g（铸币用）' },
+]
+
+/** 法制（公制诞生地，但旧制 au 1795 前仍在使用）。 */
+export const FRANCE_UNITS: UnitDef[] = [
+  { name: 'toise', aliases: ['图瓦兹', '法丈'], dimension: 'length', factor: 1.949, note: '法丈 ≈ 1.949 m（旧制长度基准）' },
+  { name: 'pied', aliases: ['法尺'], dimension: 'length', factor: 0.32484, note: '法尺 = 1/6 法丈 ≈ 32.5 cm' },
+  { name: 'pouce', aliases: ['法寸'], dimension: 'length', factor: 0.02707, note: '法寸 = 1/12 法尺 ≈ 2.71 cm' },
+  { name: 'ligne', aliases: ['法分'], dimension: 'length', factor: 0.002256, note: '1 法分 = 1/12 法寸 ≈ 2.26 mm（钟表游丝用）' },
+  { name: 'lieue', aliases: ['法里'], dimension: 'length', factor: 4444.8, note: '法里 ≈ 4.44 km（旧制，各版本 3.9—4.7 km）' },
+  { name: 'livre', aliases: ['法磅'], dimension: 'mass', factor: 0.48950584, note: '法磅 ≈ 489.5 g（旧制常衡）' },
+  { name: 'once_fr', aliases: ['法盎司'], dimension: 'mass', factor: 0.030594, note: '法盎司 = 1/16 法磅 ≈ 30.6 g' },
+  { name: 'gros_fr', aliases: ['格罗'], dimension: 'mass', factor: 0.0038243, note: '1 格罗 = 1/8 法盎司 ≈ 3.82 g' },
+  { name: 'quintal_fr', aliases: ['法担'], dimension: 'mass', factor: 48.9506, note: '法担 = 100 法磅 ≈ 49 kg' },
+  { name: 'boisseau', aliases: ['布斯罗'], dimension: 'volume', factor: 0.01297, note: '法制谷量 ≈ 13 L（巴黎口径）' },
+  { name: 'setier', aliases: ['塞蒂耶'], dimension: 'volume', factor: 0.1297, note: '1 塞蒂耶 = 8 布斯罗 ≈ 130 L' },
+  { name: 'muid', aliases: ['米伊'], dimension: 'volume', factor: 0.268, note: '法制大桶 ≈ 268 L（酒桶口径）' },
+]
+
+/** 西班牙/葡萄牙/意大利/荷兰/北欧。 */
+export const OTHER_EUROPE_UNITS: UnitDef[] = [
+  // 西班牙
+  { name: 'vara', aliases: ['西尺'], dimension: 'length', factor: 0.8359, note: '西班牙尺 ≈ 83.6 cm（卡斯蒂利亚制）' },
+  { name: 'legua', aliases: ['西里'], dimension: 'length', factor: 5572.7, note: '西班牙里 ≈ 5.57 km（约 6667 西尺）' },
+  { name: 'libra', aliases: ['西磅'], dimension: 'mass', factor: 0.460093, note: '西班牙磅 ≈ 460 g' },
+  { name: 'arroba', aliases: ['阿罗巴'], dimension: 'mass', factor: 11.502, note: '西班牙阿罗巴 = 25 西磅 ≈ 11.5 kg（农产品用）' },
+  { name: 'fanega', aliases: ['法内加'], dimension: 'volume', factor: 0.055501, note: '西班牙谷量 ≈ 55.5 L' },
+
+  // 葡萄牙
+  { name: 'braça', aliases: ['葡丈'], dimension: 'length', factor: 2.2, note: '葡萄牙丈 ≈ 2.2 m' },
+  { name: 'arroba_pt', aliases: ['葡阿罗巴'], dimension: 'mass', factor: 14.688, note: '葡萄牙阿罗巴 ≈ 14.69 kg（比西班牙重 28%）' },
+
+  // 意大利（各邦各异，取通行值）
+  { name: 'braccio', aliases: ['意丈'], dimension: 'length', factor: 0.5836, note: '意大利丈 ≈ 58.4 cm（托斯卡纳制，各邦 50—70 cm）' },
+  { name: 'piede_it', aliases: ['意尺'], dimension: 'length', factor: 0.2978, note: '意大利尺 ≈ 29.8 cm（罗马制）' },
+  { name: 'libbra', aliases: ['意磅'], dimension: 'mass', factor: 0.339, note: '意大利磅 ≈ 339 g（各邦差异大）' },
+  { name: 'miglia_it', aliases: ['意里'], dimension: 'length', factor: 1481.7, note: '意大利里 ≈ 1.48 km（罗马制）' },
+
+  // 荷兰
+  { name: 'duim', aliases: ['荷寸'], dimension: 'length', factor: 0.0257, note: '荷兰寸 ≈ 2.57 cm' },
+  { name: 'voet', aliases: ['荷尺'], dimension: 'length', factor: 0.2831, note: '荷兰尺 ≈ 28.3 cm（阿姆斯特丹制）' },
+  { name: 'el', aliases: ['荷兰厄尔'], dimension: 'length', factor: 0.6878, note: '荷兰布尺 ≈ 68.8 cm（量布料用）' },
+  { name: 'pond_nl', aliases: ['荷磅'], dimension: 'mass', factor: 0.4954, note: '荷兰磅 ≈ 495 g' },
+  { name: 'vat', aliases: ['荷桶'], dimension: 'volume', factor: 0.14157, note: '荷兰桶 ≈ 141.6 L' },
+
+  // 北欧
+  { name: 'aln_sv', aliases: ['瑞典尺'], dimension: 'length', factor: 0.5938, note: '瑞典尺 ≈ 59.4 cm' },
+  { name: 'mil_sv', aliases: ['瑞典里'], dimension: 'length', factor: 10688.0, note: '瑞典里 ≈ 10.69 km（1889 年后改 10 km）' },
+  { name: 'skalpund', aliases: ['瑞典磅'], dimension: 'mass', factor: 0.425076, note: '瑞典磅 ≈ 425 g' },
+  { name: 'canne_dk', aliases: ['丹麦丈'], dimension: 'length', factor: 0.6277, note: '丹麦丈 ≈ 62.8 cm' },
+  { name: 'pund_dk', aliases: ['丹麦磅'], dimension: 'mass', factor: 0.4963, note: '丹麦磅 ≈ 496 g' },
+
+  // 奥地利/匈牙利/波兰
+  { name: 'klafter', aliases: ['克拉夫特'], dimension: 'length', factor: 1.8966, note: '奥地利克拉夫特（丈）≈ 1.897 m' },
+  { name: 'wiertel', aliases: ['维尔特尔'], dimension: 'volume', factor: 0.001555, note: '奥地利液量 ≈ 1.56 L' },
+  { name: 'metze', aliases: ['梅策'], dimension: 'volume', factor: 0.0619, note: '奥地利谷量 ≈ 61.9 L' },
+  { name: 'sążeń', aliases: ['波兰沙任'], dimension: 'length', factor: 1.728, note: '波兰丈 ≈ 1.73 m' },
+  { name: 'łokieć', aliases: ['波兰肘'], dimension: 'length', factor: 0.5956, note: '波兰肘 ≈ 59.6 cm' },
+]
+
+/**
+ * 东亚、南亚、西亚的传统单位。
+ *
+ * 日本是用户明确点名的：尺贯法（shakkan-hō）自成一套，且与中国市制
+ * 同字不同值（日尺 30.3 cm vs 市尺 32 cm，日斤 600 g vs 市斤 500 g）。
+ * 写日式题材（武士、町人、和风奇幻）时这些是刚需。
+ */
+
+/** 日本尺贯法（1891 年法定，沿用至公制化）。 */
+export const JAPAN_UNITS: UnitDef[] = [
+  // 长度
+  { name: '日尺', aliases: ['曲尺', 'shaku'], dimension: 'length', factor: 0.30303, note: '日本尺 ≈ 30.3 cm（曲尺）。中国市尺 32 cm，差 5%' },
+  { name: '日寸', aliases: ['sun'], dimension: 'length', factor: 0.030303, note: '日寸 = 1/10 日尺 ≈ 3.03 cm' },
+  { name: '日分', aliases: ['bu_jp'], dimension: 'length', factor: 0.0030303, note: '日分 = 1/10 日寸 ≈ 3.03 mm' },
+  { name: '日厘', aliases: ['rin'], dimension: 'length', factor: 0.00030303, note: '日厘 = 1/10 日分' },
+  { name: '间', aliases: ['ken'], dimension: 'length', factor: 1.81818, note: '日本「间」= 6 日尺 ≈ 1.82 m（建筑开间模数）' },
+  { name: '丈_日', aliases: ['日丈'], dimension: 'length', factor: 3.0303, note: '日丈 = 10 日尺 ≈ 3.03 m' },
+  { name: '鲸尺', aliases: ['kujira-shaku'], dimension: 'length', factor: 0.378787, note: '鲸尺 ≈ 37.9 cm（量布用，比曲尺长 25%）' },
+  { name: '间_海', aliases: ['hiro'], dimension: 'length', factor: 1.81818, note: '航海用「寻」，同日间 ≈ 1.82 m（测水深）' },
+
+  // 面积
+  { name: '日反', aliases: ['tan'], dimension: 'area', factor: 991.74, note: '日反 = 10 日亩 ≈ 992 m²（田地基本单位）' },
+  { name: '日畝', aliases: ['se'], dimension: 'area', factor: 99.174, note: '日亩 = 30 日坪 ≈ 99.2 m²（与中文「亩」差 6.7 倍）' },
+
+  // 体积（容量）
+  { name: '勺_日', aliases: ['shao_jp'], dimension: 'volume', factor: 1.8039e-5, note: '日勺 ≈ 18 mL（1/10 日合）' },
+  { name: '日升量', aliases: ['shō'], dimension: 'volume', factor: 0.0018039, note: '日升 ≈ 1.80 L，中国市升 1 L，差 1.8 倍' },
+  { name: '日斗量', aliases: ['to'], dimension: 'volume', factor: 0.018039, note: '日斗 = 10 日升 ≈ 18 L' },
+
+  // 质量（贯目）
+  { name: '日匁', aliases: ['monme'], dimension: 'mass', factor: 0.00375, note: '日匁 = 3.75 g（1/1000 贯，贵金属与药）' },
+  { name: '日斤_质量', aliases: ['kin_jp'], dimension: 'mass', factor: 0.6, note: '日斤 = 160 匁 ≈ 600 g（中国市斤 500 g，差 20%）' },
+  { name: '贯', aliases: ['kan_jp', '贯目'], dimension: 'mass', factor: 3.75, note: '日贯 = 1000 匁 = 3.75 kg（江户时代货币与重量两用）' },
+  { name: '日両', aliases: ['ryō_mass'], dimension: 'mass', factor: 0.0375, note: '日两（重量）≈ 37.5 g（十匁）。注意与小判金币的「两」区分' },
+]
+
+/** 印度（莫卧儿与英属时期）。 */
+export const INDIA_UNITS: UnitDef[] = [
+  { name: 'gaz', aliases: ['加兹'], dimension: 'length', factor: 0.9144, note: '莫卧儿加兹 ≈ 0.914 m（各统治期 0.7—1.0 m 不等）' },
+  { name: 'coss', aliases: ['科斯'], dimension: 'length', factor: 1855, note: '英属印度科斯 ≈ 1.855 km（与莫卧儿制不同）' },
+  { name: 'tola', aliases: ['托拉'], dimension: 'mass', factor: 0.0116638, note: '印度托拉 ≈ 11.66 g（黄金与香料基本单位）' },
+  { name: 'seer', aliases: ['锡尔'], dimension: 'mass', factor: 0.9331, note: '莫卧儿锡尔 ≈ 933 g（各邦 0.8—1.2 kg）' },
+  { name: 'maund', aliases: ['芒德'], dimension: 'mass', factor: 37.3242, note: '英属印度芒德 = 40 锡尔 ≈ 37.3 kg（大宗货物）' },
+  { name: 'candy', aliases: ['坎迪'], dimension: 'mass', factor: 746.48, note: '印度坎迪 = 20 芒德 ≈ 746 kg（棉花贸易）' },
+  { name: 'ser_ind', aliases: ['印度升'], dimension: 'volume', factor: 0.001041, note: '印度容量单位 ≈ 1.04 L（各地差异大）' },
+  { name: 'bigha', aliases: ['比加'], dimension: 'area', factor: 1337.8, note: '印度比加 ≈ 1338 m²（各邦 1000—2500 m²，差异极大）' },
+  { name: 'katha', aliases: ['卡塔'], dimension: 'area', factor: 66.89, note: '1 卡塔 = 1/20 比加 ≈ 66.9 m²（孟加拉制）' },
+]
+
+/** 阿拉伯/奥斯曼/波斯。 */
+export const ARABIA_UNITS: UnitDef[] = [
+  { name: 'dhira', aliases: ['迪拉', '阿拉伯肘'], dimension: 'length', factor: 0.6496, note: '阿拉伯肘 ≈ 65 cm（各学派 0.49—0.94 m，差异极大）' },
+  { name: 'farsakh', aliases: ['法尔萨赫'], dimension: 'length', factor: 5544, note: '波斯/阿拉伯「里」≈ 5.54 km（约 12000 肘）' },
+  { name: 'ratl', aliases: ['拉特儿'], dimension: 'mass', factor: 0.4375, note: '阿拉伯磅 ≈ 437 g（巴格达制，各地 0.4—0.5 kg）' },
+  { name: 'dirham_mass', aliases: ['迪拉姆重'], dimension: 'mass', factor: 0.003125, note: '伊斯兰迪拉姆（重量）≈ 3.125 g（与银币迪拉姆同源）' },
+  { name: 'qintar', aliases: ['坎塔'], dimension: 'mass', factor: 44.928, note: '阿拉伯坎塔 = 100 拉特儿 ≈ 44.9 kg' },
+  { name: 'okka', aliases: ['奥卡', '奥斯曼欧克'], dimension: 'mass', factor: 1.2829, note: '奥斯曼欧克 ≈ 1.283 kg（100 德拉姆）' },
+  { name: 'dirhem_ott', aliases: ['奥斯曼德拉姆'], dimension: 'mass', factor: 0.003207, note: '奥斯曼德拉姆 ≈ 3.21 g（欧克的 1/400）' },
+  { name: 'arshin_ott', aliases: ['奥斯曼尺'], dimension: 'length', factor: 0.6503, note: '奥斯曼尺 ≈ 65 cm（与俄尺 71.1 cm 不同，容易混）' },
+]
+
+/** 东南亚与其它。 */
+export const SEA_OTHER_UNITS: UnitDef[] = [
+  { name: 'pik_th', aliases: ['泰尺'], dimension: 'length', factor: 0.508, note: '泰国「皮」≈ 50.8 cm（布料与建筑用）' },
+  { name: 'sen_th', aliases: ['泰里'], dimension: 'length', factor: 400, note: '泰国「森」≈ 400 m' },
+  { name: 'hath', aliases: ['印度肘'], dimension: 'length', factor: 0.4572, note: '印度「哈特」≈ 45.7 cm（等同英制肘）' },
+  { name: 'coyan', aliases: ['科扬'], dimension: 'mass', factor: 2419, note: '东南亚大宗货物单位 ≈ 2.4 t（橡胶/锡）' },
+  { name: 'picul', aliases: ['担_南洋'], dimension: 'mass', factor: 60.478, note: '南洋「担」≈ 60.5 kg（华侨与东南亚贸易单位）' },
+  { name: 'gantang', aliases: ['甘唐'], dimension: 'volume', factor: 0.00184, note: '马来亚容量单位 ≈ 1.84 L（量米）' },
+]
+
+/**
+ * 全部单位：公制（含 SI 词头）、中国市制与历代、日本尺贯法、
+ * 俄/德/法/西/葡/意/荷/北欧传统单位、印度/阿拉伯/奥斯曼、
+ * 英美制、航海与天文，以及数据量/角度/力/频率。
+ *
+ * 每个条目只声明「等于多少**公制基准单位**」，因此任意两者都能互换 ——
+ * 这就是「公制做换算中转」的实现方式。
+ *
+ * 条数见 `ALL_UNITS.length`（当前 429：度量衡 398 + 科学 31）。
+ */
 export const ALL_UNITS: UnitDef[] = [
   ...LENGTH_UNITS,
   ...MASS_UNITS,
@@ -627,6 +874,15 @@ export const ALL_UNITS: UnitDef[] = [
   ...ANGLE_UNITS,
   ...FORCE_UNITS,
   ...FREQUENCY_UNITS,
+  ...CHINA_EXTRA_UNITS,
+  ...RUSSIA_UNITS,
+  ...GERMANY_UNITS,
+  ...FRANCE_UNITS,
+  ...OTHER_EUROPE_UNITS,
+  ...JAPAN_UNITS,
+  ...INDIA_UNITS,
+  ...ARABIA_UNITS,
+  ...SEA_OTHER_UNITS,
 ]
 
 /** 各量纲的基准（公制中转点）。换算永远「先乘到基准、再除以目标」。 */

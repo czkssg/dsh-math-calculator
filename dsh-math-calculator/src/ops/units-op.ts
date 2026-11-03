@@ -189,8 +189,17 @@ export function opUnits(args: MathArgs): Outcome {
       if (items.length === 0) continue
       /** 展开只针对点名的那一维；其余给计数与样例。 */
       if (expandDimension === dimension) {
-        lines.push('【' + DIMENSION_LABEL[dimension] + '】（基准单位 ' + BASE_UNIT[dimension] + '）共 ' + items.length + ' 条')
-        for (const unit of items) {
+        /**
+         * 展开时**按用途分两段**：度量衡在前（绝大多数调用者要这个），
+         * 科学单位在后并标明。混排会让「找三丈是多少米」的人翻过一堆 eV。
+         */
+        const measureItems = items.filter(function (u) { return u.category !== 'science' })
+        const scienceItems = items.filter(function (u) { return u.category === 'science' })
+        lines.push(
+          '【' + DIMENSION_LABEL[dimension] + '】（基准单位 ' + BASE_UNIT[dimension] + '）' +
+          '共 ' + items.length + ' 条：度量衡 ' + measureItems.length + ' / 科学 ' + scienceItems.length,
+        )
+        for (const unit of measureItems) {
           const aliases = (unit.aliases || []).length > 0 ? '（别名：' + unit.aliases!.join('、') + '）' : ''
           lines.push(
             '  ' + unit.name.padEnd(12) + ' = ' + showFactor(unit.factor).padEnd(22) +
@@ -198,12 +207,26 @@ export function opUnits(args: MathArgs): Outcome {
           )
           if (unit.note) lines.push('      · ' + unit.note)
         }
+        if (scienceItems.length > 0) {
+          lines.push('  ── 科学单位（专业计算用，正文里通常不写）──')
+          for (const unit of scienceItems) {
+            const aliases = (unit.aliases || []).length > 0 ? '（别名：' + unit.aliases!.join('、') + '）' : ''
+            lines.push(
+              '  ' + unit.name.padEnd(12) + ' = ' + showFactor(unit.factor).padEnd(22) +
+              BASE_UNIT[dimension] + aliases,
+            )
+          }
+        }
         lines.push('')
       } else {
-        const sample = items.slice(0, 6).map(function (u) { return u.name }).join('/')
+        /** 摘要行也标出度量衡/科学的条数——不展开也能看出这条量纲的分界。 */
+        const measureCount = items.filter(function (u) { return u.category !== 'science' }).length
+        const scienceCount = items.length - measureCount
+        const sample = items.slice(0, 5).map(function (u) { return u.name }).join('/')
         lines.push(
-          '  ' + DIMENSION_LABEL[dimension].padEnd(4) + BASE_UNIT[dimension].padEnd(5) +
-          '共 ' + String(items.length).padEnd(4) + '条   例：' + sample + (items.length > 6 ? '/…' : ''),
+          '  ' + DIMENSION_LABEL[dimension].padEnd(4) + BASE_UNIT[dimension].padEnd(6) +
+          ('度量衡 ' + measureCount).padEnd(9) +
+          ('科学 ' + scienceCount).padEnd(7) + '例：' + sample + (items.length > 5 ? '/…' : ''),
         )
       }
     }
