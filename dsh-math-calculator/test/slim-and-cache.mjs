@@ -52,15 +52,19 @@ console.log('-- 1. 工具定义已瘦身（每轮成本）--')
   assert('定义总长比基线（7789）省 20% 以上',
     total <= 7789 * 0.8, total + ' 字符（省 ' + Math.round((1 - total / 7789) * 100) + '%）')
   assert('description 控制在 450 字符内', descLen <= 450, String(descLen))
-  // 加了 expressions（批量求值）后略增，但仍须比基线省 20%
-  assert('parameters 控制在 5800 字符内', paramLen <= 5800, String(paramLen))
+  /**
+   * 加了 expressions（批量求值）与 terse（批量省 token）后略增，但仍须比基线省 20%。
+   * 上限从 5800 提到 5900 是因为 terse 的声明约 90 字符 —— 那是一个真实参数，
+   * 不该为了维持某个数字而砍掉它。省 20% 的**总长**断言才是真正要守的那条。
+   */
+  assert('parameters 控制在 5900 字符内', paramLen <= 5900, String(paramLen))
 }
 
 console.log('-- 2. 参数一个都没少（功能未缩水）--')
 {
   const props = Object.keys(tool.parameters.properties)
-  // 41 个原有 + expressions（批量求值）= 42
-  assert('参数仍有 42 个', props.length === 42, String(props.length))
+  // 41 个原有 + expressions（批量求值）+ terse（批量省 token）= 43
+  assert('参数仍有 43 个', props.length === 43, String(props.length))
   // 关键参数必须都在
   for (const name of ['world', 'terrain', 'constants', 'balance', 'customUnits',
     'precision', 'displayPrecision', 'formula', 'overrides', 'bodyType']) {

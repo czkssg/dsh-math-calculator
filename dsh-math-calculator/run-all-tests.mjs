@@ -159,6 +159,9 @@ const SUITES = [
   { file: 'overrides-unknown-keys.mjs', expect: 12, label: '未知参数名上报（错拼不静默忽略）' },
   // 批量 label（结果可认）与 terse（省输出但绝不隐藏失败）。
   { file: 'batch-label-terse.mjs', expect: 22, label: '批量 label 与 terse（可认/省 token/不藏失败）' },
+  // 本轮：三份实测文档评审后补的三条守卫 + 单位英制别名。
+  // 共同点都是「调用方以为生效了、其实没有」这类静默问题。
+  { file: 'arg-guard.mjs', expect: 41, label: '参数不静默/显示精度0/括号定位/英制单位' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
   { file: 'slim-and-cache.mjs', expect: 60, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },

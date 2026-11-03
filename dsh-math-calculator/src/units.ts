@@ -60,6 +60,7 @@ export type Dimension =
   | 'power'
   | 'temperature'
   | 'speed'
+  | 'pressure'
 
 /** 每个量纲的基准单位（factor = 1 的那个）。 */
 export const BASE_UNIT: Record<Dimension, string> = {
@@ -72,6 +73,7 @@ export const BASE_UNIT: Record<Dimension, string> = {
   power: 'W',
   temperature: 'K',
   speed: 'm/s',
+  pressure: 'Pa',
 }
 
 /** 量纲的中文名。 */
@@ -85,6 +87,7 @@ export const DIMENSION_LABEL: Record<Dimension, string> = {
   power: '功率',
   temperature: '温度',
   speed: '速度',
+  pressure: '压强',
 }
 
 /**
@@ -128,6 +131,17 @@ export const UNITS: UnitDef[] = [
   { name: '石', dimension: 'mass', factor: 60, note: '容量/重量混用单位，此处按「一石米约 60 kg」估' },
   { name: 'lb', aliases: ['磅'], dimension: 'mass', factor: 0.45359237 },
   { name: 'oz', aliases: ['盎司'], dimension: 'mass', factor: 0.028349523125 },
+  /**
+   * 英制的「吨」有三种，互相差 1.6%——写蒸汽朋克/航海题材时会撞上。
+   * 单说「一吨」在英制语境的原文里通常是长吨，所以 longton 也认 tons。
+   */
+  { name: 'longton', aliases: ['长吨', 'LT', 'gross ton'], dimension: 'mass', factor: 1016.0469088,
+    note: '英制长吨 = 2240 磅 ≈ 1016 kg。航运「载重吨」用这个' },
+  { name: 'shortton', aliases: ['短吨', 'ST', '净吨'], dimension: 'mass', factor: 907.18474,
+    note: '美制短吨 = 2000 磅 ≈ 907 kg。比长吨小 1.6%' },
+  { name: 'cwt', aliases: ['英担'], dimension: 'mass', factor: 50.80234544,
+    note: '英制英担 = 112 磅 ≈ 50.8 kg（美制英担 100 磅，差 12%）' },
+  { name: 'stone', aliases: ['英石'], dimension: 'mass', factor: 6.35029318, note: '1 英石 = 14 磅' },
   { name: 'Mearth', aliases: ['地球质量'], dimension: 'mass', factor: 5.972e24 },
   { name: 'Msun', aliases: ['太阳质量'], dimension: 'mass', factor: 1.989e30 },
 
@@ -164,6 +178,13 @@ export const UNITS: UnitDef[] = [
   { name: 'kWh', aliases: ['度'], dimension: 'energy', factor: 3.6e6, note: '一度电 = 3.6 MJ' },
   { name: 'cal', aliases: ['卡'], dimension: 'energy', factor: 4.184 },
   { name: 'kcal', aliases: ['大卡', '千卡'], dimension: 'energy', factor: 4184, note: '营养学的「卡路里」其实是大卡' },
+  /**
+   * BTU 是英热单位。实测反馈里它被手打过 8+ 次（1260000 BTU/磅 这种写法），
+   * 每次重打都是一次记错系数的机会 —— 收进表里让「记错数」变成「打错名」。
+   */
+  { name: 'BTU', aliases: ['英热单位', 'btu'], dimension: 'energy', factor: 1055.05585262,
+    note: '英热单位。1055 J；「1260000 BTU/磅」这类换算以前全靠手打' },
+  { name: 'therm', aliases: ['色姆'], dimension: 'energy', factor: 1.05434184e8, note: '1 therm = 100000 BTU（天然气计价单位）' },
   { name: 'TNT', dimension: 'energy', factor: 4.184e9, note: '1 吨 TNT 当量' },
   { name: 'eV', dimension: 'energy', factor: 1.602176634e-19 },
   { name: 'eVperBond', aliases: [], dimension: 'energy', factor: 1.602176634e-19 },
@@ -174,7 +195,9 @@ export const UNITS: UnitDef[] = [
   { name: 'MW', dimension: 'power', factor: 1e6 },
   { name: 'GW', dimension: 'power', factor: 1e9 },
   { name: 'TW', dimension: 'power', factor: 1e12 },
-  { name: 'hp', aliases: ['马力'], dimension: 'power', factor: 745.6998715822702 },
+  { name: 'hp', aliases: ['马力'], dimension: 'power', factor: 745.6998715822702,
+    note: '英制机械马力 = 550 ft·lbf/s ≈ 745.7 W。公制马力 735 W，差 1.4%' },
+  { name: 'ftlb', aliases: ['ft·lbf/s', '英尺磅每秒'], dimension: 'power', factor: 1.3558179483314004, note: '1 ft·lbf/s ≈ 1.356 W' },
   { name: '人', aliases: ['人力'], dimension: 'power', factor: 75, note: '一个成年人持续体力输出约 75—100 W（长时间）' },
   { name: '畜', aliases: ['畜力'], dimension: 'power', factor: 500, note: '一头上等役畜持续输出约 500 W' },
 
@@ -190,6 +213,24 @@ export const UNITS: UnitDef[] = [
   { name: 'mph', aliases: ['英里每小时'], dimension: 'speed', factor: 0.44704 },
   { name: 'mach', aliases: ['马赫'], dimension: 'speed', factor: 340.29, note: '按海平面 15°C 声速折算；高空声速更低' },
   { name: 'c', aliases: ['光速'], dimension: 'speed', factor: 299792458 },
+
+  /**
+   * ── 压强 ──
+   *
+   * 为什么补这个量纲：实测反馈里「psi」「mmHg」「巴」反复出现在工程验算里，
+   * 而单位表完全没有压力量纲 —— 于是这些换算只能手打系数，
+   * 正是文档批评过的「靠调用者脑内存系数」。
+   */
+  { name: 'Pa', aliases: ['帕', '帕斯卡'], dimension: 'pressure', factor: 1, note: '基准单位' },
+  { name: 'kPa', dimension: 'pressure', factor: 1e3 },
+  { name: 'MPa', dimension: 'pressure', factor: 1e6 },
+  { name: 'bar', aliases: ['巴'], dimension: 'pressure', factor: 1e5, note: '1 bar = 100 kPa ≈ 1 个大气压' },
+  { name: 'atm', aliases: ['大气压', '标准大气压'], dimension: 'pressure', factor: 101325, note: '海平面标准大气压 = 101325 Pa' },
+  { name: 'psi', aliases: ['磅每平方英寸'], dimension: 'pressure', factor: 6894.757293168,
+    note: '1 psi ≈ 6.895 kPa。英制工程常用，与 bar 差 14.5 倍' },
+  { name: 'mmHg', aliases: ['毫米汞柱', '托'], dimension: 'pressure', factor: 133.322387415,
+    note: '1 mmHg ≈ 133.3 Pa。医学与真空常用；760 mmHg = 1 atm' },
+  { name: 'Torr', dimension: 'pressure', factor: 133.32236842105263, note: '与 mmHg 差 0.000014%，工程上可视为同一个' },
 ]
 
 /**

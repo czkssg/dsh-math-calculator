@@ -212,7 +212,8 @@ import { opImpact } from './ops/impact-op.js'
 import { opQuantities } from './ops/quantities-op.js'
 import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
-import { opDerivation } from './ops/derivation-op.js'
+import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
+import { WORLD_KEYS } from './world-params.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -389,7 +390,90 @@ const RISKY_FUNCTION_LIMITS = new Map<string, number>([
 // ────────────────────────────────────────────────────────────────────────────
 
 /** 把任意异常翻译成带类型的 CalcError。 */
-function translateError(raw: unknown, fallbackType = 'internal'): CalcError {
+/**
+ * 给括号类语法错补一句「在哪一层、哪一对对不上」。
+ *
+ * ## 为什么需要它
+ *
+ * 原来的提示是一句固定文案「检查括号是否配对、运算符是否连续」——
+ * 对长公式等于没说。实测反馈原话：char 25 指向的是多余的右括号，
+ * 真正缺的那个左括号在更前面，人得自己数。
+ *
+ * 这里做的是**最小可用的定位**，不是完整解析器：
+ *   · 扫一遍得到每个括号的层级与配对状态
+ *   · 报出第一处不配对的位置（缺左 / 多右）
+ *   · 回显表达式并在下方标出各层的起止
+ *
+ * ## 为什么不做「自动补括号」
+ *
+ * 猜意图补全括号，猜错时会把报错变成一个**算错的数** ——
+ * 比直接报错糟得多。这里只指出位置，补不补、补在哪，由调用方决定。
+ *
+ * @param source - 归一化后的表达式
+ * @returns 提示文本；括号本身平衡时返回空串（说明不是括号问题）
+ */
+function diagnoseParentheses(source: string): string {
+  if (typeof source !== 'string' || source === '') return ''
+  const openAt: Array<{ index: number; depth: number }> = []
+  const pairs: Array<{ open: number; close: number; depth: number }> = []
+  let depth = 0
+  let firstUnexpectedClose = -1
+  /** 引号内的括号不算结构（例如 5 cm to "inch(2)" 这类）。 */
+  let inQuote: string | null = null
+
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i]
+    if (inQuote !== null) {
+      if (ch === inQuote) inQuote = null
+      continue
+    }
+    if (ch === '"' || ch === "'") { inQuote = ch; continue }
+    if (ch === '(') {
+      openAt.push({ index: i, depth })
+      depth += 1
+    } else if (ch === ')') {
+      depth -= 1
+      const opened = openAt.pop()
+      if (opened === undefined) {
+        if (firstUnexpectedClose < 0) firstUnexpectedClose = i
+        depth = 0
+      } else {
+        pairs.push({ open: opened.index, close: i, depth: opened.depth })
+      }
+    }
+  }
+
+  const lines: string[] = []
+  if (firstUnexpectedClose >= 0) {
+    lines.push('第 ' + (firstUnexpectedClose + 1) + ' 个字符处的 ")" 没有对应的左括号')
+    if (openAt.length > 0) {
+      lines.push('这几个左括号始终没配上: ' + openAt.map(function (o) { return '第 ' + (o.index + 1) + ' 字符' }).join('、'))
+    }
+    lines.push('多数情况是它前面漏了一个 "("')
+  } else if (openAt.length > 0) {
+    lines.push('这几个左括号没有闭合: ' + openAt.map(function (o) { return '第 ' + (o.index + 1) + ' 字符' }).join('、'))
+    lines.push('在末尾补上 ' + openAt.length + ' 个 ")" 即可（若本意不是这样，删掉多余的 "("）')
+  } else {
+    return ''
+  }
+
+  /** 回显表达式并标出层级（超过 120 字符只给结论，避免糊成一片）。 */
+  if (source.length <= 120) {
+    const marks: string[] = []
+    for (let i = 0; i < source.length; i += 1) marks.push(' ')
+    for (const pair of pairs) {
+      marks[pair.open] = String(Math.min(9, pair.depth))
+      marks[pair.close] = String(Math.min(9, pair.depth))
+    }
+    lines.push('')
+    lines.push(source)
+    lines.push(marks.join(''))
+    lines.push('（数字标的是括号层级，同层级的左右括号应该一一对应）')
+  }
+  return lines.join('\n')
+}
+
+function translateError(raw: unknown, fallbackType = 'internal', source = ''): CalcError {
   if (raw instanceof CalcError) return raw
   if (raw instanceof SymbolicError) {
     return new CalcError(raw.stage, raw.message, '符号引擎的能力有限，可尝试 operation="integral" 配数值区间。')
@@ -416,7 +500,18 @@ function translateError(raw: unknown, fallbackType = 'internal'): CalcError {
     )
   }
   if (/Unexpected end of expression|Value expected|Parenthesis|Invalid left hand side|SyntaxError|Unexpected operator/i.test(text)) {
-    return new CalcError('syntax', text, '检查括号是否配对、运算符是否连续。')
+    /**
+     * 括号类错误给**定位**，其它语法错仍给通用建议。
+     * 判据是表达式里到底有没有括号 —— 没有括号时做括号诊断没意义。
+     */
+    const diagnostic = /Parenthesis|Unexpected operator|Value expected/i.test(text)
+      ? diagnoseParentheses(source)
+      : ''
+    return new CalcError(
+      'syntax',
+      text,
+      diagnostic || '检查括号是否配对、运算符是否连续。',
+    )
   }
   if (/Units do not match|Cannot convert|not found.*unit/i.test(text)) {
     return new CalcError('unit_mismatch', text, '两侧单位必须同量纲。')
@@ -690,7 +785,7 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   try {
     node = engine.parse(expression)
   } catch (error) {
-    throw translateError(error, 'syntax')
+    throw translateError(error, 'syntax', expression)
   }
   guardAst(node)
   guardComplexity(node)
@@ -795,7 +890,7 @@ function opEvaluateBatch(
       try {
         node = engine.parse(expression)
       } catch (error) {
-        throw translateError(error, 'syntax')
+        throw translateError(error, 'syntax', expression)
       }
       guardAst(node)
       guardComplexity(node)
@@ -1911,7 +2006,7 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
   try {
     node = engine.parse(expression)
   } catch (error) {
-    throw translateError(error, 'syntax')
+    throw translateError(error, 'syntax', expression)
   }
   guardAst(node)
   guardComplexity(node)
@@ -2226,6 +2321,16 @@ function opHelp(): Outcome {
       '                不带单位参数 → 列出全部可用单位（含中文古制与天文单位）',
       '                例：unitValue=30, unitFrom="里", unitTo="km" → 15 km',
       '                自创单位用 customUnits 覆盖（如把「里」定成 576 m）',
+      '  derivation    推演栈：derivation 子命令（共 ' + DERIVATION_SUBCOMMANDS.length + ' 个，不给会列出全部）',
+      '    stack/cards/pipeline/checklist            推演栈与检查表',
+      '    dead/chaos/flip/observer                  死寂/混沌/结论翻转/观测者',
+      '    anchors/backSolve/sensitivity/phase/heatmap/graph/timeline/compare/diff',
+      '                                              逆推/敏感度(base+exponent)/相图/时间轴(from,To,Steps)',
+      '    archive/history/tables/whitepaper/trace/cost',
+      '                                              档案/白皮书/溯源/算力(costKind,costX,Y,Iterations,Combos)',
+      '    fantasy/civilization/dimensionless/inherit/units/impact',
+      '                                              幻想层/文明极限/无量纲/继承(inheritBase,Derived,Sync)',
+      '                入口：{operation:"derivation", derivation:"stack"}',
       '  balance       收支盘点：粮/水/能/地/财政/军费/信息 多项一起看，给最短板',
       '                例：balance={grain:{demand:2.7e6,supply:3.1e6,unit:"kg/年"}}',
       '                回答「这个王国养不养得起二十万兵」这类问题（feasibility 只管单项上限）',
@@ -2254,6 +2359,14 @@ function opHelp(): Outcome {
       '  constants     要改的物理常数',
       '  world         星球参数',
       '  terrain       局部地形参数',
+      '  expressions   批量求值（每条独立报错）；带 {label,expr} 可让结果认得出来',
+      '  terse         true = 批量只回「表达式 = 结果」，去掉标题与统计（失败条照常标出）',
+      '',
+      '【账本闭合配方】没有单独的 check 操作，用一条 expressions 即可，逐项列值：',
+      '  {operation:"evaluate", expressions:[{label:"A",expr:"650*3840"},',
+      '   {label:"四项和",expr:"650*3840+200*4745+100*3740+50*5120"},',
+      '   {label:"与目标之差",expr:"...-4075000"}]}   ← 差值 0 即闭合',
+      '  为什么不做成 PASS/FAIL：差 3 与差 3% 是两种情况，压成一个布尔就全糊了。',
       '',
       '【失败时】返回 ok=false + error.type/message/hint，按 hint 修正即可，不会崩溃。',
     ].join('\n'),
@@ -2284,6 +2397,121 @@ function normalizeOperation(value: unknown): MathOperation {
 }
 
 /** 工具主入口：永不抛异常。 */
+/**
+ * 承认的参数名白名单 —— 从 `MathArgs` 接口派生，不手写。
+ *
+ * ## 为什么需要这份白名单
+ *
+ * 踩过的坑：`{expression:'1+3', foo_bar_baz:123}` 会**静默成功**并返回 3。
+ * 调用方以为参数生效了，实际被整个吞掉。这类「以为做了、其实没做」
+ * 比报错危险得多 —— 与 overrides 里 key 拼错被丢弃是同一类问题。
+ *
+ * ## 为什么不靠 JSON Schema 的 additionalProperties
+ *
+ * 工具的 input schema 是宿主侧契约，加严会影响所有历史调用；
+ * 而「参数名拼错」这件事在本工具内部就能判，判得更早、提示更具体。
+ *
+ * ## 白名单从哪来
+ *
+ * 不手写清单（手写必然与接口漂移）。用 TypeScript 的类型约束保证
+ * `KNOWN_ARGUMENT_KEYS` 覆盖 `MathArgs` 的全部键：少一个键 tsconfig 会报错。
+ * 见文件末尾的 `_AssertKeysCoverMathArgs`。
+ */
+const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
+  // 基础计算
+  'expression', 'expressions', 'terse', 'variables', 'operation', 'variable',
+  'matrix', 'vector', 'precision', 'displayPrecision',
+  // 数据与统计
+  'data', 'dataY', 'distribution', 'params', 'x', 'degree',
+  // 公式
+  'formula', 'overrides', 'query', 'customExpression',
+  // 微分方程 / 物理
+  'initial', 'from', 'to', 'steps', 'samples',
+  // 星球与推演
+  'world', 'terrain', 'constants', 'derivation', 'layer',
+  // 工作区
+  'action2', 'workspace', 'name', 'description', 'terrainName', 'workspaceVariables',
+  // 设定一致性
+  'claims', 'listConstraints',
+  // 单位
+  'unitValue', 'unitFrom', 'unitTo', 'customUnits', 'unitScales',
+  // 收支
+  'balance',
+  // 天体
+  'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
+  // 逆推校准
+  'anchor', 'anchorValue', 'compareFrom', 'compareTo',
+  // 幻想层
+  'fantasyAbility', 'fantasyDemand', 'fantasyPhysical', 'fantasyBodyArea',
+  // 混沌 / 继承 / 对比
+  'lyapunov', 'inheritDerived', 'inheritBase', 'inheritSync', 'diffA', 'diffB',
+  // 观测者 / 图 / 时间轴 / 白皮书 / 溯源 / 算力
+  'observerKind', 'graphDepths', 'timelineFrom', 'timelineTo', 'timelineSteps',
+  'whitepaperMode', 'traceTarget', 'costKind', 'costX', 'costY',
+  'costIterations', 'costCombos', 'costWithPipeline',
+  // 提示档位
+  'promptMode',
+  // 公式表
+  'tableAction', 'formulaId', 'newExpression', 'newParams', 'customFormula',
+  // 自定义常数
+  'customAction', 'customConstant', 'customConstantName', 'expectedDimension',
+  // 结论文翻转
+  'flipClaim', 'flipEpsilon', 'flipBase',
+  // 杂项
+  'threshold', 'worstLimit', 'variableName', 'constantName',
+  'emptyOnly', 'dryRun', 'olderThanDays', 'keep', 'tempPrefixes',
+  'sensitivityBase', 'sensitivityExponent',
+]);
+
+/**
+ * world 的**顶层简写参数**（`{operation:'world', starMass:10}` 这种写法）。
+ *
+ * 这些键**不在 `MathArgs` 接口里**，但它们是合法输入 —— 由 `WORLD_PARAMS` 决定，
+ * `opWorld` 会遍历它把顶层值并入 `world`。
+ *
+ * 踩过的坑：白名单第一版只抄了接口里的 4 个（planetRadius/planetMass/rotationHours/obliquityDeg），
+ * 于是 `{operation:'world', starMass:10}` 被新加的校验拦下 —— **world 套件当场红**。
+ * 教训：白名单不能只认 TypeScript 接口，接口落后于实现的部分会变成假阳性。
+ * 所以这里**从真实数据源 `WORLD_KEYS` 派生**，接口补不全也不影响。
+ */
+const WORLD_SHORTHAND_KEYS: readonly string[] = WORLD_KEYS
+
+/**
+ * 查有没有拼错/多余的参数名。
+ *
+ * ## 为什么大小写变体也一律报错
+ *
+ * 做过一版「容忍大小写差异」（把 `DisplayPrecision` 归一到 `displayPrecision`），
+ * 实测发现更糟：**参数被接受，却因为代码只读小写键而完全不生效**，
+ * 输出静默退回 8 位。那不是宽容，那是另一种静默 ——
+ * 比直接报错更难排查，因为连错误信息都没有。
+ *
+ * 所以这里只做**精确匹配**：名字必须是白名单里那个写法，一个字母都不差。
+ *
+ * @param rawArguments - 调用方原样的参数对象
+ * @returns 认不出的键；空数组表示全部可识别
+ */
+function findUnknownArguments(rawArguments: unknown): string[] {
+  if (rawArguments === null || typeof rawArguments !== 'object' || Array.isArray(rawArguments)) return []
+  const unknown: string[] = []
+  for (const key of Object.keys(rawArguments as Record<string, unknown>)) {
+    if (KNOWN_ARGUMENT_KEYS.has(key)) continue
+    if (WORLD_SHORTHAND_KEYS.includes(key)) continue
+    unknown.push(key)
+  }
+  return unknown.sort()
+}
+
+/**
+ * 工具主入口：永不抛异常。
+ *
+ * 所有失败都转成 `{ ok:false, error:{ type, message, hint } }`，
+ * 因为宿主侧把抛异常当成「工具坏了」，而这里的失败几乎都是**输入问题**，
+ * 调用方按 hint 改一下就能过。
+ *
+ * @param rawArguments - 宿主传进来的参数对象（可能是任意形态，这里先做白名单校验）
+ * @returns 永远是一个 MathResult，不会 throw
+ */
 export function runMathTool(rawArguments: unknown): MathResult {
   const args = (rawArguments ?? {}) as Partial<MathArgs>
   const input = typeof args.expression === 'string' ? args.expression.trim() : ''
@@ -2294,6 +2522,22 @@ export function runMathTool(rawArguments: unknown): MathResult {
   let displayPrecision: number | undefined
 
   try {
+    /**
+     * 先把「认不出的参数名」拦下来。
+     *
+     * 不静默继续算 —— 那样调用方会以为某个参数已经生效
+     * （实测见过：`displayPrecision:0`、`format`、`sigfigs` 都是这样被吞的）。
+     */
+    const unknownArguments = findUnknownArguments(rawArguments)
+    if (unknownArguments.length > 0) {
+      throw new CalcError(
+        'unknown_argument',
+        '这些参数名认不出来，已经被忽略（本次没有生效）: ' + unknownArguments.join('、'),
+        '按名字传给 help 可查用法: {operation:"help"}。' +
+          '常见原因：拼写笔误、大小写、把某个 operation 的子字段提到了顶层' +
+          '（如 terrain 的字段要放在 terrain 对象里）。',
+      )
+    }
     precision = clampPrecision(args.precision)
     /**
      * 显示精度：本次显式给 > 工作区固化值 > 沿用计算精度。
@@ -2858,18 +3102,28 @@ function stableArgs(value: unknown): string {
  * 解析**显示**精度。
  *
  * 与 `clampPrecision` 的区别：这个不影响计算，只影响写出来的位数，
- * 所以允许更宽的范围（1—64）并且**允许返回 undefined**（= 不截断）。
+ * 所以允许更宽的范围（**0—64**）并且**允许返回 undefined**（= 没给）。
  *
- * 传 0 视为「清除」，与工作区的约定一致。
+ * ## 0 在这里是「0 位小数」，不是「清除」
+ *
+ * 踩过的坑：这里原先把 `<= 0` 当作未给，于是 `displayPrecision: 0`
+ * 被静默丢弃、照旧输出 8 位小数 —— 而 schema 上白纸黑字写着「0-64」。
+ * 文档与实现对不上，正是这个项目一直要避免的那类问题。
+ *
+ * **两处 0 的语义刻意不同，各有各的理由**：
+ *   · 本次参数 `displayPrecision: 0` → `3.14159265` 显示成 `3`
+ *     （问的是「这次显示几位」，0 是合法答案）
+ *   · 工作区 `set displayPrecision: 0` → 清除固化值
+ *     （问的是「要不要保存」，0 表示不要）
  *
  * @param value - 原始参数
- * @returns 显示位数；未给或非法返回 undefined
+ * @returns 显示位数（0—64）；未给或非法返回 undefined
  */
 function clampDisplayPrecision(value: unknown): number | undefined {
   if (value === undefined || value === null || value === '') return undefined
   const numeric = typeof value === 'number' ? value : Number(value)
-  if (!Number.isFinite(numeric) || numeric <= 0) return undefined
-  return Math.min(64, Math.max(1, Math.round(numeric)))
+  if (!Number.isFinite(numeric) || numeric < 0) return undefined
+  return Math.min(64, Math.max(0, Math.round(numeric)))
 }
 
 function normalizeVariable(value: unknown): string {
@@ -2933,6 +3187,49 @@ const OUTPUT_SCHEMA = {
   },
 } as const
 
+/**
+ * 编译期守卫：`KNOWN_ARGUMENT_KEYS` 必须覆盖 `MathArgs` 的每一个键。
+ *
+ * 手写白名单最大的风险是**与接口漂移** —— 新增一个参数却忘了加进白名单，
+ * 那条新参数就会被自己的校验拦下（比不校验更糟）。
+ * 这里用「键的联合类型必须被白名单收住」的写法把漂移变成编译期报错。
+ *
+ * 少了哪个键，tsc 会直接指出该键名。
+ */
+type MathArgsKeys = keyof MathArgs
+type _KeysCovered = MathArgsKeys extends string ? (MathArgsKeys extends KnownKeyUnion ? true : never) : never
+type KnownKeyUnion =
+  | 'expression' | 'expressions' | 'terse' | 'variables' | 'operation' | 'variable'
+  | 'matrix' | 'vector' | 'precision' | 'displayPrecision'
+  | 'data' | 'dataY' | 'distribution' | 'params' | 'x' | 'degree'
+  | 'formula' | 'overrides' | 'query' | 'customExpression'
+  | 'initial' | 'from' | 'to' | 'steps' | 'samples'
+  | 'world' | 'planetRadius' | 'planetMass' | 'rotationHours' | 'obliquityDeg'
+  | 'terrain' | 'constants' | 'derivation' | 'layer'
+  | 'action2' | 'workspace' | 'name' | 'description' | 'terrainName' | 'workspaceVariables'
+  | 'claims' | 'listConstraints'
+  | 'unitValue' | 'unitFrom' | 'unitTo' | 'customUnits' | 'unitScales'
+  | 'balance'
+  | 'bodyName' | 'bodyKind' | 'bodyConstant' | 'bodyFactor' | 'bodyType' | 'bodyEvidence'
+  | 'anchor' | 'anchorValue' | 'compareFrom' | 'compareTo'
+  | 'fantasyAbility' | 'fantasyDemand' | 'fantasyPhysical' | 'fantasyBodyArea'
+  | 'lyapunov' | 'inheritDerived' | 'inheritBase' | 'inheritSync' | 'diffA' | 'diffB'
+  | 'observerKind' | 'graphDepths' | 'timelineFrom' | 'timelineTo' | 'timelineSteps'
+  | 'whitepaperMode' | 'traceTarget' | 'costKind' | 'costX' | 'costY'
+  | 'costIterations' | 'costCombos' | 'costWithPipeline'
+  | 'promptMode'
+  | 'tableAction' | 'formulaId' | 'newExpression' | 'newParams' | 'customFormula'
+  | 'customAction' | 'customConstant' | 'customConstantName' | 'expectedDimension'
+  | 'flipClaim' | 'flipEpsilon' | 'flipBase'
+  | 'threshold' | 'worstLimit' | 'variableName' | 'constantName'
+  | 'emptyOnly' | 'dryRun' | 'olderThanDays' | 'keep' | 'tempPrefixes'
+  | 'sensitivityBase' | 'sensitivityExponent'
+
+/** 运行期再兜一次：白名单里不许有接口没有的键（防止手滑多写）。 */
+const _KEY_SET_MATCHES_INTERFACE: ReadonlySet<string> = KNOWN_ARGUMENT_KEYS
+void 0 as unknown as _KeysCovered
+void _KEY_SET_MATCHES_INTERFACE
+
 function renderResult(value: any): Array<{ type: 'text'; text: string }> {
   const payload = (value ?? {}) as Partial<MathResult>
   if (payload.ok === false) {
@@ -2960,9 +3257,16 @@ const PARAMETER_SPEC = {
   },
   expressions: {
     type: 'array',
-    description:
-      '批量求值（operation=evaluate）：一次算多条，省多次往返。' +
-      '逐条独立报错，一条失败不影响其它条。例：["1/7","2^0.5","log(10)"]。',
+    /**
+     * 刻意不声明 items：字符串与 {label,expr} 两种形态都在描述里说明即可。
+     * 理由有两条——① 不声明 items 时数组项接受任意 JSON，宿主实测两种形态都能传进来；
+     * ② 每多一段 schema 都是每轮重复计费的固定成本，而这段声明会把长度顶出预算。
+     */
+    description: '批量求值，逐条独立报错。例 ["1/7","2^0.5"]。要认出是哪条用 {label:"储耗比", expr:"139e8/152e4"}。',
+  },
+  terse: {
+    type: 'boolean',
+    description: '省 token：只回「表达式 = 结果」。失败条照常标出原因。',
   },
   variables: {
     type: 'object',
@@ -3069,7 +3373,8 @@ const PARAMETER_SPEC = {
     type: 'integer',
     description:
       '**显示精度：小数点后几位**（0-64，默认 8）。只截小数，整数永远完整。' +
-      '例 8 → 1/7 得 0.14285714。全局换档用 workspace set displayPrecision=N。' +
+      '例 8 → 1/7 得 0.14285714；0 → 只留整数。' +
+      '全局换档用 workspace set displayPrecision=N（那里的 0 = 清除）。' +
       '别用 precision 达此目的（会算错大数）。',
   },
   data: {
