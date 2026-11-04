@@ -215,6 +215,7 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
 import { WORLD_KEYS } from './world-params.js'
+import { annotateMagnitude, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -939,6 +940,8 @@ function opEvaluateBatch(
 
   const shown: string[] = []
   const values: Array<{ expression: string; label?: string; ok: boolean; result?: string; error?: string }> = []
+  /** 量级类提示（不影响成败，只提醒核对）。 */
+  const magnitudeWarnings: string[] = []
   let successCount = 0
   let failCount = 0
 
@@ -1002,7 +1005,22 @@ function opEvaluateBatch(
        * 回显原文（`π` 而不是 `pi`）是刻意的 —— 否则用户会怀疑「我传的到底被改成了什么」。
        */
       const echo = label ? label : rawExpression
-      shown.push('  ' + echo + (label ? '（' + rawExpression + '）' : '') + ' = ' + text)
+      /**
+       * 量级标注：给裸数字配上「这是 10 的几次方」。
+       *
+       * 实测复盘里最贵的一次错误是：`/1e9` 算出 2133 却贴上「万吨」标签，
+       * 据此指控原文「错了 10 倍」。返回体当时只有一行裸数字，看不出量级。
+       * 标上 `(~10³)` 之后，「2133 与万吨差一个量级」这件事人眼即可发现。
+       */
+      shown.push('  ' + echo + (label ? '（' + rawExpression + '）' : '') + ' = ' + annotateMagnitude(text))
+      /**
+       * label 与结果的量级核对：只有 label 里**明确写了量级词**（万/亿/千…）才查，
+       * 且结果本身已跨过那个量级时才提示 —— 宁漏勿误。
+       */
+      if (label) {
+        const warn = checkLabelMagnitude(label, text)
+        if (warn) magnitudeWarnings.push(warn)
+      }
       successCount++
     } catch (error) {
       const translated = translateError(error)
@@ -1024,9 +1042,32 @@ function opEvaluateBatch(
    * 但**失败信息不能省**：省掉失败行会让调用方以为「全成功了」。
    */
   if (terse) {
+    /**
+     * terse 的承诺是「省掉标题与统计」，**不是**省掉风险提示。
+     *
+     * 踩过：第一版把 ⚠ 量级提示一起省了，于是 terse 用户看到的是一行干净数字，
+     * 而干净正是最危险的 —— 他会以为没问题。
+     */
+    const terseWarnings: string[] = []
+    const terseBatch = findBatchAnomalies(
+      values
+        .filter(function (v) { return v.ok && typeof v.result === 'string' })
+        .map(function (v) { return { label: v.label, result: String(v.result) } }),
+    )
+    if (terseBatch) magnitudeWarnings.push(terseBatch)
+    if (magnitudeWarnings.length > 0) {
+      terseWarnings.push('')
+      for (const warning of magnitudeWarnings) terseWarnings.push(warning)
+    }
     return {
-      result: shown.map((s) => s.trim()).join('\n'),
-      value: toJsonValue({ count: items.length, success: successCount, failed: failCount, items: values } as never),
+      result: [...shown.map((s) => s.trim()), ...terseWarnings].join('\n'),
+      value: toJsonValue({
+        count: items.length,
+        success: successCount,
+        failed: failCount,
+        magnitudeWarnings: magnitudeWarnings.length,
+        items: values,
+      } as never),
     }
   }
 
@@ -1034,9 +1075,46 @@ function opEvaluateBatch(
     ? `═══ 批量求值（前 ${items.length} 条，共给了 ${expressions.length} 条）═══`
     : `═══ 批量求值（${items.length} 条）═══`
 
+  /**
+   * 同批次量级一致性比对。
+   *
+   * 真实案例：四条「年耗/年产（万吨）」全部用了 /1e9（实际是千吨），
+   * 全部偏大 10 倍、全部报「成功」。单条看不出问题，四条一起就该看出来。
+   */
+  const batchWarning = findBatchAnomalies(
+    values
+      .filter(function (v) { return v.ok && typeof v.result === 'string' })
+      .map(function (v) { return { label: v.label, result: String(v.result) } }),
+  )
+  if (batchWarning) magnitudeWarnings.push(batchWarning)
+
+  /**
+   * 分级语义：把「算式没塌」与「结论已验证」分开。
+   *
+   * 实测反馈原话：「成功 7，失败 0」会让调用方跳过复核 ——
+   * 因为「成功」两个字读起来像「对了」。这里显式说明它只表示什么。
+   */
+  const summary: string[] = []
+  if (failCount === 0) {
+    summary.push('算式全部求值成功（' + successCount + ' 条，只表示算式无语法/符号错，不含结论正确性判断）')
+  } else {
+    summary.push('成功 ' + successCount + '，失败 ' + failCount)
+  }
+  if (magnitudeWarnings.length > 0) {
+    summary.push('')
+    summary.push('⚠ 量级待核（' + magnitudeWarnings.length + ' 条）：')
+    for (const warning of magnitudeWarnings) summary.push(warning)
+  }
+
   return {
-    result: [header, '', ...shown, '', `成功 ${successCount}，失败 ${failCount}`].join('\n'),
-    value: toJsonValue({ count: items.length, success: successCount, failed: failCount, items: values } as never),
+    result: [header, '', ...shown, '', ...summary].join('\n'),
+    value: toJsonValue({
+      count: items.length,
+      success: successCount,
+      failed: failCount,
+      magnitudeWarnings: magnitudeWarnings.length,
+      items: values,
+    } as never),
   }
 }
 

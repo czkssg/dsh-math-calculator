@@ -191,7 +191,12 @@ console.log('-- 9. 批量求值（一次算多条）--')
   const text = String(r.result)
   assert('标题标明条数', /批量求值（3 条）/.test(text), text.split('\n')[0])
   assert('逐行给出结果', /1\/7 = 0\.142857/.test(text), '')
-  assert('统计成功数与失败数', /成功 3，失败 0/.test(text), '')
+  /**
+   * 全成功时的措辞是分级的，不再说「成功 3，失败 0」——
+   * 后者读起来像「结论对了」，会让调用者跳过复核。
+   * 见 CHANGELOG「『成功』改为分级语义」。
+   */
+  assert('统计成功数与失败数', /算式全部求值成功（3 条/.test(text), '')
   assert('结构化值含 items', Array.isArray(r.value && r.value.items), '')
 
   // 一条失败不影响其它

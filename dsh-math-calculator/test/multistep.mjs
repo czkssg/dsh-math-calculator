@@ -42,7 +42,16 @@ const text = async (args) => String((await run(args)).result || '')
 console.log('-- 1. 批量内链式：前一条赋值对后一条可见 --')
 {
   const t = await text({ operation: 'evaluate', expressions: ['a=5', 'b=a*2', 'c=b+3', 'd=c^2'] })
-  assert('四步链全部成功', /成功 4，失败 0/.test(t), t.split('\n').slice(-3).join(' '))
+  /**
+   * 全成功时的措辞是分级的：「算式全部求值成功（4 条，只表示算式无语法/符号错，
+   * 不含结论正确性判断）」。
+   *
+   * 刻意不去匹配「成功 4，失败 0」—— 那句话读起来像「对了」，
+   * 会让调用者跳过复核。这里同时断言了「不含结论正确性判断」这半句，
+   * 因为那才是这次改措辞的真正目的。
+   */
+  assert('四步链全部求值成功', /算式全部求值成功（4 条/.test(t), t.split('\n').slice(-3).join(' '))
+  assert('并声明不含结论正确性判断', /不含结论正确性判断/.test(t), '')
   assert('最后一步得 169', /d\(c\^2\)|c\^2\) = 169|= 169/.test(t), '')
 }
 
@@ -58,7 +67,7 @@ console.log('-- 2. 带 label 的多步链，中间值可认 --')
       { label: '总计', expr: 'total=sub+tax' },
     ],
   })
-  assert('五步链全成功', /成功 5，失败 0/.test(t), '')
+  assert('五步链全部求值成功', /算式全部求值成功（5 条/.test(t), '')
   assert('小计 = 15', /小计.*= 15/.test(t), '')
   assert('总计 = 16.95', /总计.*= 16\.95/.test(t), '')
 }
@@ -97,7 +106,7 @@ console.log('-- 5. 真单位用法一个都不能坏（这是修复的主要风�
 console.log('-- 6. 单字母赋值后可在链中复用 --')
 {
   const t = await text({ operation: 'evaluate', expressions: ['m=5', 'v=m*2', 'k=v+3'] })
-  assert('单字母链成功', /成功 3，失败 0/.test(t), '')
+  assert('单字母链全部求值成功', /算式全部求值成功（3 条/.test(t), '')
   assert('k = 13', /k\(v\+3\)|= 13/.test(t), t.split('\n').slice(-3).join(' '))
 }
 
