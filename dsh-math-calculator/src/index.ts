@@ -191,6 +191,7 @@ import {
   currentDisplayPrecision,
   fast,
   normalizeSource,
+  normalizeChineseUnits,
   rational,
   safeNumberForJson,
   setActiveDisplayPrecision,
@@ -262,6 +263,17 @@ export interface MathResult {
    * 提示属于「给人/模型看的说明」，走这个字段即可。
    */
   notice?: string
+  /**
+   * 批量模式：「部分成功」——本批有失败条目，但也有成功结果可用。
+   *
+   * 为什么要单独一个字段：`ok` 是布尔，说不了「废了几条、还剩几条」。
+   * 没有它，调用方只能二选一：整批当废（浪费成功条目）或整批当可用（把失败当成功）。
+   */
+  partial?: boolean
+  /** 批量模式：失败条目数。 */
+  failed?: number
+  /** 批量模式：成功条目数。 */
+  succeeded?: number
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -875,6 +887,13 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
    * 幂等：这些替换重复执行结果不变，所以不会因多次归一化而出错。
    */
   expression = normalizeSource(expression)
+  /**
+   * 中文单位展开：把「1 里 + 3 米」变成 mathjs 能算的形态。
+   *
+   * 必须放在 normalizeSource **之后**：前者处理数学记号（× ÷ π **），
+   * 后者处理单位名；顺序反了会让 `2 × 3 里` 这类混合写法漏掉。
+   */
+  expression = normalizeChineseUnits(expression)
   if (expression.length > MAX_INPUT_LENGTH) {
     throw new CalcError('too_large', `表达式过长（${expression.length} > ${MAX_INPUT_LENGTH}）`)
   }
@@ -960,6 +979,39 @@ function opEvaluateBatch(
      * 批内条目一多（该会话单批最多 14 条），纯靠位置对齐的心智负担很大。
      */
     const entry = typeof raw === 'string' ? { expr: raw } : (raw as { label?: string; expr?: string }) ?? {}
+    /**
+     * ## 元素里的未知键也要点名
+     *
+     * 顶层的未知参数有 `findUnknownArguments` 拦着，但**数组元素内部没查**。
+     * 实测（2026-11-06）：
+     *
+     * ```
+     *   {expressions:[{label:'a', expr:'1+1', unit:'kg/day'}]}  → ok=true，unit 被静默丢弃
+     *   {expression:'1+1', unit:'kg/day'}                       → 报 unknown_argument ✓
+     * ```
+     *
+     * 危险在于：将来若要加 `unit` / `assumption` 这类**按条**的参数，
+     * 它们必然写在这个位置 —— 而现有行为会让它们**静默不生效**，
+     * 调用方以为生效了。这正是本项目一直在打击的那类问题。
+     *
+     * 处理方式：认不出的键当作**该条失败**（而不是整批失败），
+     * 这样一条写错不影响其余条目 —— 与「逐条独立报错」的既有约定一致。
+     */
+    const allowedEntryKeys = ['label', 'expr']
+    const unknownEntryKeys =
+      typeof raw === 'string'
+        ? []
+        : Object.keys(raw as Record<string, unknown>).filter(function (k) { return !allowedEntryKeys.includes(k) })
+    if (unknownEntryKeys.length > 0) {
+      const echoName = (entry as { label?: string }).label || String((entry as { expr?: string }).expr ?? '')
+      values.push({ expression: '', label: String(echoName), ok: false, error: 'unknown_argument' })
+      shown.push(
+        '  ' + echoName + ' → 失败[unknown_argument]：这一条里有认不出的键 ' +
+          unknownEntryKeys.join('、') + '（只接受 label 与 expr）',
+      )
+      failCount++
+      continue
+    }
     const label = typeof entry.label === 'string' ? entry.label.trim() : ''
     const rawExpression = String(entry.expr ?? '').trim()
 
@@ -975,7 +1027,7 @@ function opEvaluateBatch(
      * 否则用户写 `π`、`2**10` 会看到自己被回显成 `pi`、`2^10` ——
      * 那会让人怀疑「我传的到底被改成了什么」。
      */
-    const expression = normalizeSource(rawExpression)
+    const expression = normalizeChineseUnits(normalizeSource(rawExpression))
     try {
       /**
        * 解析单独包一层：给 `translateError` 传 `'syntax'` 作为兜底类型。
@@ -2517,9 +2569,11 @@ function opHelp(): Outcome {
       '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
       '                action2: list/show/create/switch/save/set/add-terrain/delete/reset',
       '                stats/cleanup 可查看存储与清理；不同工作区完全隔离',
-      '                命名变量：{action2:"set", workspaceVariables:{BTU_LB:1260000}} 存进去',
-      '                  默认**不参与计算**；要生效再传 useWorkspaceVariables:true（逐工作区）',
-      '                  打开后本次 variables 参数优先于工作区值；改变量会让缓存失效',
+      '                命名变量：{action2:"set", workspaceVariables:{BTU_LB:1260000}} 存进去（默认不参与计算）',
+      '                  启用：{action2:"set", useWorkspaceVariables:true}  ← 必须走 action2:"set"',
+      '                        （在 evaluate 上传这个开关不生效，它会被忽略）',
+      '                  启用后 evaluate 可直接用变量名；本次 variables 参数优先于工作区值',
+      '                  改变量会让缓存失效（避免拿到改之前的数）',
       '                注意：本插件没有图形界面（2026-10-25 已移除），全部经工具与 HTTP 路由操作',
       '',
       '【其他】',
@@ -2920,14 +2974,47 @@ export function runMathTool(rawArguments: unknown): MathResult {
      */
     if (Array.isArray(args.expressions) && args.expressions.length > 0) {
       outcome = opEvaluateBatch(engine, args.expressions, scope, precision, args.terse === true)
+      /**
+       * 批量里**有失败**时，顶层 `ok` 必须为 false。
+       *
+       * ## 修的是什么
+       *
+       * 实测反馈（2026-11-06）：批量里一条 `unknown_symbol` 失败时，
+       * `result` 里写着「→ 失败[unknown_symbol]」，但 `ok` 仍是 `true`、
+       * `error` 是 `undefined`。于是任何写 `if (r.ok)` 的调用方
+       * **都会把失败当成成功**，再把失败文本当数值用。
+       *
+       * 原话：「我在本次任务中多次写 `if (!r.ok)` 来判断成败，
+       *   得到的结果是『永远成功』——因为 `ok` 永远是 `true`。」
+       *
+       * ## 为什么不是「一条失败就整批失败」
+       *
+       * 「一条失败不影响其它条」是这个批量模式的核心优点，不能丢。
+       * 所以这里分开表达：
+       *   · `ok: false`      —— 告诉自动化流程「本批**不是**全好」
+       *   · `partial: true`  —— 告诉它「但有成功的条目可用」
+       *   · `failed / succeeded` —— 给出具体数量，便于分流处理
+       *
+       * 顶层 `error` 仍是 `undefined`（这是**批量**失败，不是某个单条的错误；
+       * 每条的原因都在 `value.items` 里）。若硬塞一个 error，
+       * 反而会让「只有第 3 条错」被读成「整个调用都错了」。
+       */
+      const batchValue = (outcome.value ?? {}) as Record<string, unknown>
+      const failedCount = typeof batchValue.failed === 'number' ? batchValue.failed : 0
+      const succeededCount = typeof batchValue.success === 'number' ? batchValue.success : 0
       const batchResult: MathResult = {
-        ok: true,
+        ok: failedCount === 0,
         operation: 'evaluate',
         input: args.expressions.join(' ; ').slice(0, 200),
         result: outcome.result,
         precision,
       }
       if (outcome.value !== undefined) batchResult.value = outcome.value
+      if (failedCount > 0) {
+        batchResult.partial = succeededCount > 0
+        batchResult.failed = failedCount
+        batchResult.succeeded = succeededCount
+      }
       return batchResult
     }
     switch (operation) {
@@ -3407,6 +3494,17 @@ const OUTPUT_SCHEMA = {
     notice: { type: 'string', description: '附加提示（显示精度/精度不足等）' },
     /** 结果来自缓存（未重算）。同样必须声明，否则命中缓存时调用失败。 */
     cached: { type: 'boolean', description: '是否命中缓存' },
+    /**
+     * 批量模式下「部分成功」。
+     *
+     * 语义：本批**有失败条目**（所以 `ok` 是 false），但**也有成功的**可用。
+     * 没这个字段时，调用方无法区分「整批全废」与「废一条、其余可用」。
+     */
+    partial: { type: 'boolean', description: '批量部分成功（有失败条目但仍有成功结果）' },
+    /** 批量模式：失败条目数。 */
+    failed: { type: 'integer', description: '批量中失败条数' },
+    /** 批量模式：成功条目数。 */
+    succeeded: { type: 'integer', description: '批量中成功条数' },
     error: {
       type: 'object',
       additionalProperties: false,

@@ -206,7 +206,16 @@ console.log('-- 9. 批量求值（一次算多条）--')
     displayPrecision: 6,
   })
   const mixedText = String(mixed.result)
-  assert('批量整体仍 ok', mixed.ok, '')
+  /**
+   * 这里断言的是**新契约**（2026-11-06 起）：
+   * 批量里有失败时顶层 `ok` 为 false，同时 `partial=true` 表示「仍有可用条目」。
+   *
+   * 旧断言写的是 `mixed.ok === true` —— 那正是被修掉的缺陷：
+   * 任何写 `if (r.ok)` 的调用方都会把「废了一条的批次」当成全好。
+   * 「一条失败不影响其它条」这个优点由 `partial` + 成功条目仍在文本来承载。
+   */
+  assert('批量有失败时 ok=false（新契约）', mixed.ok === false, String(mixed.ok))
+  assert('部分成功时 partial=true', mixed.partial === true, String(mixed.partial))
   assert('失败条被标出', /不存在xyz\(1\) → 失败/.test(mixedText), '')
   assert('其它条仍算成功', /1\+1 = 2/.test(mixedText) && /3\*3 = 9/.test(mixedText), '')
   assert('统计正确（成功2失败1）', /成功 2，失败 1/.test(mixedText), '')

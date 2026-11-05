@@ -30,6 +30,8 @@ DSH（DeepSeek Harness）原生的**高精度数学计算器**插件，附带可
 | [ADR-0002](../docs/adr/0002-plugin-ai-facing.md) | 面向 AI 的三层提示设计 |
 | [docs/formula-authoring.md](../docs/formula-authoring.md) | 怎么加一条公式 |
 | [docs/ui-removed.md](docs/ui-removed.md) | 界面为什么被移除 |
+| [docs/实测报告1106评审.md](docs/实测报告1106评审.md) | 一份实测报告的逐条评审：哪些是真缺陷、哪些判断有误 |
+| [docs/联网联动方案与价值验证.md](docs/联网联动方案与价值验证.md) | 联网联动怎么做、值不值得做（**方案稿，未实现**） |
 
 ---
 

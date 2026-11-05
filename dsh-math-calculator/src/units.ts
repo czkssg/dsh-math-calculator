@@ -289,14 +289,69 @@ export function convert(
   } else {
     const inBase = value * from.factor
     result = inBase / to.factor
-    steps.push('1 ' + from.name + ' = ' + from.factor + ' ' + BASE_UNIT[from.dimension])
-    steps.push(
-      show(value) + ' ' + from.name + ' = ' + show(inBase) + ' ' + BASE_UNIT[from.dimension],
-    )
-    steps.push(
-      '1 ' + to.name + ' = ' + to.factor + ' ' + BASE_UNIT[to.dimension] +
-      '，故结果 = ' + show(result) + ' ' + to.name,
-    )
+    /**
+     * 代入过程只写「有信息量」的步骤。
+     *
+     * ## 修的是什么
+     *
+     * 实测反馈（2026-11-06）原话：换算 kg → t 时「代入过程」里出现
+     * 「1 kg = 1 kg」「9.0000e+15 kg = 9.0000e+15 kg」这类**同义重复**，
+     * 属无效信息 —— 而且它让输出**看起来有内容，其实没有**。
+     *
+     * 根因：当 from 或 to 恰好是基准单位（factor = 1）时，
+     * 那一步就是「X = X」，什么都没说明。
+     *
+     * 现在的规则：
+     *   · from.factor ≠ 1 时才写「1 from = N base」（否则 1 = 1，无信息）
+     *   · from.factor ≠ 1 时才写「value from = inBase base」（上面那行是它的依据）
+     *   · to.factor ≠ 1 时才写「1 to = M base」；无论哪种都写「故结果 = ...」
+     *
+     * 换算到基准单位时，过程就只剩一行结论 —— 那本来就是它的全部信息。
+     */
+    const fromIsBase = from.factor === 1
+    const toIsBase = to.factor === 1
+    const baseName = BASE_UNIT[from.dimension]
+
+    /**
+     * ## 合并成一行，避免同一个换算关系说两遍
+     *
+     * 踩过：`t → kg` 时先写「1 t = 1000 kg」，再写
+     * 「9.0000e+15 t = 9.0000e+15 kg」—— 两行说的是**同一件事**
+     * （因为 inBase 恰好等于 inBase，且 to 就是基准单位）。
+     *
+     * 现在按信息量分三种：
+     *   · 源非基准、目标非基准 → 「1 from = N base，1 to = M base，故结果」
+     *   · 源非基准、目标是基准 → 「value from = X base，故结果 = X to」
+     *   · 源是基准、目标非基准 → 「1 to = M base，故结果」
+     *   · 两者都是基准       → 只剩结论（其实同名，前面已处理）
+     */
+    if (!fromIsBase && !toIsBase) {
+      /**
+       * 两个都非基准 → 中间值**必须给**。
+       *
+       * 它是「30 里 = 15000 m = 15 km」这条链的中段：
+       * 少了它，调用方无法核对「500 × 30」这一步是否算对。
+       * 这与「去掉同义重复」不冲突 —— 重复指的是 `1 X = 1 X` 那种零信息行，
+       * 而中间值是真信息。
+       */
+      steps.push('1 ' + from.name + ' = ' + from.factor + ' ' + baseName)
+      steps.push(show(value) + ' ' + from.name + ' = ' + show(inBase) + ' ' + baseName)
+      steps.push('1 ' + to.name + ' = ' + to.factor + ' ' + baseName)
+      steps.push('故结果 = ' + show(result) + ' ' + to.name)
+    } else if (!fromIsBase && toIsBase) {
+      steps.push(show(value) + ' ' + from.name + ' = ' + show(inBase) + ' ' + baseName)
+      steps.push('故结果 = ' + show(result) + ' ' + to.name)
+    } else if (fromIsBase && !toIsBase) {
+      steps.push('1 ' + to.name + ' = ' + to.factor + ' ' + baseName)
+      steps.push('故结果 = ' + show(result) + ' ' + to.name)
+    } else {
+      steps.push('故结果 = ' + show(result) + ' ' + to.name)
+    }
+  }
+  if (from.name === to.name) {
+    /** 源与目标同名：换算本身无操作，别编出一段过程。 */
+    steps.length = 0
+    steps.push('源单位与目标单位同名，数值不变。')
   }
 
   if (from.note) warnings.push(from.name + '：' + from.note)

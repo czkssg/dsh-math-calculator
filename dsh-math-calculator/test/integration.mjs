@@ -132,7 +132,8 @@ const stub = { tool: captured.tool, hooks: host.hooks, promptSection: captured.s
    * 手写这份清单是有意的：加字段时被迫同时改这里，
    * 从而被迫去检查 schema —— 比自动推导更能起到提醒作用。
    */
-  const PRODUCED = ['ok', 'operation', 'input', 'result', 'precision', 'value', 'variables', 'notice', 'cached', 'error']
+  // 批量新增 partial / failed / succeeded：让自动化流程能区分「整批全废」与「废一条、其余可用」。
+  const PRODUCED = ['ok', 'operation', 'input', 'result', 'precision', 'value', 'variables', 'notice', 'cached', 'error', 'partial', 'failed', 'succeeded']
   const undeclared = PRODUCED.filter((f) => !declared.includes(f))
   assert('产出字段全部已在 output.schema 声明', undeclared.length === 0,
     '未声明: ' + undeclared.join(', '))

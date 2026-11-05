@@ -302,6 +302,48 @@ export function opUnits(args: MathArgs): Outcome {
   }
   const c = outcome.conversion
 
+  /**
+   * `terse`：只回「A = B」一行。
+   *
+   * ## 为什么让 terse 对 units 也生效
+   *
+   * 实测反馈（2026-11-06）：`{operation:"units", terse:true}` 返回仍是 6 行带框，
+   * terse 对 units **没有任何压缩效果** —— 而 units 的输出本来就有
+   * 「代入过程 + 注意」两段可省的内容。
+   *
+   * ## 但**注意**那一段不能省，只压缩格式
+   *
+   * 与批量一致：terse 承诺的是「省掉标题与统计」，不是省掉风险。
+   * 「里在周制约 415 m」这类适用域提示如果被省掉，
+   * 调用方会拿一个用错朝代的值去写设定 —— 那比多几行更糟。
+   * 所以 terse 下保留内容，只去掉竖排与空行。
+   */
+  if (args.terse === true) {
+    const terseLines: string[] = []
+    terseLines.push(show(c.value) + ' ' + c.from.name + ' = ' + show(c.result) + ' ' + c.to.name)
+    if (implicitOne) terseLines[0] = '（未给 unitValue，按 1 计）' + terseLines[0]
+    /**
+     * 适用域提示合并成一行 —— 它们在 terse 下仍必须出现，
+     * 只是不再逐条占一行。
+     */
+    if (c.warnings.length > 0) terseLines.push('⚠ ' + c.warnings.join('；'))
+    return {
+      result: terseLines.join('\n'),
+      value: toJsonValue({
+        mode: 'convert',
+        dimension: c.dimension,
+        value: safeNumberForJson(c.value),
+        from: c.from.name,
+        to: c.to.name,
+        result: safeNumberForJson(c.result),
+        steps: c.steps,
+        warnings: c.warnings,
+        implicitOne: implicitOne,
+        terse: true,
+      } as never),
+    }
+  }
+
   lines.push('══════ 单位换算 ══════')
   lines.push('')
   if (implicitOne) {

@@ -76,11 +76,18 @@ export const SI_PREFIXES: Array<[string, number]> = [
  */
 export const LENGTH_UNITS: UnitDef[] = [
   // ── 公制基本 ──
-  { name: 'm', aliases: ['米', '公尺'], dimension: 'length', factor: 1, note: '基准单位' },
-  { name: 'km', aliases: ['千米', '公里'], dimension: 'length', factor: 1e3 },
+  /**
+   * 核心单位的英文全称与复数。
+   *
+   * 实测反馈（2026-11-06）：`meters` 不认、只认缩写 —— 而英文文献/数据里全称极常见。
+   * 这条对 length/mass/time 三个最常用量纲影响最大，所以只在这三处铺全称，
+   * 不让每个冷门单位都长一截别名表（那是每轮计费的固定成本）。
+   */
+  { name: 'm', aliases: ['米', '公尺', 'meter', 'meters', 'metre', 'metres'], dimension: 'length', factor: 1, note: '基准单位' },
+  { name: 'km', aliases: ['千米', '公里', 'kilometer', 'kilometers', 'kilometre', 'kilometres'], dimension: 'length', factor: 1e3 },
   { name: 'dm', aliases: ['分米'], dimension: 'length', factor: 0.1 },
-  { name: 'cm', aliases: ['厘米', '公分'], dimension: 'length', factor: 0.01 },
-  { name: 'mm', aliases: ['毫米', '公厘'], dimension: 'length', factor: 0.001 },
+  { name: 'cm', aliases: ['厘米', '公分', 'centimeter', 'centimeters'], dimension: 'length', factor: 0.01 },
+  { name: 'mm', aliases: ['毫米', '公厘', 'millimeter', 'millimeters'], dimension: 'length', factor: 0.001 },
   { name: 'µm', aliases: ['微米', 'μm'], dimension: 'length', factor: 1e-6 },
   { name: 'nm', aliases: ['纳米'], dimension: 'length', factor: 1e-9 },
 
@@ -153,9 +160,16 @@ export const LENGTH_UNITS: UnitDef[] = [
  */
 export const MASS_UNITS: UnitDef[] = [
   // ── 公制 ──
-  { name: 'kg', aliases: ['千克', '公斤'], dimension: 'mass', factor: 1, note: '基准单位' },
-  { name: 't', aliases: ['吨', '公吨'], dimension: 'mass', factor: 1e3, note: '公制吨 = 1000 kg' },
-  { name: 'g', aliases: ['克'], dimension: 'mass', factor: 1e-3 },
+  { name: 'kg', aliases: ['千克', '公斤', 'kilogram', 'kilograms'], dimension: 'mass', factor: 1, note: '基准单位' },
+  /**
+   * 公制吨的英文全称要收齐：文献里 `ton` / `tonne` / `metric ton` 三种都常见。
+   *
+   * 注意 `ton` 在英制语境下常指长吨（2240 lb），但**没有上下文时按公制吨**：
+   * 这是国际惯例（SI 里 ton 就是 tonne），且误差 1.6% 会在结果里看得出。
+   * 真要长吨请显式写 `longton` / `长吨`。
+   */
+  { name: 't', aliases: ['吨', '公吨', 'ton', 'tonne', 'metric ton', 'metric tonne', 'MT'], dimension: 'mass', factor: 1e3, note: '公制吨 = 1000 kg。英制长吨请写 longton（2240 lb）' },
+  { name: 'g', aliases: ['克', 'gram', 'grams', 'gramme', 'grammes'], dimension: 'mass', factor: 1e-3 },
   { name: 'mg', aliases: ['毫克'], dimension: 'mass', factor: 1e-6 },
   { name: 'µg', aliases: ['微克', 'mcg'], dimension: 'mass', factor: 1e-9 },
   { name: 'ng', aliases: ['纳克'], dimension: 'mass', factor: 1e-12 },
@@ -218,11 +232,11 @@ export const MASS_UNITS: UnitDef[] = [
  * 基准 s。含中国古制（刻/时辰/更/炷香）、佛家/道家时间、地质年代、天文周期。
  */
 export const TIME_UNITS: UnitDef[] = [
-  { name: 's', aliases: ['秒'], dimension: 'time', factor: 1, note: '基准单位' },
+  { name: 's', aliases: ['秒', 'second', 'seconds', 'sec'], dimension: 'time', factor: 1, note: '基准单位' },
   { name: 'ms', aliases: ['毫秒'], dimension: 'time', factor: 1e-3 },
   { name: 'µs', aliases: ['微秒'], dimension: 'time', factor: 1e-6 },
   { name: 'ns', aliases: ['纳秒'], dimension: 'time', factor: 1e-9 },
-  { name: 'min', aliases: ['分钟'], dimension: 'time', factor: 60 },
+  { name: 'min', aliases: ['分钟', 'minute', 'minutes'], dimension: 'time', factor: 60 },
   { name: 'h', aliases: ['小时'], dimension: 'time', factor: 3600,
     note: '与普朗克常数 h 同名。单位换算语境下按小时理解' },
 
@@ -265,11 +279,18 @@ export const TIME_UNITS: UnitDef[] = [
  * 基准 m²。中国市制亩/顷（各地亩不同）、英制 acre/rood、日本町/反步。
  */
 export const AREA_UNITS: UnitDef[] = [
-  { name: 'm²', aliases: ['平方米', '平米'], dimension: 'area', factor: 1, note: '基准单位' },
-  { name: 'km²', aliases: ['平方千米', '平方公里'], dimension: 'area', factor: 1e6 },
-  { name: 'cm²', aliases: ['平方厘米'], dimension: 'area', factor: 1e-4 },
-  { name: 'mm²', aliases: ['平方毫米'], dimension: 'area', factor: 1e-6 },
-  { name: 'ha', aliases: ['公顷'], dimension: 'area', factor: 1e4, note: '1 公顷 = 10000 m² = 15 市亩' },
+  /**
+   * 面积别名：`m2` / `m^2` 是代码与 Markdown 环境里的自然写法。
+   *
+   * 实测反馈（2026-11-06）：敲 `km²` 需要输入法配合，很容易写成 `km2`，
+   * 而工具「对最自然的写法报错、只对需要特殊字符的写法才通过」。
+   * 调用方在算树占地时连续踩坑 4 次（km2 → km^2 → 平方米 → 才试 km²）。
+   */
+  { name: 'm²', aliases: ['平方米', '平米', 'm2', 'm^2', 'sqm', 'sq m'], dimension: 'area', factor: 1, note: '基准单位' },
+  { name: 'km²', aliases: ['平方千米', '平方公里', 'km2', 'km^2', 'sqkm', 'sq km'], dimension: 'area', factor: 1e6 },
+  { name: 'cm²', aliases: ['平方厘米', 'cm2', 'cm^2'], dimension: 'area', factor: 1e-4 },
+  { name: 'mm²', aliases: ['平方毫米', 'mm2', 'mm^2'], dimension: 'area', factor: 1e-6 },
+  { name: 'ha', aliases: ['公顷', 'hectare', 'hectares'], dimension: 'area', factor: 1e4, note: '1 公顷 = 10000 m² = 15 市亩' },
 
   // ── 中国市制 ──
   { name: '亩', dimension: 'area', factor: 666.6666666666666,

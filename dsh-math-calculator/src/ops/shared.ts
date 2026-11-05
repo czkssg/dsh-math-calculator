@@ -13,6 +13,15 @@
 */
 
 import { create, all } from 'mathjs'
+/**
+ * 单位数据表：中文单位归一化要用它派生出展开表。
+ *
+ * `units-data.ts` 是**纯数据模块**（不 import 任何本项目模块），
+ * 所以这里引用它不会造成循环依赖 —— 这一点很关键，
+ * 因为 `units.ts` 的逻辑层会 import 本模块。
+ */
+import { ALL_UNITS } from '../units-data.js'
+import { BASE_UNIT } from '../units.js'
 
 import type { JsonValue } from '../format.js'
 import {
@@ -636,6 +645,154 @@ export function normalizeSource(input: string): string {
     .replace(/\*\*/g, '^')
     // 自然对数别名：mathjs 的 `log` 本就是自然对数，但用户直觉会写 `ln`
     .replace(/\bln\s*\(/g, 'log(')
+    .replace(/\bLN\s*\(/g, 'log(')
+    // 面积别名：`km^2` / `km2` 在表达式里统一成 mathjs 认得的 `km^2`
+    // （mathjs 的单位系统能解析 `km^2`，但不能解析裸的 `km2`）
+    .replace(/(\d)\s*(m|cm|mm|km|dm|um)2(?![0-9a-zA-Z])/g, '$1 $2^2')
+    .replace(/(\d)\s*(m|cm|mm|km|dm|um)\^2(?![0-9a-zA-Z])/g, '$1 $2^2')
+    /**
+     * 上标字符 → 幂运算。
+     *
+     * mathjs 的解析器**不认上标**：`5 m²` 报 `Syntax error in part "²"`。
+     * 而 `m²` 恰恰是面积单位最自然的写法（`units` 模式里也用它当主名）。
+     * 所以表达式里出现 ²/³ 时统一换成 `^2`/`^3`。
+     */
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+}
+
+/**
+ * 正则元字符转义。
+ *
+ * @param text - 待转义的字符串
+ * @returns 可安全嵌入正则的字符串
+ */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * 中文单位展开表（由 units 数据表派生，避免两处维护）。
+ *
+ * ## 为什么必须定义在 `normalizeChineseUnits` 之前
+ *
+ * 踩过：第一版把它写在文件末尾，而函数在文件中间。
+ * `const` 有暂时性死区（TDZ）—— 函数**首次被调用时**常量还没初始化，
+ * 抛 ReferenceError，被外层的 try/catch 吞掉，表现为「函数静默返回原文」。
+ * 这个 bug 的隐蔽处在于：函数看着完全正确，测试却全不生效。
+ */
+const CHINESE_UNIT_EXPANSIONS: Array<{ name: string; dimension: string; factor: number; base: string }> =
+  /**
+   * ## 逐个别名判断，不按整个单位过滤
+   *
+   * 踩过两次，都是同一种错：
+   *
+   *   ① 按 `unit.name` 是否含中文来过滤 → `m` 的单位被整个排除，
+   *      于是「米」「克」这些**中文别名**也用不上了（`2 斤 + 300 克` 报错）。
+   *   ② 反过来收全部单位 → `m²` 被收进来，展开时把表达式里的 `m²`
+   *      也替换掉，变成 `... * 1 * 1 m²` 这种嵌套垃圾，把式子弄坏。
+   *
+   * 正确做法：**只挑出名字本身是纯中文的那些**，逐个判断，与单位主名无关。
+   *
+   * ```
+   *   m  → aliases 里的「米」      ✓ 收（纯中文）
+   *   m² → name `m²` 含 m         ✗ 不收（英文/符号 mathjs 自己认得）
+   *   里 → name「里」             ✓ 收
+   * ```
+   */
+  ALL_UNITS.flatMap(function (unit) {
+    const names = [unit.name, ...(unit.aliases ?? [])]
+    return names
+      .filter(function (n) {
+        /**
+         * ⚠️ 方括号不能省：`/\u4e00-\u9fff/`（无方括号）匹配的是
+         * **字面字符串「一-鿿」**，不是字符范围 —— 它对任何单个汉字都返回 false。
+         *
+         * 这个坑很隐蔽：正则语法合法、编译通过、运行不报错，只是永远匹配不到，
+         * 表现为「派生表为空、函数静默不生效」。排查时我一度怀疑循环依赖或 TDZ，
+         * 实际只是一对缺失的方括号。
+         */
+        if (!/[\u4e00-\u9fff]/.test(n)) return false
+        /** 纯中文：不能含 ASCII 字母数字（否则是 `m²` 这类符号名）。 */
+        return !/[A-Za-z0-9]/.test(n)
+      })
+      .map(function (n) {
+        /**
+         * 基准单位要转成 mathjs 认得的写法。
+         *
+         * `BASE_UNIT` 用人类可读的 `m²` / `m³`，但 mathjs 解析器**不认上标字符**
+         * （它会报 `Syntax error in part "²"`）。所以改成 `m^2` / `m^3`。
+         */
+        const base = BASE_UNIT[unit.dimension].replace(/²/g, '^2').replace(/³/g, '^3')
+        return { name: n, dimension: unit.dimension, factor: unit.factor, base }
+      })
+  })
+
+/**
+ * 中文单位 → mathjs 单位表达式的归一化。
+ *
+ * ## 为什么要这一步
+ *
+ * 实测反馈（2026-11-06）：
+ *
+ * ```
+ *   3 km + 500 m   → 3.5 km       ✓
+ *   1 里 + 3 米    → Syntax error ✗
+ *   5 亩 + 100 m²  → Syntax error ✗
+ * ```
+ *
+ * **英文/符号单位可在表达式内混算，中文单位不行** —— 而 `units` 模式里
+ * 「里」「亩」都是支持的。两条路径的单位表没打通。
+ *
+ * ## 为什么不用 mathjs 的 createUnit 注册中文单位
+ *
+ * 因为 `buildMath` 里**刻意删掉了 createUnit**：那是安全边界的一部分
+ * （表达式求值时不允许往引擎里注入任意定义）。为了中文单位把这个边界放开，
+ * 代价远大于收益。
+ *
+ * ## 所以走文本替换：把「数值 + 中文单位」换成「数值 * 系数 基准单位」
+ *
+ * 这是纯文本变换，不碰引擎能力边界。规则：
+ *   · 只替换 `数字 + 可选空格 + 中文单位` 这种**明确带数值**的形态
+ *   · 替换后乘上该单位的 factor（数值直接内联，避免再算一次）
+ *   · 单位后必须不是中文/字母（否则是更长词的一部分，如「公里」不是「里」）
+ *
+ * ```
+ *   1 里 + 3 米  →  1 * 500 m + 3 * 1 m   →  mathjs 得 503 m
+ *   5 亩 + 100 m² →  5 * 666.6666666666666 m^2 + 100 m^2  →  3433.33 m²
+ * ```
+ *
+ * 例外：温度单位是**仿射**的（不能乘），所以不在此处替换 ——
+ * 带温度的表达式请走 `operation:"units"`。
+ *
+ * @param source - 已做过基础归一化的表达式
+ * @returns 中文单位已展开的表达式
+ */
+export function normalizeChineseUnits(source: string): string {
+  if (typeof source !== 'string' || source === '') return source
+  let output = source
+  /**
+   * 长单位名优先：否则「公里」会先匹配成「里」，
+   * 把 `3 公里` 换成 `3 * 500 m`（错了 2 倍）。
+   */
+  const ordered = CHINESE_UNIT_EXPANSIONS.slice().sort(function (a, b) {
+    return b.name.length - a.name.length
+  })
+  for (const entry of ordered) {
+    if (entry.dimension === 'temperature') continue
+    /**
+     * 匹配「数字 + 空格? + 单位」，且单位后面不能紧跟中文或字母数字，
+     * 避免命中更长词的一部分。
+     */
+    const pattern = new RegExp(
+      '([0-9][0-9,.]*(?:e[+-]?[0-9]+)?)\\s*' + escapeRegExp(entry.name) + '(?![0-9A-Za-z\u4e00-\u9fff])(?![\u4e00-\u9fff])',
+      'gi',
+    )
+    output = output.replace(pattern, function (_match, numeric: string) {
+      return numeric.replace(/,/g, '') + ' * ' + entry.factor + ' ' + entry.base
+    })
+  }
+  return output
 }
 
 /**
