@@ -230,6 +230,139 @@ export function checkLabelMagnitude(label: string, result: string): string {
 }
 
 /**
+ * 调用方给的锚点（`sanity` 字段）。
+ *
+ * ## 这一层的定位
+ *
+ * 实测报告（2026-11-06）原话：
+ *
+ * > 工具能算出 `1e8 * 25000 = 2.5e12`，但**不会提醒「这个数比帝国星界军总人口
+ * > （1e10）还大 250 倍」**。
+ *
+ * 工具不知道 1e10 是什么，也不该知道 —— 那需要先检索、再理解语义。
+ * 但**调用方知道**：它刚查过那个锚点，或者它本来就在自己的设定文档里。
+ *
+ * 所以这一层做的是：**把「我已经知道的常识」交给工具，让工具做它擅长的事——比对。**
+ * 判据来自人，执行来自工具。不猜。
+ */
+export interface SanitySpec {
+  /** 上限：结果超过它时提示。 */
+  max?: number
+  /** 下限：结果低于它时提示。 */
+  min?: number
+  /** 期望量级（10 的幂）。例如 3 表示「应该在 10³ 量级」。 */
+  expect?: number
+  /** 提示时引用的依据（如「帝国星界军总规模」）。不给就说「设定的上限」。 */
+  note?: string
+}
+
+/**
+ * 比对锚点，返回提示文本。
+ *
+ * ## 为什么不处理非有限数
+ *
+ * `1/0` 得 Infinity。锚点比较对它没有意义（`Infinity > 1e10` 恒真，
+ * 但那条提示毫无信息量）。非有限数该由另一条通道报（数值型 operation 用非有限数
+ * 本身就该报错），锚点这里静默跳过。
+ *
+ * ## 为什么只比数值，不管量纲
+ *
+ * `9e7 kg` 与 `max:1e10` 的语义可能是「9e9 克」——量纲不同，锚点不该管。
+ * 这条限制必须写进 help，否则会变成新的误报源。
+ *
+ * ## expect 的判据是「偏离 ≥1 个数量级」
+ *
+ * 因为调用方通常只对**量级**有把握（「这是千吨级的」），对具体值没有。
+ * 差 0 个数量级（同量级）不报；差 1 个及以上才报。
+ *
+ * @param spec - 调用方给的锚点
+ * @param result - 结果文本（可能是「123」「123 kg」「1.2e5」）
+ * @returns 提示文本；无需提示时返回空串
+ */
+export function checkAnchors(spec: unknown, result: string): string {
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return ''
+  const s = spec as SanitySpec
+  const numeric = parseResultNumber(result)
+  if (!Number.isFinite(numeric) || numeric === 0) return ''
+
+  const note = typeof s.note === 'string' && s.note.trim() !== '' ? s.note.trim() : ''
+  /** 引用依据时用它；没给就用中性说法，不编。 */
+  const basis = note ? '（' + note + '）' : '（按你设定的锚点）'
+  const shown = trimForWarn(result)
+
+  const lines: string[] = []
+  if (typeof s.max === 'number' && Number.isFinite(s.max) && numeric > s.max) {
+    const ratio = numeric / s.max
+    lines.push('⚠ 超出锚点上限 ' + showAnchorValue(s.max) + basis + ' 达 ' + formatRatio(ratio) + ' 倍')
+  }
+  if (typeof s.min === 'number' && Number.isFinite(s.min) && numeric < s.min) {
+    const ratio = s.min / numeric
+    lines.push('⚠ 低于锚点下限 ' + showAnchorValue(s.min) + basis + ' 达 ' + formatRatio(ratio) + ' 分之一')
+  }
+  if (typeof s.expect === 'number' && Number.isFinite(s.expect)) {
+    const actual = Math.floor(Math.log10(Math.abs(numeric)))
+    const drift = actual - Math.round(s.expect)
+    if (Math.abs(drift) >= 1) {
+      lines.push(
+        '⚠ 量级偏离锚点期望 10' + superscriptOf(Math.round(s.expect)) + basis +
+        '：实际落在 10' + superscriptOf(actual) + ' 量级（差 ' + Math.abs(drift) + ' 个数量级）',
+      )
+    }
+  }
+  if (lines.length === 0) return ''
+  lines.push('  若这个数要写进设定，请先确认口径。')
+  return lines.join('\n')
+}
+
+/**
+ * 从结果文本里取出数值。
+ *
+ * 结果可能是纯数字（`2133.41184`）、带单位（`9e15 kg`）、带量级标注
+ * （`2133 (~10³)`）。取**开头的数值部分**即可。
+ *
+ * @param text - 结果文本
+ * @returns 数值；解析不出时返回 NaN
+ */
+function parseResultNumber(text: string): number {
+  if (typeof text !== 'string') return NaN
+  const match = text.trim().match(/^-?[0-9][0-9,.]*(?:e[+-]?[0-9]+)?/i)
+  if (!match) return NaN
+  return Number(match[0].replace(/,/g, ''))
+}
+
+/**
+ * 锚点值在提示里的写法。
+ *
+ * 大数用科学计数法：`1e10` 比 `10000000000` 好读得多 ——
+ * 后者要数零，而「数零」正是量级判断最容易出错的地方。
+ *
+ * @param value - 锚点数值
+ * @returns 便于阅读的写法
+ */
+function showAnchorValue(value: number): string {
+  const abs = Math.abs(value)
+  if (abs !== 0 && (abs >= 1e6 || abs < 1e-4)) return value.toExponential(0).replace(/e\+/, 'e')
+  return String(Number(value.toPrecision(6)))
+}
+
+/** 警告里引用时截短，避免把 64 位小数抄进提示。 */
+function trimForWarn(text: string): string {
+  const numeric = Number(text)
+  if (!Number.isFinite(numeric)) return text
+  const abs = Math.abs(numeric)
+  if (abs !== 0 && (abs >= 1e15 || abs < 1e-4)) return numeric.toExponential(3).replace(/e\+/, 'e')
+  return String(Number(numeric.toPrecision(6)))
+}
+
+/** 「超了 N 倍」的倍数表述。 */
+function formatRatio(ratio: number): string {
+  if (!Number.isFinite(ratio)) return '很多'
+  if (ratio >= 1000) return Math.round(ratio).toLocaleString('en-US')
+  if (ratio >= 10) return String(Math.round(ratio))
+  return String(Number(ratio.toPrecision(3)))
+}
+
+/**
  * 一条待检查的批量结果。
  */
 export interface BatchEntryForGuard {

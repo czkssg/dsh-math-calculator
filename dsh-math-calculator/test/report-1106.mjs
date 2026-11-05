@@ -197,6 +197,74 @@ console.log('-- 8. 批量元素里的未知键要点名（本报告未提，实�
   assert('并点名是哪个键', /foo/.test(String(mixed.result)), '')
 }
 
+console.log('-- 10. 锚点校验 sanity（方案 A 层）--')
+{
+  /**
+   * ## 这一节的验收标准来自方案文档
+   *
+   * 1. **拦住数 ≥ 2/3**：用报告里的三个历史案例回放
+   * 2. **零误报**：不传 sanity 时输出与以前完全一致
+   * 3. **不猜**：警告必须引用调用方给的 note
+   * 4. **结果数字绝不受影响**：换 sanity 不改 computed 值
+   */
+  const case1 = await run({
+    operation: 'evaluate', terse: true,
+    expressions: [{ label: '日产台数', expr: '1e8*25000', sanity: { max: 1e10, note: '帝国总兵力' } }],
+  })
+  const t1 = String(case1.result)
+  assert('案例1 拦住（超上限）', /超出锚点上限/.test(t1), t1.slice(-80))
+  assert('案例1 引用调用方给的依据', /帝国总兵力/.test(t1), '')
+  assert('案例1 给出倍数', /达 250 倍/.test(t1), '')
+
+  const case2 = await run({
+    operation: 'evaluate', terse: true,
+    expressions: [{ label: '年耗N2', expr: '2645.6*28*3600*8000/1e9', sanity: { expect: 4, note: '应为万吨' } }],
+  })
+  const t2 = String(case2.result)
+  assert('案例2 拦住（量级偏离）', /量级偏离锚点期望/.test(t2), t2.slice(-80))
+  assert('案例2 说差几个数量级', /差 1 个数量级/.test(t2), '')
+
+  /**
+   * 案例 3 是**故意拦不住**的：拿「材料吨位」与「成品台数」比较，
+   * 两者都在各自上限内，锚点没有任何理由报。
+   * 这条断言存在的意义是**把限制写成测试**，防止将来吹嘘它能做量纲判断。
+   */
+  const case3 = await run({
+    operation: 'evaluate', terse: true,
+    expressions: [
+      { label: '材料流', expr: '9e7', sanity: { max: 1e12 } },
+      { label: '成品流', expr: '0.25', sanity: { max: 1e12 } },
+    ],
+  })
+  assert('案例3 不报（量纲不可比，锚点挡不住）', !/⚠/.test(String(case3.result)), '')
+
+  /** 零误报：不传 sanity 时一条新提示都不该有 */
+  const noSanity = await run({ operation: 'evaluate', expressions: ['1e8*25000'] })
+  assert('不传 sanity 无新提示', !/⚠/.test(String(noSanity.result)), '')
+  const withLabelOnly = await run({ operation: 'evaluate', expressions: [{ label: '台数', expr: '1e8*25000' }] })
+  assert('只传 label 也不该有新提示', !/⚠/.test(String(withLabelOnly.result)), '')
+
+  /** 结果数字不受 sanity 影响 —— 用维度守住「纯提示参数不得改变计算」 */
+  const a = await run({ operation: 'evaluate', expressions: [{ label: 'x', expr: '1e8*25000' }] })
+  const b = await run({ operation: 'evaluate', expressions: [{ label: 'x', expr: '1e8*25000', sanity: { max: 1 } }] })
+  const numOf = (r) => String(r.result).match(/([0-9]{6,})/)?.[1] ?? ''
+  assert('换 sanity 不改数值', numOf(a) === numOf(b) && numOf(a) !== '', numOf(a) + ' vs ' + numOf(b))
+
+  /** 非有限数不参与锚点比对（Infinity > max 恒真，但提示毫无信息量） */
+  const inf = await run({ operation: 'evaluate', expressions: [{ label: 'x', expr: '1/0', sanity: { max: 1e10 } }] })
+  assert('Infinity 不触发锚点提示', !/超出锚点/.test(String(inf.result)), '')
+
+  /** min 与 expect 也要能工作 */
+  const min = await run({ operation: 'evaluate', terse: true, expressions: [{ label: 'x', expr: '0.001', sanity: { min: 1, note: '不该这么小' } }] })
+  assert('min 下限生效', /低于锚点下限/.test(String(min.result)), '')
+  const ok = await run({ operation: 'evaluate', terse: true, expressions: [{ label: 'x', expr: '5000', sanity: { expect: 3 } }] })
+  assert('同量级不报（expect 允许差 0）', !/⚠/.test(String(ok.result)), '')
+
+  /** note 不给时不编依据 */
+  const noNote = await run({ operation: 'evaluate', terse: true, expressions: [{ label: 'x', expr: '1e20', sanity: { max: 1e10 } }] })
+  assert('没给 note 时用中性说法', /按你设定的锚点/.test(String(noNote.result)), String(noNote.result).slice(-60))
+}
+
 console.log('-- 9. 措辞不出现「错误/禁止/必须」--')
 {
   const t = await text({ operation: 'evaluate', expressions: [{ label: 'x', expr: '1+1', foo: 1 }] })

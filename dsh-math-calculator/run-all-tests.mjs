@@ -190,7 +190,7 @@ const SUITES = [
   { file: 'guards.mjs', expect: 23, label: '防呆（量级标注/label 核对/同批比对/正确用例不误报）' },
   // 2026-11-06 实测报告里的真缺陷：批量 ok 契约 / label 误报回归 /
   // 中文单位参与运算 / units 步骤去重与 terse / 英文全称别名 / 元素级未知键。
-  { file: 'report-1106.mjs', expect: 51, label: '实测报告 1106（ok 契约/中文单位/units 精简/别名）' },
+  { file: 'report-1106.mjs', expect: 64, label: '实测报告 1106（ok 契约/中文单位/units 精简/别名/锚点）' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
   { file: 'slim-and-cache.mjs', expect: 61, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },

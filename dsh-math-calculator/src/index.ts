@@ -216,7 +216,7 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
 import { WORLD_KEYS } from './world-params.js'
-import { annotateMagnitude, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
+import { annotateMagnitude, checkAnchors, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -997,7 +997,8 @@ function opEvaluateBatch(
      * 处理方式：认不出的键当作**该条失败**（而不是整批失败），
      * 这样一条写错不影响其余条目 —— 与「逐条独立报错」的既有约定一致。
      */
-    const allowedEntryKeys = ['label', 'expr']
+    /** 元素级允许的键。新增一条按条参数时记得加在这里，否则会被自己的校验拦下。 */
+    const allowedEntryKeys = ['label', 'expr', 'sanity']
     const unknownEntryKeys =
       typeof raw === 'string'
         ? []
@@ -1007,7 +1008,7 @@ function opEvaluateBatch(
       values.push({ expression: '', label: String(echoName), ok: false, error: 'unknown_argument' })
       shown.push(
         '  ' + echoName + ' → 失败[unknown_argument]：这一条里有认不出的键 ' +
-          unknownEntryKeys.join('、') + '（只接受 label 与 expr）',
+          unknownEntryKeys.join('、') + '（只接受 ' + allowedEntryKeys.join(' / ') + '）',
       )
       failCount++
       continue
@@ -1072,6 +1073,23 @@ function opEvaluateBatch(
       if (label) {
         const warn = checkLabelMagnitude(label, text)
         if (warn) magnitudeWarnings.push(warn)
+      }
+      /**
+       * ③ 锚点比对：调用方给了 `sanity` 就拿它的判据去比。
+       *
+       * 三条来源共用同一个 `magnitudeWarnings` 通道 —— 它的下游
+       * （terse 分支、汇总行、结构化计数）全部自动生效，不必改三处。
+       *
+       * 为什么在这里而不是在缓存层：批量路径**根本不走缓存**（见上方注释），
+       * 所以不存在「换锚点却命中旧提示」的问题。
+       */
+      if (typeof entry === 'object' && entry !== null) {
+        const sanity = (entry as { sanity?: unknown }).sanity
+        const anchorWarn = checkAnchors(sanity, text)
+        if (anchorWarn) {
+          const anchorEcho = label || rawExpression
+          magnitudeWarnings.push(anchorEcho + ' → ' + anchorWarn)
+        }
       }
       successCount++
     } catch (error) {
@@ -2593,11 +2611,16 @@ function opHelp(): Outcome {
       '  expressions   批量求值（每条独立报错）；带 {label,expr} 可让结果认得出来',
       '  terse         true = 批量只回「表达式 = 结果」，去掉标题与统计（失败条照常标出）',
       '',
-      '【账本闭合配方】没有单独的 check 操作，用一条 expressions 即可，逐项列值：',
-      '  {operation:"evaluate", expressions:[{label:"A",expr:"650*3840"},',
-      '   {label:"四项和",expr:"650*3840+200*4745+100*3740+50*5120"},',
-      '   {label:"与目标之差",expr:"...-4075000"}]}   ← 差值 0 即闭合',
-      '  为什么不做成 PASS/FAIL：差 3 与差 3% 是两种情况，压成一个布尔就全糊了。',
+      '【锚点 sanity】工具不知道这个数该多大，但你可以逐条声明判据：',
+      '  {label:"日产台数", expr:"1e8*25000", sanity:{max:1e10,note:"帝国总兵力"}}',
+      '  → ⚠ 超出上限 1e10（帝国总兵力）达 250 倍。键 max/min/expect/note，',
+      '  expect 是期望量级（expect:3 即 10³）。',
+      '  判据来自你，工具只比对不猜；量纲不管；不声明则零提示。',
+      '',
+      '【账本闭合】无独立 check 操作，一条 expressions 逐项列值即可：',
+      '  [{label:"A",expr:"650*3840"}, {label:"四项和",expr:"..."},',
+      '   {label:"与目标之差",expr:"...-4075000"}]  ← 差值 0 即闭合',
+      '  不做 PASS/FAIL：差 3 与差 3% 是两回事，压成布尔就糊了。',
       '',
       '【失败时】返回 ok=false + error.type/message/hint，按 hint 修正即可，不会崩溃。',
     ].join('\n'),
@@ -3589,11 +3612,22 @@ const PARAMETER_SPEC = {
   expressions: {
     type: 'array',
     /**
-     * 刻意不声明 items：字符串与 {label,expr} 两种形态都在描述里说明即可。
-     * 理由有两条——① 不声明 items 时数组项接受任意 JSON，宿主实测两种形态都能传进来；
-     * ② 每多一段 schema 都是每轮重复计费的固定成本，而这段声明会把长度顶出预算。
+     * ## 这里声明 items，是推翻了之前「刻意不声明」的决定
+     *
+     * 之前的理由是「不声明也收得进来 + 省 schema 长度」。但那是错的：
+     * **不声明等于模型看不见元素级字段**。上一轮修「元素里的未知键被静默忽略」时
+     * 就撞上了这个 —— 校验现在会拒绝未声明的键，而模型不知道能写什么。
+     *
+     * 加了 `sanity` 之后更明显：一个模型看不见的参数等于不存在。
+     * 所以把 items 加回来，长度从别处腾（`operation` 与 `customExpression` 各压一段）。
      */
-    description: '批量求值，逐条独立报错。例 ["1/7","2^0.5"]。要认出是哪条用 {label:"储耗比", expr:"139e8/152e4"}。',
+    items: {
+      type: 'json',
+      description:
+        '字符串（"1/7"）或对象 {label?, expr, sanity?}。' +
+        'sanity 给锚点：{max,min,expect,note}，例 {max:1e10,note:"帝国总兵力"}。',
+    },
+    description: '批量求值，逐条独立报错。',
   },
   terse: {
     type: 'boolean',
@@ -3752,8 +3786,7 @@ const PARAMETER_SPEC = {
   customExpression: {
     type: 'string',
     description:
-      'structure 级改造：临时替换公式的表达式，仍沿用该公式的参数名。' +
-      '例如 operation="formula", formula="weight", customExpression="m * g * 1.3" 表示该世界重力异常 +30%。',
+      'structure 级改造：临时替换公式表达式，沿用其参数名。例 formula="weight", customExpression="m*g*1.3" 表示重力 +30%。',
   },
   query: {
     type: 'string',
