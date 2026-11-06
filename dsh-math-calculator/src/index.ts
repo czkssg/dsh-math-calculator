@@ -216,7 +216,7 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
 import { WORLD_KEYS } from './world-params.js'
-import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
+import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, explainUnitResult, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -1215,7 +1215,24 @@ function opEvaluateBatch(
        * 据此指控原文「错了 10 倍」。返回体当时只有一行裸数字，看不出量级。
        * 标上 `(~10³)` 之后，「2133 与万吨差一个量级」这件事人眼即可发现。
        */
-      shown.push('  ' + echo + (label ? '（' + rawExpression + '）' : '') + ' = ' + annotateMagnitude(text))
+      /**
+       * 量级标注：给裸数字配上「这是 10 的几次方」。
+       *
+       * 实测复盘里最贵的一次错误是：`/1e9` 算出 2133 却贴上「万吨」标签，
+       * 据此指控原文「错了 10 倍」。返回体当时只有一行裸数字，看不出量级。
+       *
+       * ## 带单位的结果另走一条
+       *
+       * `annotateMagnitude` 内部做 `Number(text)`，而 `87.78 Mt` 会得到 NaN ——
+       * 带单位时它静默失效。所以这里按结果形态分派：
+       * 纯数字走 `(~10^N)`，带单位走 `explainUnitResult`（给出基准值与中文量级）。
+       */
+      const shownValue = annotateMagnitude(text)
+      const unitExplain = explainUnitResult(text)
+      shown.push(
+        '  ' + echo + (label ? '（' + rawExpression + '）' : '') + ' = ' + shownValue +
+          (unitExplain ? '｜' + unitExplain : ''),
+      )
       /**
        * label 与结果的量级核对：只有 label 里**明确写了量级词**（万/亿/千…）才查，
        * 且结果本身已跨过那个量级时才提示 —— 宁漏勿误。
@@ -3333,6 +3350,22 @@ export function runMathTool(rawArguments: unknown): MathResult {
       const angleNote = checkAngleUnit(input)
       if (angleNote) {
         result.notice = result.notice ? result.notice + '\n' + angleNote : angleNote
+      }
+    }
+
+    /**
+     * 带单位的结果补说明：「这个数有多大、等价于什么」。
+     *
+     * 实测：`evaluate` 带单位的结果只有裸文本（`87.78 Mt`，notice 为空），
+     * 而 `units` 操作有【代入过程】【注意】——两者信息量差得远。
+     * 模型看到 `87.78 Mt` 并不知道它是 8778 万吨。
+     *
+     * 用户原话：「面向 AI 的运算信息最好把信息注释写到位。」
+     */
+    {
+      const unitNote = explainUnitResult(result.result)
+      if (unitNote) {
+        result.notice = result.notice ? result.notice + '\n' + unitNote : unitNote
       }
     }
 

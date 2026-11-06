@@ -251,9 +251,110 @@ export function checkAngleUnit(expression: string): string {
  *
  * ## 只认 SI 前缀 + 简单单位，且只在中英文语料真正会用的量级出现
  *
- *   · `Tg`（10¹² g）→ 「= 8778 万吨」
- *   · `Mg`（10⁶ g = 1 t）→ 不注（等于吨，太常见）
- *   · 复合单位（kg/m³、m/s）不注 —— 量级词那个位置不适用
+/**
+ * 带单位的结果：给 AI 补一句「这个数有多大、等价于什么」。
+ *
+ * ## 为什么需要它
+ *
+ * 实测：`evaluate` 带单位的结果只有裸文本，`notice` 为空：
+ *
+ * ```
+ *   2.66e8 * 330 kg  →  87.78 Mt
+ * ```
+ *
+ * 而 `units` 操作会给出【代入过程】与【注意】。两者信息量差得远：
+ * 模型看到 `87.78 Mt` 并不知道它是 8778 万吨、量级是 10⁷ 吨。
+ *
+ * 用户原话：「面向 AI 的运算信息最好把信息注释写到位。」
+ *
+ * ## 补什么
+ *
+ * 三件事，都是模型判断「这个数合不合理」时真正要用的：
+ *   1. **展开成基准单位**（`= 8.778e7 t`）—— 便于和别的数比
+ *   2. **中文量级说法**（`约 8778 万吨`）—— 中文语料的习惯表达
+ *   3. **量级**（`10⁷`）—— 一眼判断大小
+ *
+ * ## 只对「带单位」的结果补
+ *
+ * 纯数字走 `(~10^N)` 标注那条路，不重复；复合单位（`m/s^2`）不补 ——
+ * 量级词在那个位置不适用。
+ *
+ * @param text - 已格式化的结果文本
+ * @returns 说明文本；不需要时返回空串
+ */
+export function explainUnitResult(text: string): string {
+  if (typeof text !== 'string' || text === '') return ''
+  /** `数值 + 空格 + 单个单位符号`（允许前缀如 `Mt`/`km`）。复合单位不匹配。 */
+  const match = text.match(/^(-?[0-9][0-9.]*(?:e[+-]?[0-9]+)?)\s+([A-Za-zµ]{1,3})(?![\w/^])$/)
+  if (!match) return ''
+  const numeric = Number(match[1])
+  const symbol = match[2]
+  if (!Number.isFinite(numeric) || numeric === 0) return ''
+
+  /** 单位符号 → [基准单位名, 到基准的倍数]。只收会出现在正文里的。 */
+  const SCALES: Record<string, [string, number]> = {
+    t: ['t', 1], kt: ['t', 1e3], Mt: ['t', 1e6], Gt: ['t', 1e9], Tt: ['t', 1e12],
+    kg: ['kg', 1], g: ['g', 1], mg: ['mg', 1],
+    m: ['m', 1], km: ['m', 1e3], Mm: ['m', 1e6], Gm: ['m', 1e9],
+    W: ['W', 1], kW: ['W', 1e3], MW: ['W', 1e6], GW: ['W', 1e9], TW: ['W', 1e12],
+    J: ['J', 1], kJ: ['J', 1e3], MJ: ['J', 1e6], GJ: ['J', 1e9], TJ: ['J', 1e12],
+    Pa: ['Pa', 1], kPa: ['Pa', 1e3], MPa: ['Pa', 1e6],
+  }
+  const scale = SCALES[symbol]
+  if (!scale) return ''
+  const [baseSymbol, factor] = scale
+  const inBase = numeric * factor
+  const magnitude = Math.floor(Math.log10(Math.abs(inBase)))
+
+  /** 中文量级：只对质量说「万吨/亿吨」——那正是中文语料里最常混的量级。 */
+  let chinese = ''
+  if (baseSymbol === 't' && symbol !== 't') {
+    const abs = Math.abs(inBase)
+    if (abs >= 1e8) chinese = '约 ' + fnSmall(inBase / 1e8) + ' 亿吨'
+    else if (abs >= 1e4) chinese = '约 ' + fnSmall(inBase / 1e4) + ' 万吨'
+  }
+
+  /**
+   * ## 唯一门槛：量级 ≥ 10⁴
+   *
+   * 试过「带前缀就注」，结果 `3 km = 3000 m，量级 10³` —— 注了等于没注，
+   * 反而占行宽。日常量级（≤ 10³）人本来就有直觉，不需要说明。
+   *
+   * 只有跨到 10⁴ 以上（万吨级、亿米级）才值得说一句：
+   * 那正是人容易数错 0 的区间，也是中文量级词真正派上用场的地方。
+   */
+  if (Math.abs(inBase) < 1e4) return ''
+
+  const parts = ['= ' + fnSmall(inBase) + ' ' + baseSymbol]
+  if (chinese) parts.push(chinese)
+  parts.push('量级 10' + superscriptOf(magnitude))
+  return '注：' + text + ' ' + parts.join('，') + '。'
+}
+
+/** 小数值的紧凑写法（最多 6 位有效数字）。 */
+function fnSmall(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1e6 || abs < 1e-4) {
+    const [mantissa, exponent] = value.toExponential(6).split('e')
+    const trimmed = mantissa.includes('.') ? mantissa.replace(/0+$/, '').replace(/\.$/, '') : mantissa
+    return trimmed + 'e' + exponent.replace('+', '')
+  }
+  return String(Number(value.toPrecision(6)))
+}
+
+/**
+ * 给带 SI 前缀的结果补一句中文量级参照。
+ *
+ * ## 为什么需要它
+ *
+ * 实测反馈：`2.66e8 * 330 kg` 曾被输出成 `87.78 Tg`（太克）——
+ * 而中文语料里这个量级叫「8778 万吨」。单位归位后 `Tg` 不再出现，
+ * 但这条注释仍然作为**兜底**保留：万一某种组合漏出了冷门前缀，它会补一句人话。
+ *
+ * ## 只认 SI 前缀 + 简单单位
+ *
+ *   · 复合单位（kg/m³、m/s）不注 —— 量级词在那个位置不适用
  *
  * @param text - 已格式化的结果（如 `87.78 Tg`）
  * @returns 带中文参照的文本；不需要时原样返回

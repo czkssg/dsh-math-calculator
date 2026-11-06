@@ -126,6 +126,34 @@ console.log('-- 6. 大整数补千分位（报告 P2）--')
   assert('result 数据通道不加逗号', r.result.trim() === '100000000000000000005', String(r.result))
 }
 
+console.log('-- 6.4 带单位结果的说明注释（用户要求「信息注释写到位」）--')
+{
+  /**
+   * 实测：`evaluate` 带单位的结果原来只有裸文本（`87.78 Mt`，notice 为空），
+   * 而 `units` 有【代入过程】【注意】。模型看到 `87.78 Mt` 并不知道它是 8778 万吨。
+   */
+  const big = await run({ operation: 'evaluate', expression: '2.66e8 * 330 kg' })
+  const note = String(big.notice || '')
+  assert('大质量结果有说明', note.includes('注：'), note.slice(0, 50))
+  assert('说明里有基准值', /= 8\.778e7 t/.test(note), note.slice(0, 80))
+  assert('说明里有中文量级', /8778 万吨/.test(note), '')
+  assert('说明里有量级', /量级 10⁷/.test(note), '')
+
+  /** 日常量级不该注（注了反而吵） */
+  const small = await run({ operation: 'evaluate', expression: '3 km' })
+  assert('日常量级不注', !String(small.notice || '').includes('注：'), String(small.notice || '').slice(0, 40))
+  const oneTon = await run({ operation: 'evaluate', expression: '1 t' })
+  assert('1 t 不注（展开等于没说）', !String(oneTon.notice || '').includes('注：'), '')
+
+  /** 批量路径也要有 */
+  const batch = await run({ operation: 'evaluate', terse: true, expressions: [{ label: '年产', expr: '2.66e8*330 kg' }] })
+  assert('批量结果也带说明', /注：.*万吨/.test(String(batch.result)), String(batch.result).slice(-60))
+
+  /** 复合单位不注（量级词在那个位置不适用） */
+  const compound = await run({ operation: 'evaluate', expression: '9.81 m/s^2' })
+  assert('复合单位不注', !String(compound.notice || '').includes('注：'), '')
+}
+
 console.log('-- 6.5 三角函数弧度提示（报告 P2）--')
 {
   /**
