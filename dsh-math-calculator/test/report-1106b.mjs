@@ -39,7 +39,11 @@ console.log('-- 1. 中文量级词（报告 P0）--')
      * 断言写成「含 266 且末尾补出亿吨参照」——那正是量级词闭环的样子：
      * 输入用「亿吨」，输出用 SI 前缀，并注回中文量级。
      */
-    ['2.66亿吨', /266 Tg（= 2\.66 亿吨）/, '亿吨 = 亿 + 吨，且输出注回中文量级'],
+    /**
+     * 2.66 亿吨 = 2.66×10¹¹ kg = 2.66e8 t。
+     * 质量归到常用档后不会再出现 `Tg`（太克）—— 那正是本次要修的问题。
+     */
+    ['2.66亿吨', /^2\.66e8 t$/, '亿吨 = 亿 + 吨，归到吨档'],
   ]
   for (const [expr, re, note] of cases) {
     const t = (await text({ operation: 'evaluate', expression: expr })).trim()
@@ -93,8 +97,12 @@ console.log('-- 4. 语法错误给子类型与位置（报告 P1）--')
 
 console.log('-- 5. 质量 SI 前缀补中文量级参照（报告 P1）--')
 {
+  /**
+   * 质量归到常用档后，`2.66e8*330 kg` 直接给 `8.778e7 t`（约 8778 万吨），
+   * 不再出现 `Tg` —— 「给常用单位」这件事本身就替代了「补中文参照」。
+   */
   const t = (await text({ operation: 'evaluate', expression: '2.66e8*330 kg' })).trim()
-  assert('Tg 补出万吨/亿吨参照', /（= 8778 万吨）/.test(t), t)
+  assert('大质量给吨而不是太克', /t$/.test(t) && !/Tg|Gg|Pg/.test(t), t)
   /** 低量级不注（注了反而吵） */
   const low = (await text({ operation: 'evaluate', expression: '1e9 g' })).trim()
   assert('Gg 不注（1000 吨本就好懂）', !/（=/.test(low), low)
@@ -105,9 +113,13 @@ console.log('-- 5. 质量 SI 前缀补中文量级参照（报告 P1）--')
 
 console.log('-- 6. 大整数补千分位（报告 P2）--')
 {
+  /**
+   * 批量的显示行补千分位分组（纯视觉，不改值）。
+   * 单条的 `result` 数据通道保持完整整数 —— 两条断言一起守。
+   */
   const t = (await text({ operation: 'evaluate', terse: true, expressions: [{ label: 'x', expr: '1e20*3' }] }))
-  assert('大数带千分位', /300,000,000,000,000,000,000/.test(t), t.slice(0, 80))
-  /** 数据通道必须干净：整数一位不少、不加逗号 */
+  assert('大数带千分位', /300,000,000,000,000,000,000/.test(t), t.slice(0, 90))
+  /** 数据通道必须干净：整数一位不少、不加逗号、不改科学计数法 */
   const r = await run({ operation: 'evaluate', expression: '10^20+5' })
   assert('result 数据通道不加逗号', r.result.trim() === '100000000000000000005', String(r.result))
 }

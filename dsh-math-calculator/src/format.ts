@@ -124,8 +124,39 @@ export function formatValue(
   const isBig = Boolean(value && value.isBigNumber)
   const integer = isIntegerLike(value)
 
+  /**
+   * ## 带单位的值：先让 mathjs 格式化，再挑一个「人会说」的单位
+   *
+   * 实测反馈（2026-11-06）：
+   *
+   * ```
+   *   一个很大的重量 → 1e12 g 被输出成 `1 Tg`
+   * ```
+   *
+   * 「太克」这种 SI 前缀现实中没人说；而中文语料里这个量级叫「100 万吨」。
+   * mathjs 的 `Unit` 在**构造时**就选定了前缀，`format` 选项改不了它 ——
+   * 所以在文本层做一次归位。
+   *
+   * 只调**质量**这一个量纲：它是唯一实测出过问题的场景，
+   * 而长度/时间/功率的 SI 前缀（km / s / kW）本来就是常用写法，动它们反而添乱。
+   */
+  if (value && value.isUnit) {
+    const normalized = normalizeUnitPrefix(value)
+    if (normalized !== '') return normalized
+  }
+
   try {
-    // 整数：完整输出，不受显示精度影响
+    /**
+     * ## 整数：**一律完整输出**，任何阈值都不截断
+     *
+     * 试过一版「≥1e15 改科学计数法」，被 12 条断言当场打回 ——
+     * 那违反本项目最硬的一条不变量：**整数永不丢位**。
+     * 写成 `1e20` 是**丢信息**，不是简洁（`10^20` 与 `10^20+5` 会长得一样）。
+     *
+     * 大数占行宽的问题改由**别处解决**：批量显示时补千分位分组
+     * （纯视觉分组、不改值），`result` 数据通道保持完整整数。
+     * 这才是「既让人看得清、又不丢一位」的解法。
+     */
     if (isBig && integer) {
       return math.format(value, { notation: 'fixed' })
     }
@@ -337,6 +368,168 @@ export function containsNonFinite(value: JsonValue | undefined): boolean {
     return Object.values(value as { [key: string]: JsonValue }).some((item) => containsNonFinite(item))
   }
   return false
+}
+
+/**
+ * 每个量纲的「人会说」单位阶梯。
+ *
+ * ## 为什么需要这张表
+ *
+ * mathjs 会按数量级自动选 SI 前缀，但它**只按数量级走**，
+ * 不管现实中人说哪个词。于是：
+ *
+ * ```
+ *   一个很大的重量 → 1 Tg（太克）      ← 没人这么说
+ *   1e6 m         → 1 Mm（兆米）      ← 没人这么说
+ *   1e6 L         → 1 ML              ← 没人这么说
+ * ```
+ *
+ * 实测反馈原话：「之前出现过一个很大的重量，居然最后用的单位是 g，
+ * 而不是用公斤或吨这种更加常用的单位。」
+ *
+ * ## 阶梯怎么定
+ *
+ * 每一档是 `[阈值, 换算系数, 单位名]`，从大到小排；
+ * 取第一个「真实值 ≥ 阈值」的档。阈值与系数都以**基准单位**为准。
+ *
+ * 原则：**只收现实中会出现在正文里的单位**。
+ * 兆米、太克、兆升这些「数学上合法、语用上没人用」的档位一律不进表 ——
+ * 超出最大常用档就用科学计数法配常用单位（如 `1e6 t`）。
+ */
+const PREFERRED_UNIT_LADDER: Record<string, Array<[number, number, string]>> = {
+  /** 质量以千克为基准（mathjs 的 Unit.value 就是千克数）。 */
+  mass: [
+    [1e3, 1e-3, 't'],
+    [1, 1, 'kg'],
+    [1e-3, 1e3, 'g'],
+    [0, 1e6, 'mg'],
+  ],
+  /** 长度以米为基准。km 档从 1e3 起（不是 1e6），否则 1e6 m 会落到 m 档。 */
+  length: [
+    [1e3, 1e-3, 'km'],
+    [1, 1, 'm'],
+    [1e-2, 1e2, 'cm'],
+    [1e-3, 1e3, 'mm'],
+    [0, 1e6, 'µm'],
+  ],
+  /** 时间以秒为基准。 */
+  time: [
+    [86400 * 365.25, 1 / (86400 * 365.25), 'year'],
+    [86400, 1 / 86400, 'day'],
+    [3600, 1 / 3600, 'h'],
+    [60, 1 / 60, 'min'],
+    [0, 1, 's'],
+  ],
+  /**
+   * ## 体积刻意不做归位
+   *
+   * 试过一版（L↔m³ 互换），结果是 `1000 L` 变 `1 m^3` 而 `1 m^3` 变 `1000 L` ——
+   * **两者在互相吞吐**，因为 `m^3` 那一档把 `L` 家族整个吃掉了。
+   *
+   * 体积的「常用写法」本身就不统一：水用 L、土方用 m³、气体用 mL 到都合理。
+   * 强行归位只会改变调用方给的语义，收益为零。所以**从阶梯里去掉**，
+   * 保持 mathjs 原有选择（它唯一的问题只是 `ML` 这种冷门前缀，而那很少见）。
+   */
+  /** 功率以瓦为基准。kW / MW / GW 是常用档，再往上就科学计数法。 */
+  power: [
+    [1e9, 1e-9, 'GW'],
+    [1e6, 1e-6, 'MW'],
+    [1e3, 1e-3, 'kW'],
+    [0, 1, 'W'],
+  ],
+  /** 能量以焦耳为基准。 */
+  energy: [
+    [1e12, 1e-12, 'TJ'],
+    [1e9, 1e-9, 'GJ'],
+    [1e6, 1e-6, 'MJ'],
+    [1e3, 1e-3, 'kJ'],
+    [0, 1, 'J'],
+  ],
+  /** 压强以帕为基准。 */
+  pressure: [
+    [1e6, 1e-6, 'MPa'],
+    [1e3, 1e-3, 'kPa'],
+    [0, 1, 'Pa'],
+  ],
+}
+
+/** mathjs 的基准单位名 → 量纲键。未列出的量纲不归位（保持 mathjs 的选择）。 */
+const BASE_TO_DIMENSION: Record<string, string> = {
+  g: 'mass',
+  t: 'mass',
+  kg: 'mass',
+  m: 'length',
+  s: 'time',
+  W: 'power',
+  J: 'energy',
+  Pa: 'pressure',
+}
+
+/**
+ * 把「不常用前缀的单位」归到人会说的大小。
+ *
+ * ## 判据
+ *
+ * 三件事同时满足才动手：
+ *   1. 单个单位的 1 次幂（复合单位如 kg/m³、m/s 不动）
+ *   2. 基准单位在 `BASE_TO_DIMENSION` 里（未登记的量纲保持原样）
+ *   3. 该量纲有阶梯表
+ *
+ * ## 关键陷阱：`unit.value` 已经是基准单位的数值
+ *
+ * ```
+ *   1 t      → value = 1000   （基准是 kg，所以这是 1000 kg）
+ *   2 kg     → value = 2
+ *   1e12 g   → value = 1e9
+ *   1e6 m    → value = 1e6
+ * ```
+ *
+ * 踩过两次：第一次乘了 `prefix.value`、第二次乘了 `baseFactor` ——
+ * 两次都是「凭直觉推断内部表示」而不实测反推。教训：第三方库的内部语义
+ * 必须用数据验证。
+ *
+ * @param unit - mathjs 的 Unit 对象
+ * @returns 归一后的文本；不需要处理时返回空串（由调用方走原路径）
+ */
+function normalizeUnitPrefix(unit: any): string {
+  try {
+    const parts = Array.isArray(unit.units) ? unit.units : []
+    if (parts.length !== 1 || (parts[0].power ?? 1) !== 1) return ''
+    const baseName: string = parts[0].unit?.name ?? ''
+    const dimension = BASE_TO_DIMENSION[baseName]
+    if (!dimension) return ''
+    const ladder = PREFERRED_UNIT_LADDER[dimension]
+    if (!ladder) return ''
+
+    const baseValue = Number(unit.value)
+    if (!Number.isFinite(baseValue) || baseValue === 0) return ''
+
+    const abs = Math.abs(baseValue)
+    const tier = ladder.find(function (row) { return abs >= row[0] })
+    if (!tier) return ''
+    const [, factor, symbol] = tier
+    return formatScalar(baseValue * factor) + ' ' + symbol
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 数值 → 可读文本：大数用科学计数法，其余保留有限位。
+ *
+ * @param value - 数值
+ * @returns 文本
+ */
+function formatScalar(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1e6 || abs < 1e-4) {
+    /** 科学计数法：尾数最多 6 位有效数字，够读且不啰嗦。 */
+    const [mantissa, exponent] = value.toExponential(6).split('e')
+    const trimmed = mantissa.includes('.') ? mantissa.replace(/0+$/, '').replace(/\.$/, '') : mantissa
+    return trimmed + 'e' + exponent.replace('+', '')
+  }
+  return String(Number(value.toPrecision(10)))
 }
 
 /**
