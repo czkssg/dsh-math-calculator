@@ -165,10 +165,133 @@ export function annotateMagnitude(value: string): string {
   const numeric = Number(value)
   if (!Number.isFinite(numeric) || numeric === 0) return value
   const magnitude = Math.floor(Math.log10(Math.abs(numeric)))
+  /**
+   * 整数且 ≥ 10⁶（百万）时补千分位。
+   *
+   * 实测反馈（2026-11-06 第二份）：「一条 21 位数字就占满一行，
+   * 且**位数多到无法目视核位**（本次我数错过一次 0 的个数）。」
+   *
+   * 千分位是**纯视觉分组**，不改变值——「整数永远完整」这条不变量不受影响。
+   * 只加在批量显示里，`result` 数据通道保持原样。
+   */
+  const text = Number.isInteger(numeric) && Math.abs(numeric) >= 1e6
+    ? value + '（' + numeric.toLocaleString('en-US') + '）'
+    : value
   /** 10⁰~10³ 这个区间是日常数字，标了反而吵。 */
-  if (magnitude < 1) return value
+  if (magnitude < 1) return text
   const superscript = superscriptOf(magnitude)
-  return value + ' (~10' + superscript + ')'
+  return text + ' (~10' + superscript + ')'
+}
+
+/**
+ * 三角函数用了「无单位角度」时，补一句「按弧度计算」。
+ *
+ * ## 为什么值得加（成本极低）
+ *
+ * 实测反馈（2026-11-06 第二份）：
+ *
+ * ```
+ *   sin(30)     = -0.98803162      ← 弧度
+ *   sin(30 deg) = 0.5              ← 加单位才对
+ * ```
+ *
+ * 中文工程语境里 `sin(30)` 的默认读法是 **30 度**。
+ * 按数学惯例走弧度是对的，但**不给提示**就是静默错误：
+ * `-0.988` 看起来像个正常数，用户不会察觉自己问的是 30 度。
+ *
+ * ## 判据：只在「像角度但没写 deg」时提示
+ *
+ *   · 函数是三角函数（sin/cos/tan/asin…）
+ *   · 参数是裸数字（无 deg/rad/单位）
+ *   · 数值 ∈ [0, 360]（角度制下的常见范围）
+ *
+ * 三条同时满足才提示 —— 幂函数、双曲函数、`sin(1e6)` 之类一律不注（那是真的用弧度）。
+ *
+ * @param expression - 归一化后的表达式
+ * @returns 提示文本；不需要时返回空串
+ */
+export function checkAngleUnit(expression: string): string {
+  if (typeof expression !== 'string' || expression === '') return ''
+  /** 三角函数据 + 裸数字参数（允许负号与小数）。 */
+  const match = expression.match(/\b(sin|cos|tan|cot|sec|csc)\s*\(\s*([+-]?[0-9]+(?:\.[0-9]+)?)\s*\)/i)
+  if (!match) return ''
+  const value = Number(match[2])
+  if (!Number.isFinite(value) || Math.abs(value) > 360) return ''
+  /** 0 与 π 的整数倍在两种单位下都特殊，不注。 */
+  if (value === 0) return ''
+  /**
+   * 提示里用**实际写的函数名**，不硬写 sin —— `cos(45)` 被说成「sin(45)」会让人怀疑
+   * 提示是模板拼的、没看懂自己的输入。
+   */
+  const fn = match[1].toLowerCase()
+  return '注：三角函数按**弧度**计算（' + fn + '(' + match[2] + ') 不是 ' + match[2] + ' 度）。' +
+    '要用角度请写 ' + fn + '(' + match[2] + ' deg)。'
+}
+
+/**
+ * 给带 SI 前缀的结果补一句中文量级参照。
+ *
+ * ## 为什么需要它
+ *
+ * 实测反馈（2026-11-06 第二份）：
+ *
+ * ```
+ *   2.66e8 * 330 kg  = 87.78 Tg      ← 太克，现实中没人这么说
+ *   (2.66e8*330 kg) in t = 8.778e+7 t
+ * ```
+ *
+ * 「?87.78?Tg」读不出「8,778 万吨」——而中文语料里这个量级就叫「亿吨」。
+ * 报告作者两次把「吨」当成「亿吨」，起因正是**输出里没有一个中文量级锚点**。
+ *
+ * ## 为什么不动 prest? 而是加注释
+ *
+ * 换前缀策略（k/M/G 封顶）会改变所有既有输出，破坏依赖精确文本的调用方；
+ * 而「加一句参照」是**追加信息**，不改变原有数值文本。
+ * 按项目一贯取舍：能加注释就不改主文本。
+ *
+ * ## 只认 SI 前缀 + 简单单位，且只在中英文语料真正会用的量级出现
+ *
+ *   · `Tg`（10¹² g）→ 「= 8778 万吨」
+ *   · `Mg`（10⁶ g = 1 t）→ 不注（等于吨，太常见）
+ *   · 复合单位（kg/m³、m/s）不注 —— 量级词那个位置不适用
+ *
+ * @param text - 已格式化的结果（如 `87.78 Tg`）
+ * @returns 带中文参照的文本；不需要时原样返回
+ */
+export function annotateMetricPrefix(text: string): string {
+  if (typeof text !== 'string' || text === '') return text
+  /** 形如 `87.78 Tg`：数值 + 空格 + 大写前缀 + 单字符单位。 */
+  const match = text.match(/^(-?[0-9.]+(?:e[+-]?[0-9]+)?)\s+(\w)\w(?![\w/^])/i)
+  if (!match) return text
+  const numeric = Number(match[1])
+  if (!Number.isFinite(numeric)) return text
+
+  /**
+   * 只处理「质量 × 克」这一族 —— 它是中文语料里量级混用最严重的场景
+   * （万吨/亿吨 vs Tg/Pg），也是报告里唯一真实出过事故的地方。
+   */
+  const massFromGram = text.match(/^(-?[0-9.]+(?:e[+-]?[0-9]+)?)\s+(\w)g(?!\w)/)
+  if (!massFromGram) return text
+  const prefix = massFromGram[2]
+  const prefixPower: Record<string, number> = { k: 3, M: 6, G: 9, T: 12, P: 15 }
+  const power = prefixPower[prefix]
+  if (power === undefined) return text
+  /** 换算成「吨」（吨 = 10⁶ 克）。 */
+  const inTons = numeric * Math.pow(10, power - 6)
+  if (!Number.isFinite(inTons) || Math.abs(inTons) === 0) return text
+
+  /**
+   * ## 只在「中文量级词真的用得着」时才注
+   *
+   * `1 Gg（= 1000 吨）` 这种注了等于没注 —— 「1000 吨」和 `1 Gg` 一样好懂，
+   * 而多出来的括号反而占行宽。所以只在 ≥ 万吨（10⁴ 吨）时才补：
+   * 那正是「Tg/Pg 读不出、而中文语料说万吨/亿吨」的分界。
+   */
+  if (Math.abs(inTons) < 1e4) return text
+  const chinese = Math.abs(inTons) >= 1e8
+    ? String(Number((inTons / 1e8).toPrecision(4))) + ' 亿吨'
+    : String(Number((inTons / 1e4).toPrecision(4))) + ' 万吨'
+  return text + '（= ' + chinese + '）'
 }
 
 /** 把指数转成上标（用 ASCII 兜底，避免字体缺字）。 */

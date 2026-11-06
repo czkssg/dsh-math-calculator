@@ -116,8 +116,22 @@ console.log('-- 8. 非法变量名不能绕过校验（合并后仍要校验）-
 {
   await text({ operation: 'workspace', action2: 'switch', workspace: 'ws' })
   await text({ operation: 'workspace', action2: 'set', useWorkspaceVariables: true })
+  /**
+   * ## 契约变更（2026-11-06）
+   *
+   * 旧行为：非法变量名 → 抛错 → **整批中止**。
+   * 新行为：非法键**跳过 + 告知**，其余照算（见实测报告 1106b 的 P1）。
+   *
+   * 理由：这类语料的概念名几乎全是中文（人口/粮食/石料），
+   * 用户第一反应就是用中文命名；一个键写错就让前面排队的算式全白写，
+   * 代价远大于「那个键没生效」。
+   *
+   * 但**「不绕过校验」这条实质要求没变** —— 非法键仍然不进作用域，
+   * 只是失败方式从「中止」改成「跳过 + 明确告知」。
+   */
   const r = await run({ operation: 'evaluate', expression: '1+1', variables: { 'bad-name': 3 } })
-  assert('本次传入的非法变量名仍被拦', !r.ok, String(r.error && r.error.type))
+  assert('非法键不进作用域（不绕过校验）', r.result.trim() === '2', String(r.result))
+  assert('并且明确告知被跳过', /bad-name/.test(String(r.notice)), String(r.notice).slice(0, 60))
 }
 
 rmSync(home, { recursive: true, force: true })

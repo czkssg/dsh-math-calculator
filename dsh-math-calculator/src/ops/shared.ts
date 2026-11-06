@@ -768,9 +768,96 @@ const CHINESE_UNIT_EXPANSIONS: Array<{ name: string; dimension: string; factor: 
  * @param source - 已做过基础归一化的表达式
  * @returns 中文单位已展开的表达式
  */
-export function normalizeChineseUnits(source: string): string {
+/**
+ * 中文量级词 → 10 的幂（纯乘数展开）。
+ *
+ * ## 为什么量级词不能当「单位」注册
+ *
+ * 单位表的机制是「factor × 基准单位」，要有量纲。而「万」「亿」是**无量纲乘数** ——
+ * `2.66亿` 就是 `2.66 × 10⁸`，它本身不是一个可换算的量。
+ * 硬塞进单位表会把「亿米」和「亿吨」搞成同一种东西，那比不支持更糟。
+ *
+ * 所以在这里做**文本乘数展开**：把 `2.66亿` 改写成 `(2.66 * 1e8)`。
+ *
+ * ## 长词优先 + 边界检查
+ *
+ *   · `万亿`（10¹²）必须排在 `万`（10⁴）与 `亿`（10⁸）之前，否则 `3万亿` 会被拆成 `3万`+`亿`
+ *   · 量级词后面不能紧跟中文（`亿人` 里「人」是数量名词，可以；但 `亿万` 不行）——
+ *     用「后面是中文时继续吃进数量名词」的方式放宽，见实现
+ *   · 前面必须有数字（`亿` 单独出现不展开，那是语法错，交给引擎报）
+ *
+ * @param source - 表达式原文
+ * @returns 量级词已展开的表达式
+ */
+function normalizeMagnitudeWords(source: string): string {
   if (typeof source !== 'string' || source === '') return source
   let output = source
+  /**
+   * 长词在前：`万亿` > `亿` > `万`。
+   * 每条是 [词, 10 的幂]。
+   */
+  const words: Array<[string, number]> = [
+    ['万亿', 12],
+    ['亿', 8],
+    ['万', 4],
+  ]
+  for (const [word, power] of words) {
+    /**
+     * 匹配「数字 + 空格? + 量级词」。
+     *
+     * 后面允许：空格、运算符、括号、结尾，或**一个数量名词**（人/吨/米/件…）。
+     * 数量名词的处理方式：把它留在原处 —— 展开只针对数字，
+     * `2.66亿人` 会变成 `(2.66 * 1e8)人`，再由单位展开或引擎处理「人」。
+     *
+     * 用负向断言保证「万亿」不会被「万」抢先拆：由于长词先处理，
+     * 处理完 `万亿` 之后 `万` 就找不到它了。
+     */
+    const pattern = new RegExp(
+      '([0-9][0-9,.]*(?:e[+-]?[0-9]+)?)\\s*' + escapeRegExp(word) + '(?![万千百十])',
+      'g',
+    )
+    output = output.replace(pattern, function (_match, numeric: string) {
+      return '(' + numeric.replace(/,/g, '') + ' * 1e' + power + ')'
+    })
+  }
+  return output
+}
+
+/**
+ * 把中文单位与中文量级词展开成 mathjs 能解析的形态。
+ *
+ * ## 两次展开，顺序有讲究
+ *
+ * 1. **量级词**（万/亿/万亿）→ 纯乘数括号，如 `(2.66 * 1e8)`
+ * 2. **中文单位**（里/丈/亩/斤/吨）→ `(450 * 1e8) * 1000 kg`
+ *
+ * 顺序反了会漏：`450 亿吨` 先走单位展开时，「亿吨」不在单位表里，
+ * 原样留下；先展开量级词得到 `(450 * 1e8)吨`，再让单位展开处理「吨」才对。
+ *
+ * ## 为什么走文本变换而不是注册进 mathjs
+ *
+ * `buildMath` 里刻意删掉了 `createUnit`（表达式求值不允许往引擎注入任意定义）。
+ * 放开这个边界来支持中文单位，代价远大于收益。
+ *
+ * @param source - 已做过基础归一化的表达式
+ * @returns 中文单位与量级词已展开的表达式
+ */
+export function normalizeChineseUnits(source: string): string {
+  if (typeof source !== 'string' || source === '') return source
+  /**
+   * ## 先展开中文量级词，再展开中文单位
+   *
+   * 顺序不能反。`450 亿吨` 若先走单位展开，会因为「亿吨」不在单位表里而原样留下；
+   * 而先展开量级词得到 `450 * 1e8 吨`，再由单位展开处理「吨」→ 才对。
+   *
+   * 这也是实测反馈（2026-11-06 第二份）里 P0 那条：
+   * 「`万/亿/万亿` 是这类语料的默认数量级词，几乎每个数都带，
+   *   而工具内置 462 条单位里一个中文量级词都没有。」
+   *
+   * 后果不只是不方便 —— 它让使用者必须手写 `/1e8` 这类除法，
+   * 而「两步除法」正是报告里两次把「吨」当成「亿吨」的直接成因。
+   */
+  let output = normalizeMagnitudeWords(source)
   /**
    * 长单位名优先：否则「公里」会先匹配成「里」，
    * 把 `3 公里` 换成 `3 * 500 m`（错了 2 倍）。
@@ -781,15 +868,73 @@ export function normalizeChineseUnits(source: string): string {
   for (const entry of ordered) {
     if (entry.dimension === 'temperature') continue
     /**
+     * ## 「人」「畜」在量级词后面是**计数**，不是功率
+     *
+     * 单位表里 `人` 是「一个成年人持续体力输出 75 W」（power 量纲），
+     * `畜` 是「一头役畜 500 W」。那是为了算「这活需要几个劳力」。
+     *
+     * 但语料里 `2.66亿人` 指的是**人口数** —— 把它展开成功率会得到 `19.95 GW`，
+     * 数字看着完全正常，语义却全错。这类静默错误正是本项目最要防的。
+     *
+     * 判据：**紧跟量级词**（`亿人`/`万人`/`亿畜`）时按计数处理，不展开。
+     * 单独用（`3 人` 表示 3 个劳力）仍按功率单位展开 —— 那是有意义的换算。
+     */
+    if (entry.name === '人' || entry.name === '畜') {
+      /**
+       * 计数用法下**把量级词后面的「人/畜」直接去掉** —— 它是量纲说明词，
+       * 不是一个要参与运算的量。`(2.66 * 1e8)人` → `(2.66 * 1e8)`。
+       *
+       * 为什么不是「保留但改成无量纲」：保留会变成裸标识符（语法错），
+       * 而乘 1 又会让输出带上多余的量纲。去掉最干净 ——
+       * `2.66亿人` 在算式里本来就只是一个数。
+       */
+      const stripPattern = new RegExp(
+        '(\\([0-9.\\s*+\\-e]*\\))\\s*' + escapeRegExp(entry.name) + '(?![0-9A-Za-z\\u4e00-\\u9fff])',
+        'g',
+      )
+      const stripped = output.replace(stripPattern, '$1')
+      if (stripped !== output) {
+        output = stripped
+        continue
+      }
+    }
+    /**
      * 匹配「数字 + 空格? + 单位」，且单位后面不能紧跟中文或字母数字，
      * 避免命中更长词的一部分。
      */
+    /**
+     * 数值载体有两种：
+     *   · 直接的数字（`3 米`）
+     *   · **已展开的量级词括号**（`(450 * 1e8)吨`）
+     *
+     * 第二种是量级词展开的产物 —— 若只认数字，`亿吨` 展开成 `(450 * 1e8)吨`
+     * 之后就没人处理「吨」了，表达式接着报错。这个 bug 很隐蔽：
+     * 单看量级词那条是对的，单看单位那条也是对的，两者串起来才漏。
+     */
     const pattern = new RegExp(
-      '([0-9][0-9,.]*(?:e[+-]?[0-9]+)?)\\s*' + escapeRegExp(entry.name) + '(?![0-9A-Za-z\u4e00-\u9fff])(?![\u4e00-\u9fff])',
+      '([0-9][0-9,.]*(?:e[+-]?[0-9]+)?|\\([0-9.\\s*+\\-e]*\\))\\s*' +
+        escapeRegExp(entry.name) + '(?![0-9A-Za-z\u4e00-\u9fff])(?![\u4e00-\u9fff])',
       'gi',
     )
     output = output.replace(pattern, function (_match, numeric: string) {
-      return numeric.replace(/,/g, '') + ' * ' + entry.factor + ' ' + entry.base
+      /**
+       * ## 整个替换必须包成括号
+       *
+       * 踩过（2026-11-06）：`450 亿吨 / 31.39 亿吨` 展开成
+       *
+       * ```
+       *   (450 * 1e8) * 1000 kg / (31.39 * 1e8) * 1000 kg
+       * ```
+       *
+       * 乘除同级左结合，等于先除再乘 —— 结果带上 `Mg^2` 量纲，
+       * **而数值部分恰好是对的（14.33）**。这种「数字对、量纲错」最难发现：
+       * 单看数字会以为没问题，而量纲只在结果后缀里露出。
+       *
+       * 加外层括号后变成 `((450*1e8) * 1000 kg) / ((31.39*1e8) * 1000 kg)`，
+       * 比值无量纲、数值 14.34 —— 正确。
+       */
+      const value = numeric.startsWith('(') ? numeric + ' * ' + entry.factor : numeric.replace(/,/g, '') + ' * ' + entry.factor
+      return '(' + value + ' ' + entry.base + ')'
     })
   }
   return output

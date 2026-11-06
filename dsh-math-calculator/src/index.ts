@@ -216,7 +216,7 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
 import { WORLD_KEYS } from './world-params.js'
-import { annotateMagnitude, checkAnchors, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
+import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -487,6 +487,72 @@ function diagnoseParentheses(source: string): string {
   return lines.join('\n')
 }
 
+/**
+ * 语法错误的具体解释：**先认常见误因，再退到通用诊断**。
+ *
+ * ## 为什么需要分类
+ *
+ * 实测反馈（2026-11-06 第二份）列了三种同 `syntax` 但原因完全不同的情况：
+ *
+ * ```
+ *   / 112.5e8     → 「检查括号是否配对、运算符是否连续」
+ *   2.66亿 * 330  → 没有任何提示
+ *   1,000 * 2     → 仍说「检查括号」  ← 真因是千分位逗号
+ * ```
+ *
+ * 第三条最糟：**提示指向了错误的方向**。用户会去数括号，而问题是逗号。
+ *
+ * ## 顺序：具体 → 通用
+ *
+ * 越具体的误因越先判，因为它们能被可靠识别；都认不出才用括号诊断兜底。
+ *
+ * @param source - 归一化后的表达式
+ * @param engineText - 引擎给的原始消息（含 char 位置）
+ * @returns 解释文本
+ */
+function explainSyntax(source: string, engineText: string): string {
+  const at = engineText.match(/char ([0-9]+)/i)
+  const position = at ? Number(at[1]) : 0
+  /** 出错字符附近的一小段，便于用户对照。 */
+  const snippet = position > 0 && source.length > 0
+    ? source.slice(Math.max(0, position - 1), Math.min(source.length, position + 6))
+    : ''
+
+  /**
+   * ① 千分位逗号 —— 中文语料里极常见（`1,000`、`139,000,000`）。
+   * 引擎把逗号当分隔符，报语法错。
+   */
+  if (/[0-9],[0-9]{3}/.test(source)) {
+    return '无法解析：表达式里有**千分位逗号**（如 1,000）。去掉逗号即可 —— 千分位只是书写习惯，不参与计算。'
+  }
+
+  /**
+   * ② 中文/未知字符 —— 量级词与中文单位若无对应展开，会落到这里。
+   * 给出可操作的下一步（而不是「检查括号」）。
+   */
+  if (/[\u4e00-\u9fff]/.test(source)) {
+    return '无法解析：表达式里有中文。中文单位（里/丈/亩/斤/吨）与量级词（万/亿/万亿）可直接写；' +
+      '其它中文标识符请改用英文变量名，或先存进工作区。'
+  }
+
+  /**
+   * ③ 运算符位置 —— 开头/连续运算符。
+   */
+  if (/^[*/+^]|\/\/|[*/+^]{2,}/.test(source)) {
+    return '无法解析：运算符位置不对' + (position > 0 ? '（第 ' + position + ' 个字符附近「' + snippet + '」）' : '') +
+      '。检查是否以运算符开头，或出现连续运算符。'
+  }
+
+  /**
+   * ④ 兜底：括号诊断（它会给出层级图），再退到通用建议。
+   */
+  const diagnostic = diagnoseParentheses(source)
+  if (diagnostic) return diagnostic
+
+  return '检查括号是否配对、运算符是否连续。' +
+    (position > 0 ? '（引擎报错位置：第 ' + position + ' 个字符「' + snippet + '」）' : '')
+}
+
 function translateError(raw: unknown, fallbackType = 'internal', source = ''): CalcError {
   if (raw instanceof CalcError) return raw
   if (raw instanceof SymbolicError) {
@@ -513,19 +579,18 @@ function translateError(raw: unknown, fallbackType = 'internal', source = ''): C
       '可用 operation="help" 查看支持的全部函数与公式。',
     )
   }
-  if (/Unexpected end of expression|Value expected|Parenthesis|Invalid left hand side|SyntaxError|Unexpected operator/i.test(text)) {
-    /**
-     * 括号类错误给**定位**，其它语法错仍给通用建议。
-     * 判据是表达式里到底有没有括号 —— 没有括号时做括号诊断没意义。
-     */
-    const diagnostic = /Parenthesis|Unexpected operator|Value expected/i.test(text)
-      ? diagnoseParentheses(source)
-      : ''
-    return new CalcError(
-      'syntax',
-      text,
-      diagnostic || '检查括号是否配对、运算符是否连续。',
-    )
+  /**
+   * ⚠️ `SyntaxError` 与 `Syntax error` **不是同一个字符串**：一个是标识符名、一个是消息文本。
+   * mathjs 抛的是后者（`Syntax error in part "某中文*2" (char 1)`）。
+   *
+   * 踩过：正则只写了前者，于是这类错误落到了末尾的兜底分支 ——
+   * 表现为「错误类型对（syntax）、但没有任何 hint」。这类漏判不报错、不显眼，
+   * 靠的是对照实验（同样是语法错，`1+*2` 有提示而 `某中文*2` 没有）才揪出来。
+   *
+   * 所以两种写法都收，并且用 `\s*` 容忍中间空格差异。
+   */
+  if (/Unexpected end of expression|Value expected|Parenthesis|Invalid left hand side|Syntax\s*Error|Unexpected operator/i.test(text)) {
+    return new CalcError('syntax', text, explainSyntax(source, text))
   }
   if (/Units do not match|Cannot convert|not found.*unit/i.test(text)) {
     return new CalcError('unit_mismatch', text, '两侧单位必须同量纲。')
@@ -806,27 +871,85 @@ function mergeWorkspaceVariables(passed: unknown): unknown {
   return { ...stored, ...incoming }
 }
 
+/**
+ * 收集上一次 `buildScope` 跳过的非法变量键。
+ *
+ * 模块级、每次调用开头清空 —— 与 `activeDisplayPrecision` 同样的理由：
+ * 逐层传参要改四十多个函数签名，而这个信息只在**入口**用来组装一条提示。
+ */
+let skippedVariableKeys: Array<{ name: string; reason: string }> = []
+
+/**
+ * 取本次调用中被跳过的非法变量键（组装提示用）。
+ *
+ * @returns 被跳过的键与原因
+ */
+export function takeSkippedVariableKeys(): Array<{ name: string; reason: string }> {
+  const taken = skippedVariableKeys
+  skippedVariableKeys = []
+  return taken
+}
+
+/**
+ * 清理被跳过的变量键记录（每次工具调用开头）。
+ */
+export function resetSkippedVariableKeys(): void {
+  skippedVariableKeys = []
+}
+
+/**
+ * 把变量字典装进 mathjs 作用域。
+ *
+ * ## 非法键只跳过，不中止整批
+ *
+ * 实测反馈（2026-11-06 第二份）：
+ *
+ * ```
+ *   expressions: ["P*330", "Q+1"], variables: {"P":1000, "Q":5, "人口":1}
+ *   → ok:false，连合法的 P*330 都没算
+ * ```
+ *
+ * 一个键名写错，前面排队的算式全白写的 —— 而这类语料的**概念名几乎全是中文**
+ * （人口/粮食/石料），用户第一反应就是用中文命名。
+ *
+ * 现在：合法的键照常进作用域，非法的记进 `skippedVariableKeys`，
+ * 由入口在结果里列出来。**算出来的数仍然是对的** —— 只是那个中文键没生效。
+ *
+ * ## 为什么不做「支持中文变量名」
+ *
+ * 那要放宽 mathjs 的词法，而词法宽松会带来新的歧义
+ * （中文字符与单位名、量级词的边界更难判）。
+ * 相比之下「跳过 + 明确告知」既解决了痛点，又不引入不确定性。
+ *
+ * @param engine - mathjs 实例
+ * @param variables - 变量字典
+ * @returns 可用的作用域对象
+ */
 function buildScope(engine: any, variables: unknown): Record<string, any> {
   const scope: Record<string, any> = {}
   if (!variables || typeof variables !== 'object' || Array.isArray(variables)) return scope
   for (const [key, raw] of Object.entries(variables as Record<string, unknown>)) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
-      throw new CalcError('invalid_argument', `变量名 "${key}" 不合法`, '变量名只能含字母、数字、下划线。')
+      skippedVariableKeys.push({ name: key, reason: '标识符只能含字母、数字、下划线' })
+      continue
     }
     if (typeof raw === 'number') {
-      if (!Number.isFinite(raw)) throw new CalcError('invalid_argument', `变量 "${key}" 不是有限数字`)
+      if (!Number.isFinite(raw)) {
+        skippedVariableKeys.push({ name: key, reason: '不是有限数字' })
+        continue
+      }
       scope[key] = engine.bignumber(String(raw))
     } else if (typeof raw === 'string') {
       // 允许字符串形式的大数，例如 "1e100"
       try {
         scope[key] = engine.bignumber(raw.trim())
       } catch {
-        throw new CalcError('invalid_argument', `变量 "${key}" 无法解析为数字: ${raw}`)
+        skippedVariableKeys.push({ name: key, reason: '无法解析为数字' })
       }
     } else if (typeof raw === 'boolean') {
       scope[key] = raw
     } else {
-      throw new CalcError('invalid_argument', `变量 "${key}" 必须是数字或数字字符串`)
+      skippedVariableKeys.push({ name: key, reason: '必须是数字或数字字符串' })
     }
   }
   return scope
@@ -917,8 +1040,18 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   }
 
   const value = unwrapResult(raw)
+  const text = formatValue(engine, value, precision, currentDisplayPrecision())
   return {
-    result: formatValue(engine, value, precision, currentDisplayPrecision()),
+    /**
+     * 带 SI 质量前缀时补一句中文量级参照（如 `87.78 Tg（= 8778 万吨）`）。
+     *
+     * 只对「质量 × 克」这一族生效 —— 它是中文语料里量级混用最严重的场景，
+     * 也是实测反馈里唯一真实出过事故的地方（两次把「吨」当成「亿吨」）。
+     *
+     * 其它单位、复合单位一律原样返回：量级词在那个位置不适用，
+     * 硬套只会制造噪音。
+     */
+    result: annotateMetricPrefix(text),
     value: toJsonValue(value),
   }
 }
@@ -978,7 +1111,24 @@ function opEvaluateBatch(
      *
      * 批内条目一多（该会话单批最多 14 条），纯靠位置对齐的心智负担很大。
      */
-    const entry = typeof raw === 'string' ? { expr: raw } : (raw as { label?: string; expr?: string }) ?? {}
+    /**
+     * ## 纯数字元素自动转成表达式
+     *
+     * 实测反馈（2026-11-06 第二份）：`expressions: [0.5, 9.9, 10]` 五条全被当成
+     * **「空表达式」跳过**，汇总「成功 0，失败 5」。
+     *
+     * 这是**类型错误被伪装成内容错误** —— 用户传的是合法数字，
+     * 工具说「空表达式」，会让人去翻数据源而不是检查类型。
+     *
+     * 转成字符串是零风险的：`0.5` → `"0.5"` → 正常求值得 0.5。
+     * 布尔与 null 不转换（那不是「一个数」，是调用方写错了，该报错）。
+     */
+    const entry =
+      typeof raw === 'string'
+        ? { expr: raw }
+        : typeof raw === 'number' && Number.isFinite(raw)
+          ? { expr: String(raw) }
+          : (raw as { label?: string; expr?: string }) ?? {}
     /**
      * ## 元素里的未知键也要点名
      *
@@ -2873,6 +3023,11 @@ export function runMathTool(rawArguments: unknown): MathResult {
     const scopeVariables = mergeWorkspaceVariables(args.variables)
     const known = knownNumbers(scopeVariables)
     const engine = bignum(precision)
+    /**
+     * 每次调用开头清空「被跳过的变量键」记录，避免串到上一次调用。
+     * 与 `activeDisplayPrecision` 同理：模块级状态必须每次开头复位。
+     */
+    resetSkippedVariableKeys()
     const scope = buildScope(engine, scopeVariables)
 
     operation = requested === 'auto' ? detectOperation(input, args) : requested
@@ -3038,6 +3193,20 @@ export function runMathTool(rawArguments: unknown): MathResult {
         batchResult.failed = failedCount
         batchResult.succeeded = succeededCount
       }
+      /**
+       * 被跳过的变量键在**批量路径**也要告知。
+       *
+       * 踩过：第一版只在函数末尾的单条路径上组装这条提示，
+       * 而批量在 3078 行就 return 了 —— 于是批量调用永远看不到它。
+       * 这正是实测反馈里的原始场景（一批算式 + 一个中文变量名）。
+       */
+      const skippedInBatch = takeSkippedVariableKeys()
+      if (skippedInBatch.length > 0) {
+        const parts = skippedInBatch.map(function (item) { return item.name + '（' + item.reason + '）' })
+        batchResult.notice =
+          '这些变量名没被采用，已跳过（其余照算）: ' + parts.join('；') +
+          '。变量名只能含字母、数字、下划线；中文名可先存进工作区再引用。'
+      }
       return batchResult
     }
     switch (operation) {
@@ -3160,6 +3329,40 @@ export function runMathTool(rawArguments: unknown): MathResult {
      */
     const hintNote = maybeDisplayPrecisionHint(result.result)
     if (hintNote) result.notice = hintNote
+
+    /**
+     * 三角函数按弧度算时补一句说明。
+     *
+     * 走 `notice` 而不是拼进 `result`：`result` 是数据通道，
+     * 往里拼提示会让依赖精确相等（`sin(30) = -0.98803162`）的调用方失配 ——
+     * 这与「显示精度提示走 notice」是同一条既有约定。
+     *
+     * 实测反馈（2026-11-06 第二份）：中文工程语境里 `sin(30)` 的默认读法是 30 度，
+     * 而工具按弧度给出 `-0.988` —— 数字看着正常，用户不会察觉。
+     */
+    if (operation === 'evaluate' && input !== '') {
+      const angleNote = checkAngleUnit(input)
+      if (angleNote) {
+        result.notice = result.notice ? result.notice + '\n' + angleNote : angleNote
+      }
+    }
+
+    /**
+     * 被跳过的变量键要告知，不能静默。
+     *
+     * 实测反馈（2026-11-06 第二份）：`variables` 里写了一个中文键，
+     * 整批中止、合法算式一条没算。现在改成「跳过 + 告知」——
+     * 算出来的数是对的，但调用方必须知道哪个键没生效，
+     * 否则它会以为 `人口` 已经传进去了。
+     */
+    const skippedVars = takeSkippedVariableKeys()
+    if (skippedVars.length > 0) {
+      const parts = skippedVars.map(function (item) { return item.name + '（' + item.reason + '）' })
+      const skipNote =
+        '这些变量名没被采用，已跳过（其余照算）: ' + parts.join('；') +
+        '。变量名只能含字母、数字、下划线；中文名可先存进工作区再引用。'
+      result.notice = result.notice ? result.notice + '\n' + skipNote : skipNote
+    }
 
     /**
      * ── 精度不足提醒 ──
