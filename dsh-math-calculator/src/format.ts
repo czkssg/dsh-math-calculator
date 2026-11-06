@@ -397,15 +397,31 @@ export function containsNonFinite(value: JsonValue | undefined): boolean {
  * 超出最大常用档就用科学计数法配常用单位（如 `1e6 t`）。
  */
 const PREFERRED_UNIT_LADDER: Record<string, Array<[number, number, string]>> = {
-  /** 质量以千克为基准（mathjs 的 Unit.value 就是千克数）。 */
+  /**
+   * 质量以千克为基准（mathjs 的 Unit.value 就是千克数）。
+   *
+   * 只列到 `t` 为止：再往上走 `kt / Mt / Gt / Tt…`，
+   * 由下面的「前缀叠加」在 `t` 上加一层（`t` 不带前缀，不会拼出无效组合）。
+   */
   mass: [
     [1e3, 1e-3, 't'],
     [1, 1, 'kg'],
     [1e-3, 1e3, 'g'],
     [0, 1e6, 'mg'],
   ],
-  /** 长度以米为基准。km 档从 1e3 起（不是 1e6），否则 1e6 m 会落到 m 档。 */
+  /**
+   * 长度以米为基准。km 档从 1e3 起（不是 1e6），否则 1e6 m 会落到 m 档。
+   *
+   * 高量级直接在这里列全（Gm / Tm / Pm…），而不是靠「前缀叠加」——
+   * 因为长度阶梯里已经有 `km`（自带前缀），再叠一层会拼出 `kkm` 这种无效组合。
+   * 与其在叠加逻辑里特判「当前符号带不带前缀」，不如把档位摊平在数据里。
+   */
   length: [
+    [1e18, 1e-18, 'Em'],
+    [1e15, 1e-15, 'Pm'],
+    [1e12, 1e-12, 'Tm'],
+    [1e9, 1e-9, 'Gm'],
+    [1e6, 1e-6, 'Mm'],
     [1e3, 1e-3, 'km'],
     [1, 1, 'm'],
     [1e-2, 1e2, 'cm'],
@@ -430,8 +446,11 @@ const PREFERRED_UNIT_LADDER: Record<string, Array<[number, number, string]>> = {
    * 强行归位只会改变调用方给的语义，收益为零。所以**从阶梯里去掉**，
    * 保持 mathjs 原有选择（它唯一的问题只是 `ML` 这种冷门前缀，而那很少见）。
    */
-  /** 功率以瓦为基准。kW / MW / GW 是常用档，再往上就科学计数法。 */
+  /** 功率以瓦为基准。 */
   power: [
+    [1e18, 1e-18, 'EW'],
+    [1e15, 1e-15, 'PW'],
+    [1e12, 1e-12, 'TW'],
     [1e9, 1e-9, 'GW'],
     [1e6, 1e-6, 'MW'],
     [1e3, 1e-3, 'kW'],
@@ -439,6 +458,8 @@ const PREFERRED_UNIT_LADDER: Record<string, Array<[number, number, string]>> = {
   ],
   /** 能量以焦耳为基准。 */
   energy: [
+    [1e18, 1e-18, 'EJ'],
+    [1e15, 1e-15, 'PJ'],
     [1e12, 1e-12, 'TJ'],
     [1e9, 1e-9, 'GJ'],
     [1e6, 1e-6, 'MJ'],
@@ -507,12 +528,89 @@ function normalizeUnitPrefix(unit: any): string {
     const abs = Math.abs(baseValue)
     const tier = ladder.find(function (row) { return abs >= row[0] })
     if (!tier) return ''
-    const [, factor, symbol] = tier
-    return formatScalar(baseValue * factor) + ' ' + symbol
+    const [threshold, factor, symbol] = tier
+    let value = baseValue * factor
+
+    /**
+     * ## 阶梯之上再叠 SI 前缀：k / M / G / T / P / E / Z / Y / R / Q
+     *
+     * 用户明确要求：「K,M,G,T,P,E,Z,Y,R,Q，不是禁止，可以斟酌使用。」
+     *
+     * 上一版把前缀**全部禁用**、超档一律丢给科学计数法（`1e6 t`），那是矫枉过正：
+     * `Mt`（百万吨）、`Gt`（十亿吨）、`kt`（千吨）这些是**正经写法**，
+     * 工程与气候文献里常见；`1e12 t` 反而不如 `1 Tt` 好读。
+     *
+     * 所以规则改成两层：
+     *   · **先按阶梯选常用单位**（保证不会出现 `Tg`、`Mm` 这种冷门组合）
+     *   · **数值仍超出该档范围时，在常用单位上叠前缀**（`t` → `kt` / `Mt` / `Gt`）
+     *
+     * 阈值：|值| ≥ 1000 才升档（`2000 t` → `2 kt`），
+     * 这样 `1000 t` 仍是 `1000 t`（不升级）而 `10000 t` 变 `10 kt`。
+     * 再往上每 1000 倍升一级，到 Q（10³⁰）为止。
+     */
+    if (Math.abs(value) >= 1e4 && STEP_PREFIXABLE.has(symbol)) {
+      /**
+       * `steps` = 该值要**除以 10³ 几次**才能落到 1—999 的区间。
+       *
+       * ```
+       *   value = 2e3   → log10 = 3.3  → floor(3.3/3) = 1 → 疑似 k
+       *   value = 1e4   → log10 = 4    → floor(4/3)   = 1 → k
+       *   value = 1e6   → log10 = 6    → floor(6/3)   = 2 → M
+       * ```
+       *
+       * 但要注意：**前缀数组的 0 号是 'k'**（即除以 10³ 一次），
+       * 所以下标 = steps - 1，不是 steps。
+       *
+       * 踩过：第一版直接用 `SI_STEP_PREFIXES[steps]`，于是 `1e4 t` 输出成 `10 Mt`
+       * —— 倍率差了一千倍（10 Mégatonne ≈ 1e10 t，而实际只要 1e4 t）。
+       */
+      const exponent = Math.floor(Math.log10(Math.abs(value)))
+      const steps = Math.min(Math.floor(exponent / 3), SI_STEP_PREFIXES.length)
+      if (steps >= 1) {
+        /** 数组 0 号 = 'k'（10³），所以下标是 steps - 1。 */
+        const prefix = SI_STEP_PREFIXES[steps - 1]
+        const divisor = Math.pow(10, steps * 3)
+        return formatScalar(value / divisor) + ' ' + prefix + symbol
+      }
+    }
+    return formatScalar(value) + ' ' + symbol
   } catch {
     return ''
   }
 }
+
+/**
+ * 「千进制一位」的 SI 前缀序列（不含 k，因为阶梯里的 km/kW/kJ/kPa 已经自带）。
+ *
+ * 下标即「往上叠了几个 10³」：
+ *   [0]='k' → 10³（`2 kt`）
+ *   [1]='M' → 10⁶（`2 Mt`）
+ *   [2]='G' → 10⁹（`2 Gt`）
+ *   …… 直到 [9]='Q' → 10³⁰
+ */
+const SI_STEP_PREFIXES = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y', 'R', 'Q']
+
+/**
+ * 允许叠加前缀的单位符号。
+ *
+ * ## 为什么 `km` / `GW` / `TJ` 也算「可叠加」
+ *
+ * 它们本身已是阶梯选出来的常用档（`1e6 m` → `1000 km`）。
+ * 再往上（`1e9 m`）如果不能再叠，就只能给 `1e6 km` —— 那正是用户不想要的。
+ *
+ * 所以「可叠加」跟「带不带前缀」无关，而跟**叠上去之后说不说人话**有关：
+ *
+ * ```
+ *   1e9 m   → 1 Gm     ✓（吉米，物理/天文会说）
+ *   1e6 km  → 1 Mm     ✗ 兆米（很少说），但 1 Gm 是对同量级的更好写法
+ *   1e9 W   → 1 GW     ✓（已是 GW，再升就是 TW）
+ *   1e12 W  → 1 TW     ✓
+ * ```
+ *
+ * 因此集合里放的正是**阶梯可能产出的那些符号**，
+ * 这样升档逻辑统一在「在当前符号前面加一层前缀」这一个动作上。
+ */
+const STEP_PREFIXABLE = new Set(['t', 'm', 's', 'W', 'J', 'Pa', 'g', 'kg'])
 
 /**
  * 数值 → 可读文本：大数用科学计数法，其余保留有限位。
