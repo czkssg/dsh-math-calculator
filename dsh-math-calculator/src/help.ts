@@ -54,6 +54,22 @@ export interface HelpTopic {
   summary: string
   /** 常见别名，便于用直觉词命中也（如「概率」命中 dist）。 */
   aliases?: string[]
+  /**
+   * 频次档：`core` = 几乎每次都会用到，目录里占一行带简介；
+   * `extra` = 低频，折叠成一行只给 key + 极短标签。
+   *
+   * ## 为什么要分档（用户 2026-11-07 要求）
+   *
+   * 「加减乘除高频其余低频可以折叠」——目录每轮都要付费，
+   * 而 12 节里真正高频的是 evaluate / units / formula 这几节。
+   * 把低频节压成一行，省下的字给高频节写更详细的正文。
+   *
+   * 折叠不等于藏起来：key 与极短标签仍然列在目录里，
+   * 只是不再为它们付「一句话简介 + 别名清单」的成本。
+   */
+  tier: 'core' | 'extra'
+  /** 折叠档用的极短标签（≤8 字，目录里跟 key 同行）。 */
+  short?: string
   /** 该节正文。 */
   body: () => string
 }
@@ -141,30 +157,92 @@ const ALGEBRA_BODY = (): string => `【代数与微积分】
 
 /** 【线性代数】矩阵与特征值。 */
 const LINALG_BODY = (): string => `【线性代数】
-  matrix       矩阵乘法/求逆/行列式/转置/迹
-               只给 matrix 不给其它参数时，输出完整画像：
-               秩 / 行列式 / 迹 / 奇异值 / 零空间 / 逆
+
+  matrix       矩阵运算。代入 mathjs 表达式，所以可以直接写算式：
+                 {matrix:[[1,2],[3,4]]}                只给矩阵 → 输出完整画像
+                 {expression:"[[1,2],[3,4]] * [[5],[6]]"}   矩阵乘向量
+                 {expression:"inv([[1,2],[3,4]])"}        求逆
+                 {expression:"det([[1,2],[3,4]])"}        行列式
+                 {expression:"transpose([[1,2],[3,4]])"}   转置
+                 {expression:"trace([[1,2],[3,4]])"}      迹
+
+                ★ 只给 matrix 时输出的是**完整画像**，不只是结果：
+                  秩 / 行列式 / 迹 / 奇异值 / 零空间 / 逆
+                  这套画像用来看「这个矩阵有没有信息量」——
+                  秩为 1 说明所有行线性相关，那方程组就无唯一解。
+
   eigen        特征值与特征向量（复数特征值也支持）
-  例：{operation:"matrix", matrix:[[1,2],[3,4]]}`
+               例：{expression:"eigen([[2,0],[0,3]])"}
+
+  system       解线性方程组，给 matrix（系数）与 vector（右端项）
+               例：{matrix:[[3,2],[1,-1]], vector:[10,1]}  ← 解 3x+2y=10, x-y=1
+
+  ★ 秩与零空间常被忽略但很有用：
+    rank 小 → 方程组不独立，会得到「无穷多解」而非唯一解
+    nullspace 给出那些「解不出来」的方向，是理解退化方程组的钥匙
+
+  ★ 本工具不做数值优化（最小二乘、SVD 压缩这类），
+    需要时用 expressions 手写，或退回 operation="evaluate"。`
 
 /** 【统计与概率】描述统计/分布/回归。 */
 const STATS_BODY = (): string => `【统计与概率】
-  stats        描述统计：均值/中位数/众数/方差/标准差/分位数/偏度/峰度
+
+  stats        描述统计，一次给全套：
+               均值 / 中位数 / 众数 / 方差 / 标准差 / 分位数 / 偏度 / 峰度
                例：{operation:"stats", data:[1,2,3,4]}
-  dist         概率分布。distribution 选型，params 给参数，x 给求值点：
-               normal[均值,标准差] / binomial[n,p] / poisson[lambda]
-               exponential[lambda] / chisquare[df] / t[df]
-               normalinv 给分位数求对应值 / quantile 求分位数
-  regression   线性与多项式回归，degree 指定次数（默认 1），给 R²`
+               ★ 均值与中位数差得远，说明数据偏斜（少数极值拉动了均值）——
+                 这是判断「平均数能不能用」的第一眼信号。
+
+  dist         概率分布。三个参数：distribution 选型 / params 给参数 / x 给求值点
+
+               normal      params:[均值, 标准差]     正态分布
+               binomial    params:[n, p]              二项分布（n 次试验成功 p 次）
+               poisson     params:[lambda]            泊松分布（单位时间事件数）
+               exponential params:[lambda]            指数分布（等待时间）
+               chisquare   params:[df]                χ² 分布
+               t           params:[df]                t 分布（小样本）
+               normalinv   x=分位数 → 给出对应的值（正态反查）
+               quantile    x=分位数 → 给出分位数值
+
+               ★ 给出的是 CDF 或 PDF，取决于分布定义——看输出里写的是哪个，
+                 别凭分布名猜。
+
+  regression   线性与多项式回归
+               degree 指定次数（默认 1 = 线性）
+               返回系数与 **R²**
+               ★ R² 接近 1 不代表因果成立，只说明拟合贴合——
+                 这是最常见的误读，尤其在「用拟合曲线论证规律」时。
+
+  ★ 概率类常用场景：
+    两年一遇的洪水 → 求超越概率 0.5 对应的重现期
+    「这个数字落在正常区间的概率」→ normal + CDF
+    A/B 结果差异是不是巧合 → t 分布`
 
 /** 【微分方程】ODE 数值解。 */
 const ODE_BODY = (): string => `【微分方程】ode 数值求解（RK4）
-  一阶方程组（SIR / 捕食模型）、二阶方程自动降阶
-  返回轨迹、终点值、极值、发散警告
-  参数：from(起点,默认0) / to(终点,默认10) / steps(RK4 步数,默认1000)
-        samples(返回采样点数,默认24) / initial(初值对象)
-  例：{operation:"ode", expression:"a=k1*S*I-k2*I", initial:{S:999,I:1,R:0}}
-  ★ 二阶方程降阶后可能需要辅助变量（y_d 表示 dy/dt），缺了会提示补哪个`
+
+  一阶方程组（SIR / 捕食模型）与二阶方程（自动降阶）都能解。
+
+  参数：
+    expression  状态方程，多个用分号分隔。等号左边是导数变量
+                例："S'=-k1*S*I; I'=k1*S*I-k2*I; R'=k2*I"   ← SIR 传染病
+                    "x'=y; y'=-k*x"                        ← 简谐振子
+    initial     初值对象 {S:999, I:1, R:0}
+    from/to     积分区间（默认 0 → 10）
+    steps       RK4 步数（默认 1000，刚性方程要加大）
+    samples     返回的采样点数（默认 24，只要不爆内存可以调大）
+
+  返回：轨迹（时间序列）、终点值、极值、**发散警告**
+
+  ★ 二阶方程降阶：y'' 要写成 y'=y_d; y_d'=…，y_d 表示 dy/dt。
+    缺了辅助变量会提示补哪个，不会静默给错。
+
+  ★ 数值解不是解析解：steps 太少会失真，且刚性方程（变化极快）
+    容易发散——看到发散警告就加大 steps，或换解析思路。
+
+  ★ 写故事时的常见用法：
+    传染病扩散（SIR）、捕食者-猎物振荡（Lotka-Volterra）、
+    碳循环、人口动态、冷却曲线`
 
 /** 【公式库】442 条公式的调用与检索。 */
 const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自然科学公式
@@ -380,6 +458,109 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
     not_a_quantity     to 左边不是带单位的量（裸数字没有单位可换）
     unknown_argument   参数名认不出来（会点名是哪个）`
 
+
+/**
+ * 【工程 / 生物 / 宏观】专节 —— 覆盖写世界观最常用的三块。
+ *
+ * ## 为什么单独成节
+ *
+ * 这三块是本次新增的 29 条公式的落点，但它们在目录里跟「统计」「线代」混在一起时
+ * 读者不会想到去查。单独一节把「我要算这座塔立不立得住」直接对上一个 key。
+ *
+ * ## 内容比旧版细得多
+ *
+ * 旧版 6000 字总预算下，每节只能给十几个字。现在每节按需付费，
+ * 所以这里把**每条公式的适用域、典型取值、以及它会教你的那条 scaling 律**都写出来 ——
+ * 那些才是判断「这个数合不合理」时真正要用的。
+ */
+const DOMAINS_BODY = (): string => `【工程 / 生物 / 宏观】三块的常用算式（共 29 条，公式库里按 id 调用）
+
+调用方式与其它公式一样：{operation:"formula", formula:"id", overrides:{参数}}
+参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+════ 工程·结构（engineering/structures）════
+  beam_section_modulus      抗弯截面系数 W = b·h²/6
+                            ★ 梁要高不要宽：高度翻倍，抗弯能力 4 倍
+  beam_bending_stress       弯曲应力 σ = M/W（输出 MPa）
+                            与屈服强度比即知安全；钢梁许用应力取屈服 1/1.5~1/2
+  rect_inertia              惯性矩 I = b·h³/12
+                            ★ 高度的**三次方**——「梁要竖着放」的数学理由
+  beam_self_weight_moment   自重跨中弯矩 qL²/8
+                            ★ 跨度的**平方律**：跨度翻倍，弯矩 4 倍
+                            大跨度结构必须先算这项，否则漏掉最主要的荷载
+  beam_uniform_load_deflection 均布挠度 δ = 5qL⁴/(384EI)
+                            ★ 跨度的**四次方**：跨度翻倍，挠度 16 倍
+                            所以桥梁不能靠「加厚」延长跨度，必须改结构形式
+  bolt_shear_capacity       螺栓抗剪 F = n·τ·π·d²/4（4.6 级 τ≈141 MPa）
+                            ★ 承压型高强螺栓靠摩擦传力，不按这个算式
+  weld_throat_capacity      角焊缝 F = 0.707a·L·τ（喉部有效厚度 0.707a）
+
+════ 工程·热机与能量（engineering/thermal, energy）════
+  thermal_efficiency_carnot 卡诺上限 η ≤ 1 − Tc/Th
+                            ★ **绝对温度**不是摄氏度；300K/500K 之间上限 40%
+                            加多少煤都没用——只能提高热源温度或降低排热温度
+  steam_power_output        P = ṁ·Δh·η（Δh 焓差 J/kg）
+                            ★ 汽轮机 η≈0.35，往复式 η≈0.12：同功率只需 1/3 蒸汽
+                            这个 3 倍差距决定蒸汽朋克的煤耗与锅炉体积
+  boiler_coal_rate          每小时耗煤 = P/(cv·η)×3600（标准煤 2.93e7 J/kg）
+                            ★ 用「多少吨煤」比「多少瓦」更有体感
+  heat_exchanger_duty       Q = U·A·LMTD（对数平均温差）
+                            ★ 同样两端温差，逆流 LMTD 明显大于顺流——好换热器都做成逆流
+                            dT1 与 dT2 不能相等（那对应换热面积无穷大）
+  conduction_wall_loss      Q = k·A·ΔT/d
+                            ★ 岩棉 k=0.04、钢 45 —— 差 1000 倍
+                            10 cm 岩棉 ≈ 100 m 钢，这是「隔热好不好」的量化说法
+  wind_power_available      P = ½ρA·v³·Cp
+                            ★ 风速的**三次方**：5→10 m/s，功率 8 倍（最反直觉的一条）
+                            贝茨极限 0.593 是理论上限，实用 0.35~0.45
+  water_turbine_power       P = ρ·g·Q·H·η（与水泵恰好相反：η 是乘的）
+
+════ 工程·流体与管路（engineering/fluid）════
+  pipe_flow_rate            Q = v·π·d²/4
+                            ★ 管径翻倍，流量 4 倍——扩一倍口径顶四条旧管
+  darcy_head_loss           h = f·(L/d)·v²/(2g)
+                            ★ 流速的平方：流速翻倍损失 4 倍
+                            所以长距离输水宁可加大管径降流速（经济流速 1~2 m/s）
+  pump_power                P = ρ·g·Q·H/η（扬程含沿程损失）
+                            流量与扬程都是相乘，任一翻倍功率就翻倍
+  orifice_discharge         Q = Cd·A·√(2gh)
+                            ★ 水头的**平方根**：流量翻倍要水头 4 倍
+                            水库泄洪、攻城水攻、倒水时间估算都用它
+
+════ 生物·生态（biology/ecology）════
+  grazing_capacity          载畜量 = 面积×产草量×利用率/(采食量×天数)
+                            ★ 利用率取 0.5 不是保守而是必需：超载后草地退化，第二年产量腰斩
+                            温带草原 2000~5000 kg/(ha·年)，牛采食 40~60 kg/日
+  livestock_growth_time     (出栏重−初生重)/日增重
+                            ★ 猪≈180 天、牛≈450 天、肉鸡≈42 天；这个比值决定肉价与周转率
+  feed_conversion_ratio     料肉比 = 耗料/增重
+                            ★ 牛 6~8、猪 2.5~3.5、鸡 1.6~2.0
+                            直接决定「养一头牛要多少亩地」；牛高是反刍维持消耗大，不是品种差
+  crop_yield_npp            可收获干物质 = NPP×面积×收获指数
+                            ★ 谷物收获指数 0.4~0.5 —— 六成生物量是秸秆（饲料与燃料的来源）
+  trophic_chain_support     每级只剩约 10%
+                            ★ 养活 1 kg 狼要 10 kg 兔、100 kg 草
+                            这解释了为什么食物链一般不超过 5 级，也立刻否掉「满地猛兽」
+
+════ 宏观·经济（econ/macro）════
+  labor_force               劳力 = 人口 × 参与率（农业社会 0.45~0.55）
+                            ★ 0.45 里含着大量童工与老人——决定「能征多少兵、能修多大工程」
+  gdp_from_labor            产出 = 劳力 × 人均产出
+                            ★ 想提高总产出只有两条路；长期增长几乎全靠提高单产
+  macro_savings_rate        可投资额 = 产出 × 储蓄率
+                            ★ 增长燃料：东亚高速期 0.3+，贫困农业社会几乎攒不出投资
+  capital_output_ratio      所需资本产出比 = 储蓄率/增长率
+                            ★ 储蓄率 10%、目标增长 5%，需要资本产出比 2；实际要 4 就达不到 5%
+                            这条能立刻判断增长目标现不现实
+  money_supply_from_base    广义货币 = 基础货币 × 乘数
+                            ★ 金属货币制乘数≈1，现代部分准备金 8~12
+                            这解释了为什么古代通胀罕见而现代可以剧烈
+  inflation_from_money_growth  通胀 ≈ 货币增速 − 产出增速
+                            ★ 0.15 对 0.03 即约 12%，三年物价翻倍
+                            「滥发货币导致崩溃」时用它量化
+
+★ 这些式子的共同特点：**缩放律比绝对值更重要**。算出来的数可以偏，
+  但「跨度翻倍挠度 16 倍」这类关系错了就是硬伤——那是判断合不合理的第一道关。`
 /**
  * 各节注册表。**顺序即目录顺序**，而顺序决定「AI 会不会翻到它」。
  *
@@ -387,88 +568,129 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
  * `recipe` 放最后是因为它是跨节组合，读它之前一般已经读了几节。
  */
 export const HELP_TOPICS: HelpTopic[] = [
+  /**
+   * ## core：几乎每次都会用到，目录里给整块简介
+   *
+   * `evaluate` / `units` / `formula` 三节覆盖「算一条式子」「换单位」「调公式」，
+   * 是 90% 以上调用的落点。它们值得在目录里占完整位置。
+   */
   {
     key: 'evaluate',
+    tier: 'core',
     title: '求值与代数（evaluate / solve / 微积分）',
-    summary: '算一条表达式、解方程、求导积分化简。物理量请带单位写，量纲错误会被当场拦下。',
+    summary: '算表达式、解方程、求导积分。物理量带单位写，量纲错当场拦下。',
     aliases: ['算式', '计算', '求值', '求解', '方程', '积分', '求导', 'mathjs', 'algebra'],
     body: () => EVALUATE_BODY() + '\n\n' + ALGEBRA_BODY(),
   },
   {
+    key: 'units',
+    tier: 'core',
+    title: '单位换算与输出单位（units）',
+    summary: '中外古今单位换算、自定义单位，以及输出为什么是大数配吨/公里。',
+    aliases: ['单位', '换算', '里', '丈', '斤', '亩', 'unit', 'conversion'],
+    body: UNITS_BODY,
+  },
+  {
+    key: 'formula',
+    tier: 'core',
+    title: '公式库（formula / formulas）',
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改造参数（架空世界的关键）、按层级/领域检索。`,
+    aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
+    body: FORMULA_BODY,
+  },
+  {
+    key: 'world',
+    tier: 'core',
+    title: '世界观推演（world / 地形 / 气候）',
+    summary: '星球参数得体感画像：重力昼夜气候、天空、恒星寿命、卫星、生命闸门。★ 完整字段表在这里。',
+    aliases: ['星球', '世界', '重力', '气候', '恒星', '地形', 'world', 'planet'],
+    body: WORLD_BODY,
+  },
+  /**
+   * ## extra：低频，折叠成一行 key + 短标签
+   *
+   * 用户原话：「加减乘除高频其余低频可以折叠。」
+   * 折叠不等于藏起来 —— key 与六字标签仍在目录里，AI 能看见并可以查，
+   * 只是不再为它们付「一句话简介 + 别名清单」的成本。
+   */
+  {
+    key: 'domains',
+    tier: 'core',
+    title: '工程 / 生物 / 宏观（29 条领域公式）',
+    summary: '梁柱应力挠度、热机效率煤耗、管流泵功率、载畜量营养级、劳动力货币通胀。每条都写了 scaling 律。',
+    aliases: ['工程', '生物', '经济', '宏观', '建筑', '结构', '热机', '流体', '生态', '畜牧', '通胀'],
+    body: DOMAINS_BODY,
+  },
+  {
     key: 'linalg',
+    tier: 'extra',
+    short: '矩阵/特征值',
     title: '线性代数（matrix / eigen）',
-    summary: '矩阵乘法求逆行列式、特征值。只给 matrix 时输出秩/行列式/奇异值/零空间/逆的完整画像。',
+    summary: '矩阵运算、特征值；只给 matrix 时输出秩/行列式/奇异值/零空间/逆的完整画像。',
     aliases: ['矩阵', '行列式', '特征值', 'matrix', 'eigen', '线性'],
     body: LINALG_BODY,
   },
   {
     key: 'stats',
+    tier: 'extra',
+    short: '统计/分布/回归',
     title: '统计与概率（stats / dist / regression）',
-    summary: '描述统计、八种概率分布（给 CDF/PDF/分位数）、线性与多项式回归。',
-    aliases: ['统计', '概率', '分布', '回归', '方差', 'standard deviation'],
+    summary: '描述统计、八种概率分布（CDF/PDF/分位数）、线性与多项式回归。',
+    aliases: ['统计', '概率', '分布', '回归', '方差'],
     body: STATS_BODY,
   },
   {
     key: 'ode',
+    tier: 'extra',
+    short: '微分方程',
     title: '微分方程（ode）',
     summary: 'RK4 数值解一阶方程组与二阶方程，返回轨迹/终点值/极值/发散警告。',
     aliases: ['微分方程', 'ode', '传染病', '捕食模型', 'rk4'],
     body: ODE_BODY,
   },
   {
-    key: 'formula',
-    title: '公式库（formula / formulas / formula-table）',
-    summary: '调用 442 条自然科学公式并用 overrides 改造任意参数（架空世界的关键），以及按层级/领域/频率检索。',
-    aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
-    body: FORMULA_BODY,
-  },
-  {
-    key: 'units',
-    title: '单位换算与输出单位策略（units）',
-    summary: '中外古今单位换算、自定义单位覆盖，以及输出时为什么是大数配吨/公里而不是 Tg/Tm。',
-    aliases: ['单位', '换算', '里', '丈', '斤', '亩', 'unit', 'conversion'],
-    body: UNITS_BODY,
-  },
-  {
-    key: 'world',
-    title: '世界观推演（world / 地形 / 气候）',
-    summary: '给星球参数得一张体感画像：重力昼夜季节气候、天空配色、恒星寿命、卫星、化学窗口、生命闸门。★ 完整字段表在这里。',
-    aliases: ['星球', '世界', '重力', '气候', '恒星', '地形', 'world', 'planet'],
-    body: WORLD_BODY,
-  },
-  {
     key: 'constants',
+    tier: 'extra',
+    short: '改常数看后果',
     title: '常数推演（constants / quantities / impact）',
-    summary: '改光速/引力常数等基础旋钮，派生量自动重算并评估世界偏离度；看哪些物理量该跟着变。',
-    aliases: ['常数', '物理常数', '光速', '引力常数', '推翻物理', 'constants'],
+    summary: '改光速/引力常数，派生量自动重算并评估偏离度；看哪些物理量该跟着变。',
+    aliases: ['常数', '物理常数', '光速', '引力常数', '推翻物理'],
     body: CONSTANTS_BODY,
   },
   {
     key: 'balance',
-    title: '收支盘点与天体目录（balance / bodies / feasibility）',
-    summary: '粮水能地财政军费信息多项一起看给最短板；以及天体目录、类型学、改常数后哪些天体数据要重算。',
-    aliases: ['收支', '盘点', '养得起', '经济', '天体', '火星', 'balance', 'bodies'],
+    tier: 'extra',
+    short: '收支/天体',
+    title: '收支盘点与天体目录（balance / bodies）',
+    summary: '粮水能地财政军费多项一起看给最短板；以及天体目录、类型学、常数变化影响。',
+    aliases: ['收支', '盘点', '养得起', '经济', '天体', '火星'],
     body: BALANCE_BODY,
   },
   {
     key: 'derivation',
-    title: '推演栈（derivation 的 29 个子命令）',
-    summary: '八层推演栈、混沌拦截、结论翻转判定、逆推校准、敏感度、相图、白皮书、算力预算、幻想层、文明极限。',
+    tier: 'extra',
+    short: '推演栈 29 子命令',
+    title: '推演栈（derivation 子命令）',
+    summary: '八层推演栈、混沌拦截、结论翻转、逆推校准、敏感度、相图、白皮书、算力、幻想层、文明极限。',
     aliases: ['推演', 'derivation', '混沌', '白皮书', '相图', '敏感度', '算力'],
     body: DERIVATION_BODY,
   },
   {
     key: 'workspace',
+    tier: 'extra',
+    short: '工作区/变量',
     title: '数据管理（workspace）',
-    summary: '工作区（一个世界观一套常数/公式/地点/变量）、命名变量跨调用复用、显示精度固化。',
+    summary: '工作区（一个世界观一套常数/公式/地点/变量）、命名变量跨调用复用、精度固化。',
     aliases: ['工作区', '变量', 'workspace', '切换', '保存'],
     body: WORKSPACE_BODY,
   },
   {
     key: 'recipe',
+    tier: 'extra',
+    short: '锚点/账本/错误码',
     title: '常见配方（锚点/账本闭合/多步链/错误码）',
-    summary: '跨节组合用法：sanity 锚点让工具比对你自己给的判据、账本闭合配方、多步链、以及错误码对照表。',
-    aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '错误', '配方', 'recipe'],
+    summary: '跨节组合用法：sanity 锚点比对你自己给的判据、账本闭合、多步链、错误码对照。',
+    aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '错误', '配方'],
     body: RECIPE_BODY,
   },
 ]
@@ -506,32 +728,62 @@ function findTopic(topic: string): HelpTopic | undefined {
 }
 
 /**
- * 目录层：各节 key + 简介 + 别名。
+ * 目录层：**高频给简介，低频折叠成一行**。
  *
- * ## 为什么不列每节的内部细节
+ * ## 用户要求（2026-11-07）
  *
- * 目录的职责只有一个：让 AI 判断「要不要查这一节」。
- * 所以给 key（可操作）、title（人话）、summary（这节解决什么问题）、
- * aliases（AI 用直觉词也能查到）。不放具体参数 —— 那是正文的事。
+ * 「压缩目录本身的字符数，合并同类项减少目录本身的字数，
+ *   加减乘除高频其余低频可以折叠。」
+ *
+ * ## 旧版哪里浪费了
+ *
+ * 旧目录 1731 字符里，**12 行「也可写: 别名…」占了 432 字符**。
+ * 而那些别名本来就能通过 `findTopic` 的 alias 匹配命中
+ * （写「矩阵」照样查到 linalg）—— 列出来只是为了「让人看见」。
+ *
+ * 但 AI 不需要看见别名清单才能查到它。真正需要看见的是：
+ *   · 有哪些**能力**（key + 一句话用途）
+ *   · 哪些是高频（值得先查）
+ *
+ * ## 现在的结构
+ *
+ * ```
+ *   ▸ core 节（4 个）：key + 标题 + 一句简介   ← 每行值钱，保留
+ *   ▸ extra 节（8 个）：一行 key + 六字标签     ← 折叠，但仍在目录里
+ * ```
+ *
+ * 折叠掉的部分：别名清单、长标题、extra 节的长简介。
+ * 它们没有丢 —— 查那一节时正文里有，且别名匹配照旧生效。
  */
 function renderIndex(): string {
+  const core = HELP_TOPICS.filter((item) => item.tier === 'core')
+  const extra = HELP_TOPICS.filter((item) => item.tier === 'extra')
   const lines: string[] = [
     '══════ math_execute 能力目录（' + HELP_TOPICS.length + ' 节）══════',
-    '',
-    '用 helpTopic 取任一节的详细说明，不带则回到本目录。',
-    '（例：{operation:"help", helpTopic:"world"} → world 的完整字段表）',
+    'helpTopic:"键名" 取该节全文；也可用中文词（矩阵/星球/单位…）。',
     '',
   ]
-  for (const topic of HELP_TOPICS) {
-    lines.push('  ' + topic.key.padEnd(11) + topic.title)
+  for (const topic of core) {
+    lines.push('  ' + topic.key.padEnd(10) + topic.title)
     lines.push('    ' + topic.summary)
-    if (topic.aliases && topic.aliases.length > 0) {
-      lines.push('    也可写: ' + topic.aliases.slice(0, 5).join(' / '))
-    }
+  }
+  /**
+   * 低频节压成一行：`key` 后面跟六字标签。
+   * 用 ` / ` 分隔而不是每个占一行，是因为 8 行 = 8 次换行成本，
+   * 而它们本来只是「顺带知道一下」的存在。
+   */
+  lines.push('')
+  lines.push('  低频（同样可查，正文里有完整说明）:')
+  const folded = extra.map(function (item) {
+    const label = item.short ?? item.title.slice(0, 8)
+    return item.key + '=' + label
+  })
+  /** 每行约三到四项，便于目视扫读，也不至于把一行拉得过长。 */
+  for (let index = 0; index < folded.length; index += 3) {
+    lines.push('    ' + folded.slice(index, index + 3).join('  ·  '))
   }
   lines.push('')
-  lines.push('★ 最常用的一条：物理量带单位写（(10 hp/0.475) to kW、5 cm to inch），')
-  lines.push('  带单位时量纲错误会被当场拦下；裸数字无从判断 745.7 是瓦还是千瓦。')
+  lines.push('★ 物理量一律带单位写（(10 hp/0.475) to kW、5 cm to inch）：量纲错当场拦下。')
   return lines.join('\n')
 }
 

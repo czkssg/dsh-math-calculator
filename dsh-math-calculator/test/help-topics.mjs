@@ -35,10 +35,17 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
 {
   const index = await text({ operation: 'help' })
   /**
-   * 目录必须显著小于旧版全文（5900）。
-   * 上限 2500 是留了大余量的：只要它不再随节数线性膨胀到全文量级就合格。
+   * ## 目录预算收紧（用户 2026-11-07 要求）
+   *
+   * 用户原话：「压缩目录本身的字符数，合并同类项减少目录本身的字数，
+   * 加减乘除高频其余低频可以折叠。」
+   *
+   * 旧目录 1731 字符，其中 432 是「也可写: 别名…」清单——而那些别名
+   * 本来就能通过 alias 匹配命中，列出来只为「让人看见」，AI 并不需要。
+   *
+   * 现在折叠后目录约 700 字符。上限设 900 是为了防止将来又悄悄膨胀回去。
    */
-  assert('目录显著小于旧版全文', index.length <= 2500, index.length + ' 字符（旧版全文 5900）')
+  assert('目录压到 900 以内', index.length <= 900, index.length + ' 字符（旧版 1731）')
   assert('目录自称是目录', /目录/.test(index), '')
   assert('目录说明了两步查法', /helpTopic/.test(index), '')
 
@@ -48,16 +55,31 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
     '缺: ' + missing.map((t) => t.key).join(', '))
 
   /**
-   * 每节的简介必须**说清用途**，不能只写标题的同义词。
-   * 判据：至少 15 个字 ——「矩阵」「统计」这种两字简介等于没写。
+   * 简介的完整性与「折叠」是两件事，必须分开守：
+   *
+   *   · **每个 topic 都要有一句说清用途的 summary**（≥15 字）——
+   *     折叠只影响它出不出现在目录里，不影响它存在。查那一节时仍会读到。
+   *   · **高频（tier=core）节的 summary 必须出现在目录里** ——
+   *     它们才是「目录要让人发现」的那部分。
    */
   const thin = TOPICS.filter((t) => t.summary.trim().length < 15)
-  assert('每节简介都够具体（≥15 字）', thin.length === 0,
+  assert('每节都有一句够具体的简介（≥15 字）', thin.length === 0,
     thin.map((t) => t.key + ':' + t.summary.length).join(', '))
 
-  /** 简介要出现在目录里（否则目录只是一堆 key）。 */
-  const noSummary = TOPICS.filter((t) => !index.includes(t.summary.slice(0, 10)))
-  assert('目录里能看到简介', noSummary.length === 0, noSummary.map((t) => t.key).join(', '))
+  const coreTopics = TOPICS.filter((t) => t.tier === 'core')
+  assert('高频节均为 core 档', coreTopics.length >= 4, String(coreTopics.length))
+  const coreNoSummary = coreTopics.filter((t) => !index.includes(t.summary.slice(0, 10)))
+  assert('高频节的简介都出现在目录里', coreNoSummary.length === 0,
+    coreNoSummary.map((t) => t.key).join(', '))
+
+  /**
+   * 折叠节必须仍**可被识别**：目录里要有 key 与短标签，
+   * 否则「折叠」就变成了「藏起来」。
+   */
+  const extraTopics = TOPICS.filter((t) => t.tier === 'extra')
+  const extraBroken = extraTopics.filter((t) => !index.includes(t.key) || !t.short)
+  assert('折叠节仍有 key 与短标签', extraBroken.length === 0,
+    extraBroken.map((t) => t.key).join(', '))
 }
 
 console.log('-- 2. 单节：按需取用，且比全文小得多 --')
@@ -72,10 +94,13 @@ console.log('-- 2. 单节：按需取用，且比全文小得多 --')
   }
   const avg = Math.round(total / TOPICS.length)
   /**
-   * 这是改造的核心收益指标：平均查一节 vs 旧版全文。
-   * 实测旧版全文 5900，单节平均应在 1000 以内（约 1/6）。
+   * 单节成本上限放宽到 1400（旧 1200）。
+   *
+   * 理由：用户明确要求「字数可以多一些」。正文写得细，每节变长是对的——
+   * 关键在于**只在查那一节时才付**，而目录已经压到 700 出头。
+   * 真正的成本指标变成「目录 + 单节」，下面那条继续守。
    */
-  assert('单节平均成本远低于旧版全文', avg <= 1200, '平均 ' + avg + ' 字符 vs 全文 5900')
+  assert('单节平均不超过 1400', avg <= 1400, '平均 ' + avg + ' 字符')
   /** 目录 + 最常用一节，必须仍显著小于全文。 */
   const index = await text({ operation: 'help' })
   const evalBody = await text({ operation: 'help', helpTopic: 'evaluate' })
