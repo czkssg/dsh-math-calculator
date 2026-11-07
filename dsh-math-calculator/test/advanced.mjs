@@ -51,17 +51,23 @@ console.log('-- 2. 扩展函数在表达式里可用 --')
 
 console.log('-- 3. help 清单必须提到新能力 --')
 {
-  const help = String(run({ operation: 'help' }).result)
-  assert('提到 rank/nullspace/svd', help.includes('rank(') && help.includes('nullspace(') && help.includes('svd('))
-  assert('提到 factorize', help.includes('factorize('))
-  assert('提到 nsolve', help.includes('nsolve('))
-  assert('提到天空/恒星', help.includes('天空') && help.includes('恒星'))
-  assert('提到生命闸门', help.includes('生命闸门'))
-  assert('提到跨模块一致性', help.includes('一致性'))
+  /**
+   * help 现在是分节的：扩展函数与 world 在各自那一节里。
+   * 断言目的没变（新能力必须写在文档里），只是要去对应节找。
+   */
+  const helpExt = String(run({ operation: 'help', helpTopic: 'evaluate' }).result)
+  assert('提到 rank/nullspace/svd', helpExt.includes('rank(') && helpExt.includes('nullspace(') && helpExt.includes('svd('))
+  assert('提到 factorize', helpExt.includes('factorize('))
+  assert('提到 nsolve', helpExt.includes('nsolve('))
+  const helpWorld = String(run({ operation: 'help', helpTopic: 'world' }).result)
+  assert('提到天空/恒星', helpWorld.includes('天空') && helpWorld.includes('恒星'))
+  assert('提到生命闸门', helpWorld.includes('生命闸门'))
+  assert('提到跨模块一致性', helpWorld.includes('一致性'))
   // UI 已于 2026-10-25 全部移除。help 里不该再出现「侧栏」「图形化管理」这类指引，
   // 否则 AI 会告诉作者去点一个不存在的面板（真机实测踩到过）。
-  assert('help 不再提已删的侧栏入口', !help.includes('侧栏'), '')
-  assert('help 说明没有图形界面', /没有图形界面|无图形界面/.test(help), '')
+  const helpWs = String(run({ operation: 'help', helpTopic: 'workspace' }).result)
+  assert('help 不再提已删的侧栏入口', !helpWs.includes('侧栏'), '')
+  assert('help 说明没有图形界面', /没有图形界面|无图形界面/.test(helpWs), '')
 }
 
 console.log('-- 4. world 输出完整性 --')

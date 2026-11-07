@@ -217,6 +217,7 @@ import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
 import { WORLD_KEYS } from './world-params.js'
+import { opHelp, HELP_TOPICS } from './help.js'
 import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, explainUnitResult, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
@@ -2826,151 +2827,6 @@ function opFormulas(args: MathArgs): Outcome {
   return { result: lines.join('\n'), value: { query, matches: matches.map((m) => m.id) } }
 }
 
-/** 能力清单。 */
-
-/** 能力清单。 */
-function opHelp(): Outcome {
-  return {
-    result: [
-      '══════ math_execute 完整能力清单 ══════',
-      '',
-      '【求值与代数】',
-      '  evaluate      任意 mathjs 表达式；BigNumber 64 位精度',
-      /**
-       * 例子顺序是刻意的：**带单位的那条排第一**。
-       *
-       * 实测反馈（1107 报告 P0-1）：原来 `5 cm to inch` 排在第 4 个，
-       * 且没说「物理量请全部带单位」，于是使用者一律转成裸数字算，
-       * 而那正是四起千倍级事故的共同形式。
-       */
-      '                例：5 cm to inch、(10 hp/0.475) to kW、28000 BTU/lb to MJ/kg',
-      '                    10^20+5、factorial(50)、(1+2i)*(3-i)、sin(30 deg)',
-      '                物理量**一律带单位写**：量纲错误当场拦下（10 hp + 3 kg → unit_mismatch）',
-      '                裸数字无从判断 745.7 是瓦还是千瓦，差 1000 倍也可能宣告成功',
-      '                批量：给 expressions=["1/7","2^0.5","log(10)"] 一次算多条，',
-      '                      逐条独立报错；比多次调用省往返',
-      '  solve         解方程。多方程逗号分隔 = 方程组',
-      '                例：3x + 2y = 10, x - y = 1  /  x^2 - 5x + 6 = 0',
-      '  system        显式线性系统（matrix + vector）',
-      '  derivative/integral/simplify/expand/roots  符号求导・积分・化简・展开・求根',
-      '',
-      '【扩展函数】rank(A) nullspace(A) svd(A) factorize(n) nsolve("表达式",初值)',
-      '',
-      '【线性代数】',
-      '  matrix        矩阵乘法/求逆/行列式/转置/迹；只给 matrix 时输出完整画像',
-      '                （秩/行列式/迹/奇异值/零空间/逆）',
-      '  eigen         特征值与特征向量',
-      '',
-      '【统计与概率】',
-      '  stats         描述统计（均值/中位数/众数/方差/标准差/分位数/偏度/峰度）',
-      '  dist          概率分布：normal/binomial/poisson/exponential/chisquare/t/normalinv',
-      '  regression    线性与多项式回归（含 R²）',
-      '',
-      '【微分方程】',
-      '  ode           数值求解 ODE（RK4）：一阶方程组（SIR/捕食模型）、二阶方程自动降阶',
-      '                返回轨迹、终点值、极值、发散警告',
-      '',
-      '【公式库】',
-      '  formula       调用已收录的 ' + FORMULAS.length + ' 条自然科学公式',
-      '                例：formula="escape_velocity", overrides={M,r}',
-      '                任何参数可覆盖 —— 架空世界改造的关键',
-      '  formulas      检索：query="关键词"/"layer:derived"/"domain:物理"/"freq:high"/"symbol:m"',
-      '  formula-table 两级扩展：工作区临时公式 + 全局包；tableAction: global-list/add/remove',
-      '                字段与校验规则见 docs/formula-authoring.md',
-      '',
-      '【世界观推演】',
-      '  world         输入星球参数 → 体感画像：重力/昼夜/季节/纬度气候/地形上限 +',
-      '                天空配色/恒星结构与寿命/卫星系统/化学窗口/生命闸门/跨模块一致性检查',
-      '                【world 完整字段表】（全部可选，默认地球）',
-      '                  恒星：starMass(太阳质量)、starRadius(太阳半径)、starTemp(K,默认5778)',
-      '                  轨道：orbitAU(AU,默认1)、eccentricity(默认0.0167)',
-      '                  行星：planetMass(地球质量)、planetRadius(地球半径)、rotationHours(默认23.93)、',
-      '                        obliquityDeg(默认23.44)、albedo(默认0.306)',
-      '                  大气：pressure(Pa,默认101325)、molarMass(kg/mol,默认0.02896)、',
-      '                        gamma(默认1.4)、greenhouse(增温K,默认33)',
-      '                  地表：materialStrength(Pa,默认1.3e8花岗岩)、materialDensity(默认2700)',
-      '                  地形 terrain（附带）：kind=coastal/plain/plateau/mountain/valley/desert/',
-      '                        forest/tundra/island/lake；elevation(海拔m)、distanceToSea(km)、',
-      '                        latitudeDeg、annualPrecipMm、humidity(0-1)、windward(1迎风/-1背风)、',
-      '                        reliefHeight(m)、oceanCurrent=warm/cold/none、',
-      '                        surface=soil/sand/rock/ice/water/vegetation',
-      '  constants     改变物理常数，自动推导派生量并评估世界偏离度',
-      '                【可改的基础旋钮】c(光速) / G(引力常数) / h(普朗克) / kB(玻尔兹曼) /',
-      '                  e_charge(元电荷) / me(电子质量) / mp(质子质量) / NA(阿伏伽德罗) /',
-      '                  epsilon0(真空介电常数)',
-      '                【派生量，自动跟随，不能直接改】hbar / R / mu0 / kCoulomb / sigma /',
-      '                  bWien / alpha_fs / Ry / muB',
-      '                例：{c:1.5e8} → mu0/sigma/alpha_fs 等自动重算并评估偏离度',
-      '  quantities    看哪些物理量该跟着常数变、哪些不该（量纲分析 + 缩放指数）',
-      '  impact        改常数后跑全部公式并与现实对比，算每条偏差',
-      '  units         单位换算：把「三里」「两丈」「五百斤」换成标准单位',
-      '                不带单位参数 → 列出全部可用单位（含中文古制与天文单位）',
-      '                例：unitValue=30, unitFrom="里", unitTo="km" → 15 km',
-      '                自创单位用 customUnits 覆盖（如把「里」定成 576 m）',
-      '  【输出单位】先归到**常用档**，再按需叠 SI 前缀 k/M/G/T/P/E/Z/Y/R/Q：',
-      '    质量 t（→ kt/Mt/Gt/Tt…）｜ 长度 m/km（→ Mm/Gm/Tm…）',
-      '    时间 s/min/h/day/year ｜ 功率/能量 W/J（→ kW/MW、kJ/MJ…）｜ 压强 Pa',
-      '  例：1e12 g → 1 Mt（不是 1 Tg）；1e9 m → 1 Gm；1e12 W → 1 TW。',
-      '  整数一律完整输出（10^20+5 一位不少），批量显示另补千分位分组。',
-      '  derivation    推演栈：derivation 子命令（共 ' + DERIVATION_SUBCOMMANDS.length + ' 个，不给会列出全部）',
-      '    stack/cards/pipeline/checklist            推演栈与检查表',
-      '    dead/chaos/flip/observer                  死寂/混沌/结论翻转/观测者',
-      '    anchors/backSolve/sensitivity/phase/heatmap/graph/timeline/compare/diff',
-      '                                              逆推/敏感度(base+exponent)/相图/时间轴(from,To,Steps)',
-      '    archive/history/tables/whitepaper/trace/cost',
-      '                                              档案/白皮书/溯源/算力(costKind,costX,Y,Iterations,Combos)',
-      '    fantasy/civilization/dimensionless/inherit/units/impact',
-      '                                              幻想层/文明极限/无量纲/继承(inheritBase,Derived,Sync)',
-      '                入口：{operation:"derivation", derivation:"stack"}',
-      '  balance       收支盘点：粮/水/能/地/财政/军费/信息 多项一起看，给最短板',
-      '                例：balance={grain:{demand:2.7e6,supply:3.1e6,unit:"kg/年"}}',
-      '                回答「这个王国养不养得起二十万兵」这类问题（feasibility 只管单项上限）',
-      '  bodies        天体目录：太阳系 8 大行星 + 卫星 + 代表性系外行星 + 各亮度级恒星',
-      '                例：bodyName="mars" / bodyKind="moon" / 不带参数列全部',
-      '                bodyConstant="alpha_fs", bodyFactor=2 → 看改常数后哪些天体数据要重算',
-      '                （关键：行星质量/半径/轨道与 α 无关，绝不跟着改）',
-      '',
-      '【数据管理】',
-      '  workspace     工作区管理（一个世界观 = 一套常数表 + 公式表 + 地点 + 变量）',
-      '                action2: list/show/create/switch/save/set/add-terrain/delete/reset',
-      '                stats/cleanup 可查看存储与清理；不同工作区完全隔离',
-      '                命名变量：{action2:"set", workspaceVariables:{BTU_LB:1260000}} 存进去（默认不参与计算）',
-      '                  启用：{action2:"set", useWorkspaceVariables:true}  ← 必须走 action2:"set"',
-      '                        （在 evaluate 上传这个开关不生效，它会被忽略）',
-      '                  启用后 evaluate 可直接用变量名；本次 variables 参数优先于工作区值',
-      '                  改变量会让缓存失效（避免拿到改之前的数）',
-      '                注意：本插件无图形界面，全部经工具与 HTTP 路由操作',
-      '',
-      '【其他】',
-      '  help          本清单',
-      '  prompt-mode   调整系统提示注入档位（off/brief/full）',
-      '',
-      '【常用参数】expression / variables / operation / precision(有效位,默认64)',
-      '  overrides(公式参数) / constants / world / terrain',
-      '  expressions(批量,{label,expr}) / terse(只回表达式=结果) / variable(自变量)',
-      /**
-       * 实测反馈（1107 报告问题 10）：schema 只写了「批量求值，逐条独立报错」，
-       * 没写元素可以是对象，于是模型几乎必然尝试 `"标签=表达式"` 这种最直觉的写法，
-       * 然后撞上一个中文标识符语法错。
-       */
-      '    元素两种写法：字符串 "1/7"，或对象 {label:"煤砖含能", expr:"2 lb * 28000 BTU/lb to MJ"}',
-      '    ★ "标签=表达式" 这种写法**不支持**（= 左边是中文标识符，会报 syntax）',
-      '',
-      '【锚点 sanity】工具不知道这个数该多大，但你可以逐条声明判据：',
-      '  {label:"日产台数", expr:"1e8*25000", sanity:{max:1e10,note:"帝国总兵力"}}',
-      '  → ⚠ 超出上限 1e10（帝国总兵力）达 250 倍。键 max/min/expect/note，',
-      '  expect 是期望量级（expect:3 即 10³）。',
-      '  判据来自你，工具只比对不猜；量纲不管；不声明则零提示。',
-      '',
-      '【账本闭合】无独立 check 操作，一条 expressions 逐项列值即可：',
-      '  [{label:"A",expr:"650*3840"}, {label:"四项和",expr:"..."},',
-      '   {label:"与目标之差",expr:"...-4075000"}]  ← 差值 0 即闭合',
-      '  不做 PASS/FAIL：差 3 与差 3% 是两回事，压成布尔就糊了。',
-      '',
-      '【失败时】返回 ok=false + error.type/message/hint，按 hint 修正即可，不会崩溃。',
-    ].join('\n'),
-  }
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 // 主流程
@@ -3049,8 +2905,9 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'observerKind', 'graphDepths', 'timelineFrom', 'timelineTo', 'timelineSteps',
   'whitepaperMode', 'traceTarget', 'costKind', 'costX', 'costY',
   'costIterations', 'costCombos', 'costWithPipeline',
-  // 提示档位
+  // 提示档位与帮助分节
   'promptMode',
+  'helpTopic',
   // 公式表
   'tableAction', 'formulaId', 'newExpression', 'newParams', 'customFormula',
   // 自定义常数
@@ -3406,7 +3263,8 @@ export function runMathTool(rawArguments: unknown): MathResult {
     }
     switch (operation) {
       case 'help':
-        outcome = opHelp()
+        /** 分节帮助：给了 helpTopic 就回那一节，否则回目录。详见 `src/help.ts`。 */
+        outcome = opHelp(typeof args.helpTopic === 'string' ? args.helpTopic : undefined)
         break
       case 'derivative':
         outcome = opDerivative(input, variable, precision)
@@ -3986,7 +3844,7 @@ type KnownKeyUnion =
   | 'observerKind' | 'graphDepths' | 'timelineFrom' | 'timelineTo' | 'timelineSteps'
   | 'whitepaperMode' | 'traceTarget' | 'costKind' | 'costX' | 'costY'
   | 'costIterations' | 'costCombos' | 'costWithPipeline'
-  | 'promptMode'
+  | 'promptMode' | 'helpTopic'
   | 'tableAction' | 'formulaId' | 'newExpression' | 'newParams' | 'customFormula'
   | 'customAction' | 'customConstant' | 'customConstantName' | 'expectedDimension'
   | 'flipClaim' | 'flipEpsilon' | 'flipBase'
@@ -4128,14 +3986,11 @@ const PARAMETER_SPEC = {
   },
   bodyType: {
     type: 'string',
-    description:
-      'bodies：查天体类型学条目（中子星/热木星/戴森球等）。每类标证据等级与「物理锁死项」。',
+    description: 'bodies：查天体类型学（中子星/热木星/戴森球等），每类标证据等级与物理锁死项。',
   },
   bodyEvidence: {
     type: 'string',
-    description:
-      '按证据等级筛天体类型（operation=bodies）：observed（已观测）/ ' +
-      'theoretical（理论预言，物理必然但未直接观测）/ speculative（纯思辨）。',
+    description: 'bodies：按证据等级筛：observed（已观测）/ theoretical（理论预言）/ speculative（纯思辨）。',
   },
   matrix: {
     type: 'array',
@@ -4148,17 +4003,14 @@ const PARAMETER_SPEC = {
   precision: {
     type: 'integer',
     description:
-      '**计算精度**：BigNumber 有效数字位数，默认 64，范围 1-256。' +
-      '⚠️ 不要为了「输出好看」调低它——它决定计算的正确性：' +
-      '`(10^20+1)-(10^20)` 在 precision=20 时会得 0（应为 1）。' +
-      '只想让输出短一些，用 displayPrecision。',
+      '**计算精度**（BigNumber 有效位，默认 64，1-256）。⚠️ 调低会算错大数：' +
+      '`(10^20+1)-(10^20)` 在 precision=20 得 0。只想输出短些用 displayPrecision。',
   },
   displayPrecision: {
     type: 'integer',
     description:
-      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数，整数永远完整；0 = 只留整数。' +
-      '换档可传单次值，或用 workspace set displayPrecision=N 固化（那里的 0 = 清除）。' +
-      '别用 precision 达此目的。',
+      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数、整数永远完整，0 = 只留整数。' +
+      '可用 workspace set displayPrecision=N 固化（那里的 0 = 清除）。',
   },
   data: {
     type: 'array',
@@ -4194,9 +4046,7 @@ const PARAMETER_SPEC = {
     type: 'object',
     additionalProperties: true,
     description:
-      '覆盖公式里的任意参数 —— 这是架空世界改造的关键。' +
-      '例如把重力改成 1.5 倍地球：{"g": 14.71}；把光速改成 1e8：{"c": 100000000}。' +
-      '任何带默认值的参数都能这样覆盖。',
+      '覆盖公式任意参数 —— 架空世界改造的关键。例：重力 1.5 倍 {"g": 14.71}、光速 {"c": 1e8}。',
   },
   customExpression: {
     type: 'string',
@@ -4270,7 +4120,13 @@ const PARAMETER_SPEC = {
     // 旋钮清单移进 help：只有要改常数时才需要，不该每轮付费
     description:
       '要改的物理常数（operation=constants），只能改基础旋钮，派生量自动重算。' +
-      '例：{c:1.5e8}。可用旋钮清单见 help 的 constants 条目。',
+      '例：{c:1.5e8}。可用旋钮清单见 help 的 constants 节。',
+  },
+  helpTopic: {
+    type: 'string',
+    description:
+      'operation="help" 时要取哪一节，省略则返回目录。目录里每节都有简介，' +
+      '按需逐节取比一次读全文省得多（单节约 400 字符，全文 5900）。',
   },
 } as const
 

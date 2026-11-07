@@ -172,9 +172,21 @@ console.log('-- 7. help 输出完整 --')
 {
   const help = exec({ operation: 'help' })
   assert('help 可用', help.ok)
-  const expected = ['evaluate', 'solve', 'derivative', 'integral', 'ode', 'formula', 'world', 'constants', 'workspace']
-  const missing = expected.filter((op) => !help.result.includes(op))
-  assert('help 覆盖主要 operation', missing.length === 0, '未提到: ' + missing.join(', '))
+  /**
+   * 目录层的职责：让 AI 知道有哪些节可查。
+   * 所以断言是「目录里能找到这些节」而不是「目录正文提到每个 operation」。
+   */
+  const expected = ['evaluate', 'linalg', 'stats', 'ode', 'formula', 'units', 'world', 'constants', 'derivation', 'workspace']
+  const missing = expected.filter((op) => help.result.includes(op))
+  assert('目录覆盖主要节', missing.length === expected.length, '缺: ' + expected.filter(x => !help.result.includes(x)).join(', '))
+  /**
+   * 但「目录能找到」还不够 —— 每节简介必须说清用法，否则 AI 不会去查。
+   * 这里抽查 evaluate 节的正文确实含 solve/derivative/integral 这些子能力。
+   */
+  const evalTopic = exec({ operation: 'help', helpTopic: 'evaluate' })
+  assert('evaluate 节含 solve', evalTopic.result.includes('solve'), '')
+  assert('evaluate 节含 derivative', evalTopic.result.includes('derivative'), '')
+  assert('evaluate 节含 integral', evalTopic.result.includes('integral'), '')
 }
 
 rmSync(tempHome, { recursive: true, force: true })

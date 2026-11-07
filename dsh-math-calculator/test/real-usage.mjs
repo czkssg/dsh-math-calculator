@@ -159,11 +159,15 @@ console.log('-- 7. help 不能再让作者去找已删的界面 --')
 {
   const r = await call({ operation: 'help' })
   assert('help 可用', r.ok, '')
-  assert('help 不提「侧栏」', !r.text.includes('侧栏'), '')
-  assert('help 不提「图形化管理」', !r.text.includes('图形化管理'), '')
-  // 但要说清「没有界面」，否则 AI 会以为有
-  assert('help 说明没有图形界面', /没有图形界面|无图形界面/.test(r.text), '')
-  assert('help 覆盖 29 个 operation', r.text.includes('units') && r.text.includes('balance'), '')
+  assert('目录不提「侧栏」', !r.text.includes('侧栏'), '')
+  assert('目录不提「图形化管理」', !r.text.includes('图形化管理'), '')
+  assert('目录覆盖主要节', r.text.includes('units') && r.text.includes('balance'), '')
+  /**
+   * 「没有图形界面」这句在 workspace 节（那里才讲管理方式）。
+   * 目录层不重复它 —— 否则每轮都在为一句只在管理场景才用的话付费。
+   */
+  const ws = await call({ operation: 'help', helpTopic: 'workspace' })
+  assert('workspace 节说明没有图形界面', /没有图形界面|无图形界面/.test(ws.text), '')
 }
 
 console.log('-- 7b. 其它输出也不许承诺渲染界面 --')

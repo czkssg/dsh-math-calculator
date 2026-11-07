@@ -391,6 +391,13 @@ export interface MathArgs {
   costWithPipeline?: boolean
   /** 提示注入档位: off / brief / full（传了就切换并返回当前值）。 */
   promptMode?: string
+  /**
+   * operation=help 时要取哪一节。省略则返回目录。
+   *
+   * 分节是为了让「每次调用只付用到的那一节」—— 旧版是一整块 5900 字符全量摊平，
+   * 算一条 1/3 也要读 3039 字符的 world 字段表。详见 `src/help.ts`。
+   */
+  helpTopic?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */
   tableAction?: string
   /** 目标公式 id。 */

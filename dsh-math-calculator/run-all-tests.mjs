@@ -78,7 +78,7 @@ const SUITES = [
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
   { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
   { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
-  { file: 'awareness.mjs', expect: 62, label: '模型感知（提示注入）' },
+  { file: 'awareness.mjs', expect: 65, label: '模型感知（提示注入）' },
   { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
   { file: 'hook.mjs', expect: 25, label: 'agent/pre-step 钩子' },
   { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
@@ -173,6 +173,8 @@ const SUITES = [
   { file: 'report-1106b.mjs', expect: 45, label: '实测报告 1106b（中文量级词/容错/语法分类/可读性/说明注释）' },
   // 1107 报告：单条与批量的非有限判断一致、显式换算不被归位吞掉、to 报错分类、两套单位表打通
   { file: 'report-1107.mjs', expect: 63, label: '实测报告 1107（非有限一致/换算不被吞/to 报错分类/工程单位）' },
+  // 分节帮助：目录小、单节小、目录可发现、内容没因拆而丢
+  { file: 'help-topics.mjs', expect: 63, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
   // 多步计算的两条静默不变量：批量内按序可见 + 失败步骤的下游不能变「虚成功」。
   // 后者是本轮实测发现的真缺陷：d=b*2 曾静默算成「2 b（单位）」并显示为成功。
   { file: 'multistep.mjs', expect: 27, label: '多步计算（链式可见/失败不虚成功/单位顺序）' },
@@ -198,7 +200,7 @@ const SUITES = [
   { file: 'report-1106.mjs', expect: 64, label: '实测报告 1106（ok 契约/中文单位/units 精简/别名/锚点）' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
-  { file: 'slim-and-cache.mjs', expect: 61, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
+  { file: 'slim-and-cache.mjs', expect: 66, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
   // 三档分流替代单一阈值：simple 不提醒 / forced 提醒 / fuzzy 按阈值。
   // 关键：`2+2` 得分高但该心算，`20 个数字求和` 得分低但最该用工具——阈值把两者都判反了。
   { file: 'triage.mjs', expect: 50, label: '计算需求三档分流（心算/强制用工具）' },

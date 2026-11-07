@@ -158,11 +158,17 @@ console.log('-- 9. 新增单位可换算 --')
 
 console.log('-- 10. help 含 derivation 全部子命令与账本闭合配方 --')
 {
+  /**
+   * help 已改成分节：目录只给简介，子命令表在 derivation 节、配方在 recipe 节。
+   * 这里同时守两件事：内容没丢，以及**目录本身够小**（否则分节就白做了）。
+   */
   const h = String((await run({ operation: 'help' })).result || '')
-  assert('help 列出 derivation', /derivation/.test(h), '')
-  assert('help 含继承参数名', /inherit/i.test(h), '')
-  assert('help 含账本闭合配方', /账本闭合/.test(h), '')
-  assert('help 总长仍受控', h.length <= 6000, String(h.length))
+  assert('目录列出 derivation', /derivation/.test(h), '')
+  assert('目录尺寸受控（≤2500）', h.length <= 2500, String(h.length))
+  const deriv = String((await run({ operation: 'help', helpTopic: 'derivation' })).result || '')
+  assert('derivation 节含继承参数名', /inherit/i.test(deriv), '')
+  const recipe = String((await run({ operation: 'help', helpTopic: 'recipe' })).result || '')
+  assert('recipe 节含账本闭合配方', /账本闭合/.test(recipe), '')
 }
 
 rmSync(home, { recursive: true, force: true })

@@ -63,8 +63,9 @@ console.log('-- 1. 工具定义已瘦身（每轮成本）--')
 console.log('-- 2. 参数一个都没少（功能未缩水）--')
 {
   const props = Object.keys(tool.parameters.properties)
-  // 41 个原有 + expressions + terse + workspaceVariables + useWorkspaceVariables = 45
-  assert('参数仍有 45 个', props.length === 45, String(props.length))
+  // 41 个原有 + expressions + terse + workspaceVariables + useWorkspaceVariables
+  // + helpTopic（分节帮助，v2.3.0）= 46
+  assert('参数仍有 46 个', props.length === 46, String(props.length))
   // 关键参数必须都在
   for (const name of ['world', 'terrain', 'constants', 'balance', 'customUnits',
     'precision', 'displayPrecision', 'formula', 'overrides', 'bodyType']) {
@@ -76,21 +77,33 @@ console.log('-- 2. 参数一个都没少（功能未缩水）--')
 
 console.log('-- 3. 移走的说明必须在 help 里找得到 --')
 {
-  const help = String((await run({ operation: 'help' })).result || '')
-
-  // world 的星球参数
+  /**
+   * ## 从「查全文」改成「按节取」
+   *
+   * 旧断言拿 `operation:"help"` 的输出做全文搜索。但 help 现在返回**目录**
+   * （1731 字符，12 节简介），字段表在 `helpTopic:"world"` 那一节里。
+   *
+   * 断言的目的没变 —— 仍然是「从 schema 移走的说明必须能在 help 里找到」，
+   * 只是现在要去对应那一节找。
+   */
+  const world = String((await run({ operation: 'help', helpTopic: 'world' })).result || '')
   for (const key of ['starMass', 'starRadius', 'starTemp', 'orbitAU', 'eccentricity',
     'albedo', 'pressure', 'molarMass', 'greenhouse', 'materialStrength']) {
-    assert('help 含 world 字段 ' + key, help.includes(key), '')
+    assert('world 节含字段 ' + key, world.includes(key), '')
   }
-  // terrain 的地形参数
-  for (const key of ['kind=coastal', 'oceanCurrent', 'surface=soil', 'reliefHeight']) {
-    assert('help 含 terrain 字段 ' + key, help.includes(key), '')
+  // terrain 的地形参数（与 world 同节）
+  for (const key of ['kind', 'oceanCurrent', 'surface', 'reliefHeight']) {
+    assert('world 节含 terrain 字段 ' + key, world.includes(key), '')
   }
-  // constants 的旋钮
-  for (const key of ['c(光速)', 'G(引力常数)', 'eBohr', 'hbar', 'alpha_fs', 'epsilon0']) {
-    if (key === 'eBohr') continue
-    assert('help 含常数旋钮 ' + key, help.includes(key), '')
+  // constants 的旋钮（在 constants 节）
+  const constants = String((await run({ operation: 'help', helpTopic: 'constants' })).result || '')
+  for (const key of ['c(光速)', 'G(引力常数)', 'hbar', 'alpha_fs', 'epsilon0']) {
+    assert('constants 节含旋钮 ' + key, constants.includes(key), '')
+  }
+  /** 目录层必须能让人找到这些节（否则 AI 不知道去哪查）。 */
+  const index = String((await run({ operation: 'help' })).result || '')
+  for (const key of ['evaluate', 'world', 'constants', 'derivation', 'units']) {
+    assert('目录列出 ' + key + ' 节', index.includes(key), '')
   }
 }
 
