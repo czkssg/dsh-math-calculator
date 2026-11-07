@@ -27,6 +27,8 @@ import { GENERIC_FORMULAS } from './formula-library-generic.js'
 import { EM_OPTICAL_NUCLEAR_FORMULAS } from './formula-library-em.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
+import { findUnit, convert } from './units.js'
+import { parseParamValue, unitFromDescription } from './param-units.js'
 
 /**
  * 全部公式 = 主批次 + 扩展 + 感知层 + 故事 + 势力动力学 + 通用计算 + 普适经验式。
@@ -89,11 +91,14 @@ export type Overrides = Record<string, number | string | number[]>
 export class FormulaError extends Error {
   readonly type: string
   readonly details?: string[]
-  constructor(type: string, message: string, details?: string[]) {
+  /** 修复方向（给调用方看的下一步，与 CalcError 的 hint 同一语义）。 */
+  readonly hint?: string
+  constructor(type: string, message: string, details?: string[], hint?: string) {
     super(message)
     this.name = 'FormulaError'
     this.type = type
     this.details = details
+    this.hint = hint
   }
 }
 
@@ -112,12 +117,42 @@ function isArrayParam(desc: string): boolean {
   return desc.includes('数组') || desc.includes('array')
 }
 
+/** 参数描述里声明的单位（如 "位移 m" → m）。判据用单位表，不做正则硬猜。 */
+function declaredUnitOf(desc: string): string {
+  return unitFromDescription(desc, isKnownUnitName)
+}
+
+/** 单位名是否已知（避免 param-units 依赖 units.ts 造成循环）。 */
+function isKnownUnitName(name: string): boolean {
+  try {
+    return findUnit(name) !== undefined
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 供 param-units 用的换算适配器（对齐它的返回形态）。
+ *
+ * 踩过：`Conversion` 里的**结果字段叫 `result`**，不是 `value`。
+ * 第一版读 `conversion.value` 拿到 `undefined`，于是 `60 里` 被当成 60 m、
+ * `2 时辰` 当成 2 s —— 换算记录写了、数值却没换，算出来的数看着像正经结果。
+ * 这类「有记录无效果」错得最像对的。
+ */
+function convertForFormula(value: number, from: string, to: string):
+  { ok: boolean; value?: number; error?: string; hint?: string } {
+  const result = convert(value, from, to)
+  if (!result.ok) return { ok: false, error: result.error, hint: result.hint }
+  return { ok: true, value: result.conversion.result }
+}
 /**
  * 解析公式的参数：默认值 → 常量表 → 调用方覆盖。
  *
  * 优先级：调用方 overrides > 公式自带默认值。
  * 数组型参数（如熵的 p、HHI 的 s）允许传数组或数组表达式字符串，
  * 原样交给 mathjs 求值，不做数字转换。
+ *
+ * 带单位的值（`"10 km"`）会先校验量纲、换算到该参数声明的单位，再进来。
  */
 export function resolveParams(
   formula: FormulaDef,
@@ -129,10 +164,13 @@ export function resolveParams(
   missing: string[]
   /** 传了但公式里没有的参数名 —— 会被忽略，必须上报。 */
   unknownKeys: string[]
+  /** 做过单位换算的参数（如 10 km → 10000 m），要在结果里说明。 */
+  converted: Record<string, { from: string; to: string; original: number | null }>
 } {
   const values: Record<string, unknown> = {}
   const overridden: string[] = []
   const missing: string[] = []
+  const convertedParams: Record<string, { from: string; to: string; original: number | null }> = {}
   // 当前生效的世界常数（由 operation=constants 设定）
   const active = getActiveConstants()
 
@@ -168,11 +206,32 @@ export function resolveParams(
       if (arrayLike) {
         values[name] = raw
       } else {
-        const numeric = toNumber(raw)
-        if (numeric === undefined) {
-          throw new FormulaError('invalid_argument', `参数 "${name}" 不是有效数字: ${String(raw)}`)
+        /**
+         * ## 带单位的值：校验量纲并换算到该参数声明的单位
+         *
+         * 参数描述里本来就写着单位（`s → "位移 m"`），以前只用于显示。
+         * 现在让调用方可以带单位给值，工具负责校验与换算：
+         *
+         * ```
+         *   overrides:{s:"10 km", t:"1 h"}   → 自动换算到 SI，得 2.7778 m/s
+         *   overrides:{s:"10 kg", t:"1 s"}   → 量纲不符报错，而不是静默算出怪数
+         * ```
+         *
+         * 裸数字照旧原样接受 —— 不猜 `10` 是米还是公里。判据交给调用方。
+         */
+        const declared = declaredUnitOf(spec.desc)
+        const parsed = parseParamValue(raw, declared, convertForFormula)
+        if ('error' in parsed) {
+          throw new FormulaError('invalid_argument', `参数 "${name}"：${parsed.error}`, undefined, parsed.hint)
         }
-        values[name] = numeric
+        if (declared !== '' && parsed.givenUnit && parsed.givenUnit !== declared) {
+          convertedParams[name] = {
+            from: parsed.givenUnit,
+            to: declared,
+            original: toNumber(String(raw).replace(/\s*[^0-9.].*$/, '')) ?? null,
+          }
+        }
+        values[name] = parsed.value
       }
       overridden.push(name)
       continue
@@ -205,7 +264,7 @@ export function resolveParams(
     missing.push(name)
   }
 
-  return { values, overridden, missing, unknownKeys }
+  return { values, overridden, missing, unknownKeys, converted: convertedParams }
 }
 
 /**

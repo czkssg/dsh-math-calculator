@@ -216,6 +216,11 @@ import { opQuantities } from './ops/quantities-op.js'
 import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
+import { familiesOfUnits, makeConverter, traditionalNote } from './param-units.js'
+import { convert as convertUnitRaw } from './units.js'
+
+/** 单位换算适配器（供同体系折算用）。`convert` 的三层返回结构集中在这一处适配。 */
+const formulaConverter = makeConverter(convertUnitRaw)
 import { WORLD_KEYS } from './world-params.js'
 import { opHelp, HELP_TOPICS } from './help.js'
 import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, explainUnitResult, findBatchAnomalies } from './guards.js'
@@ -1061,11 +1066,39 @@ function buildScope(engine: any, variables: unknown): Record<string, any> {
       }
       scope[key] = engine.bignumber(String(raw))
     } else if (typeof raw === 'string') {
-      // 允许字符串形式的大数，例如 "1e100"
+      /**
+       * ## 字符串值：先按数解析，再按「带单位的量」解析
+       *
+       * 实测（本轮）：`variables: {V:'10 m/s', T:'1 s'}` 里的值**被整个丢弃**，
+       * 于是 `V*T` 里的 V、T 都不存在，mathjs 把单字母当单位符号相乘，
+       * 静默返回 `V T` —— 既不报错，也不是数。
+       *
+       * ```
+       *   variables:{V:'10 m/s', T:'1 s'}, expression:'V*T'
+       *   → "V T"（变量被跳过）   ← 应该是 10 m
+       * ```
+       *
+       * 为什么这很要紧：物理量本来就该带单位写（那是本项目一直在推的方向），
+       * 而带单位的值传进 variables 却完全失效，等于逼人回到裸数字的老路。
+       *
+       * 回退顺序是刻意的：纯数字优先，因为 `engine.bignumber` 对 `1e100` 这类
+       * 字符串要精确得多；只有它失败时才试单位，避免把纯数字误走单位路径。
+       */
+      const text = raw.trim()
       try {
-        scope[key] = engine.bignumber(raw.trim())
+        scope[key] = engine.bignumber(text)
       } catch {
-        skippedVariableKeys.push({ name: key, reason: '无法解析为数字' })
+        /** 回退：把整串当表达式求值（`10 m/s` 会得到 Unit 对象）。 */
+        try {
+          const unitValue = engine.evaluate(normalizeChineseUnits(normalizeSource(text)))
+          if (unitValue && (unitValue.isUnit || unitValue.isBigNumber || typeof unitValue === 'number')) {
+            scope[key] = unitValue
+          } else {
+            skippedVariableKeys.push({ name: key, reason: '无法解析为数字或带单位的量' })
+          }
+        } catch {
+          skippedVariableKeys.push({ name: key, reason: '无法解析为数字或带单位的量' })
+        }
       }
     } else if (typeof raw === 'boolean') {
       scope[key] = raw
@@ -2529,6 +2562,7 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
     overridden: string[]
     missing: string[]
     unknownKeys: string[]
+    converted: Record<string, { from: string; to: string; original: number | null }>
   }
   try {
     resolved = resolveParams(formula, overrides)
@@ -2617,6 +2651,76 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
    * 紧跟在结果后面（而不是压到输出末尾），因为这类问题会直接改变结论，
    * 读者必须第一眼就看到。
    */
+  if (Object.keys(resolved.converted).length > 0) {
+    const items = Object.entries(resolved.converted).map(function ([name, info]) {
+      const original = info.original === null ? info.from : String(info.original) + ' ' + info.from
+      return name + ': ' + original + ' → ' + info.to
+    })
+    parts.push('')
+    parts.push('【单位换算】' + items.join('；') + '（换算到参数声明的单位后代入公式）')
+  }
+  /**
+   * ## 同体系折算（用户 2026-11-07 要求）
+   *
+   * 「最好使用同一体系单位，把 60 km 折算成 里。」
+   *
+   * 输入用了里/时辰时，主结果仍是 SI（那是公式参数的口径，也是与其它计算对接的基础），
+   * 但补一行折算到传统体系的说法 —— 作者写正文时直接能用，不必自己再换一遍。
+   *
+   * ```
+   *   结果: 2.08333333 m/s
+   *   【同体系折算】约 30 里/时辰（你的输入用了 里、时辰）
+   * ```
+   */
+  {
+    /**
+     * 输入里的单位来源有两处，**都要看**：
+     *   · `resolved.converted` —— 做过换算的（`60 里` → `30000 m`）
+     *   · 调用方原文 —— 单位恰好等于声明单位时不会产生换算记录
+     *     （如参数声明 `m/s`、调用方就写 `10 m/s`），但那时也不算「传统单位」
+     *
+     * 踩过：第一版只看 `converted`，于是 `60 里` 能折出里、
+     * 而其它写法（如 `200 斤` 换算后）虽然 converted 里有、
+     * 但**没走这个分支**的形态就漏了。现在两处合并取单位名。
+     */
+    const seenUnits: string[] = []
+    for (const info of Object.values(resolved.converted)) {
+      if (!seenUnits.includes(info.from)) seenUnits.push(info.from)
+    }
+    /**
+     * ★ 变量名必须与外层 `raw`（公式结果）区分开。
+     *
+     * 踩过：第一版写成 `for (const [name, raw] of ...)`，于是**遮蔽了外层的
+     * `raw`（公式算出来的值）**，`formatValue(engine, raw, ...)` 拿到的是
+     * 调用方输入的字符串 `"60 里"` 而不是 `"2.08333333 m/s"` ——
+     * 折算函数收不到合法数值，静默返回 null。
+     *
+     * 这类 shadowing bug 编译不报错、测试不覆盖就很难发现。
+     */
+    for (const [, rawInput] of Object.entries(overrides)) {
+      if (typeof rawInput !== 'string') continue
+      const piece = rawInput.trim().match(/^[+-]?[0-9][0-9.]*(?:e[+-]?[0-9]+)?\s*(.+)$/i)
+      if (!piece) continue
+      const unitName = piece[1].trim()
+      if (unitName !== '' && !seenUnits.includes(unitName)) seenUnits.push(unitName)
+    }
+    const families = familiesOfUnits(seenUnits)
+    if (families.length > 0) {
+      /**
+       * ★ 单位要**自己拼上**。
+       *
+       * `formatValue` 对 `s / t` 这种纯数值表达式只给 `2.08333333` ——
+       * 单位 `m/s` 是在渲染那一行时用 `formula.unit` 拼上去的，不在值里。
+       * 踩过：直接把 `formatValue` 的结果喂给折算函数，它拿不到单位、
+       * 静默返回 null，于是折算行永远不出现。
+       */
+      const siText = formula.unit
+        ? formatValue(engine, raw, precision, currentDisplayPrecision()) + ' ' + formula.unit
+        : formatValue(engine, raw, precision, currentDisplayPrecision())
+      const note = traditionalNote(siText, families, formulaConverter)
+      if (note !== null) parts.push(note)
+    }
+  }
   if (unknownOverrideKeys.length > 0) {
     parts.push('')
     parts.push(
