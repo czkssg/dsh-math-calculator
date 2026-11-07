@@ -828,6 +828,28 @@ export function normalizeSource(input: string): string {
      */
     .replace(/²/g, '^2')
     .replace(/³/g, '^3')
+    /**
+     * ## `min` 撞函数名：单位位置的 min 换成 minute
+     *
+     * mathjs 里 `min` 是**函数**（求最小值），同时我们的单位表里 `min` 是**分钟**。
+     * 于是 `1 L/min` 会被解析成「L 除以 min 函数」，报一个看不懂的错：
+     *
+     * ```
+     *   1 L/min
+     *   → internal: Unexpected type of argument in function divide
+     *      (expected: number or Complex or ... actual: function)
+     * ```
+     *
+     * 这个错**完全指向不到修复方向** —— 用户只觉得「工具不支持复合单位」，
+     * 而真实原因只是一个名字冲突（1108 报告的问题 5 与问题 6 是同一个根）。
+     *
+     * 判据只认**单位位置**的 min，避免改坏真正的函数调用：
+     *   · 紧跟 `/` 之后（`L/min`、`mol/min`）
+     *   · 紧跟数字之后（`5 min`）
+     *   · 紧跟 `to` 之后（`1 s to min`）
+     * 而 `min(3,5)` 这类调用（后面紧跟左括号）**不动**。
+     */
+    .replace(/(^|[\/(\s])min(?=\s*(?:to\b|[)*\-+^/;]|$))/g, '$1minute')
 }
 
 /**

@@ -182,13 +182,61 @@ export function formatValue(
        * 的纯数字路径（那里有完整的小数位与丢精度判据），单位原样拼回。
        * 这样既不重复实现截断逻辑，也不会改变整数完整这条不变量。
        */
+      /**
+       * ★ 拆不开时必须**带着单位**退回，不能落进下面的纯数字分支。
+       *
+       * 踩过：`1 L/minute to m^3/s` 的格式化结果是 `1.6666e-5 m^3 / s`，
+       * 而 `trimUnitNumber` 的正则只认「数字 + 一个单位符号」，遇复合单位返回空串。
+       * 于是控制流落进末尾的通用分支，那里对 Unit 值走 `numeric === null`，
+       * 输出只剩 `1.666666666666666666666666666666666666666`——**单位没了**。
+       *
+       * 那个数字本身是对的（1.67e-5），但少了 `m^3 / s` 之后，读者会把它当成
+       * 「1.67」，而真实值是 0.0000167，差 10 万倍。
+       *
+       * 所以这里拆不开就直接用 mathjs 的原格式（单位一定在里面）。
+       */
       try {
-        const rendered = trimUnitNumber(
-          math, math.format(value, { notation: 'auto', precision }), precision, displayPrecision,
-        )
+        /**
+         * ## 复合单位必须**自己拼单位**：mathjs 的 toString 会丢它
+         *
+         * 实测 `1 L/minute to m^3/s`（一个 `to` 到复合单位的值）：
+         *
+         * ```
+         *   math.format(v, {notation:'auto', precision})  → "1.6666666666666…"  ← 没有单位
+         *   String(v)                                     → "1.6666666666666…"  ← 也没有
+         *   v.formatUnits()                               → "m^3 / s"           ← 单位在这里
+         *   v.value                                       → 0.000016666…        ← 基准值
+         * ```
+         *
+         * 根因：`Unit#toString` 会先 `simplify()`，而简化对 `m^3 / s` 这类
+         * **多单位复合**处理不了，它就只输出数值那一半。
+         * 单单位（`kW`、`cm`）不受影响，所以只有复合单位丢 ——
+         * 这也解释了为什么 `1 MJ/day to kW` 一直是对的。
+         *
+         * 后果很严重：`1.67e-5` 少了 `m^3 / s` 之后看着像「1.67」，
+         * 而真实值是 0.0000167，**差 10 万倍**，数字本身没有任何异常。
+         *
+         * 所以这里显式拆成「数值 + formatUnits()」两段自己拼。
+         */
+        const unitText = typeof value.formatUnits === 'function' ? value.formatUnits() : ''
+        const numericText = math.format(value, { notation: 'auto', precision })
+        /**
+         * ★ 只在**确实缺单位**时才补。
+         *
+         * `math.format` 的行为不一致：单单位（`kW`、`cm`）本来就会带上，
+         * 多单位复合（`m^3 / s`）才丢。一律追加会得到 `200 cm cm`。
+         *
+         * 判据用「结果里有没有出现单位的首个符号」—— 够简单，且不会误判：
+         * 数值部分只有数字、指数、符号，不会包含单位名。
+         */
+        const unitHead = unitText.split(/[\s/]/)[0]
+        const hasUnit = unitHead !== '' && numericText.includes(unitHead)
+        const raw = unitText === '' || hasUnit ? numericText : numericText + ' ' + unitText
+        const rendered = trimUnitNumber(math, raw, precision, displayPrecision)
         if (rendered !== '') return rendered
+        return raw
       } catch {
-        /* 拆不开就退回原格式 */
+        /* 拼不出来：交给下面的兜底 */
       }
     }
   }

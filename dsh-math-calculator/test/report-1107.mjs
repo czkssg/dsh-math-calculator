@@ -158,11 +158,30 @@ console.log('-- 3. to 的报错必须分类到可行动的提示（报告 P1-4�
    * `internal` 在本项目的约定里意思是**工具自己坏了** —— 会让人去重试。
    * 而真实原因全是写法问题，四类各有各的修法。
    */
+  /**
+   * ## `min` 撞函数名：从「报错」升级成「可用」（1108 报告问题 5/6 同源）
+   *
+   * 上一轮的做法是**报错并指引写法**：
+   *
+   * ```
+   *   1 s to min → unit_name_conflict：目标单位名与内置函数同名，写 minute
+   * ```
+   *
+   * 但更好的做法是**直接认出来** —— 在单位位置上，`min` 显然是指分钟，
+   * 不可能是指 min() 函数。于是 1108 那轮在 `normalizeSource` 里做了归一化：
+   *
+   * ```
+   *   1 s to min → 1 minute      ✓ 能算
+   *   min(3,5)   → 3             ✓ 函数照旧
+   * ```
+   *
+   * 所以这条断言从「必须报专属类型」改成「必须能算出来」，
+   * 而「函数不被改坏」由 report-1108 那套守。
+   */
   const conflict = await run({ operation: 'evaluate', expression: '1 s to min' })
-  assert('min 撞函数名时给出专属类型', conflict.error && conflict.error.type === 'unit_name_conflict',
-    String(conflict.error && conflict.error.type))
-  assert('并给出替代写法', /minute|hour|second|units/.test(String(conflict.error && conflict.error.hint)),
-    String(conflict.error && conflict.error.hint).slice(0, 70))
+  assert('min 在单位位置可用（不再报错）', conflict.ok === true, String(conflict.error && conflict.error.type))
+  assert('结果按分钟算（0.0167 min）', /0\.0166666.*minute/.test(String(conflict.result)),
+    String(conflict.result).slice(0, 40))
 
   const notQuantity = await run({ operation: 'evaluate', expression: '(1/0) to kW' })
   assert('裸数字换算给出 not_a_quantity', notQuantity.error && notQuantity.error.type === 'not_a_quantity',

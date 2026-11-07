@@ -216,8 +216,8 @@ import { opQuantities } from './ops/quantities-op.js'
 import { opFormulaTable } from './ops/formula-table-op.js'
 import { opFeasibility } from './ops/feasibility-op.js'
 import { opDerivation, DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
-import { familiesOfUnits, makeConverter, traditionalNote } from './param-units.js'
-import { convert as convertUnitRaw } from './units.js'
+import { familiesOfUnits, makeConverter, traditionalNote, unitFromDescription } from './param-units.js'
+import { convert as convertUnitRaw, convert, findUnit } from './units.js'
 
 /** 单位换算适配器（供同体系折算用）。`convert` 的三层返回结构集中在这一处适配。 */
 const formulaConverter = makeConverter(convertUnitRaw)
@@ -633,6 +633,29 @@ function translateError(raw: unknown, fallbackType = 'internal', source = ''): C
   if (toError) return toError
 
   if (/Undefined symbol/i.test(text)) {
+    /**
+     * ## `Math.xxx` 是最常见的一种 —— 单独给提示（1108 报告问题 5）
+     *
+     * ```
+     *   Math.min(3,5)  → 错误[unknown_symbol]: Undefined symbol Math
+     *   min(3,5)       → 3
+     * ```
+     *
+     * 报错只说「Math 未定义」，读者不知道要做的只是**去掉前缀**。
+     * 而 JS 习惯让人本能地写 `Math.min`/`Math.abs`——
+     * 所以这一条其实命中率很高，值得单独说一句。
+     */
+    const mathMatch = text.match(/Undefined symbol\s+(Math)\b/i)
+    if (mathMatch) {
+      const fnMatch = /Math\.([A-Za-z_][A-Za-z0-9_]*)/.exec(source)
+      const fn = fnMatch ? fnMatch[1] : ''
+      return new CalcError(
+        'unknown_symbol',
+        '本工具不支持 Math 命名空间（' + (fn ? 'Math.' + fn : 'Math.xxx') + '）',
+        (fn ? '去掉 Math. 前缀写成 ' + fn + '(...)' : '去掉 Math. 前缀即可') +
+          '；可用 operation="help", helpTopic="evaluate" 看支持的函数清单。',
+      )
+    }
     return new CalcError('unknown_symbol', text, '先定义变量，或通过 variables 参数传入，例如 {"m": 500}。')
   }
   /**
@@ -1190,7 +1213,8 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   try {
     raw = node.evaluate(scope)
   } catch (error) {
-    throw translateError(error)
+    /** 把 source 传进去 —— 有些报错提示要用原表达式（如识别 `Math.xxx` 的前缀）。 */
+    throw translateError(error, 'internal', expression)
   }
 
   const value = unwrapResult(raw)
@@ -2531,6 +2555,127 @@ function findInCurrentWorkspace(query: string, limit: number) {
   return scoreFormulas(currentFormulas(), query, limit)
 }
 
+/**
+ * 把一批 overrides 按 `unitFrom` → `unitTo` 换算。
+ *
+ * ## 只换算「数值型」参数
+ *
+ * · 用户已经是「数值 + 单位」字符串（`"324375 L"`）→ **原样放行**，
+ *   那是他自己指定的单位，比统一的 unitFrom 更精确。
+ * · 数组型参数（份额、概率）→ 放行，它们多半无量纲。
+ * · 纯数字 → 换算。
+ *
+ * ## 目标单位怎么定
+ *
+ * 调用方给了 `unitTo` 就用它；没给就用**该参数自己声明的单位**
+ * （`V → "空间体积 m³"` 里的 `m³`）。
+ * 这样 `unitFrom:"L"` 一个参数就够了，不必再写 unitTo。
+ *
+ * ## 换算失败怎么办
+ *
+ * **不静默按原数字算** —— 那正是报告批评的那种错。
+ * 直接抛错并说明是哪个参数、两边是什么量纲。
+ *
+ * @param overrides - 调用方给的原始覆盖值
+ * @param formula - 目标公式（用来取每个参数的声明单位）
+ * @param unitFrom - 用户声明的输入单位
+ * @param unitTo - 目标单位（空串表示用参数自己声明的）
+ * @returns 换算后的 overrides
+ */
+function convertOverrides(
+  overrides: Record<string, number | string>,
+  formula: FormulaDef,
+  unitFrom: string,
+  unitTo: string,
+): Record<string, number | string> {
+  const output: Record<string, number | string> = {}
+  for (const [name, raw] of Object.entries(overrides)) {
+    /** 数组与「带单位的字符串」原样放行（见上面的注释）。 */
+    if (Array.isArray(raw)) {
+      output[name] = raw as unknown as string
+      continue
+    }
+    if (typeof raw === 'string' && /[a-zA-Z\u4e00-\u9fff]/.test(raw.trim())) {
+      output[name] = raw
+      continue
+    }
+    const numeric = typeof raw === 'number' ? raw : Number(String(raw).trim())
+    if (!Number.isFinite(numeric)) {
+      output[name] = raw
+      continue
+    }
+    const declared = formaliveUnitOf(formula, name)
+    /**
+     * ## ★ 无量纲参数一律不参与换算
+     *
+     * 这是本轮最隐蔽的一个 bug，实测复现如下：
+     *
+     * ```
+     *   {formula:"oxygen_depletion", overrides:{V:324375, n:20}, unitFrom:"L"}
+     *   → 11353.125 min     ✓ 正确（V 换了、n 不动）
+     *
+     *   {同上，但加 unitTo:"m³"}
+     *   → 11353125 min      ✗ 差 1000 倍
+     * ```
+     *
+     * 根因：`n` 是「人数」，参数描述里**没有单位**（`declared === ''`），
+     * 但我写的兜底 `unitTo !== '' ? unitTo : declared` 在 declared 为空时
+     * 让 unitTo 生效了 —— 于是 `n: 20` 被当成 `20 L` 换算成 `0.02 m³`。
+     *
+     * 结果虚高正是**人数被缩小了 1000 倍**，而输出看着完全正常。
+     *
+     * 判据：**只有声明了单位的参数才谈得上「从哪个单位换成哪个」**。
+     * 无量纲的（人数、个数、份额、概率）跳过 —— 它们本来就没有单位可换。
+     */
+    if (declared === '') {
+      output[name] = numeric
+      continue
+    }
+    /**
+     * ## 上标写法要归一化
+     *
+     * 公式描述里写的是 `m³`（上标），而用户习惯写 `m^3`。
+     * 单位表用的是 `m³`，所以 `unitTo:"m^3"` 会报「不认识单位」。
+     * 在入口统一成上标形式，两种写法都能过。
+     */
+    const target = unitTo !== '' ? normalizeUnitSpelling(unitTo) : declared
+    if (target === '' || target === unitFrom) {
+      output[name] = numeric
+      continue
+    }
+    const result = convert(numeric, unitFrom, target)
+    if (!result.ok) {
+      throw new CalcError(
+        'unit_mismatch',
+        `参数 "${name}" 无法从 ${unitFrom} 换算到 ${target}：${result.error}`,
+        (result.hint ?? '') + ' 不给 unitFrom 就按该参数声明的单位直接代入。',
+      )
+    }
+    output[name] = result.conversion.result
+  }
+  return output
+}
+
+
+/**
+ * 单位写法归一：`m^3` → `m³`、`m^2` → `m²`（与单位表一致）。
+ *
+ * 为什么需要：公式描述里是上标（`空间体积 m³`），而用户与 AI 常写 `m^3`。
+ * `units.ts` 的 `findUnit` 只认上标形式，所以这里做一次映射 ——
+ * 不做的话 `unitTo:"m^3"` 会被判成「不认识单位」，而那是**写法差异，不是能力缺失**。
+ */
+function normalizeUnitSpelling(name: string): string {
+  return name
+    .trim()
+    .replace(/\^3$/, '³')
+    .replace(/\^2$/, '²')
+}
+/** 取某参数在公式描述里声明的单位（`"空间体积 m³"` → `m³`）。 */
+function formaliveUnitOf(formula: FormulaDef, name: string): string {
+  const spec = formula.params?.[name]
+  if (!spec || typeof spec.desc !== 'string') return ''
+  return unitFromDescription(spec.desc, (name) => { try { return findUnit(name) !== undefined } catch { return false } })
+}
 function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
   const query = (args.formula ?? args.expression ?? '').trim()
   if (query === '') {
@@ -2555,7 +2700,35 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
     )
   }
 
-  const overrides = (args.overrides ?? {}) as Record<string, number | string>
+  /**
+   * ## `unitFrom` / `unitTo`：**让它们真的参与计算**（1108 报告 P0-1）
+   *
+   * 报告实测：
+   *
+   * ```
+   *   {formula:"oxygen_depletion", overrides:{V:324375}, unitFrom:"L"}
+   *   → 11353125 min        ← 与不传 unitFrom 完全相同
+   * ```
+   *
+   * 根因：`opFormula` 里**根本没有读取这两个参数** —— 它们只是被 schema 声明了，
+   * 于是「传了却不生效」这种最难发现的情况。
+   *
+   * 而公式参数的声明单位是 m³，用户按 L 给数字，结果就虚高 **1000 倍**，
+   * 且数字看起来完全正常（11353125 分钟 ≈ 21 年，荒谬但不像错）。
+   *
+   * ## 语义定成「把所有数值参数按 unitFrom → unitTo 换算」
+   *
+   * 公式内部一律 SI，所以 `unitFrom` 是「我给的数是什么单位」，
+   * `unitTo` 是「目标单位」（默认就用参数自己声明的那个）。
+   * 逐个参数换算而不是只换一个，因为一次调用里参数通常同单位。
+   *
+   * 注意：这与「参数直接带单位」（`overrides:{V:"324375 L"}`）是两条等价路径，
+   * 后者更精确（可逐参数给不同单位），前者更省事（一次给全）。两条都保留。
+   */
+  const unitFrom = typeof args.unitFrom === 'string' ? args.unitFrom.trim() : ''
+  const unitTo = typeof args.unitTo === 'string' ? args.unitTo.trim() : ''
+  const rawOverrides = (args.overrides ?? {}) as Record<string, number | string>
+  const overrides = unitFrom === '' ? rawOverrides : convertOverrides(rawOverrides, formula, unitFrom, unitTo)
 
   let resolved: {
     values: Record<string, unknown>
@@ -2758,6 +2931,62 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
     if (empiricalNote.advice) parts.push('  建议：' + empiricalNote.advice)
     if (empiricalNote.needsFrom && empiricalNote.needsFrom.length > 0) {
       parts.push('  需要这些量：' + empiricalNote.needsFrom.join('、'))
+    }
+  }
+
+  /**
+   * ## `terse`：只回一行（1108 报告问题 9）
+   *
+   * 报告实测：`formula:"kleiber", terse:true` 返回的仍是完整结构化输出，
+   * `terse` 对 formula 完全无效。
+   *
+   * ## 但风险提示不能省
+   *
+   * 与 evaluate 的 terse 同一条约定：**省掉的是标题与参数表，不是风险**。
+   * 所以 terse 下仍保留三样：结果、覆盖了哪些参数（一句话）、
+   * 以及「这个数的单位是什么」。
+   *
+   * 尤其经验公式的 **【适用域】绝不能砍** —— 那是「这个系数只在 1g 世界成立」
+   * 的唯一提示，砍掉就等于让人在非地球世界里照抄。所以 terse 时会用半行压缩它。
+   */
+  if (args.terse === true) {
+    const answer = formatValue(engine, raw, precision, currentDisplayPrecision())
+    const unitSuffix = formula.unit ? ' ' + formula.unit : ''
+    const terseLines: string[] = [formula.id + ' = ' + answer + unitSuffix]
+    /** 覆盖提示：一句话，不列明细。 */
+    if (resolved.overridden.length > 0) {
+      terseLines.push('  (覆盖: ' + resolved.overridden.join(',') + ')')
+    }
+    /** 单位换算与同体系折算：与完整版同一判据，只是不加标题行。 */
+    if (Object.keys(resolved.converted).length > 0) {
+      const items = Object.entries(resolved.converted).map(function ([name, info]) {
+        const original = info.original === null ? info.from : String(info.original) + ' ' + info.from
+        return name + ': ' + original + '→' + info.to
+      })
+      terseLines.push('  (换算: ' + items.join('; ') + ')')
+    }
+    /** 经验式适用域：压成一行，但绝不省略。 */
+    const terseEmpirical = empiricalNoteOf(formula.id)
+    if (terseEmpirical) {
+      terseLines.push('  【适用域：' + KIND_LABEL[terseEmpirical.kind] + '】' +
+        (terseEmpirical.breaksWhen ? ' 何时失效: ' + terseEmpirical.breaksWhen : ''))
+    }
+    /** 未知参数名必须保留 —— 它会直接改变结论。 */
+    if (unknownOverrideKeys.length > 0) {
+      terseLines.push('  ⚠ 未生效的 key: ' + unknownOverrideKeys.join('、') +
+        '（该公式参数是 ' + Object.keys(formula.params).join('、') + '）')
+    }
+    return {
+      result: terseLines.join('\n'),
+      value: {
+        formula: formula.id,
+        category: formula.cat,
+        expression,
+        params: toJsonValue(resolved.values),
+        overridden: resolved.overridden,
+        answer: toJsonValue(raw),
+        unit: formula.unit ?? null,
+      },
     }
   }
 
@@ -3099,6 +3328,26 @@ export function runMathTool(rawArguments: unknown): MathResult {
           '（如 terrain 的字段要放在 terrain 对象里）。',
       )
     }
+    /**
+     * ## 记下「调用方是否显式调低了计算精度」（1108 报告问题 4）
+     *
+     * 报告实测：
+     *
+     * ```
+     *   precision=8:   10^20 + 1  → 100000000000000000000   ← 加 1 被吃掉
+     *   precision=16:  (10^20+12345678901234567890)-(10^20) → 12345678901234600000
+     * ```
+     *
+     * 文档已警告「不要为好看调低 precision」，但**没有任何反馈**——
+     * 数字看着正常，只是末几位不是真的。
+     *
+     * 这里只记录「是否低于默认档」，具体要不要提示由结果判断：
+     * 若结果的位数超过 precision，说明确实被截了，才提示。
+     */
+    const requestedPrecision =
+      typeof args.precision === 'number' && Number.isFinite(args.precision)
+        ? Math.round(args.precision)
+        : undefined
     precision = clampPrecision(args.precision)
     /**
      * 显示精度：本次显式给 > 工作区固化值 > 沿用计算精度。
@@ -3486,6 +3735,12 @@ export function runMathTool(rawArguments: unknown): MathResult {
      */
     const hintNote = maybeDisplayPrecisionHint(result.result)
     if (hintNote) result.notice = hintNote
+
+    /** 调低计算精度导致结果被截 —— 那种「看起来正常、末位是假的」情况。 */
+    const truncNote = checkPrecisionTruncation(requestedPrecision, precision, result.result)
+    if (truncNote) {
+      result.notice = result.notice ? result.notice + '\n' + truncNote : truncNote
+    }
 
     /**
      * 三角函数按弧度算时补一句说明。
@@ -4252,6 +4507,57 @@ const PARAMETER_SPEC = {
  */
 let ctxRef: any = null
 
+
+/**
+ * 调用方显式调低计算精度时，检查结果是否**因此被截**。
+ *
+ * ## 为什么要提示（1108 报告问题 4）
+ *
+ * ```
+ *   precision=8:   10^20 + 1   → 100000000000000000000   ← 加 1 被吃掉
+ *   precision=16:  (10^20+大数)-(10^20) → 12345678901234600000  ← 末位失真
+ * ```
+ *
+ * 文档已经写了「不要为好看调低 precision」，但**说了不等于看见了**：
+ * 这两个结果看起来都是正常的大整数，没有任何迹象表明末几位是假的。
+ *
+ * ## 判据
+ *
+ * 只有两件事同时成立才提示：
+ *   1. 调用方**显式**给了低于默认（64）的 precision；
+ *   2. 结果的**整数位数超过** precision —— 那说明确实丢了低位。
+ *
+ * 第 2 条是关键：`precision:8` 算 `1+1` 不该被念；
+ * 只有数字真的长到装不下时才提示。
+ *
+ * @param requested - 调用方显式给的 precision（未给则 undefined）
+ * @param effective - 实际生效的 precision
+ * @param text - 已格式化的结果文本
+ * @returns 提示文本；不需要时返回空串
+ */
+function checkPrecisionTruncation(
+  requested: number | undefined,
+  effective: number,
+  text: string,
+): string {
+  /**
+   * 判据：调用方显式给的精度**低于默认 64** 才算「调低了」，
+   * 然后看结果是否真的装不下。
+   *
+   * 踩过：第一版写 `requested >= effective` 就跳过 —— 而两者本来相等
+   * （effective 就是 clamp 过的 requested），于是这条永远不触发。
+   */
+  if (requested === undefined || requested >= DEFAULT_PRECISION) return ''
+  /** 只看纯数字结果：带单位的另有提示通道。 */
+  const numeric = text.trim().match(/^-?([0-9]+)(?:\.([0-9]+))?$/)
+  if (!numeric) return ''
+  const integerDigits = numeric[1].replace(/^0+(?=.)/, '').length
+  if (integerDigits <= effective) return ''
+  return '本次结果有 ' + integerDigits + ' 位有效数字，而 precision=' + effective +
+    ' 只能精确表示 ' + effective + ' 位——末 ' + (integerDigits - effective) +
+    ' 位可能已失真。需要精确值时请用 precision:64（默认），' +
+    '只想让输出短些请用 displayPrecision。'
+}
 /**
  * 数学计算工具（`math_execute`）。
  *
