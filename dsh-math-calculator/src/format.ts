@@ -106,6 +106,7 @@ export function isIntegerLike(value: any): boolean {
  * @param value - 待格式化的值
  * @param precision - 计算精度（BigNumber 有效位数）
  * @param displayPrecision - **小数点后保留几位**；省略则输出完整精度
+ * @param respectExplicitUnit - 调用方是否在表达式里**显式写了目标单位**（`.to('cm')`）
  * @returns 显示串
  */
 export function formatValue(
@@ -113,6 +114,7 @@ export function formatValue(
   value: any,
   precision: number,
   displayPrecision?: number,
+  respectExplicitUnit = false,
 ): string {
   if (value === undefined) return 'undefined'
   if (value === null) return 'null'
@@ -140,9 +142,55 @@ export function formatValue(
    * 只调**质量**这一个量纲：它是唯一实测出过问题的场景，
    * 而长度/时间/功率的 SI 前缀（km / s / kW）本来就是常用写法，动它们反而添乱。
    */
+  /**
+   * ## 调用方写了目标单位时，**不许归位**
+   *
+   * 实测（本轮 1107 报告核查时发现，是本项目最难发现的一类回归）：
+   *
+   * ```
+   *   2 m to cm    → mathjs 算出 200 cm → 工具输出 "2 m"     ← 换算被撤回了
+   *   1 t to kg    → mathjs 算出 1000 kg → 工具输出 "1 t"
+   *   2.5 m to mm  → mathjs 算出 2500 mm → 工具输出 "2.5 m"
+   * ```
+   *
+   * 根因：归位逻辑不看用户的意图，只看 `unit.value`（基准单位数值），
+   * 于是把**显式换算的目标**按阶梯重新挑了一遍 —— 恰好挑回用户出发的那个单位。
+   * 数字看着合理（`2 m` 就是个合法的长度），所以不会有人怀疑。
+   *
+   * 判据很简单：归位是为了「没人指定时挑一个人会说的档」，
+   * **一旦指定了，就轮不到工具替他挑**。
+   */
   if (value && value.isUnit) {
-    const normalized = normalizeUnitPrefix(value)
-    if (normalized !== '') return normalized
+    if (!respectExplicitUnit) {
+      const normalized = normalizeUnitPrefix(value)
+      if (normalized !== '') return normalized
+    } else {
+      /**
+       * ## 显式换算时，小数位也必须按 displayPrecision 收
+       *
+       * 实测（本轮）：`5 cm to inch` 在修好归位之后吐出了整整 21 位小数 ——
+       *
+       * ```
+       *   1.96850393700787401575 inch
+       * ```
+       *
+       * 根因在**归位路径之外**：归位走的是 `formatScalar`（只给 6 位），
+       * 掩盖了「Unit 值根本不经过 displayPrecision」这件事。
+       * 一旦跳开归位，这个既有缺陷就露出来了。
+       *
+       * 处理方式：拆成「数字 + 单位」两段，数字那段递归回本函数
+       * 的纯数字路径（那里有完整的小数位与丢精度判据），单位原样拼回。
+       * 这样既不重复实现截断逻辑，也不会改变整数完整这条不变量。
+       */
+      try {
+        const rendered = trimUnitNumber(
+          math, math.format(value, { notation: 'auto', precision }), precision, displayPrecision,
+        )
+        if (rendered !== '') return rendered
+      } catch {
+        /* 拆不开就退回原格式 */
+      }
+    }
   }
 
   try {
@@ -358,6 +406,74 @@ export function unwrapResult(value: any): any {
   return value
 }
 
+/**
+ * 判断一个 mathjs 原始返回值里是否含非有限数（Infinity / -Infinity / NaN）。
+ *
+ * ## 为什么不能用序列化后的文本判断
+ *
+ * 既有实现 `containsNonFinite` 只认**恰好等于** `"Infinity"` 的字符串。
+ * 而带单位的结果序列化成 `"Infinity g"` —— 于是：
+ *
+ * ```
+ *   (1/0)*2 kg   →  ok=true，result "Infinity g"      ← 漏检
+ *   2 kg         →  ok=true，result "2 kg"            ← 正常
+ * ```
+ *
+ * 同一件事在裸数字上拦得住、在带单位值上拦不住，是**判据挑错了层**：
+ * 文本层只能看见「长得像」，值层才知道「是不是」。
+ *
+ * ## Unit 的非有限数藏在 `value` 里
+ *
+ * ```
+ *   (1/0)*2 kg  →  Unit { value: BigNumber(Infinity), units: [g] }
+ *   (2/0) kg to g →  Unit { value: BigNumber(Infinity) }
+ * ```
+ *
+ * 而正则读文本时那个 `g` 会把判定带偏。所以逐层下钻到真正的数字。
+ *
+ * @param value - mathjs 的原始返回值（不是 toJsonValue 之后的）
+ * @returns 含非有限数时为 true
+ */
+export function isNonFiniteValue(value: any, depth = 0): boolean {
+  if (value === null || value === undefined || depth > 8) return false
+  if (typeof value === 'number') return !Number.isFinite(value)
+  if (typeof value === 'bigint') return false
+  if (typeof value !== 'object') return false
+  if (value.isBigNumber) {
+    /**
+     * BigNumber 自己带 `isFinite()`，用它最准。
+     *
+     * 退回 `Number(value)` 会踩坑：`1e400` 是**合法的有限大数**，
+     * 但转成双精度就成了 Infinity —— 那会把「大」误判成「错」。
+     */
+    try {
+      if (typeof value.isFinite === 'function') return !value.isFinite()
+      const text = String(value)
+      return text === 'Infinity' || text === '-Infinity' || text === 'NaN'
+    } catch {
+      return false
+    }
+  }
+  if (value.isUnit) return isNonFiniteValue(value.value, depth + 1)
+  /** 复数：实部虚部都要有限。`sqrt(-1)` 是 `0 + 1i`，两者都有限，放行。 */
+  if (value.isComplex) {
+    return isNonFiniteValue(value.re, depth + 1) || isNonFiniteValue(value.im, depth + 1)
+  }
+  if (Array.isArray(value)) return value.some((item) => isNonFiniteValue(item, depth + 1))
+  /** Matrix 走 toArray，别递归到它的内部字段。 */
+  if (value.isMatrix && typeof value.toArray === 'function') {
+    try {
+      return isNonFiniteValue(value.toArray(), depth + 1)
+    } catch {
+      return false
+    }
+  }
+  if (value.isResultSet && Array.isArray(value.entries)) {
+    return value.entries.some((item: any) => isNonFiniteValue(item, depth + 1))
+  }
+  if (value.isFraction) return false
+  return false
+}
 /** 递归判断一个 JSON 值里是否含非有限数字。 */
 export function containsNonFinite(value: JsonValue | undefined): boolean {
   if (value === undefined) return false
@@ -612,6 +728,50 @@ const SI_STEP_PREFIXES = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y', 'R', 'Q']
  */
 const STEP_PREFIXABLE = new Set(['t', 'm', 's', 'W', 'J', 'Pa', 'g', 'kg'])
 
+/**
+ * 把「数值 + 单位」的文本拆开，数字那段按 displayPrecision 重新渲染。
+ *
+ * ## 为什么需要它
+ *
+ * formatValue 对 isUnit 有两个分支：
+ *   · 归位（normalizeUnitPrefix）→ 走 formatScalar，**只给 6 位**
+ *   · 不归位（显式换算）→ 原来直接 math.format，**吐 64 位**
+ *
+ * 后者是长久存在的缺陷，只是被前者掩盖了：2 m to cm 曾经被改写成 2 m
+ * 走归位路径，于是没人发现 5 cm to inch 会给出 21 位小数。
+ *
+ * 修好归位之后它立刻暴露，所以在这里补上：数字递归回本函数
+ * 的纯数字分支（小数位、科学计数法、丢精度判据全都在那儿），单位原样拼回。
+ *
+ * ## 拆不开就返回空串
+ *
+ * 复合单位（kg / s^2）、带括号的、含 Infinity 的，一律交给调用方回退到
+ * 原格式 —— 那些位置重排数字有风险，而收益为负（本来就不长）。
+ *
+ * @param math - mathjs 实例
+ * @param text - mathjs 已经格式化好的「数字 单位」
+ * @param precision - 计算精度
+ * @param displayPrecision - 小数位；undefined 表示按完整精度
+ * @returns 重新渲染的文本；拆不开时返回空串
+ */
+function trimUnitNumber(
+  math: any,
+  text: string,
+  precision: number,
+  displayPrecision: number | undefined,
+): string {
+  if (displayPrecision === undefined || !Number.isFinite(displayPrecision)) return ''
+  /** 只认「数字 + 一个单位符号」：数字可带符号、小数点、指数。 */
+  const match = text.match(/^(-?[0-9][0-9.]*(?:[eE][+-]?[0-9]+)?)\s+([A-Za-z\u00b5]+)$/)
+  if (!match) return ''
+  const digits = match[1]
+  const unitPart = match[2]
+  /** 太短的数没必要重排（2 m 就两个字符）。 */
+  if (digits.length < 6) return ''
+  const numericText = formatValue(math, math.bignumber(digits), precision, displayPrecision)
+  if (numericText === '' || numericText === 'undefined') return ''
+  return numericText + ' ' + unitPart
+}
 /**
  * 数值 → 可读文本：大数用科学计数法，其余保留有限位。
  *

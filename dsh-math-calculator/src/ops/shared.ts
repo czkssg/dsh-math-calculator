@@ -474,6 +474,129 @@ export class CalcError extends Error {
  */
 import { factorizeInt, makeNsolve, nullspaceOf, rankOf, singularValuesOf } from '../numeric.js'
 
+// ────────────────────────────────────────────────────────────────────────────
+// 把 units 的单位表注入 evaluate 引擎
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 两套单位表长期没打通：`operation:"units"` 认 462 条，`evaluate` 只认 mathjs 自带的那批。
+ *
+ * ## 实测的落差（1107 报告问题 7）
+ *
+ *```
+ *   1 mph to m/s        units=OK   evaluate=Undefined symbol mph
+ *   1 kn  to m/s        units=OK   evaluate=Undefined symbol kn
+ *   1 rpm to Hz         units=OK   evaluate=Undefined symbol rpm
+ *   1 inHg to Pa        units=OK   evaluate=Undefined symbol inHg
+ *   1 cal to J          units=OK   evaluate=Undefined symbol cal
+ *```
+ *
+ * 报告作者为此手填系数（`10*745.7` 而不是 `10 hp`），而**手填系数正是他那
+ * 四起千倍级事故的共同源头**。换句话说：这张表不通，就是在逼人回到出错的老路。
+ *
+ * ## 为什么现在是安全的
+ *
+ * 早先刻意保留了 `createUnit` 的缺口，理由是「表达式求值不许往引擎注入定义」。
+ * 那个顾虑仍然成立，做法是**在构建期注入、注入完再删掉方法**：
+ *
+ *   · 注入发生在 `buildMath` 里，由我们的代码调用，不经过用户表达式
+ *   · 注入完成后照旧 `delete instance.createUnit`，用户表达式里仍然拿不到它
+ *
+ * 所以安全边界**一点没动**，只是把「我们自己能定义单位」这件事用上了。
+ *
+ * ## 三条必须遵守的取舍
+ *
+ * 1. **不覆盖既有单位**。已认识的（`m`/`kg`/`hp`/`psi`…）一律跳过 ——
+ *    mathjs 自己的定义比我们的 `factor` 更精确，改它只会制造回归。
+ * 2. **不收单字母单位**。`c`（光速）与 `G`（万有引力常数）在 units-data 里是常数，
+ *    进了单位表就会把变量 `c`/`G` 吃掉 —— 正是 `guardBareUnitSymbols` 一直防的事。
+ * 3. **不覆盖函数名**。`min`/`max`/`sum` 这类若被注册成单位，
+ *    `1 s to min` 会从「可诊断的报错」变成「静默取错单位」。
+ *
+ * 成本实测：构建一次 40ms（另有 plain 引擎 1ms）。引擎按精度缓存，
+ * 单次调用只付一次，换来 174 个单位可直接写进表达式。
+ *
+ * @param instance - 刚创建好、尚未删除 createUnit 的 mathjs 实例
+ * @returns 实际注入的单位名数量（供测试断言用）
+ */
+function injectUnitTable(instance: any): number {
+  if (!instance || typeof instance.createUnit !== 'function') return 0
+  /**
+   * units-data 的基准单位写法与 mathjs 略有出入：`m²`/`m³` 上标、`Ω` 希腊字母。
+   * 直接拿去做 definition 会被解析器拒（`Unexpected "²"`），所以映射一次。
+   */
+  const baseOf = (base: string): string => {
+    if (base === 'm²') return 'm^2'
+    if (base === 'm³') return 'm^3'
+    if (base === 'Ω') return 'ohm'
+    return base
+  }
+  /** mathjs 是否已经认识这个名字（单位、常量或函数都算）。 */
+  const known = (name: string): boolean => {
+    try {
+      const value = instance.evaluate(name)
+      return Boolean(value && (value.isUnit || typeof value === 'function' || value === true))
+    } catch {
+      return false
+    }
+  }
+  let added = 0
+  for (const unit of ALL_UNITS) {
+    const base = baseOf(BASE_UNIT[unit.dimension] ?? '')
+    if (base === '') continue
+    for (const rawName of [unit.name, ...(unit.aliases ?? [])]) {
+      const name = String(rawName ?? '')
+      /** 只收纯字母：上标、希腊字母、中文都进不了 mathjs 的单位命名空间。 */
+      if (name === '' || /[^A-Za-z]/.test(name)) continue
+      /** 取舍 2：单字母一律不收（会在变量名域里引起冲突）。 */
+      if (name.length === 1) continue
+      /** 取舍 1：已认识的一律不动。 */
+      if (known(name)) continue
+      /** 别把基准单位名定义成它自己。 */
+      if (name === base) continue
+      /** 取舍 3：函数名不能被单位覆盖。 */
+      try {
+        const asFunction = instance.evaluate(name + '(1)')
+        if (typeof asFunction !== 'undefined') continue
+      } catch {
+        /* 不是函数才往下走 */
+      }
+      /**
+       * ## 注入会顺带改写 mathjs 的「显示基准」，这里必须重置回来
+       *
+       * 这条是踩出来的，代价很具体：注入 `katha`（定义 `66.89 m^2`）之后，
+       *
+       * ```
+       *   1 m^2  →  0.0149499177754522 katha    ← 面积被改写成了卡塔
+       *   1 m^3  →  1086.95 gantang            ← 体积被改写成了甘唐
+       * ```
+       *
+       * 根因在 mathjs 的显示层：`Unit.toString()` 会调 `simplify()`，
+       * 而 `simplify()` 从 `currentUnitSystem` 里挑**第一个**同维度的单位。
+       * `createUnit` 会把新单位登记进 `currentUnitSystem`，于是刚注册的
+       * 冷门单位（卡塔、甘唐）就顶掉了 `m^2`／`m^3`。
+       *
+       * 这个坑最阴的地方：注入的用例全绿（`1 katha to m^2` 算得对），
+       * 坏的是**别的**老用例（`5 亩 + 100 m²`、`1 m^2`）。单测新增断言看不见，
+       * 只有跑全量回归才会暴露。
+       *
+       * ## 为什么重置成 `si` 而不是 `auto`
+       *
+       * 实测两者的输出**原本完全一致**（`1 m^2` 都是 `1 m^2`），
+       * 而 `si` 是只读的固定表，注入改不动它；`auto` 是可写的那个。
+       * 重置成 `si` 之后，注入的单位照样能用（`1 mph to m/s` 仍是 0.44704），
+       * 只是显示基准不再被它们干扰。
+       */
+      try {
+        instance.createUnit(name, { definition: String(unit.factor) + ' ' + base })
+        added += 1
+      } catch {
+        /* 个别名字 mathjs 拒收（如已有同义前缀），跳过即可 */
+      }
+    }
+  }
+  return added
+}
 /**
  * 创建一个 mathjs 实例。
  *
@@ -485,6 +608,9 @@ import { factorizeInt, makeNsolve, nullspaceOf, rankOf, singularValuesOf } from 
  * 安全：删除 import / createUnit，防止表达式注入任意 JS 或改写单位表。
  * **不能**删 typed/parse/evaluate —— derivative/simplify 依赖它们。
  * 自定义函数（rank/nsolve…）在删除 import **之前**注册，顺序不能反。
+ *
+ * 单位注入（`injectUnitTable`）同理：也在删除 createUnit **之前**做，
+ * 注入完方法即被删除，所以表达式求值仍然拿不到它。
  */
 export function buildMath(numberMode: 'BigNumber' | 'number' | 'Fraction', precision: number): any {
   const instance: any = create(all as any, {
@@ -509,6 +635,42 @@ export function buildMath(numberMode: 'BigNumber' | 'number' | 'Fraction', preci
     })
   } catch {
     /* 注册失败不影响核心运算 */
+  }
+
+  /**
+   * 把 units 的单位表注入进来 —— **必须在删除 createUnit 之前**。
+   *
+   * 注入完照旧删掉方法，所以表达式求值仍然无法注入定义。
+   * 三条取舍（不覆盖既有、不收单字母、不覆盖函数名）见 `injectUnitTable`。
+   */
+  try {
+    injectUnitTable(instance)
+  } catch {
+    /* 注入失败退化为 mathjs 自带单位，不影响核心运算 */
+  }
+
+  /**
+   * ## 重置显示基准（必须紧跟在注入之后）
+   *
+   * `createUnit` 会把新单位登记进全局的 `currentUnitSystem`，而
+   * `Unit.toString()` 的 `simplify()` 从那里挑**第一个**同维度单位 ——
+   * 于是刚注册的冷门单位（卡塔 66.89 m²、甘唐）顶掉了 `m^2`／`m^3`：
+   *
+   * ```
+   *   1 m^2  →  0.0149499177754522 katha
+   *   1 m^3  →  1086.95 gantang
+   * ```
+   *
+   * 重置成 `si` 而不是 `auto`：两者输出**原本完全一致**，
+   * 而 `si` 是只读固定表、注入改不动它。注入的单位照样能用。
+   *
+   * 注意 `currentUnitSystem` 在 mathjs 里是**模块级全局**，
+   * 所以每个实例都必须重置一次；否则先构建的实例会污染后构建的。
+   */
+  try {
+    if (typeof instance.Unit?.setUnitSystem === 'function') instance.Unit.setUnitSystem('si')
+  } catch {
+    /* 重置失败就退回 auto —— 显示可能被新单位干扰，但计算不受影响 */
   }
 
   for (const key of ['import', 'createUnit']) {

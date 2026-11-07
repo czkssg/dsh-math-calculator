@@ -40,6 +40,7 @@ import {
   containsNonFinite,
   formatValue,
   isIntegerLike,
+  isNonFiniteValue,
   toFiniteNumber,
   toJsonValue,
   unwrapResult,
@@ -553,6 +554,66 @@ function explainSyntax(source: string, engineText: string): string {
     (position > 0 ? '（引擎报错位置：第 ' + position + ' 个字符「' + snippet + '」）' : '')
 }
 
+/**
+ * 把 mathjs `Unexpected type of argument in function to` 这类内部报错
+ * 翻译成调用方能行动的说法。
+ *
+ * ## 为什么它必须单独处理
+ *
+ * 实测（1107 报告问题 6）：
+ *
+ * ```
+ *   (0.907 kg / (10 hp * 0.475)) to min
+ *   → 错误[internal]: Unexpected type of argument in function to
+ *      (expected: Unit or string or ... actual: function, index: 1)
+ * ```
+ *
+ * `internal` 在本项目的约定里意思是**工具自己坏了** —— 会让人去重试，
+ * 而真实原因有四种，全部是写法问题：
+ *
+ * ```
+ *   ① 目标单位名撞上内置函数   1 s to min    → actual: function
+ *      （min/max/mean/sum/abs/round… 在 mathjs 里是函数，不是单位）
+ *   ② 值根本不是单位           0.5 to kW     → actual: Unit | identifier
+ *      （`to` 只能把**带单位的量**换算，裸数字没有单位可换）
+ *   ③ 值算了半天不是有限数     (1/0) to kW
+ *   ④ 目标单位拼错             2 m to cmm
+ * ```
+ *
+ * 四类的修复方向完全不同，所以不能笼统说「检查写法」。
+ *
+ * @param message - mathjs 的原始消息
+ * @returns 翻译后的错误；认不出时返回 null（交给上层兜底）
+ */
+function translateToError(message: string): CalcError | null {
+  if (!/in function to\b/i.test(message)) return null
+  /** ① 目标单位名是内置函数：消息里 `actual: function` 就是这个信号。 */
+  if (/actual: function/i.test(message)) {
+    const known = ['min','max','mean','median','mode','sum','prod','std','variance','abs','sqrt','exp','log','floor','ceil','round','sign','norm','size','index','count','map','filter']
+    return new CalcError(
+      'unit_name_conflict',
+      '目标单位名与内置函数同名，mathjs 把它当函数而不是单位',
+      '常见撞名: ' + known.slice(0, 10).join(' / ') + ' …' +
+        '。时间单位写全称（minute / hour / second），或改用 operation="units"' +
+        '（units 的单位表与函数命名空间互不干扰）。',
+    )
+  }
+  /** ② 值不是单位：`actual: Unit | identifier` 说明左边根本没解析成带单位的量。 */
+  if (/actual: Unit \| identifier/i.test(message)) {
+    return new CalcError(
+      'not_a_quantity',
+      'to 只能给「带单位的量」换算，左边这个值不带单位',
+      '要么写成带单位的形态（1 hp、2 kg），要么先去算出一个带单位的结果；' +
+        '纯数字换单位请用 operation="units"（给 unitValue/unitFrom/unitTo）。',
+    )
+  }
+  /** ③ 剩下的是「左边算出来不是有限数量」，最典型是除以零。（按 4 类） */
+  return new CalcError(
+    'not_a_quantity',
+    'to 的目标单位没被识别，或左边的值不构成可换算的量',
+    '检查目标单位拼写（cm / cm^3 / MJ/kg）；若左边算式含除法，先确认它没除以零。',
+  )
+}
 function translateError(raw: unknown, fallbackType = 'internal', source = ''): CalcError {
   if (raw instanceof CalcError) return raw
   if (raw instanceof SymbolicError) {
@@ -560,6 +621,10 @@ function translateError(raw: unknown, fallbackType = 'internal', source = ''): C
   }
   const message = raw instanceof Error ? raw.message : String(raw ?? '未知错误')
   const text = message.trim() || '未知错误'
+
+  /** `to` 的四种写法错误优先翻译 —— 它原本一律落进 `internal`。 */
+  const toError = translateToError(text)
+  if (toError) return toError
 
   if (/Undefined symbol/i.test(text)) {
     return new CalcError('unknown_symbol', text, '先定义变量，或通过 variables 参数传入，例如 {"m": 500}。')
@@ -796,6 +861,61 @@ function guardAst(node: any): void {
       throw new CalcError('invalid_argument', '不允许非有限数值字面量')
     }
   })
+}
+
+/**
+ * 判断表达式里有没有**显式要求的目标单位**。
+ *
+ * mathjs 里三种写法都表示「换成这个单位」：
+ *
+ * ```
+ *   5 cm to inch            OperatorNode(op=to)
+ *   to(5 cm, inch)          FunctionNode(fn=to)
+ *   (10 hp/0.475).to('kW')  FunctionNode(fn=AccessorNode(property=to))
+ * ```
+ *
+ * ## 为什么需要这个判断
+ *
+ * 输出层的单位归位（`normalizeUnitPrefix`）会在「没人指定单位」时挑一个顺口的档。
+ * 但调用方一旦写了 `.to(...)`，选择权就该归他 —— 否则会出现
+ * `2 m to cm` 被改成 `2 m` 这种**把用户的换算悄悄撤回**的回归。
+ * 数字仍然合法（`2 m` 是个正经长度），所以这类错误不会被怀疑。
+ *
+ * @param node - 已解析的 AST；解析失败时调用方本来就走不到这里
+ * @returns 有显式目标单位时为 true
+ */
+function usesExplicitUnitConversion(node: any): boolean {
+  let found = false
+  if (!node || typeof node !== 'object') return false
+  const visit = (current: any, depth: number): void => {
+    if (found || !current || typeof current !== 'object' || depth > 64) return
+    if (current.type === 'OperatorNode' && String(current.op ?? '') === 'to') {
+      found = true
+      return
+    }
+    if (current.type === 'FunctionNode') {
+      if (String(current.fn?.name ?? '') === 'to') {
+        found = true
+        return
+      }
+      /** `.to('kW')` 的 fn 是 AccessorNode，属性名挂在 index 上。 */
+      const indexNode = current.fn?.index
+      const property = typeof indexNode?.value === 'string' ? indexNode.value : indexNode?.name
+      if (typeof property === 'string' && property.replace(/^["']|["']$/g, '') === 'to') {
+        found = true
+        return
+      }
+    }
+    for (const key of ['args', 'items']) {
+      const list = current[key]
+      if (Array.isArray(list)) for (const child of list) visit(child, depth + 1)
+    }
+    for (const key of ['content', 'object', 'index', 'value']) {
+      if (current[key]) visit(current[key], depth + 1)
+    }
+  }
+  visit(node, 0)
+  return found
 }
 
 function guardComplexity(node: any): void {
@@ -1040,7 +1160,42 @@ function opEvaluate(engine: any, expression: string, scope: Record<string, any>,
   }
 
   const value = unwrapResult(raw)
-  const text = formatValue(engine, value, precision, currentDisplayPrecision())
+  /**
+   * ## 非有限值必须在**这里**拦，不能指望顶层
+   *
+   * 顶层的 `containsNonFinite(result.value)` 拿到的是**序列化后**的值：
+   * 带单位的结果被压成字符串 `"Infinity g"`，而那个判据只认恰好 `"Infinity"`。
+   * 于是：
+   *
+   * ```
+   *   1/0          →  错误[non_finite]      ✓ 拦住
+   *   (1/0)*2 kg   →  ok=true, "Infinity g"  ✗ 放过
+   * ```
+   *
+   * 而后者更危险：它看起来**像个带单位的正经结果**（`Infinity g` 读起来
+   * 像「无穷克」，不像「算错了」），而且会顺着链式推演传下去。
+   *
+   * 所以判在原始对象上 —— `isNonFiniteValue` 会下钻到 `Unit.value`。
+   * 注意 `1e400`、`2^1024` 这类**有限的极大数**不能误判：
+   * 它们转成双精度才溢出，而 BigNumber 自己知道自己是有限的。
+   */
+  if (isNonFiniteValue(value)) {
+    const shown = String(raw)
+    throw new CalcError(
+      'non_finite',
+      `计算结果非有限（${shown}）`,
+      '常见于除以零、tan(π/2)、log(0)。若要符号形式可改用 operation="simplify"。',
+    )
+  }
+  /**
+   * 表达式里写了目标单位（`.to('cm')`、`5 cm to inch`）时，**不归位**。
+   *
+   * 归位的职责是「调用方没指定时挑一个顺口的档」；指定了就不该被改写。
+   * 详见 `formatValue` 的 `respectExplicitUnit` 参数说明 —— 那里记着
+   * `2 m to cm` 被改回 `2 m` 这条回归。
+   */
+  const explicitUnit = usesExplicitUnitConversion(node)
+  const text = formatValue(engine, value, precision, currentDisplayPrecision(), explicitUnit)
   return {
     /**
      * 带 SI 质量前缀时补一句中文量级参照（如 `87.78 Tg（= 8778 万吨）`）。
@@ -1200,7 +1355,30 @@ function opEvaluateBatch(
       // 拦「未定义单字母被当单位」的静默错误（实测反馈 P0-2）
       guardBareUnitSymbols(node, scope)
       const value = unwrapResult(node.evaluate(scope))
-      const text = formatValue(engine, value, precision, currentDisplayPrecision())
+      /**
+       * ## 批量也必须拦非有限值
+       *
+       * 实测（1107 报告问题 2、3）：单条 `1/0` 报错，批量却宣告
+       * 「算式全部求值成功（4 条）」，其中就包括 `1/0` 与 `log(0)`。
+       *
+       * 这构成一条危险的对称破坏：**同一个式子，换个调用方式就从「错」
+       * 变成「对」**。而批量恰恰是 AI 最常用的形态（一次算 8—14 条），
+       * 于是最该拦住的地方恰好不拦。
+       *
+       * 归入 `failed` 而不是单独一类，理由是与单条 `non_finite` 对齐：
+       * 调用方的分流逻辑只需要认 `ok/partial/failed` 三个字段。
+       */
+      if (isNonFiniteValue(value)) {
+        throw new CalcError(
+          'non_finite',
+          `计算结果非有限（${String(value)}）`,
+          '常见于除以零、tan(π/2)、log(0)。若要符号形式可改用 operation="simplify"。',
+        )
+      }
+      /** 批量同样要尊重显式目标单位（见 `usesExplicitUnitConversion`）。 */
+      const text = formatValue(
+        engine, value, precision, currentDisplayPrecision(), usesExplicitUnitConversion(node),
+      )
       values.push({ expression, label: label || undefined, ok: true, result: text })
       /**
        * 回显格式：有 label 用 label，否则用用户原文。
@@ -2658,7 +2836,17 @@ function opHelp(): Outcome {
       '',
       '【求值与代数】',
       '  evaluate      任意 mathjs 表达式；BigNumber 64 位精度',
-      '                例：10^20+5、factorial(50)、(1+2i)*(3-i)、5 cm to inch、sin(30 deg)',
+      /**
+       * 例子顺序是刻意的：**带单位的那条排第一**。
+       *
+       * 实测反馈（1107 报告 P0-1）：原来 `5 cm to inch` 排在第 4 个，
+       * 且没说「物理量请全部带单位」，于是使用者一律转成裸数字算，
+       * 而那正是四起千倍级事故的共同形式。
+       */
+      '                例：5 cm to inch、(10 hp/0.475) to kW、28000 BTU/lb to MJ/kg',
+      '                    10^20+5、factorial(50)、(1+2i)*(3-i)、sin(30 deg)',
+      '                物理量**一律带单位写**：量纲错误当场拦下（10 hp + 3 kg → unit_mismatch）',
+      '                裸数字无从判断 745.7 是瓦还是千瓦，差 1000 倍也可能宣告成功',
       '                批量：给 expressions=["1/7","2^0.5","log(10)"] 一次算多条，',
       '                      逐条独立报错；比多次调用省往返',
       '  solve         解方程。多方程逗号分隔 = 方程组',
@@ -2686,14 +2874,8 @@ function opHelp(): Outcome {
       '  formula       调用已收录的 ' + FORMULAS.length + ' 条自然科学公式',
       '                例：formula="escape_velocity", overrides={M,r}',
       '                任何参数可覆盖 —— 架空世界改造的关键',
-      '  formulas      检索与分类：',
-      '                query="关键词"       按名称/关键词',
-      '                query="layer:derived"  按规则层级（fundamental=基本规则、mathematical=数学基础（与基本同级）、derived/phenomenological/engineering/conventional）',
-      '                query="domain:物理"    按学科领域（多标签）',
-      '                query="freq:high"      按主角感知频率',
-      '                query="symbol:m"       按符号含义',
-      '  formula-table 两级扩展：工作区临时公式（覆盖/自定义/停用）+ 全局公式包',
-      '                （tableAction: global-list / global-add / global-remove）',
+      '  formulas      检索：query="关键词"/"layer:derived"/"domain:物理"/"freq:high"/"symbol:m"',
+      '  formula-table 两级扩展：工作区临时公式 + 全局包；tableAction: global-list/add/remove',
       '                字段与校验规则见 docs/formula-authoring.md',
       '',
       '【世界观推演】',
@@ -2757,7 +2939,7 @@ function opHelp(): Outcome {
       '                        （在 evaluate 上传这个开关不生效，它会被忽略）',
       '                  启用后 evaluate 可直接用变量名；本次 variables 参数优先于工作区值',
       '                  改变量会让缓存失效（避免拿到改之前的数）',
-      '                注意：本插件没有图形界面（2026-10-25 已移除），全部经工具与 HTTP 路由操作',
+      '                注意：本插件无图形界面，全部经工具与 HTTP 路由操作',
       '',
       '【其他】',
       '  help          本清单',
@@ -2766,6 +2948,13 @@ function opHelp(): Outcome {
       '【常用参数】expression / variables / operation / precision(有效位,默认64)',
       '  overrides(公式参数) / constants / world / terrain',
       '  expressions(批量,{label,expr}) / terse(只回表达式=结果) / variable(自变量)',
+      /**
+       * 实测反馈（1107 报告问题 10）：schema 只写了「批量求值，逐条独立报错」，
+       * 没写元素可以是对象，于是模型几乎必然尝试 `"标签=表达式"` 这种最直觉的写法，
+       * 然后撞上一个中文标识符语法错。
+       */
+      '    元素两种写法：字符串 "1/7"，或对象 {label:"煤砖含能", expr:"2 lb * 28000 BTU/lb to MJ"}',
+      '    ★ "标签=表达式" 这种写法**不支持**（= 左边是中文标识符，会报 syntax）',
       '',
       '【锚点 sanity】工具不知道这个数该多大，但你可以逐条声明判据：',
       '  {label:"日产台数", expr:"1e8*25000", sanity:{max:1e10,note:"帝国总兵力"}}',
@@ -3460,7 +3649,8 @@ export function runMathTool(rawArguments: unknown): MathResult {
       'simplify', 'expand', 'roots', 'matrix', 'eigen', 'dist',
       'regression', 'ode', 'formula',
     ]
-    if (STRICT_FINITE_OPERATIONS.includes(operation) && containsNonFinite(result.value)) {
+    
+if (STRICT_FINITE_OPERATIONS.includes(operation) && containsNonFinite(result.value)) {
       throw new CalcError(
         'non_finite',
         `计算结果非有限（${outcome.result}）`,
