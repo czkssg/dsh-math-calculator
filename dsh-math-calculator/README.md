@@ -14,7 +14,7 @@ DSH（DeepSeek Harness）原生的**高精度数学计算器**插件，附带可
 | 高精度计算 | 心算 / bash 拼 | BigNumber 64 位，整数输出完整定点 |
 | 符号运算 | 查表或近似 | 求导/积分/化简/展开，符号精确 |
 | 单位换算 | 自己查系数 | 462 个单位 / 32 个量纲，温度按仿射换算 |
-| 写公式 | 每次都重推 | 442 条公式库，参数全可覆盖 |
+| 写公式 | 每次都重推 | 471 条公式库，参数全可覆盖 |
 | 改物理常数 | 无法验证 | 自动推导派生量 + 全公式偏差 |
 | 多项目数据 | 互相污染 | 工作区隔离，各持一套常数表与公式表 |
 | *（可选）* 架空世界设定 | 凭感觉 | 输入星球参数 → 出重力/气候/地形上限 |
@@ -61,7 +61,7 @@ npm run build
 
 ```powershell
 npm pack
-& "...\dsh.cmd" plugin --profile desktop add ./dsh-math-calculator-2.2.0.tgz
+& "...\dsh.cmd" plugin --profile desktop add ./dsh-math-calculator-2.3.0.tgz
 ```
 
 ---
@@ -95,7 +95,7 @@ npm pack
 
 | operation | 说明 | 示例 |
 |---|---|---|
-| `formula` | 调用 442 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
+| `formula` | 调用 471 条公式之一 | `{"formula":"escape_velocity","overrides":{"M":5.97e24,"r":6371000},"operation":"formula"}` |
 | `formulas` | 检索公式库 | `{"query":"重力","operation":"formulas"}` |
 | `world` | 星球参数 → 体感画像 | `{"world":{"planetRadius":1.4,"rotationHours":40},"operation":"world"}` |
 | `terrain` | 局地气候（配合 world） | `{"world":{"planetMass":2},"terrain":{"kind":"coastal","latitudeDeg":58},"operation":"world"}` |
@@ -197,7 +197,7 @@ npm pack
 
 ### 公式库扩展（全局包 + 工作区临时）
 
-442 条内置公式不够时，不必改代码：
+471 条内置公式不够时，不必改代码：
 
 | 级别 | 存放 | 范围 | 用法 |
 |---|---|---|---|
@@ -237,7 +237,7 @@ npm pack
 {"operation":"formulas","query":"freq:low"}    // 低频：量子/核物理/相对论/金融
 ```
 
-当前分布：高频 75 / 中频 55 / 低频 4 / 未标注 308（共 442 条）。
+当前分布：高频 99 / 中频 60 / 低频 4 / 未标注 308（共 471 条）。
 
 ### 基础运算扩展
 
@@ -352,7 +352,7 @@ npm pack
 {"operation":"quantities","constants":{"G":1.3e-10},"constantName":"G"}
 //    → 普朗克长度 ∝√G、玻尔半径与 G 无关、表面重力 ∝G
 
-// 4. 看全部 442 条公式相对现实的偏差
+// 4. 看全部 471 条公式相对现实的偏差
 {"operation":"impact","constants":{"c":1.5e8}}
 //    → 11 条受影响：质能 -75%、黑体辐射 +300%、维恩位移 -50%
 
@@ -489,7 +489,7 @@ node run-all-tests.mjs # 58 套 / 2321 项
 src/
 ├── index.ts            插件入口 + 工具定义 + operation 分发（2032 行）
 ├── ops/                8 个较大的 operation 实现
-├── formula-library*.ts 442 条公式（含势力运行、通用计算与电/光/核/化学计量批次）
+├── formula-library*.ts 471 条公式（含势力运行、通用计算、电/光/核/化学计量与工程/生物/宏观批次）
 ├── constants-graph.ts  43 个常数的依赖图（23 基础旋钮 / 20 派生）
 ├── quantities.ts       量纲分析与缩放指数
 ├── feasibility.ts      11 条设定约束
