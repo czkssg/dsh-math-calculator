@@ -55,7 +55,8 @@ console.log('-- 3. help 清单必须提到新能力 --')
    * help 现在是分节的：扩展函数与 world 在各自那一节里。
    * 断言目的没变（新能力必须写在文档里），只是要去对应节找。
    */
-  const helpExt = String(run({ operation: 'help', helpTopic: 'evaluate' }).result)
+  /** 扩展函数已随代数一起移到 solve 节（实测 solve 信号量 59，独立成节）。 */
+  const helpExt = String(run({ operation: 'help', helpTopic: 'solve' }).result)
   assert('提到 rank/nullspace/svd', helpExt.includes('rank(') && helpExt.includes('nullspace(') && helpExt.includes('svd('))
   assert('提到 factorize', helpExt.includes('factorize('))
   assert('提到 nsolve', helpExt.includes('nsolve('))

@@ -180,13 +180,19 @@ console.log('-- 7. help 输出完整 --')
   const missing = expected.filter((op) => help.result.includes(op))
   assert('目录覆盖主要节', missing.length === expected.length, '缺: ' + expected.filter(x => !help.result.includes(x)).join(', '))
   /**
-   * 但「目录能找到」还不够 —— 每节简介必须说清用法，否则 AI 不会去查。
-   * 这里抽查 evaluate 节的正文确实含 solve/derivative/integral 这些子能力。
+   * 但「目录能找到」还不够 —— 每节正文必须说清用法，否则 AI 不会去查。
+   *
+   * 注意：`solve` / `derivative` / `integral` 现在在独立的 `solve` 节里
+   * （实测信号量 59 排第三，从 evaluate 拆出来了），不在 evaluate 节。
    */
+  const solveTopic = exec({ operation: 'help', helpTopic: 'solve' })
+  assert('solve 节含 solve', solveTopic.result.includes('solve'), '')
+  assert('solve 节含 derivative', solveTopic.result.includes('derivative'), '')
+  assert('solve 节含 integral', solveTopic.result.includes('integral'), '')
+  /** evaluate 节仍要说明它自己覆盖什么（例如批量与单位）。 */
   const evalTopic = exec({ operation: 'help', helpTopic: 'evaluate' })
-  assert('evaluate 节含 solve', evalTopic.result.includes('solve'), '')
-  assert('evaluate 节含 derivative', evalTopic.result.includes('derivative'), '')
-  assert('evaluate 节含 integral', evalTopic.result.includes('integral'), '')
+  assert('evaluate 节含 expressions', evalTopic.result.includes('expressions'), '')
+  assert('evaluate 节含量纲校验', evalTopic.result.includes('unit_mismatch'), '')
 }
 
 rmSync(tempHome, { recursive: true, force: true })

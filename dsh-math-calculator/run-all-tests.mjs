@@ -78,7 +78,7 @@ const SUITES = [
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
   { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
   { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
-  { file: 'awareness.mjs', expect: 65, label: '模型感知（提示注入）' },
+  { file: 'awareness.mjs', expect: 67, label: '模型感知（提示注入）' },
   { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
   { file: 'hook.mjs', expect: 25, label: 'agent/pre-step 钩子' },
   { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
@@ -174,7 +174,7 @@ const SUITES = [
   // 1107 报告：单条与批量的非有限判断一致、显式换算不被归位吞掉、to 报错分类、两套单位表打通
   { file: 'report-1107.mjs', expect: 63, label: '实测报告 1107（非有限一致/换算不被吞/to 报错分类/工程单位）' },
   // 分节帮助：目录小、单节小、目录可发现、内容没因拆而丢
-  { file: 'help-topics.mjs', expect: 67, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
+  { file: 'help-topics.mjs', expect: 76, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
   // 公式与单位耦合：符号带单位运算、参数量纲校验、同体系折算
   { file: 'formula-units.mjs', expect: 35, label: '公式单位耦合（符号带单位/参数量纲校验/同体系折算）' },
   // 工程/生物/宏观公式：数值手算核对 + scaling 律（四次方/三次方/十分之一）

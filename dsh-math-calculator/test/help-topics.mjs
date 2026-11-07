@@ -67,10 +67,67 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
     thin.map((t) => t.key + ':' + t.summary.length).join(', '))
 
   const coreTopics = TOPICS.filter((t) => t.tier === 'core')
-  assert('高频节均为 core 档', coreTopics.length >= 4, String(coreTopics.length))
+  assert('core 档节数（按实测频率定为 6）', coreTopics.length === 6, String(coreTopics.length))
   const coreNoSummary = coreTopics.filter((t) => !index.includes(t.summary.slice(0, 10)))
   assert('高频节的简介都出现在目录里', coreNoSummary.length === 0,
     coreNoSummary.map((t) => t.key).join(', '))
+
+  /**
+   * ## 分档必须有实测依据，不能凭印象（用户 2026-11-07 要求）
+   *
+   * 「高低频根据目前的实践文档进行统计频率来调整显示」。
+   * 这里守两件事：
+   *   1. 每节都带 weight（来自 6 份实践文档的关键词统计）；
+   *   2. core 档的权重**整体高于** extra 档 —— 若某天有人凭感觉把一节
+   *      提进 core 却没数据支撑，这条会红。
+   */
+  const noWeight = TOPICS.filter((t) => typeof t.weight !== 'number')
+  assert('每节都登记实测权重', noWeight.length === 0, noWeight.map((t) => t.key).join(', '))
+  /**
+   * 用**中位数**而不是极值来判「分档有序」。
+   *
+   * 踩过：第一版写 `min(core) >= max(extra)`，被 `domains` 卡住 ——
+   * 它是新增节、文档里还没人用过，权重 0 是**事实**（不是拍脑袋填的），
+   * 而「新功能就该用 0」本身是对的：权重是「已发生的使用量」，不是「重要性」。
+   * 用极值判会把这种正常情形判成错误。
+   */
+  const median = (values) => {
+    const sorted = [...values].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+  }
+  const coreMedian = median(coreTopics.map((t) => t.weight ?? 0))
+  const extraMedian = median(TOPICS.filter((t) => t.tier === 'extra').map((t) => t.weight ?? 0))
+  assert('core 权重中位数明显高于 extra', coreMedian > extraMedian * 2,
+    'core 中位 ' + coreMedian + ' vs extra 中位 ' + extraMedian)
+
+  /** 新节（权重 0）必须在正文里有说明，而不是只填 0 了事。 */
+  const zeroWeight = TOPICS.filter((t) => (t.weight ?? 0) === 0)
+  for (const topic of zeroWeight) {
+    const body = await text({ operation: 'help', helpTopic: topic.key })
+    assert('权重 0 的节仍有完整正文: ' + topic.key, body.length > 200, String(body.length))
+  }
+
+  /**
+   * 目录里的展示顺序必须**按权重降序** —— 这是「高频优先」的实际体现。
+   * 判据：evaluate 与 units 必须出现在 solve 之前（250/173 vs 59）。
+   */
+  const iEval = index.indexOf('evaluate')
+  const iUnits = index.indexOf('units')
+  const iSolve = index.indexOf('solve')
+  assert('高频节按权重排在前', iEval >= 0 && iUnits >= 0 && iSolve >= 0 && iEval < iUnits && iUnits < iSolve,
+    'evaluate@' + iEval + ' units@' + iUnits + ' solve@' + iSolve)
+
+  /**
+   * `solve` 必须是独立节 —— 实测 59 排第三，旧版把它折在 evaluate 里，
+   * 那是分档时最容易漏的一处。
+   */
+  const solveTopic = TOPICS.find((t) => t.key === 'solve')
+  assert('solve 是独立节（信号量 59 排第三）', Boolean(solveTopic) && solveTopic.tier === 'core',
+    String(solveTopic?.tier))
+  const solveBody = await text({ operation: 'help', helpTopic: 'solve' })
+  assert('solve 节含退化方程组的说明', /无穷多解/.test(solveBody), '')
+  assert('solve 节含 system 与 integral', /system/.test(solveBody) && /integral/.test(solveBody), '')
 
   /**
    * 折叠节必须仍**可被识别**：目录里要有 key 与短标签，

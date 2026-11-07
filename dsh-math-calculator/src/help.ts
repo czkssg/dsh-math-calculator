@@ -70,6 +70,29 @@ export interface HelpTopic {
   tier: 'core' | 'extra'
   /** 折叠档用的极短标签（≤8 字，目录里跟 key 同行）。 */
   short?: string
+  /**
+   * 实测使用频率（越大越高频）。数据来自「实践文档」里各能力被提到的次数。
+   *
+   * ## 为什么用实测而不是凭直觉分档（用户 2026-11-07 要求）
+   *
+   * 「高低频根据目前的实践文档进行统计频率来调整显示」——
+   * 我原先的分档是凭印象定的（evaluate/units/formula/world 四节 core），
+   * 而实测信号量是：
+   *
+   * ```
+   *   evaluate 250   units 173   solve 59   formula 28
+   *   workspace 28   world 26    derivation 21   recipe 17
+   *   matrix 11      stats 11    constants 5    balance 5    ode 4
+   * ```
+   *
+   * 与直觉的两处出入值得记：
+   *   · `solve` 59 排第三，却原来被折在 evaluate 里没有独立位置；
+   *   · `workspace` 28 与 formula 并列，凭印象时被我低估了。
+   *
+   * 这个数只用于**排序与分档参考**，不直接决定显示 ——
+   * 分档还要看「它是不是一个独立操作」，例如 workspace 虽高频但不该占 core 位置。
+   */
+  weight?: number
   /** 该节正文。 */
   body: () => string
 }
@@ -139,21 +162,38 @@ const EVALUATE_BODY = () => [
 ].join('\n')
 
 /** 【代数与微积分】求解/方程组/符号运算。 */
-const ALGEBRA_BODY = (): string => `【代数与微积分】
+const ALGEBRA_BODY = (): string => `【解方程与微积分】
+
   solve        解方程。多方程用逗号分隔 = 方程组
-               3x + 2y = 10, x - y = 1   → x=2.4, y=1.4
-               x^2 - 5x + 6 = 0          → x=2, x=3
-               退化方程组会说「无穷多解」，不静默给单解
-  system       显式线性系统（matrix + vector）
+                 3x + 2y = 10, x - y = 1   → x=2.4, y=1.4
+                 x^2 - 5x + 6 = 0          → x=2, x=3
+                 x^3 - 6x^2 + 11x - 6 = 0  → x=1, 2, 3（三次也解）
+               ★ 退化方程组会说「无穷多解」，不静默给单解 ——
+                 那正是最容易把错答案当对的场景。
+               ★ 无解时会说「无解」，不给一个近似值糊弄。
+
+  system       显式线性系统（matrix 系数 + vector 右端项）
+                 例：{matrix:[[3,2],[1,-1]], vector:[10,1]}  ← 3x+2y=10, x-y=1
+               与 solve 的区别：solve 吃方程文本，system 吃矩阵。
+               两者都能解同一组方程；**大方程组用 system 更清晰**。
+
   derivative   符号求导，variable 指定自变量（默认 x）
-  integral     符号积分；可给 from/to 做定积分
-               ★ 定积分用 Fraction 引擎代入，不出 8.9999… 这类尾差
+                 例：{expression:"x^3*sin(x)", variable:"x"}
+
+  integral     符号积分。给 from/to 就做定积分
+                 ★ 定积分用 **Fraction 引擎**代入上下限，不出 8.9999… 这类尾差
+                   （BigNumber 的 1/3 是截断小数，乘 27 回不到整数）
+
   simplify     化简（含三角恒等式）
-  expand       展开
+  expand       展开（多项式与二项式）
   roots        多项式求根（含复数根）
 
-【扩展函数】rank(A) 秩 / nullspace(A) 零空间 / svd(A) 奇异值
-  factorize(n) 整数分解 / nsolve("表达式", 初值) 数值求根`
+【扩展函数】
+  rank(A) 秩 / nullspace(A) 零空间 / svd(A) 奇异值
+  factorize(n) 整数分解 / nsolve("表达式", 初值) 数值求根
+
+  ★ 这些函数在 evaluate 里也能用（它们是注册进 mathjs 的）。
+    例如 {expression:"rank([[1,2],[2,4]])"} → 1（两行线性相关）`
 
 /** 【线性代数】矩阵与特征值。 */
 const LINALG_BODY = (): string => `【线性代数】
@@ -569,22 +609,56 @@ const DOMAINS_BODY = (): string => `【工程 / 生物 / 宏观】三块的常�
  */
 export const HELP_TOPICS: HelpTopic[] = [
   /**
-   * ## core：几乎每次都会用到，目录里给整块简介
+   * ## 分档依据：实践文档实测信号量（用户 2026-11-07 要求）
    *
-   * `evaluate` / `units` / `formula` 三节覆盖「算一条式子」「换单位」「调公式」，
-   * 是 90% 以上调用的落点。它们值得在目录里占完整位置。
+   * 「高低频根据目前的实践文档进行统计频率来调整显示」。
+   * 6 份实践文档合计 6.1 万字符，按能力关键词统计后：
+   *
+   * ```
+   *   evaluate 250  units 173  solve 59  formula 28
+   *   workspace 28  world 26   derivation 21  recipe 17
+   *   matrix 11     stats 11   constants 5  balance 5  ode 4  bodies 0
+   * ```
+   *
+   * ## 分档不只看信号量，还看「是不是独立操作」
+   *
+   * · `solve` 59 排第三，**原来被折在 evaluate 里**——这是分档时最容易漏的，
+   * 实测才看出来它该独立。
+   * · `workspace` 28 与 formula 并列，但它是**低频操作**（一个会话通常切换一两次），
+   * 不该占 core 的目录位，保留 extra。
+   * · `bodies` 信号量 0，但它是**新功能**（用户还没用过），折在 balance 里一并说明。
+   *
+   * 所以分档 = 信号量排序 + 人工判断「独立操作 / 一次性配置 / 冷启动功能」。
    */
   {
     key: 'evaluate',
     tier: 'core',
-    title: '求值与代数（evaluate / solve / 微积分）',
-    summary: '算表达式、解方程、求导积分。物理量带单位写，量纲错当场拦下。',
-    aliases: ['算式', '计算', '求值', '求解', '方程', '积分', '求导', 'mathjs', 'algebra'],
-    body: () => EVALUATE_BODY() + '\n\n' + ALGEBRA_BODY(),
+    /** 实践文档信号量 250，断层第一：算术/带单位/批量/label 全落在这一节。 */
+    weight: 250,
+    title: '求值（evaluate）',
+    summary: '算一条式子。物理量带单位写，量纲错当场拦下；批量一次多条。',
+    aliases: ['算式', '计算', '求值', 'mathjs', 'expression'],
+    body: EVALUATE_BODY,
+  },
+  {
+    key: 'solve',
+    tier: 'core',
+    /**
+     * 信号量 59，排第三 —— 原来被折在 evaluate 里，实测才看出来它该独立。
+     * 现实里「解方程」与「算一条式子」是两种不同的心智动作，
+     * 前者要写方程、要看解的形式（唯一解/无穷多解/无解）。
+     */
+    weight: 59,
+    title: '解方程与微积分（solve / derivative / integral）',
+    summary: '解方程与方程组、符号求导积分。退化方程组会说「无穷多解」而非静默给单解。',
+    aliases: ['方程', '求解', 'solve', '积分', '求导', '微积分', 'algebra'],
+    body: ALGEBRA_BODY,
   },
   {
     key: 'units',
     tier: 'core',
+    /** 信号量 173：中制单位（里/丈/斤/亩）与 to 换算在各文档频繁出现。 */
+    weight: 173,
     title: '单位换算与输出单位（units）',
     summary: '中外古今单位换算、自定义单位，以及输出为什么是大数配吨/公里。',
     aliases: ['单位', '换算', '里', '丈', '斤', '亩', 'unit', 'conversion'],
@@ -593,6 +667,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'formula',
     tier: 'core',
+    /** 信号量 28。 */
+    weight: 28,
     title: '公式库（formula / formulas）',
     summary: `调 ${FORMULAS.length} 条公式、overrides 改造参数（架空世界的关键）、按层级/领域检索。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
@@ -601,6 +677,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'world',
     tier: 'core',
+    /** 信号量 26。 */
+    weight: 26,
     title: '世界观推演（world / 地形 / 气候）',
     summary: '星球参数得体感画像：重力昼夜气候、天空、恒星寿命、卫星、生命闸门。★ 完整字段表在这里。',
     aliases: ['星球', '世界', '重力', '气候', '恒星', '地形', 'world', 'planet'],
@@ -616,6 +694,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'domains',
     tier: 'core',
+    /** 新增节，文档中尚无信号；按用户明确要求保留 core。 */
+    weight: 0,
     title: '工程 / 生物 / 宏观（29 条领域公式）',
     summary: '梁柱应力挠度、热机效率煤耗、管流泵功率、载畜量营养级、劳动力货币通胀。每条都写了 scaling 律。',
     aliases: ['工程', '生物', '经济', '宏观', '建筑', '结构', '热机', '流体', '生态', '畜牧', '通胀'],
@@ -624,6 +704,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'linalg',
     tier: 'extra',
+    /** 信号量 11。 */
+    weight: 11,
     short: '矩阵/特征值',
     title: '线性代数（matrix / eigen）',
     summary: '矩阵运算、特征值；只给 matrix 时输出秩/行列式/奇异值/零空间/逆的完整画像。',
@@ -633,6 +715,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'stats',
     tier: 'extra',
+    /** 信号量 11。 */
+    weight: 11,
     short: '统计/分布/回归',
     title: '统计与概率（stats / dist / regression）',
     summary: '描述统计、八种概率分布（CDF/PDF/分位数）、线性与多项式回归。',
@@ -642,6 +726,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'ode',
     tier: 'extra',
+    /** 信号量 4 —— 最低的一档。 */
+    weight: 4,
     short: '微分方程',
     title: '微分方程（ode）',
     summary: 'RK4 数值解一阶方程组与二阶方程，返回轨迹/终点值/极值/发散警告。',
@@ -651,6 +737,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'constants',
     tier: 'extra',
+    /** 信号量 5。 */
+    weight: 5,
     short: '改常数看后果',
     title: '常数推演（constants / quantities / impact）',
     summary: '改光速/引力常数，派生量自动重算并评估偏离度；看哪些物理量该跟着变。',
@@ -660,6 +748,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'balance',
     tier: 'extra',
+    /** 信号量 5。 */
+    weight: 5,
     short: '收支/天体',
     title: '收支盘点与天体目录（balance / bodies）',
     summary: '粮水能地财政军费多项一起看给最短板；以及天体目录、类型学、常数变化影响。',
@@ -669,6 +759,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'derivation',
     tier: 'extra',
+    /** 信号量 21。 */
+    weight: 21,
     short: '推演栈 29 子命令',
     title: '推演栈（derivation 子命令）',
     summary: '八层推演栈、混沌拦截、结论翻转、逆推校准、敏感度、相图、白皮书、算力、幻想层、文明极限。',
@@ -678,6 +770,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'workspace',
     tier: 'extra',
+    /** 信号量 28 —— 与 formula 并列，但它是低频操作，保留 extra。 */
+    weight: 28,
     short: '工作区/变量',
     title: '数据管理（workspace）',
     summary: '工作区（一个世界观一套常数/公式/地点/变量）、命名变量跨调用复用、精度固化。',
@@ -687,6 +781,8 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     key: 'recipe',
     tier: 'extra',
+    /** 信号量 17。 */
+    weight: 17,
     short: '锚点/账本/错误码',
     title: '常见配方（锚点/账本闭合/多步链/错误码）',
     summary: '跨节组合用法：sanity 锚点比对你自己给的判据、账本闭合、多步链、错误码对照。',
@@ -756,8 +852,14 @@ function findTopic(topic: string): HelpTopic | undefined {
  * 它们没有丢 —— 查那一节时正文里有，且别名匹配照旧生效。
  */
 function renderIndex(): string {
-  const core = HELP_TOPICS.filter((item) => item.tier === 'core')
-  const extra = HELP_TOPICS.filter((item) => item.tier === 'extra')
+  /**
+   * 按实测信号量排序（大的在前）——
+   * 这样 AI 读目录时，最可能用到的能力自然排在最前面。
+   * 同权重时保持注册顺序（`Array.prototype.sort` 是稳定的）。
+   */
+  const byWeight = (a: HelpTopic, b: HelpTopic) => (b.weight ?? 0) - (a.weight ?? 0)
+  const core = HELP_TOPICS.filter((item) => item.tier === 'core').sort(byWeight)
+  const extra = HELP_TOPICS.filter((item) => item.tier === 'extra').sort(byWeight)
   const lines: string[] = [
     '══════ math_execute 能力目录（' + HELP_TOPICS.length + ' 节）══════',
     'helpTopic:"键名" 取该节全文；也可用中文词（矩阵/星球/单位…）。',
