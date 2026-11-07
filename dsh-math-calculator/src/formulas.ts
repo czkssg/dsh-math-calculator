@@ -25,6 +25,8 @@ import { POWER_FORMULAS } from './formula-library-power.js'
 import { BASIC_FORMULAS } from './formula-library-basic.js'
 import { GENERIC_FORMULAS } from './formula-library-generic.js'
 import { EM_OPTICAL_NUCLEAR_FORMULAS } from './formula-library-em.js'
+import { ENGINEERING_FORMULAS } from './formula-library-engineering.js'
+import { BIOECON_FORMULAS } from './formula-library-bioecon.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 import { findUnit, convert } from './units.js'
@@ -44,6 +46,8 @@ export const FORMULAS: FormulaDef[] = [
   ...BASIC_FORMULAS,
   ...GENERIC_FORMULAS,
   ...EM_OPTICAL_NUCLEAR_FORMULAS,
+  ...ENGINEERING_FORMULAS,
+  ...BIOECON_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -56,6 +60,8 @@ for (const formula of STORY2_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of POWER_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of BASIC_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of GENERIC_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of ENGINEERING_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of BIOECON_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

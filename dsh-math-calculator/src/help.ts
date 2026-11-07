@@ -172,6 +172,13 @@ const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自
                ★ overrides 可覆盖任意参数 —— 这是架空世界改造的关键
                例：把重力改成 1.5 倍地球 {"g": 14.71}；光速 {"c": 1e8}
                ★ 错拼的 key 会点名上报，不会静默忽略
+  ★ 新补充的领域（写世界观常用）：
+    engineering/structures  梁柱应力/挠度/惯性矩/螺栓焊缝（7 条）
+    engineering/thermal     卡诺效率/蒸汽功率/煤耗/换热/导热（5 条）
+    engineering/fluid,energy 管流/水头损失/泵/孔口/风电/水电（6 条）
+    biology/ecology         载畜量/出栏/料肉比/NPP/营养级（5 条）
+    econ/macro              劳力/总产出/储蓄/资本产出比/货币供应/通胀（6 条）
+
   formulas     检索与分类：
                query="关键词"        按名称/关键词（如 "重力"、"人口"）
                query="layer:derived" 按规则层级

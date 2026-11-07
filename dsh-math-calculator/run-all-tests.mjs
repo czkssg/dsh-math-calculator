@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 442, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 471, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -177,6 +177,8 @@ const SUITES = [
   { file: 'help-topics.mjs', expect: 63, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
   // 公式与单位耦合：符号带单位运算、参数量纲校验、同体系折算
   { file: 'formula-units.mjs', expect: 35, label: '公式单位耦合（符号带单位/参数量纲校验/同体系折算）' },
+  // 工程/生物/宏观公式：数值手算核对 + scaling 律（四次方/三次方/十分之一）
+  { file: 'engineering-formulas.mjs', expect: 30, label: '工程与生物经济公式（手算核对/scaling 律/单位与标签完整）' },
   // 多步计算的两条静默不变量：批量内按序可见 + 失败步骤的下游不能变「虚成功」。
   // 后者是本轮实测发现的真缺陷：d=b*2 曾静默算成「2 b（单位）」并显示为成功。
   { file: 'multistep.mjs', expect: 27, label: '多步计算（链式可见/失败不虚成功/单位顺序）' },
