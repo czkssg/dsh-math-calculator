@@ -532,8 +532,262 @@ const WORKSPACE_BODY = (): string => `【数据管理】workspace 工作区管�
   【显示精度固化】{action2:"set", displayPrecision:4} 固化；传 0 = 清除
   【注意】本插件无图形界面，全部经工具与 HTTP 路由操作`
 
-/** 【常见配方】跨节的组合用法。 */
-const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数该多大，但你可以逐条声明判据
+/** 【工程·结构（梁柱应力/挠度/惯性矩/螺栓焊缝）】按公式 id 调用，参数可带单位。 */
+const D_STRUCT_BODY = (): string => `【工程·结构（梁柱应力/挠度/惯性矩/螺栓焊缝）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  beam_section_modulus      抗弯截面系数 W = b·h²/6
+                            ★ 梁要高不要宽：高度翻倍，抗弯能力 4 倍
+  beam_bending_stress       弯曲应力 σ = M/W（输出 MPa）
+                            与屈服强度比即知安全；钢梁许用应力取屈服 1/1.5~1/2
+  rect_inertia              惯性矩 I = b·h³/12
+                            ★ 高度的**三次方**——「梁要竖着放」的数学理由
+  beam_self_weight_moment   自重跨中弯矩 qL²/8
+                            ★ 跨度的**平方律**：跨度翻倍，弯矩 4 倍
+                            大跨度结构必须先算这项，否则漏掉最主要的荷载
+  beam_uniform_load_deflection 均布挠度 δ = 5qL⁴/(384EI)
+                            ★ 跨度的**四次方**：跨度翻倍，挠度 16 倍
+                            所以桥梁不能靠「加厚」延长跨度，必须改结构形式
+  bolt_shear_capacity       螺栓抗剪 F = n·τ·π·d²/4（4.6 级 τ≈141 MPa）
+                            ★ 承压型高强螺栓靠摩擦传力，不按这个算式
+  weld_throat_capacity      角焊缝 F = 0.707a·L·τ（喉部有效厚度 0.707a）
+`
+
+/** 【工程·热机与能量（卡诺/蒸汽/锅炉/换热）】按公式 id 调用，参数可带单位。 */
+const D_THERMAL_BODY = (): string => `【工程·热机与能量（卡诺/蒸汽/锅炉/换热）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  thermal_efficiency_carnot 卡诺上限 η ≤ 1 − Tc/Th
+                            ★ **绝对温度**不是摄氏度；300K/500K 之间上限 40%
+                            加多少煤都没用——只能提高热源温度或降低排热温度
+  steam_power_output        P = ṁ·Δh·η（Δh 焓差 J/kg）
+                            ★ 汽轮机 η≈0.35，往复式 η≈0.12：同功率只需 1/3 蒸汽
+                            这个 3 倍差距决定蒸汽朋克的煤耗与锅炉体积
+  boiler_coal_rate          每小时耗煤 = P/(cv·η)×3600（标准煤 2.93e7 J/kg）
+                            ★ 用「多少吨煤」比「多少瓦」更有体感
+  heat_exchanger_duty       Q = U·A·LMTD（对数平均温差）
+                            ★ 同样两端温差，逆流 LMTD 明显大于顺流——好换热器都做成逆流
+                            dT1 与 dT2 不能相等（那对应换热面积无穷大）
+  conduction_wall_loss      Q = k·A·ΔT/d
+                            ★ 岩棉 k=0.04、钢 45 —— 差 1000 倍
+                            10 cm 岩棉 ≈ 100 m 钢，这是「隔热好不好」的量化说法
+  wind_power_available      P = ½ρA·v³·Cp
+                            ★ 风速的**三次方**：5→10 m/s，功率 8 倍（最反直觉的一条）
+                            贝茨极限 0.593 是理论上限，实用 0.35~0.45
+  water_turbine_power       P = ρ·g·Q·H·η（与水泵恰好相反：η 是乘的）
+`
+
+/** 【工程·流体与管路（管流/水头/泵/孔口）】按公式 id 调用，参数可带单位。 */
+const D_FLUID_BODY = (): string => `【工程·流体与管路（管流/水头/泵/孔口）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  pipe_flow_rate            Q = v·π·d²/4
+                            ★ 管径翻倍，流量 4 倍——扩一倍口径顶四条旧管
+  darcy_head_loss           h = f·(L/d)·v²/(2g)
+                            ★ 流速的平方：流速翻倍损失 4 倍
+                            所以长距离输水宁可加大管径降流速（经济流速 1~2 m/s）
+  pump_power                P = ρ·g·Q·H/η（扬程含沿程损失）
+                            流量与扬程都是相乘，任一翻倍功率就翻倍
+  orifice_discharge         Q = Cd·A·√(2gh)
+                            ★ 水头的**平方根**：流量翻倍要水头 4 倍
+                            水库泄洪、攻城水攻、倒水时间估算都用它
+`
+
+/** 【生物·生态（载畜量/料肉比/NPP/营养级）】按公式 id 调用，参数可带单位。 */
+const D_ECOLOGY_BODY = (): string => `【生物·生态（载畜量/料肉比/NPP/营养级）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  grazing_capacity          载畜量 = 面积×产草量×利用率/(采食量×天数)
+                            ★ 利用率取 0.5 不是保守而是必需：超载后草地退化，第二年产量腰斩
+                            温带草原 2000~5000 kg/(ha·年)，牛采食 40~60 kg/日
+  livestock_growth_time     (出栏重−初生重)/日增重
+                            ★ 猪≈180 天、牛≈450 天、肉鸡≈42 天；这个比值决定肉价与周转率
+  feed_conversion_ratio     料肉比 = 耗料/增重
+                            ★ 牛 6~8、猪 2.5~3.5、鸡 1.6~2.0
+                            直接决定「养一头牛要多少亩地」；牛高是反刍维持消耗大，不是品种差
+  crop_yield_npp            可收获干物质 = NPP×面积×收获指数
+                            ★ 谷物收获指数 0.4~0.5 —— 六成生物量是秸秆（饲料与燃料的来源）
+  trophic_chain_support     每级只剩约 10%
+                            ★ 养活 1 kg 狼要 10 kg 兔、100 kg 草
+                            这解释了为什么食物链一般不超过 5 级，也立刻否掉「满地猛兽」
+`
+
+/** 【宏观·经济（劳力/产出/储蓄/货币/通胀）】按公式 id 调用，参数可带单位。 */
+const D_MACRO_BODY = (): string => `【宏观·经济（劳力/产出/储蓄/货币/通胀）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  labor_force               劳力 = 人口 × 参与率（农业社会 0.45~0.55）
+                            ★ 0.45 里含着大量童工与老人——决定「能征多少兵、能修多大工程」
+  gdp_from_labor            产出 = 劳力 × 人均产出
+                            ★ 想提高总产出只有两条路；长期增长几乎全靠提高单产
+  macro_savings_rate        可投资额 = 产出 × 储蓄率
+                            ★ 增长燃料：东亚高速期 0.3+，贫困农业社会几乎攒不出投资
+  capital_output_ratio      所需资本产出比 = 储蓄率/增长率
+                            ★ 储蓄率 10%、目标增长 5%，需要资本产出比 2；实际要 4 就达不到 5%
+                            这条能立刻判断增长目标现不现实
+  money_supply_from_base    广义货币 = 基础货币 × 乘数
+                            ★ 金属货币制乘数≈1，现代部分准备金 8~12
+                            这解释了为什么古代通胀罕见而现代可以剧烈
+  inflation_from_money_growth  通胀 ≈ 货币增速 − 产出增速
+                            ★ 0.15 对 0.03 即约 12%，三年物价翻倍
+                            「滥发货币导致崩溃」时用它量化
+`
+
+/** 【材料·本构与微观决定（胡克/断裂韧性/熔点/Ashby）】按公式 id 调用，参数可带单位。 */
+const D_MATERIAL_BODY = (): string => `【材料·本构与微观决定（胡克/断裂韧性/熔点/Ashby）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+【本构：应力→应变→失效】
+  hooke_law                 σ = E·ε（弹性区公理，与材料种类无关）
+                            ★ 补上了库里断掉的一环：有 strain 定义却没有应力
+  safety_factor_check       σ_allow = σ_y/n（静载 1.5~2、冲击 2~4、疲劳 3~6）
+                            ★ 安全系数是工程惯例不是物理律，失效后果重就取大
+  fracture_kic              σ_c = K_IC/(Y·√(πa))
+                            ★ σ_c ∝ 1/√a：裂纹长一档，承载降 √10≈3.2 倍
+                            这就是为什么压力容器要定期探伤、大件比小试样更脆
+  ashby_index               M = E^a·σ^b/ρ^c（指数由几何形式决定）
+                            轻而刚的梁 E^½/ρ ｜ 轻而强的梁 σ^(2/3)/ρ ｜ 弹性储能 σ²/E
+                            ★ 把「选材」从审美变成可计算：设定说「这合金轻又强」→ 一算就知排第几
+
+【微观决定：材料属性从基础物理量推出】
+  ideal_strength            σ_ideal ≈ E/10（Frenkel；E/5~E/15 都有人用）
+                            ★ 真正有用的是比值：实际强度只有理论的 1/100~1/10
+                            **这个比值就是「冶金水平」** —— 工艺差的世界只能发挥 1%
+  melting_from_cohesive     T_m ≈ (2/3)·(结合能/k_B)（Lindemann）
+                            ★ 熔点能从结合能推 → 可反推设计：「要熔点 2000°C 的金属」
+  pugh_ductility            G/K > 0.57 偏脆，< 0.57 偏韧
+                            ★ K 与 G 都由键势推出，所以脆性也能从底层推
+  gruneisen_expansion       α = γ·C_v/(3KV)
+                            ★ 补上闭环：原来 α 是硬设定，现在能由 K、C_v、γ 推
+  hall_petch                σ_y = σ₀ + k_y·d^(−1/2)
+                            ★ 晶粒细化一个数量级，强度可翻倍 ——「锻造水平」= 能达到的 d
+                            ⚠ 有反 Hall-Petch 区（纳米晶粒下反而变弱）
+  wiedemann_franz           κ/σ = L₀·T（L₀ = 2.44e-8 是基本常数）
+                            ★ 罕见的严格关系：设了电导率，导热系数自动定
+`
+
+/** 【生物·通用（异速生长/扩散/遗传/生长/酶）】按公式 id 调用，参数可带单位。 */
+const D_BIO_BODY = (): string => `【生物·通用（异速生长/扩散/遗传/生长/酶）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  sa_volume_ratio           A ∝ M^(2/3) → 面积/体积 ∝ M^(−1/3)（**纯几何**）
+                            ★ 体重 ×8 → 面积 ×4 → 单位体重散热 ÷2（为什么会过热）
+                            同理鳃面积也只 ×4 → 摄氧 ÷2（为什么会缺氧）
+  fick_diffusion            J = D·A·ΔC/δ（鳃/肺/皮肤/根/细胞膜同一个式子）
+                            ★ A∝M^(2/3)、δ∝M^(1/3) → 供氧 ∝ M^(1/3)
+                            这就是「大生物必须换气而不能靠扩散」的定量证明
+  diffusion_time            t ≈ Δx²/(2D)
+                            ★ 1 µm→5 ms ｜ 10 µm→0.5 s（细胞够用）｜ 1 mm→83 min ｜ 1 m→158 年
+                            能立刻否掉「靠扩散供氧的巨兽」，用的是硬数学而非估计
+  peclet_number             Pe = L·u/D（扩散 vs 对流）
+                            ★ Reynolds 数的质量输运版：库里已有动量版，缺这个
+                            Pe≪1 扩散主导（微循环）、Pe≫1 必须泵（大血管）
+  hardy_weinberg            p² + 2pq + q² = 1（**纯概率论**，无生物假设）
+                            ★ 常算 2pq：隐性携带者比例。p=.9 q=.1 → 携带者 18% 而表现型只 1%
+  gompertz_growth           N = a·exp(−b·exp(−c·t))
+                            ★ 比指数/logistic 更贴合**有机体**真实生长（logistic 偏种群）
+  michaelis_menten          v = Vmax·S/(Km+S)
+                            ★ 一条式子覆盖五种现象：酶、载体转运、Holling 摄食、受体结合、养分吸收
+                            S≪Km 近线性、S≫Km 饱和 —— 这是「处理能力有限」的通用形状
+  q10_temperature           R = R₀·Q₁₀^((T−T₀)/10)
+                            ★ 生物界**实际使用**的温度律（生态模型几乎都用它，不用 Ea）
+                            与 arrhenius 并存：化学用 Arrhenius、生物用 Q₁₀
+`
+
+/** 【政权财政（赤字/基本余额/债务螺旋/铸币税）】按公式 id 调用，参数可带单位。 */
+const D_FISCAL_BODY = (): string => `【政权财政（赤字/基本余额/债务螺旋/铸币税）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  fiscal_balance            D = T − G（**会计恒等式**）
+                            ★ 关键细节：赤字**不含借债** —— 借来的钱是「赤字融资」不是收入
+                            把借债算成收入，就是财政崩溃前的典型自欺
+  primary_balance           PB = T −(G − 利息) = 财政余额 + 利息
+                            ★ 判断「还有没有救」的第一条判据：
+                            PB 正而总赤字负 → 经营赚钱、被旧债利息拖垮（可救）
+                            PB 负 → 经营本身在亏（结构性危机）
+  fiscal_sustainability     Δd = (i−g)·d − PB
+                            ★ i>g 时债务自我膨胀 —— 古代帝国（高利率低增长）财政脆弱的根源
+                            工业革命后的高增长期能承受高债务，就是这条的另一面
+  seigniorage               铸币税 ≈ 通胀 × 实际货币余额
+                            ★ 财政与货币的唯一接口：税收加不动、借债又 i>g → 只能铸币
+                            历史上几乎所有恶性通胀都发生在财政危机之后
+  effective_tax_rate        ETR = 实际税收/GDP（≠ 名义税率）
+                            ★ 差额正是漏征+逃亡。「名义 vs 实际」的差距 = 政权渗透能力
+                            前工业国家 ETR 通常只有 5%~10%
+  fiscal_autonomy           可裁量支出占比 = 1 − 刚性占比
+                            ★ 「改革为什么推不动」的定量答案：
+                            刚性 80%+ → 几乎没有政策自由度，任何冲击直接触发危机
+`
+
+/** 【宏观恒等式（GDP/增长核算/趋同/费雪）】按公式 id 调用，参数可带单位。 */
+const D_GDP_BODY = (): string => `【宏观恒等式（GDP/增长核算/趋同/费雪）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
+
+
+  gdp_expenditure           Y = C + I + G +(X−M)（会计恒等式）
+                            ★ 能立刻暴露不闭合的设定：C+I+G 超过 Y → 差额只能来自净进口或举债
+  growth_accounting         g_Y = g_A + α·g_K +(1−α)·g_L
+                            ★ 人口与资本都停时 g_Y ≈ g_A —— 这就是停滞文明为何停滞
+                            来源：BLS 官方 TFP 方法即基于此
+  convergence_speed         λ =(1−α)(n+δ+g)，差距按 e^(−λt) 收敛
+                            ★ 补 solow_steady_state 缺的那半：它给终点，这条给多久到达
+  fisher_money              MV = PY（V 是**可调的世界观参数**）
+                            ★ 金属货币社会 V 低、信用货币社会 V 高
+
+★ 这些式子的共同特点：**缩放律与恒等式比绝对值更重要**。算出来的数可以偏，
+  但「跨度翻倍挠度 16 倍」「PB = T −(G−利息)」这类关系错了就是硬伤。
+  可查 operation="help", helpTopic="policy" 看文明推演配方。`
+
+/**
+ * ────────────────────────────────────────────────────────────────────
+ * ## recipe 拆成三节（v2.3.4）
+ *
+ * 拆分前 `recipe` 一节 **5371 字符**，其中：
+ *
+ * ```
+ *   材料推演      2834  (53%)  ← 只有做材料设定才需要
+ *   文明崩溃推演   535
+ *   巨兽可行性     403
+ *   锚点/账本/多步  400  ← 通用，几乎每次都要
+ *   错误码表       953  ← 通用，出错时必查
+ * ```
+ *
+ * 三条推演配方是**不同场景**（财政 / 生物 / 材料），不该压在一节里 ——
+ * 查「怎么算帝国会不会崩」不该先读 2834 字符的材料链条。
+ *
+ * 拆成：`recipe`（通用手法：锚点/账本/多步链/错误码）、
+ * `recipe-fiscal`（文明崩溃）、`recipe-bio`（巨兽可行性）、`recipe-material`（材料三层链）。
+ * ────────────────────────────────────────────────────────────────────
+ */
+
+/** 【通用手法】锚点 sanity、账本闭合、多步链。 */
+const RECIPE_COMMON_BODY = (): string => `【锚点 sanity】工具不知道这个数该多大，但你可以逐条声明判据
   {label:"日产台数", expr:"1e8*25000", sanity:{max:1e10, note:"帝国总兵力"}}
   → ⚠ 超出锚点上限 1e10（帝国总兵力）达 250 倍
   键：max 上限 / min 下限 / expect 期望量级（expect:3 即 10³）/ note 依据
@@ -548,8 +802,48 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
 【多步链】批量内前一条的赋值对后一条可见：
   [{label:"单价", expr:"u=5"}, {label:"小计", expr:"u*3"}]
   ★ 中间某步失败时，依赖它的下游会明确报错，不会变成「虚成功」
+`
 
-【文明崩溃推演】财政链，每步可核对（用 formula 逐条调，数值自己代入）
+/** 【错误码】出错时按 hint 修正。 */
+const RECIPE_ERROR_BODY = (): string => `【失败时】返回 ok=false + error.type / message / hint，按 hint 修正即可，不会崩溃。
+  常见 error.type：
+    non_finite         结果非有限（除以零、log(0)）
+    unit_mismatch      两侧单位不同量纲
+    unknown_symbol     变量/函数未定义
+    unit_name_conflict 目标单位名撞内置函数（1 s to min → 写 minute）
+    not_a_quantity     to 左边不是带单位的量（裸数字没有单位可换）
+    unknown_argument   参数名认不出来（会点名是哪个）
+
+
+/**
+ * ────────────────────────────────────────────────────────────────────
+ * ## 领域公式节：从一节拆成九节（v2.3.4）
+ *
+ * 拆分前 domains 一节 **8707 字符**，是单次查询最贵的开销。
+ * 而它是九个互不相关的领域压在一起 —— 查「财政赤字」也要把梁柱挠度、
+ * 营养级、Péclet 数全读一遍。
+ *
+ * ## 为什么这是对的做法（成本结构决定）
+ *
+ * 
+ *   schema    6212 字符   每轮固定付，无法通过拆分降低
+ *   目录      1083 字符   按需付一次
+ *   单节       800~1400   按需付
+ * 
+ *
+ * 拆开后单次查询从 **8707 → 约 1500**（加目录约 2600），降 3.4 倍，
+ * 而固定成本只增加目录里多出来的几行。
+ *
+ * ★ 这正是「总长可以扩容，但要控制单次任务查询消耗」的落点：
+ *   扩容发生在**按需层**，固定层（schema）不动。
+ * ────────────────────────────────────────────────────────────────────
+ */
+
+/** 【工程·结构（梁柱应力/挠度/惯性矩/螺栓焊缝）】按公式 id 调用，参数可带单位。 */
+`
+
+/** 【文明崩溃推演】财政六步链。 */
+const RECIPE_FISCAL_BODY = (): string => `【文明崩溃推演】财政链，每步可核对（用 formula 逐条调，数值自己代入）
   ① effective_tax_rate     名义税率 30% 但实际只 10% → 征管弱，20% 是漏征+逃亡
   ② fiscal_balance         收入 10% GDP、支出 15% → 赤字 5%
   ③ primary_balance        PB = −5% + 利息 3% = −2% GDP
@@ -561,8 +855,10 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
   ⑥ fiscal_autonomy        刚性 85% → 没有可裁量的钱，改革也推不动
   ★ 这套链能推出「为什么这个政权看着还能撑、其实已在螺旋里」，
     比「因为腐败所以要亡」可信得多——腐败只是其中一环。
+`
 
-【巨兽可行性推演】生物链，回答「这么大的生物能不能活」
+/** 【巨兽可行性推演】生物六步链。 */
+const RECIPE_BIO_BODY = (): string => `【巨兽可行性推演】生物链，回答「这么大的生物能不能活」
   ① sa_volume_ratio        体重 ×8 → 表面积 ×4 → 单位体重散热与摄氧都 ÷2
   ② fick_diffusion         A∝M^(2/3)、δ∝M^(1/3) → 供氧能力 ∝ M^(1/3)
   ③ diffusion_time         若无循环，1 m 组织扩散需 158 年 → 必须有循环系统
@@ -571,8 +867,10 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
   ⑥ gompertz_growth        生长必然饱和 → 有上限体型
   ★ 结论通常是「不能靠扩散活，必须进化出循环 + 换气」，而不是「不可能」
     —— 差别在于前者给了可行路径。
+`
 
-【材料推演】三层链：**微观决定 → 本构 → 构件失效**
+/** 【材料推演】微观决定 → 本构 → 构件失效。 */
+const RECIPE_MATERIAL_BODY = (): string => `【材料推演】三层链：**微观决定 → 本构 → 构件失效**
   分两档起步：① 只想要工程结论 → 从 B 开始，硬设定 E/σ_y/K_IC/ρ
               ② 想让材料「自洽地生出来」→ 从 A 开始，从键强度推
 
@@ -636,210 +934,27 @@ const RECIPE_BODY = (): string => `【锚点 sanity】工具不知道这个数�
 
   ★ 一条纪律：工具**不判断你的材料合不合理**，只保证「基于你给的性质，后果算对」。
     A 层给方向、B 层给数值、C 层给尺寸 —— 想让哪层自洽，就从哪层起步。
+`
 
-【失败时】返回 ok=false + error.type / message / hint，按 hint 修正即可，不会崩溃。
-  常见 error.type：
-    non_finite         结果非有限（除以零、log(0)）
-    unit_mismatch      两侧单位不同量纲
-    unknown_symbol     变量/函数未定义
-    unit_name_conflict 目标单位名撞内置函数（1 s to min → 写 minute）
-    not_a_quantity     to 左边不是带单位的量（裸数字没有单位可换）
-    unknown_argument   参数名认不出来（会点名是哪个）`
-
-
-/**
- * 【工程 / 生物 / 宏观】专节 —— 覆盖写世界观最常用的三块。
- *
- * ## 为什么单独成节
- *
- * 这三块是本次新增的 29 条公式的落点，但它们在目录里跟「统计」「线代」混在一起时
- * 读者不会想到去查。单独一节把「我要算这座塔立不立得住」直接对上一个 key。
- *
- * ## 内容比旧版细得多
- *
- * 旧版 6000 字总预算下，每节只能给十几个字。现在每节按需付费，
- * 所以这里把**每条公式的适用域、典型取值、以及它会教你的那条 scaling 律**都写出来 ——
- * 那些才是判断「这个数合不合理」时真正要用的。
- */
-const DOMAINS_BODY = (): string => `【工程 / 生物 / 宏观】三块的常用算式（共 29 条，公式库里按 id 调用）
-
-调用方式与其它公式一样：{operation:"formula", formula:"id", overrides:{参数}}
-参数可带单位（"10 km"、"2 时辰"），会校验量纲并换算。
-
-════ 工程·结构（engineering/structures）════
-  beam_section_modulus      抗弯截面系数 W = b·h²/6
-                            ★ 梁要高不要宽：高度翻倍，抗弯能力 4 倍
-  beam_bending_stress       弯曲应力 σ = M/W（输出 MPa）
-                            与屈服强度比即知安全；钢梁许用应力取屈服 1/1.5~1/2
-  rect_inertia              惯性矩 I = b·h³/12
-                            ★ 高度的**三次方**——「梁要竖着放」的数学理由
-  beam_self_weight_moment   自重跨中弯矩 qL²/8
-                            ★ 跨度的**平方律**：跨度翻倍，弯矩 4 倍
-                            大跨度结构必须先算这项，否则漏掉最主要的荷载
-  beam_uniform_load_deflection 均布挠度 δ = 5qL⁴/(384EI)
-                            ★ 跨度的**四次方**：跨度翻倍，挠度 16 倍
-                            所以桥梁不能靠「加厚」延长跨度，必须改结构形式
-  bolt_shear_capacity       螺栓抗剪 F = n·τ·π·d²/4（4.6 级 τ≈141 MPa）
-                            ★ 承压型高强螺栓靠摩擦传力，不按这个算式
-  weld_throat_capacity      角焊缝 F = 0.707a·L·τ（喉部有效厚度 0.707a）
-
-════ 工程·热机与能量（engineering/thermal, energy）════
-  thermal_efficiency_carnot 卡诺上限 η ≤ 1 − Tc/Th
-                            ★ **绝对温度**不是摄氏度；300K/500K 之间上限 40%
-                            加多少煤都没用——只能提高热源温度或降低排热温度
-  steam_power_output        P = ṁ·Δh·η（Δh 焓差 J/kg）
-                            ★ 汽轮机 η≈0.35，往复式 η≈0.12：同功率只需 1/3 蒸汽
-                            这个 3 倍差距决定蒸汽朋克的煤耗与锅炉体积
-  boiler_coal_rate          每小时耗煤 = P/(cv·η)×3600（标准煤 2.93e7 J/kg）
-                            ★ 用「多少吨煤」比「多少瓦」更有体感
-  heat_exchanger_duty       Q = U·A·LMTD（对数平均温差）
-                            ★ 同样两端温差，逆流 LMTD 明显大于顺流——好换热器都做成逆流
-                            dT1 与 dT2 不能相等（那对应换热面积无穷大）
-  conduction_wall_loss      Q = k·A·ΔT/d
-                            ★ 岩棉 k=0.04、钢 45 —— 差 1000 倍
-                            10 cm 岩棉 ≈ 100 m 钢，这是「隔热好不好」的量化说法
-  wind_power_available      P = ½ρA·v³·Cp
-                            ★ 风速的**三次方**：5→10 m/s，功率 8 倍（最反直觉的一条）
-                            贝茨极限 0.593 是理论上限，实用 0.35~0.45
-  water_turbine_power       P = ρ·g·Q·H·η（与水泵恰好相反：η 是乘的）
-
-════ 工程·流体与管路（engineering/fluid）════
-  pipe_flow_rate            Q = v·π·d²/4
-                            ★ 管径翻倍，流量 4 倍——扩一倍口径顶四条旧管
-  darcy_head_loss           h = f·(L/d)·v²/(2g)
-                            ★ 流速的平方：流速翻倍损失 4 倍
-                            所以长距离输水宁可加大管径降流速（经济流速 1~2 m/s）
-  pump_power                P = ρ·g·Q·H/η（扬程含沿程损失）
-                            流量与扬程都是相乘，任一翻倍功率就翻倍
-  orifice_discharge         Q = Cd·A·√(2gh)
-                            ★ 水头的**平方根**：流量翻倍要水头 4 倍
-                            水库泄洪、攻城水攻、倒水时间估算都用它
-
-════ 生物·生态（biology/ecology）════
-  grazing_capacity          载畜量 = 面积×产草量×利用率/(采食量×天数)
-                            ★ 利用率取 0.5 不是保守而是必需：超载后草地退化，第二年产量腰斩
-                            温带草原 2000~5000 kg/(ha·年)，牛采食 40~60 kg/日
-  livestock_growth_time     (出栏重−初生重)/日增重
-                            ★ 猪≈180 天、牛≈450 天、肉鸡≈42 天；这个比值决定肉价与周转率
-  feed_conversion_ratio     料肉比 = 耗料/增重
-                            ★ 牛 6~8、猪 2.5~3.5、鸡 1.6~2.0
-                            直接决定「养一头牛要多少亩地」；牛高是反刍维持消耗大，不是品种差
-  crop_yield_npp            可收获干物质 = NPP×面积×收获指数
-                            ★ 谷物收获指数 0.4~0.5 —— 六成生物量是秸秆（饲料与燃料的来源）
-  trophic_chain_support     每级只剩约 10%
-                            ★ 养活 1 kg 狼要 10 kg 兔、100 kg 草
-                            这解释了为什么食物链一般不超过 5 级，也立刻否掉「满地猛兽」
-
-════ 宏观·经济（econ/macro）════
-  labor_force               劳力 = 人口 × 参与率（农业社会 0.45~0.55）
-                            ★ 0.45 里含着大量童工与老人——决定「能征多少兵、能修多大工程」
-  gdp_from_labor            产出 = 劳力 × 人均产出
-                            ★ 想提高总产出只有两条路；长期增长几乎全靠提高单产
-  macro_savings_rate        可投资额 = 产出 × 储蓄率
-                            ★ 增长燃料：东亚高速期 0.3+，贫困农业社会几乎攒不出投资
-  capital_output_ratio      所需资本产出比 = 储蓄率/增长率
-                            ★ 储蓄率 10%、目标增长 5%，需要资本产出比 2；实际要 4 就达不到 5%
-                            这条能立刻判断增长目标现不现实
-  money_supply_from_base    广义货币 = 基础货币 × 乘数
-                            ★ 金属货币制乘数≈1，现代部分准备金 8~12
-                            这解释了为什么古代通胀罕见而现代可以剧烈
-  inflation_from_money_growth  通胀 ≈ 货币增速 − 产出增速
-                            ★ 0.15 对 0.03 即约 12%，三年物价翻倍
-                            「滥发货币导致崩溃」时用它量化
-
-════ 材料·本构与微观决定（materials/）════
-【本构：应力→应变→失效】
-  hooke_law                 σ = E·ε（弹性区公理，与材料种类无关）
-                            ★ 补上了库里断掉的一环：有 strain 定义却没有应力
-  safety_factor_check       σ_allow = σ_y/n（静载 1.5~2、冲击 2~4、疲劳 3~6）
-                            ★ 安全系数是工程惯例不是物理律，失效后果重就取大
-  fracture_kic              σ_c = K_IC/(Y·√(πa))
-                            ★ σ_c ∝ 1/√a：裂纹长一档，承载降 √10≈3.2 倍
-                            这就是为什么压力容器要定期探伤、大件比小试样更脆
-  ashby_index               M = E^a·σ^b/ρ^c（指数由几何形式决定）
-                            轻而刚的梁 E^½/ρ ｜ 轻而强的梁 σ^(2/3)/ρ ｜ 弹性储能 σ²/E
-                            ★ 把「选材」从审美变成可计算：设定说「这合金轻又强」→ 一算就知排第几
-
-【微观决定：材料属性从基础物理量推出】
-  ideal_strength            σ_ideal ≈ E/10（Frenkel；E/5~E/15 都有人用）
-                            ★ 真正有用的是比值：实际强度只有理论的 1/100~1/10
-                            **这个比值就是「冶金水平」** —— 工艺差的世界只能发挥 1%
-  melting_from_cohesive     T_m ≈ (2/3)·(结合能/k_B)（Lindemann）
-                            ★ 熔点能从结合能推 → 可反推设计：「要熔点 2000°C 的金属」
-  pugh_ductility            G/K > 0.57 偏脆，< 0.57 偏韧
-                            ★ K 与 G 都由键势推出，所以脆性也能从底层推
-  gruneisen_expansion       α = γ·C_v/(3KV)
-                            ★ 补上闭环：原来 α 是硬设定，现在能由 K、C_v、γ 推
-  hall_petch                σ_y = σ₀ + k_y·d^(−1/2)
-                            ★ 晶粒细化一个数量级，强度可翻倍 ——「锻造水平」= 能达到的 d
-                            ⚠ 有反 Hall-Petch 区（纳米晶粒下反而变弱）
-  wiedemann_franz           κ/σ = L₀·T（L₀ = 2.44e-8 是基本常数）
-                            ★ 罕见的严格关系：设了电导率，导热系数自动定
-
-════ 生物·通用（biology/scaling, transport, genetics, growth, kinetics）════
-  sa_volume_ratio           A ∝ M^(2/3) → 面积/体积 ∝ M^(−1/3)（**纯几何**）
-                            ★ 体重 ×8 → 面积 ×4 → 单位体重散热 ÷2（为什么会过热）
-                            同理鳃面积也只 ×4 → 摄氧 ÷2（为什么会缺氧）
-  fick_diffusion            J = D·A·ΔC/δ（鳃/肺/皮肤/根/细胞膜同一个式子）
-                            ★ A∝M^(2/3)、δ∝M^(1/3) → 供氧 ∝ M^(1/3)
-                            这就是「大生物必须换气而不能靠扩散」的定量证明
-  diffusion_time            t ≈ Δx²/(2D)
-                            ★ 1 µm→5 ms ｜ 10 µm→0.5 s（细胞够用）｜ 1 mm→83 min ｜ 1 m→158 年
-                            能立刻否掉「靠扩散供氧的巨兽」，用的是硬数学而非估计
-  peclet_number             Pe = L·u/D（扩散 vs 对流）
-                            ★ Reynolds 数的质量输运版：库里已有动量版，缺这个
-                            Pe≪1 扩散主导（微循环）、Pe≫1 必须泵（大血管）
-  hardy_weinberg            p² + 2pq + q² = 1（**纯概率论**，无生物假设）
-                            ★ 常算 2pq：隐性携带者比例。p=.9 q=.1 → 携带者 18% 而表现型只 1%
-  gompertz_growth           N = a·exp(−b·exp(−c·t))
-                            ★ 比指数/logistic 更贴合**有机体**真实生长（logistic 偏种群）
-  michaelis_menten          v = Vmax·S/(Km+S)
-                            ★ 一条式子覆盖五种现象：酶、载体转运、Holling 摄食、受体结合、养分吸收
-                            S≪Km 近线性、S≫Km 饱和 —— 这是「处理能力有限」的通用形状
-  q10_temperature           R = R₀·Q₁₀^((T−T₀)/10)
-                            ★ 生物界**实际使用**的温度律（生态模型几乎都用它，不用 Ea）
-                            与 arrhenius 并存：化学用 Arrhenius、生物用 Q₁₀
-
-════ 政权财政（power/fiscal）════
-  fiscal_balance            D = T − G（**会计恒等式**）
-                            ★ 关键细节：赤字**不含借债** —— 借来的钱是「赤字融资」不是收入
-                            把借债算成收入，就是财政崩溃前的典型自欺
-  primary_balance           PB = T −(G − 利息) = 财政余额 + 利息
-                            ★ 判断「还有没有救」的第一条判据：
-                            PB 正而总赤字负 → 经营赚钱、被旧债利息拖垮（可救）
-                            PB 负 → 经营本身在亏（结构性危机）
-  fiscal_sustainability     Δd = (i−g)·d − PB
-                            ★ i>g 时债务自我膨胀 —— 古代帝国（高利率低增长）财政脆弱的根源
-                            工业革命后的高增长期能承受高债务，就是这条的另一面
-  seigniorage               铸币税 ≈ 通胀 × 实际货币余额
-                            ★ 财政与货币的唯一接口：税收加不动、借债又 i>g → 只能铸币
-                            历史上几乎所有恶性通胀都发生在财政危机之后
-  effective_tax_rate        ETR = 实际税收/GDP（≠ 名义税率）
-                            ★ 差额正是漏征+逃亡。「名义 vs 实际」的差距 = 政权渗透能力
-                            前工业国家 ETR 通常只有 5%~10%
-  fiscal_autonomy           可裁量支出占比 = 1 − 刚性占比
-                            ★ 「改革为什么推不动」的定量答案：
-                            刚性 80%+ → 几乎没有政策自由度，任何冲击直接触发危机
-
-════ 宏观恒等式（econ/macro, econ/growth）════
-  gdp_expenditure           Y = C + I + G +(X−M)（会计恒等式）
-                            ★ 能立刻暴露不闭合的设定：C+I+G 超过 Y → 差额只能来自净进口或举债
-  growth_accounting         g_Y = g_A + α·g_K +(1−α)·g_L
-                            ★ 人口与资本都停时 g_Y ≈ g_A —— 这就是停滞文明为何停滞
-                            来源：BLS 官方 TFP 方法即基于此
-  convergence_speed         λ =(1−α)(n+δ+g)，差距按 e^(−λt) 收敛
-                            ★ 补 solow_steady_state 缺的那半：它给终点，这条给多久到达
-  fisher_money              MV = PY（V 是**可调的世界观参数**）
-                            ★ 金属货币社会 V 低、信用货币社会 V 高
-
-★ 这些式子的共同特点：**缩放律与恒等式比绝对值更重要**。算出来的数可以偏，
-  但「跨度翻倍挠度 16 倍」「PB = T −(G−利息)」这类关系错了就是硬伤。
-  可查 operation="help", helpTopic="policy" 看文明推演配方。`
 /**
  * 各节注册表。**顺序即目录顺序**，而顺序决定「AI 会不会翻到它」。
  *
  * 排前面的是高频或高风险节：`evaluate` 最常用、`world` 体量最大。
- * `recipe` 放最后是因为它是跨节组合，读它之前一般已经读了几节。
+ *
+ * ## v2.3.4 从 14 节扩到 26 节
+ *
+ * 不是为了塞更多内容，而是**把「按需付费」做彻底**：
+ *
+ * ```
+ *   原 domains  8707 字符  九个互不相关的领域压在一起
+ *   原 recipe   5371 字符  三条场景配方 + 通用手法 + 错误码
+ * ```
+ *
+ * 查「财政赤字」要读梁柱挠度与 Péclet 数，查「帝国会不会崩」要先读 2834 字符的材料链 ——
+ * 这不合理。拆开后单次查询从 8707 降到 2840（最大节），典型任务约 2400。
+ *
+ * ★ 固定成本（schema 6212 字符）**一分没涨**：扩容全部发生在按需层。
+ * 目录从 1083 涨到 1284 —— 多出的 201 字符换来 12 个可独立查询的节。
  */
 export const HELP_TOPICS: HelpTopic[] = [
   /**
@@ -926,14 +1041,103 @@ export const HELP_TOPICS: HelpTopic[] = [
    * 只是不再为它们付「一句话简介 + 别名清单」的成本。
    */
   {
-    key: 'domains',
+    key: 'd-struct',
     tier: 'core',
-    /** 新增节，文档中尚无信号；按用户明确要求保留 core。 */
-    weight: 0,
-    title: '工程 / 生物 / 材料 / 财政 / 宏观（57 条领域公式）',
-    summary: '梁柱应力、热机煤耗、泵功率；扩散供氧、异速生长；胡克与断裂韧性、熔点与结合能；财政赤字与债务螺旋。★ 每条都写了 scaling 律。',
-    aliases: ['工程', '生物', '材料', '经济', '宏观', '财政', '税收', '债务', '建筑', '结构', '热机', '流体', '生态', '畜牧', '通胀', '作物'],
-    body: DOMAINS_BODY,
+    short: '梁柱结构',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 12,
+    title: '工程·结构（梁柱应力/挠度/惯性矩/螺栓焊缝）',
+    summary: '抗弯截面系数、弯曲应力、自重弯矩、均布挠度、惯性矩、螺栓抗剪、角焊缝。★ 跨度的高次方律：挠度 ∝ L⁴、弯矩 ∝ L²。',
+    aliases: ['结构', '梁', '柱', '跨中挠度', '弯曲应力', '惯性矩', '螺栓', '焊缝', 'beam'],
+    body: D_STRUCT_BODY,
+  },
+  {
+    key: 'd-thermal',
+    tier: 'core',
+    short: '热机煤耗',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 10,
+    title: '工程·热机与能量（卡诺/蒸汽/锅炉/换热）',
+    summary: '卡诺效率上限、蒸汽机功率、锅炉煤耗、换热器 LMTD、平壁导热。★ 卡诺是上限不是可达值。',
+    aliases: ['热机', '卡诺', '蒸汽机', '锅炉', '煤耗', '换热器', '导热', 'carnot'],
+    body: D_THERMAL_BODY,
+  },
+  {
+    key: 'd-fluid',
+    tier: 'core',
+    short: '管流泵',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 10,
+    title: '工程·流体与管路（管流/水头/泵/孔口）',
+    summary: '管道流量、达西水头损失、水泵轴功率、孔口出流、风功率、水轮机。★ 管径平方律、风功率随 v³。',
+    aliases: ['流体', '管流', '水头', '泵', '孔口', '风功率', '水轮机', 'darcy'],
+    body: D_FLUID_BODY,
+  },
+  {
+    key: 'd-ecology',
+    tier: 'core',
+    short: '生态畜牧',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 8,
+    title: '生物·生态（载畜量/料肉比/NPP/营养级）',
+    summary: '草地载畜量、畜禽出栏、料肉比、农田 NPP、营养级支撑。★ 每级只剩约 10%：养活 1kg 猛兽要 100kg 草。',
+    aliases: ['生态', '载畜量', '料肉比', '出栏', 'NPP', '营养级', '畜牧', 'grazing'],
+    body: D_ECOLOGY_BODY,
+  },
+  {
+    key: 'd-macro',
+    tier: 'core',
+    short: '劳力货币',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 8,
+    title: '宏观·经济（劳力/产出/储蓄/货币/通胀）',
+    summary: '劳动力、总产出、储蓄率、资本产出比、货币供应、通胀压力。★ 通胀 ≈ 货币增速 − 产出增速。',
+    aliases: ['宏观', '劳力', '储蓄率', '资本产出比', '货币供应', '通胀', '经济'],
+    body: D_MACRO_BODY,
+  },
+  {
+    key: 'd-material',
+    tier: 'core',
+    short: '材料本构',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 14,
+    title: '材料·本构与微观决定（胡克/断裂韧性/熔点/Ashby）',
+    summary: '胡克定律与许用应力、断裂韧性 K_IC、Ashby 选材、理论强度、熔点与结合能、Pugh 脆韧性、Hall-Petch。',
+    aliases: ['材料', '胡克', '断裂韧性', '韧性', '熔点', 'Ashby', '选材', '强度', '结合能', 'pugh'],
+    body: D_MATERIAL_BODY,
+  },
+  {
+    key: 'd-bio',
+    tier: 'core',
+    short: '生物通用',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 14,
+    title: '生物·通用（异速生长/扩散/遗传/生长/酶）',
+    summary: '表面积-体积比、Fick 扩散、扩散时间、Péclet、Hardy-Weinberg、Gompertz、米氏、Q₁₀。★ 跨类群跨世界通用。',
+    aliases: ['生物', '异速生长', '扩散', '供氧', '遗传', '基因频率', '生长曲线', 'Q10', '米氏', 'fick', 'Gompertz'],
+    body: D_BIO_BODY,
+  },
+  {
+    key: 'd-fiscal',
+    tier: 'core',
+    short: '政权财政',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 12,
+    title: '政权财政（赤字/基本余额/债务螺旋/铸币税）',
+    summary: '财政余额、基本余额、债务可持续判据、铸币税、有效税率、财政自由度。★ 「这个政权还有没有救」的判据在这。',
+    aliases: ['财政', '赤字', '税收', '债务', '铸币税', '基本余额', '国债', '破产', 'fiscal'],
+    body: D_FISCAL_BODY,
+  },
+  {
+    key: 'd-gdp',
+    tier: 'core',
+    short: 'GDP增长',
+    /** 从原 domains 一节拆出，权重按各领域实际使用分配。 */
+    weight: 10,
+    title: '宏观恒等式（GDP/增长核算/趋同/费雪）',
+    summary: '支出法 GDP（会计恒等式）、增长核算 TFP、趋同速度、费雪方程。★ 恒等式能立刻否掉不闭合的设定。',
+    aliases: ['GDP', '增长核算', 'TFP', '趋同', '费雪', '货币数量', '恒等式', '全要素生产率'],
+    body: D_GDP_BODY,
   },
   {
     key: 'linalg',
@@ -1032,15 +1236,54 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     key: 'recipe',
-    /** 同上：配方是「怎么把上面几个串起来」，属于建模段。 */
+    /** 通用手法：锚点/账本/多步链。几乎每次做多步推演都要看。 */
     tier: 'core',
-    /** 信号量 17。 */
-    weight: 17,
-    short: '锚点/账本/错误码',
-    title: '常见配方（锚点/账本闭合/多步链/错误码）',
-    summary: '锚点比对、账本闭合、多步链、三条推演配方（文明/巨兽/材料）、错误码。',
-    aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '错误', '配方'],
-    body: RECIPE_BODY,
+    weight: 20,
+    short: '锚点账本多步',
+    title: '通用手法（锚点 sanity / 账本闭合 / 多步链）',
+    summary: '怎么给数字加你自己的判据（sanity）、怎么核对账本闭合、怎么串多步链。★ 通用，不依赖领域。',
+    aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '配方', 'recipe'],
+    body: RECIPE_COMMON_BODY,
+  },
+  {
+    key: 'recipe-errors',
+    tier: 'core',
+    weight: 12,
+    short: '错误码对照',
+    title: '错误码对照（ok=false 时看这节）',
+    summary: 'non_finite / unit_mismatch / unknown_symbol / not_a_quantity 等错误类型的含义与修法。',
+    aliases: ['错误', '报错', 'error', '失败', 'error type'],
+    body: RECIPE_ERROR_BODY,
+  },
+  {
+    key: 'recipe-fiscal',
+    tier: 'core',
+    weight: 14,
+    short: '文明崩溃链',
+    title: '推演配方·文明崩溃（财政六步链）',
+    summary: '征管弱 → 赤字 → 基本余额为负 → i>g 螺旋 → 铸币 → 改革无空间。★ 每步可核对。',
+    aliases: ['文明崩溃', '帝国崩溃', '财政链', '死亡螺旋', '破产推演'],
+    body: RECIPE_FISCAL_BODY,
+  },
+  {
+    key: 'recipe-bio',
+    tier: 'core',
+    weight: 12,
+    short: '巨兽可行性',
+    title: '推演配方·巨兽可行性（生物六步链）',
+    summary: '表面积比 → Fick 通量 → 扩散时间 → Péclet → 饱和 → 生长上限。★ 回答「这么大的生物能不能活」。',
+    aliases: ['巨兽', '巨型生物', '可行性', '能不能活', '生物链'],
+    body: RECIPE_BIO_BODY,
+  },
+  {
+    key: 'recipe-material',
+    tier: 'core',
+    weight: 14,
+    short: '材料三层链',
+    title: '推演配方·材料（微观决定 → 本构 → 构件失效）',
+    summary: '从键强度推熔点/模量/强度，再到胡克/断裂韧性/许用应力，最后接梁柱尺寸。★ 两档起步。',
+    aliases: ['材料推演', '材料链', '本构', '键强度', '熔模强'],
+    body: RECIPE_MATERIAL_BODY,
   },
 ]
 
@@ -1134,7 +1377,15 @@ function renderIndex(): string {
    * 并且在这一段的开头直接给一句**触发词**：「正在手写循环/逐年表/参数扫描？先看这几节」。
    * 文档的建议原话也是这句：「能力不缺，缺的是一句『你正在手写循环？先看这里』」。
    */
-  const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'world', 'domains']
+  /**
+   * 建模段包含：动力学、公式库、参数扫描、配方、世界观，以及**九个领域公式节**。
+   *
+   * 领域节原本压成一节 `domains`（8707 字符），现在拆开 ——
+   * 查询「财政赤字」不必再读梁柱挠度与 Péclet 数。
+   * 拆开后它们仍然属于「建模」，因为它们都是公式（而不是算术）。
+   */
+  const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'recipe-errors', 'recipe-fiscal', 'recipe-bio', 'recipe-material', 'world',
+    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp']
   const isModeling = (topic: HelpTopic) => MODELING_KEYS.includes(topic.key)
   const arithmetic = core.filter((topic) => !isModeling(topic))
   const modeling = core.filter(isModeling)
@@ -1151,9 +1402,44 @@ function renderIndex(): string {
   lines.push('')
   lines.push('  ── 二、建模与推演 ──')
   lines.push('  ★ 正在手写循环 / 逐年表 / 参数扫描？先看这几节，别用脚本重写')
-  for (const topic of modeling) {
+  /**
+   * ## 领域公式节在目录里只给一行
+   *
+   * 这九节是原 `domains` 拆出来的。**如果每节都给标题 + 两句简介**，
+   * 目录会从 1083 涨到 1821 字符 —— 那等于把「按需付费」又搬回「每次多付」。
+   *
+   * 所以它们按「一行 key + 六字标签」呈现（与 extra 折叠节同一形态）：
+   * key 与标签足够让人知道**有这一节、叫什么**，详细内容查时再付。
+   *
+   * 这与本轮的目标一致：**扩容发生在按需层，固定层（目录）尽量不动**。
+   */
+  /**
+   * 紧凑组：领域公式节与推演配方节都只给「key=六字标签」。
+   *
+   * 它们的共同点是**场景特定** —— 查「财政赤字」的人不需要先读材料链条，
+   * 反之亦然。所以详细内容只在被查询时才付费。
+   */
+  const isCompact = (topic: HelpTopic) => topic.key.startsWith('d-') || topic.key.startsWith('recipe-')
+  const modelingCore = modeling.filter((topic) => !isCompact(topic))
+  const compactSections = modeling.filter(isCompact)
+  for (const topic of modelingCore) {
     lines.push('  ' + topic.key.padEnd(10) + topic.title)
     lines.push('    ' + topic.summary)
+  }
+  if (compactSections.length > 0) {
+    const domainSections = compactSections.filter((topic) => topic.key.startsWith('d-'))
+    const recipeSections = compactSections.filter((topic) => topic.key.startsWith('recipe-'))
+    const pushCompact = function (label: string, topics: HelpTopic[]) {
+      lines.push('  ' + label)
+      const labels = topics.map(function (topic) {
+        return topic.key + '=' + (topic.short ?? topic.title.slice(0, 8))
+      })
+      for (let index = 0; index < labels.length; index += 3) {
+        lines.push('    ' + labels.slice(index, index + 3).join('  ·  '))
+      }
+    }
+    if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
+    if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }
   /**
    * 低频节压成一行：`key` 后面跟六字标签。
