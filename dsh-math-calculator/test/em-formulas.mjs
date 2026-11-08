@@ -55,8 +55,8 @@ function near(a, b, tol = 1e-6) {
 console.log('-- 1. 公式总量与新增批量 --')
 {
   // 404 → 442（+38 电/光/核/化学计量）→ 471（+29 工程/生物/宏观）→ 499（+28 宏观/财政/材料/生物通用）
-  // → 513（+14 工艺级工程公式）
-  assert('公式总数 513', FORMULAS.length === 513, String(FORMULAS.length))
+  // → 513（+14 工艺级工程公式）→ 516（+3 材料成品性能）
+  assert('公式总数 516', FORMULAS.length === 516, String(FORMULAS.length))
   const byId = new Map(FORMULAS.map(function (f) { return [f.id, f] }))
   const newIds = ['ohm_current', 'ohms_law_resistance', 'electric_power_vi', 'resistors_mixed_two',
     'conductance_from_resistance', 'charge_from_current_time', 'capacitor_charge_from_cv',

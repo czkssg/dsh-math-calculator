@@ -220,7 +220,7 @@ console.log('-- 7. 工艺公式：农业与化工（A2/A5/A7/A8）--')
 
 console.log('-- 8. 公式库完整性（新增 14 条不破坏既有）--')
 {
-  assert('公式总数 513（499+14）', fm.FORMULAS.length === 513, String(fm.FORMULAS.length));
+  assert('公式总数 ≥ 513（499+14 工艺批，其后还有材料成品三条）', fm.FORMULAS.length >= 513, String(fm.FORMULAS.length));
   assert('索引与数组差 ≤ 4（仅历史重复）', fm.FORMULAS.length - fm.FORMULA_INDEX.size <= 4, String(fm.FORMULAS.length - fm.FORMULA_INDEX.size));
   /** 全部 14 条都在索引里（能被 formula 调）。 */
   const ids = ['kiln_heat_balance','kiln_firing_time','wall_heat_loss','metallurgy_yield','case_depth',

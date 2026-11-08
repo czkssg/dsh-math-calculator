@@ -143,6 +143,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
     keys: ['能源链', '窑炉', '燃料', '热平衡', '煤耗', 'energy chain'],
     steps: [
       { formula: 'combustion_energy', note: '燃料质量 × 热值 → 总放热' },
+      { formula: 'furnace_efficiency', note: '烟气/炉壁/不完全燃烧三种损失 → 有效热比例' },
       { formula: 'kiln_heat_balance', note: '坯体热 + 窑体损 → 一次烧成总耗热' },
       { formula: 'kiln_firing_time', note: '升温幅度 → 工期（受热应力限制）' },
       { formula: 'wall_heat_loss', note: '围护面积 + R 值 → 维持热损' },
@@ -169,6 +170,8 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
     steps: [
       { formula: 'metallurgy_yield', note: '矿石 × 品位 × 回收率 → 金属产出' },
       { formula: 'case_depth', note: '渗碳温度/时间 → 硬化层（决定工具耐用度）' },
+      { formula: 'quench_hardness', note: '含碳量 → 可达硬度上限（判断「这把刀能不能硬」）' },
+      { formula: 'sintering_porosity', note: '烧结温度/时间 → 孔隙率（陶与瓷的分界）' },
       { formula: 'gear_geometry', note: '模数 + 齿数 → 传动件尺寸' },
       { formula: 'gear_bending_strength', note: '传动件尺寸 → 能不能承受扭矩',
         feeds: [{ from: 'gear_geometry', to: 'gear_module' }] },

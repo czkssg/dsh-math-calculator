@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 513, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 516, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -200,6 +200,8 @@ const SUITES = [
   // 第十三批：宏观/财政/材料/生物通用 28 条 + 索引漏登修复
   // 工艺级工程公式 14 条 + precision/label 两处护栏修复
   // 公式体系（18 条推演链 + 28 个跨链接点）
+  // 材料成品性能三条（烧结/淬火/炉膛效率）
+  { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 25, label: '公式体系（18 链/接点双向可达/覆盖率）' },
   { file: 'process-formulas.mjs', expect: 53, label: '工艺公式（窑炉/冶金/齿轮/发酵/护栏修复）' },
   { file: 'macro-materials-bio.mjs', expect: 67, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
