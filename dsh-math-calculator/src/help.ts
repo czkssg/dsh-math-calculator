@@ -338,6 +338,15 @@ const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自
                例：把重力改成 1.5 倍地球 {"g": 14.71}；光速 {"c": 1e8}
                ★ 错拼的 key 会点名上报，不会静默忽略
 
+  【体系】公式不是散着的 —— 18 条推演链按「一条链算一遍」组织：
+    formulas query="sys"                  → 列出全部体系（材料/结构/能源/产能/食物/
+                                             生物/时间/财政/增长/建筑/气候/交通/军事/信息/
+                                             水利/金融/天文/生理）
+    formulas query="sys:sys-energy"       → 看能源链的逐步（每步公式、输出单位、需自备参数）
+    formulas query="sys:formula:材料"      → 看某条公式属于哪几条链（体系间的接点）
+    ★ 每步都标「← 上一步的谁作为本步的哪个参数」，照着填即可
+    ★ 体系之间靠共用公式连接（如 metallurgy_yield 同时属于材料链与产能链）
+    ★ 不必追求全部串成一条 —— 按推演目的取一条链，参数才不会拖家带口
   【参数带单位】两种写法等价，都能让单位真的参与计算：
     1) 逐参数带单位：overrides={V:"324375 L", n:20}   ← 更精确，可各给不同单位
     2) 整批声明：unitFrom="L", overrides={V:324375, n:20}   ← 更省事
@@ -1092,7 +1101,12 @@ export const HELP_TOPICS: HelpTopic[] = [
     /** 信号量 28。 */
     weight: 28,
     title: '公式库（formula / formulas）',
-    summary: `调 ${FORMULAS.length} 条公式、overrides 改造参数（架空世界的关键）、按层级/领域检索。`,
+    /**
+     * 摘要里必须提**体系**：用户要的是「公式怎么连起来」，
+     * 而不只是「有多少条公式」。一条 summary 里塞不下 18 条链的名字，
+     * 所以只给入口 `query="sys"`。
+     */
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 18 条推演链（公式怎么连起来）；formulas:[…] 一次算多条。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
     body: FORMULA_BODY,
   },
@@ -1521,6 +1535,7 @@ function renderIndex(): string {
         lines.push('    ' + labels.slice(index, index + 3).join('  ·  '))
       }
     }
+    lines.push('  ★ 公式不是散着的：formulas query="sys" 看 18 条推演链（材料/能源/产能/食物/财政/军事…）')
     if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
     if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }

@@ -153,7 +153,7 @@ import {
   type FormulaOverride,
   type WorkspaceFormulaTable,
 } from './formula-table.js'
-import { FORMULAS } from './formulas.js'
+import { FORMULAS, FORMULA_INDEX } from './formulas.js'
 import {
   TOOL_DESCRIPTION,
   buildSystemPromptSection,
@@ -209,6 +209,7 @@ import {
 } from './precision-report.js'
 import { opOde } from './ops/ode-op.js'
 import { opRecurrence } from './ops/recurrence-op.js'
+import { FORMULA_SYSTEMS, findSystem, systemsOfFormula } from './formula-systems.js'
 import { opWorld } from './ops/world-op.js'
 import { opConstants } from './ops/constants-op.js'
 import { opWorkspace } from './ops/workspace-op.js'
@@ -3028,6 +3029,91 @@ function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
 /** `formulas`：检索/浏览公式库。 */
 function opFormulas(args: MathArgs): Outcome {
   const query = (args.query ?? args.expression ?? '').trim()
+
+  /**
+   * ## 体系查询：`query="sys"` 或 `query="sys:材料链"`
+   *
+   * 用户要求把公式连成「一个个体系」而不是散着的 513 条。
+   * 所以这里开一个入口：`sys` 列出全部体系，`sys:xxx` 看某条链的逐步。
+   *
+   * ★ 为什么不另开 operation：它和 `formulas` 是同一个问题（「有哪些公式」），
+   *   只是**组织方式**不同（按链条而非按关键词）。分开会让「公式在哪查」变成二选一。
+   */
+  const sysMatch = query.match(/^(?:sys|system|体系|链|链条)[:：]?\s*(.*)$/i)
+  if (sysMatch) {
+    const target = (sysMatch[1] ?? '').trim()
+    if (target === '') {
+      const lines = ['═══ 公式体系（' + FORMULA_SYSTEMS.length + ' 条链）═══', '']
+      for (const system of FORMULA_SYSTEMS) {
+        lines.push('  ' + system.name)
+        lines.push('    ' + system.purpose)
+        lines.push('    ' + system.steps.length + ' 步 ｜ 查: formulas query="sys:' + system.id + '"')
+      }
+      lines.push('')
+      lines.push('★ 体系之间靠共用公式连接：问某条公式属于哪些链 → query="sys:formula:材料"')
+      return { result: lines.join('\n'), value: toJsonValue({ systems: FORMULA_SYSTEMS.map((s) => ({ id: s.id, name: s.name, steps: s.steps.length })) }) }
+    }
+    /** `sys:formula:xxx` → 查某条公式出现在哪些体系里（体系间的接点）。 */
+    const formulaProbe = target.match(/^(?:formula|公式)[:：]\s*(.+)$/i)
+    if (formulaProbe) {
+      const needle = formulaProbe[1].trim()
+      const formula = resolveFormulaStrict(currentFormulas(), needle)
+      if (!formula) {
+        throw new CalcError('unknown_formula', '没有匹配 "' + needle + '" 的公式', '用 formulas query="关键词" 检索。')
+      }
+      const owning = systemsOfFormula(formula.id)
+      if (owning.length === 0) {
+        return { result: formula.id + ' 不在任何已登记的体系里（它是一条独立公式）。\n用 formulas query="sys" 看全部体系。', value: toJsonValue({ formula: formula.id, systems: [] }) }
+      }
+      const lines = ['公式 ' + formula.id + '（' + formula.name + '）属于 ' + owning.length + ' 条链：', '']
+      for (const system of owning) {
+        lines.push('  ' + system.name)
+        lines.push('    ' + system.purpose)
+        const stepIndex = system.steps.findIndex((s) => s.formula === formula.id)
+        if (stepIndex >= 0) lines.push('    在这条链里是第 ' + (stepIndex + 1) + ' 步（共 ' + system.steps.length + ' 步）')
+        const bridges = (system.bridges ?? []).filter((b) => b.formula === formula.id)
+        for (const bridge of bridges) {
+          lines.push('    ★ 接点 → ' + bridge.toSystem + '：' + bridge.note)
+        }
+      }
+      return { result: lines.join('\n'), value: toJsonValue({ formula: formula.id, systems: owning.map((s) => s.id) }) }
+    }
+    const system = findSystem(target)
+    if (!system) {
+      throw new CalcError('unknown_argument', '没有名为 "' + target + '" 的体系', '用 formulas query="sys" 看全部体系 id 与名称。')
+    }
+    const lines = ['═══ ' + system.name + ' ═══', '', system.purpose, '', '按顺序执行：']
+    system.steps.forEach(function (step, index) {
+      const formula = FORMULA_INDEX.get(step.formula)
+      lines.push('')
+      lines.push('  ' + (index + 1) + '. ' + step.formula + (formula ? '  —— ' + formula.name : '  （公式不存在）'))
+      lines.push('     ' + step.note)
+      if (formula && formula.unit) lines.push('     输出单位: ' + formula.unit)
+      const required = formula ? Object.entries(formula.params).filter((entry) => (entry[1] as { value: unknown }).value === null).map((entry) => entry[0]) : []
+      if (required.length > 0) lines.push('     需自备参数: ' + required.join(', '))
+      if (step.feeds) {
+        for (const feed of step.feeds) {
+          const source = FORMULA_INDEX.get(feed.from)
+          lines.push('     ← ' + feed.from + ' 的输出' + (source ? '（' + source.name + '）' : '') + ' 作为 ' + feed.to)
+        }
+      }
+    })
+    if (system.bridges && system.bridges.length > 0) {
+      lines.push('')
+      lines.push('与其它体系的接点:')
+      for (const bridge of system.bridges) lines.push('  · ' + bridge.formula + ' → ' + bridge.toSystem + '：' + bridge.note)
+    }
+    return {
+      result: lines.join('\n'),
+      value: toJsonValue({
+        id: system.id,
+        name: system.name,
+        purpose: system.purpose,
+        steps: system.steps.map((s) => ({ formula: s.formula, note: s.note, feeds: s.feeds ?? [] })),
+        bridges: system.bridges ?? [],
+      }),
+    }
+  }
 
   // ── 频次查询：query="freq:high" / "频率:高" ──
   //

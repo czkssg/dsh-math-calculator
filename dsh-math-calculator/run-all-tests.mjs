@@ -199,6 +199,8 @@ const SUITES = [
   { file: 'em-formulas.mjs', expect: 43, label: '电/光/核/化学计量公式（38 条/量纲全覆盖/不许用 ln）' },
   // 第十三批：宏观/财政/材料/生物通用 28 条 + 索引漏登修复
   // 工艺级工程公式 14 条 + precision/label 两处护栏修复
+  // 公式体系（18 条推演链 + 28 个跨链接点）
+  { file: 'formula-systems.mjs', expect: 25, label: '公式体系（18 链/接点双向可达/覆盖率）' },
   { file: 'process-formulas.mjs', expect: 53, label: '工艺公式（窑炉/冶金/齿轮/发酵/护栏修复）' },
   { file: 'macro-materials-bio.mjs', expect: 67, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
   // 三份实践文档的缺口补齐：马力族单位/批量公式/离散递推/指定采样时点
