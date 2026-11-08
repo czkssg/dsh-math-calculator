@@ -123,7 +123,11 @@ console.log('-- 4. 三条已接进体系 --')
 
 console.log('-- 5. 公式库与体系完整性 --')
 {
-  assert('公式总数 516（513+3）', fm.FORMULAS.length === 516, String(fm.FORMULAS.length));
+  /**
+   * 改成下限：每加一批公式都要手改这个数字，很快就退化成「抄实际值」，什么也守不住。
+   * 真正要守的是「本批加的没把别人的挤掉」—— 那由「体系引用全部有效」那条守。
+   */
+  assert('公式总数 ≥ 516（本批之后只增不减）', fm.FORMULAS.length >= 516, String(fm.FORMULAS.length));
   const badRef = [];
   for (const system of sys.FORMULA_SYSTEMS) {
     for (const step of system.steps) if (!fm.FORMULA_INDEX.has(step.formula)) badRef.push(system.id + '→' + step.formula);

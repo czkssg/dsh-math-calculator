@@ -96,6 +96,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
     purpose: '「这个世界的材料能做什么」。从键强度出发，一路推到某个构件立不立得住。',
     keys: ['材料链', '键强度', '熔点', '模量', '强度', 'material chain'],
     steps: [
+      { formula: 'drying_shrinkage', note: '配料 → 总收缩（决定坯体能不能不裂）' },
       { formula: 'melting_from_cohesive', note: '结合能 → 熔点（耐热上限）' },
       { formula: 'thermal_expansion', note: '热膨胀系数（温差变形与热应力来源，接点自时间链）' },
       { formula: 'ideal_strength', note: '模量 E → 理论强度上限' },
@@ -172,6 +173,9 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'case_depth', note: '渗碳温度/时间 → 硬化层（决定工具耐用度）' },
       { formula: 'quench_hardness', note: '含碳量 → 可达硬度上限（判断「这把刀能不能硬」）' },
       { formula: 'sintering_porosity', note: '烧结温度/时间 → 孔隙率（陶与瓷的分界）' },
+      { formula: 'drying_shrinkage', note: '配料 → 总收缩（掺熟料减收缩，控开裂）' },
+      { formula: 'distillation_enrichment', note: '单级蒸馏富集倍数（判断要几块塔板）' },
+      { formula: 'crystallization_yield', note: '冷却结晶收率（硝石/海盐提纯）' },
       { formula: 'gear_geometry', note: '模数 + 齿数 → 传动件尺寸' },
       { formula: 'gear_bending_strength', note: '传动件尺寸 → 能不能承受扭矩',
         feeds: [{ from: 'gear_geometry', to: 'gear_module' }] },
