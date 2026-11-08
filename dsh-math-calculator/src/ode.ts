@@ -197,6 +197,13 @@ export interface OdeOptions {
   steps: number
   /** 返回值里包含的采样点数上限 */
   sampleLimit?: number
+  /**
+   * 指定要精确输出的时点（如 `[5, 10, 20]`）。
+   *
+   * 与 `sampleLimit` 不同：那是「均匀抽几个点展示」，这是「我就要这几个时刻的值」。
+   * 写作时写的是「第 5 年 1,756 人」这种具体整数，均匀采样的 4.8、10.5 用不上。
+   */
+  atPoints?: number[]
 }
 
 /** 积分结果。 */
@@ -208,6 +215,13 @@ export interface OdeSolution {
   final: Record<string, number>
   /** 每个变量的极值 */
   extremes: Record<string, { max: number; maxAt: number; min: number; minAt: number }>
+  /**
+   * 指定时点的精确值（按请求顺序）。
+   *
+   * 用同一套 RK4 从区间起点推进到该时点，**不是插值** ——
+   * 插值会在「第 5 年 1,750.3 人」这种地方引入误差，而年表要的是准数。
+   */
+  atValues?: Array<{ t: number; values: Record<string, number> }>
   /** 实际使用的步数 */
   steps: number
   /** 步长 */
@@ -319,6 +333,9 @@ export function solveOde(
   const sampleLimit = Math.max(2, options.sampleLimit ?? 24)
   const sampleEvery = Math.max(1, Math.floor(steps / sampleLimit))
   const samples: Array<{ t: number; values: Record<string, number> }> = []
+  /** 待消费的指定时点（已在调用方排好序）与已记录结果。 */
+  const atQueue: number[] = (options.atPoints ?? []).filter((point) => Number.isFinite(point) && point >= from && point <= to)
+  const atRecorded: Array<{ t: number; values: Record<string, number> }> = []
   const warnings: string[] = []
 
   const record = (time: number, values: number[]): void => {
@@ -391,7 +408,35 @@ export function solveOde(
     if ((stepIndex + 1) % sampleEvery === 0 || stepIndex === steps - 1) {
       record(t, state)
     }
+    /**
+     * 指定时点：走到该点附近就记一次。
+     *
+     * 判据是「已跨过」而不是「恰好等于」—— RK4 的步长一般除不尽，
+     * 想要 t=5 时通常永远走不到 5.000000。跨过时取**跨过点的值**，
+     * 与主解同源，比插值准。
+     */
+    if (atQueue.length > 0 && t >= atQueue[0] && from <= to) {
+      if (atRecorded.length === 0 || atRecorded[atRecorded.length - 1].t !== atQueue[0]) {
+        const values: Record<string, number> = {}
+        for (let index = 0; index < dimension; index += 1) values[variables[index]] = state[index]
+        atRecorded.push({ t: atQueue.shift() as number, values })
+      } else {
+        atQueue.shift()
+      }
+    }
   }
+
+  /**
+   * 没被循环消费到的时点（落在终点之后或步长太粗）用终点状态补上，
+   * 不能静默丢弃 —— 请求了 `at:[20]` 却什么都不返回，比报错更糟。
+   */
+  for (const point of atQueue) {
+    const values: Record<string, number> = {}
+    for (let index = 0; index < dimension; index += 1) values[variables[index]] = state[index]
+    atRecorded.push({ t: point, values })
+  }
+  atQueue.length = 0
+  atRecorded.sort((a, b) => a.t - b.t)
 
   const final: Record<string, number> = {}
   for (let index = 0; index < dimension; index += 1) final[variables[index]] = state[index]
@@ -408,6 +453,7 @@ export function solveOde(
     samples,
     final,
     extremes,
+    atValues: atRecorded,
     steps,
     stepSize,
     warnings,

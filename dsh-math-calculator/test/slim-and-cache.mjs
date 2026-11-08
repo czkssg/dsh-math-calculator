@@ -63,16 +63,34 @@ console.log('-- 1. 工具定义已瘦身（每轮成本）--')
 console.log('-- 2. 参数一个都没少（功能未缩水）--')
 {
   const props = Object.keys(tool.parameters.properties)
-  // 41 个原有 + expressions + terse + workspaceVariables + useWorkspaceVariables
-  // + helpTopic（分节帮助，v2.3.0）= 46
-  assert('参数仍有 46 个', props.length === 46, String(props.length))
+  /**
+   * ## 这条守的是「功能没缩水」，所以写成 `>=`，不是 `==`
+   *
+   * 演进史：41 个原有 + expressions + terse + workspaceVariables +
+   * useWorkspaceVariables + helpTopic(v2.3.0) = 46；
+   * 本轮再 + formulas / recurrence / periods / at = 50。
+   *
+   * 原先写成 `=== 46` 是个隐患：**加参数会让这条红**，而加参数本来是正常演进。
+   * 结果就是每次加功能都要手改这个数字 —— 而改的次数多了，
+   * 这个断言就退化成「照着实际值抄一遍」，什么也守不住。
+   *
+   * 所以改成下限：只在**参数被删掉**时报警，那才是它真正要防的事。
+   */
+  assert('参数不少于 46 个（功能未缩水）', props.length >= 46, String(props.length))
   // 关键参数必须都在
   for (const name of ['world', 'terrain', 'constants', 'balance', 'customUnits',
     'precision', 'displayPrecision', 'formula', 'overrides', 'bodyType']) {
     assert('参数 ' + name + ' 仍在', props.includes(name), '')
   }
+  /**
+   * 同上的理由：改下限。原来 `=== 30`，本轮加 `recurrence` 变 31。
+   *
+   * 守的是「operation 没被删」，不是「不多不少 30 个」。
+   */
   const ops = tool.parameters.properties.operation.enum
-  assert('operation 仍有 30 个', ops.length === 30, String(ops.length))
+  assert('operation 不少于 30 个（功能未缩水）', ops.length >= 30, String(ops.length))
+  /** 本轮新增的 recurrence 必须真的在 enum 里（否则调用会报 invalid）。 */
+  assert('operation 含 recurrence', ops.includes('recurrence'), ops.join(','))
 }
 
 console.log('-- 3. 移走的说明必须在 help 里找得到 --')

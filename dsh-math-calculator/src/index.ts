@@ -208,6 +208,7 @@ import {
   setDisplayPrecisionExplicit,
 } from './precision-report.js'
 import { opOde } from './ops/ode-op.js'
+import { opRecurrence } from './ops/recurrence-op.js'
 import { opWorld } from './ops/world-op.js'
 import { opConstants } from './ops/constants-op.js'
 import { opWorkspace } from './ops/workspace-op.js'
@@ -349,6 +350,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'formula',
   'formulas',
   'ode',
+  'recurrence',
   'world',
   'constants',
   'workspace',
@@ -2677,6 +2679,25 @@ function formaliveUnitOf(formula: FormulaDef, name: string): string {
   return unitFromDescription(spec.desc, (name) => { try { return findUnit(name) !== undefined } catch { return false } })
 }
 function opFormula(args: MathArgs, engine: any, precision: number): Outcome {
+  /**
+   * ## 批量调公式：`formulas: [...]`（结构性不足文档第四节）
+   *
+   * 实测反馈：「需要对 22 条公式做批量调用，但 `formula` 不支持 expressions 数组，
+   * 每次只能手动拆成单条 evaluate，等于放弃了公式库的全部价值。」
+   *
+   * 这不是「再开一个 operation」，而是**同一条公式的 N 次调用**——
+   * 所以做成 `formula` 的数组入参，语义与单个调用完全一致（含 unitFrom/unitTo/terse）。
+   *
+   * 元素两种写法：
+   *   · 字符串          "kleiber"
+   *   · 对象            {formula:"kleiber", overrides:{m:100}, label:"鼠"}
+   *
+   * ★ 一条失败不影响其它条 —— 与 `evaluate` 的 expressions 同一条纪律：
+   *   批量是「多条独立查询」，不是「一个事务」。汇总里会如实报 failed 条数。
+   */
+  if (Array.isArray((args as any).formulas) && (args as any).formulas.length > 0) {
+    return opFormulaBatch(args, engine, precision)
+  }
   const query = (args.formula ?? args.expression ?? '').trim()
   if (query === '') {
     throw new CalcError('invalid_argument', '需要 formula 参数', '传公式 id 或名称，例如 "escape_velocity"、"逃逸速度"。用 operation="formulas" 检索。')
@@ -3211,10 +3232,12 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'matrix', 'vector', 'precision', 'displayPrecision',
   // 数据与统计
   'data', 'dataY', 'distribution', 'params', 'x', 'degree',
-  // 公式
-  'formula', 'overrides', 'query', 'customExpression',
-  // 微分方程 / 物理
-  'initial', 'from', 'to', 'steps', 'samples',
+  // 公式（formulas 是批量，一次算多条）
+  'formula', 'formulas', 'overrides', 'query', 'customExpression',
+  // 微分方程 / 物理（at 是 ode 的指定采样时点）
+  'initial', 'from', 'to', 'steps', 'samples', 'at',
+  // 离散递推
+  'recurrence', 'periods',
   // 星球与推演
   'world', 'terrain', 'constants', 'derivation', 'layer',
   // 工作区
@@ -3478,7 +3501,7 @@ export function runMathTool(rawArguments: unknown): MathResult {
     const CACHEABLE: MathOperation[] = [
       'auto', 'evaluate', 'solve', 'system', 'derivative', 'integral',
       'simplify', 'expand', 'roots', 'matrix', 'eigen', 'stats', 'dist',
-      'regression', 'ode', 'formula', 'units',
+      'regression', 'ode', 'recurrence', 'formula', 'units',
     ]
     /**
      * 状态变更类操作：先清空缓存，再走正常流程。
@@ -3661,14 +3684,49 @@ export function runMathTool(rawArguments: unknown): MathResult {
       case 'regression':
         outcome = opRegression(args, input, precision)
         break
-      case 'formula':
+      case 'formula': {
         outcome = opFormula(args, engine, precision)
+        /**
+         * 批量公式的成败要在这里汇总成 `ok/partial/failed/succeeded`。
+         *
+         * 与 `evaluate` 的批量走同一套语义（见上方 3590 行那段注释）：
+         *   · `ok:false` 告诉自动化流程「本批不是全好」
+         *   · `partial:true` 告诉它「但有成功的条目可用」
+         *   · 顶层 `error` 仍是 `undefined`（这是批量失败，不是整体错误）
+         *
+         * 踩过：这些字段直接在 `opFormulaBatch` 的返回值上展开，
+         * 会被 `Outcome` 类型断言吞掉 —— 正文写着「成功 0，失败 3」，
+         * 而结构化字段全是 `undefined`。所以在这里显式赋给 `MathResult`。
+         */
+        if (Array.isArray((args as any).formulas)) {
+          const batch = (outcome.value ?? {}) as Record<string, unknown>
+          const failedCount = typeof batch.failed === 'number' ? batch.failed : 0
+          const succeededCount = typeof batch.succeeded === 'number' ? batch.succeeded : 0
+          const batched: MathResult = {
+            ok: failedCount === 0,
+            operation: 'formula',
+            input: 'formulas: ' + (args as any).formulas.length + ' 条',
+            result: outcome.result,
+            precision,
+          }
+          if (outcome.value !== undefined) batched.value = outcome.value
+          if (failedCount > 0) {
+            batched.partial = succeededCount > 0
+            batched.failed = failedCount
+            batched.succeeded = succeededCount
+          }
+          outcome = batched
+        }
         break
+      }
       case 'formulas':
         outcome = opFormulas(args)
         break
       case 'ode':
         outcome = opOde(args, engine, precision)
+        break
+      case 'recurrence':
+        outcome = opRecurrence(args, precision)
         break
       case 'world':
         outcome = opWorld(args, precision)
@@ -3712,14 +3770,29 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
     }
 
+    /**
+     * ## 这里重新构造 `MathResult`，所以 `outcome` 上的成败字段必须**显式搬过来**
+     *
+     * 踩过两次，都是同一类：
+     *   ① 批量公式把 `ok/partial/failed/succeeded` 挂在 `outcome` 上 → 被这里覆盖成 `ok:true`
+     *   ② 早先 `evaluate` 批量也有同样问题，但它有独立的组装分支绕过去了
+     *
+     * 教训：`Outcome` 只是中间载体，真正的返回对象在这一处生成。
+     * 想加任何顶层字段，都得在这里接一次。
+     */
+    const batchOk = (outcome as any).ok as boolean | undefined
     const result: MathResult = {
-      ok: true,
+      ok: batchOk === undefined ? true : batchOk,
       operation,
       input,
       result: outcome.result,
       precision,
     }
     if (outcome.value !== undefined) result.value = outcome.value
+    for (const key of ['partial', 'failed', 'succeeded'] as const) {
+      const value = (outcome as any)[key]
+      if (value !== undefined) (result as any)[key] = value
+    }
     const variables = scopeSummary(args.variables)
     if (variables !== undefined) result.variables = variables
 
@@ -4238,8 +4311,7 @@ const PARAMETER_SPEC = {
   expression: {
     type: 'string',
     description:
-      '数学表达式、方程或待处理数据。多方程用逗号分隔（3x + 2y = 10, x - y = 1）。' +
-      '例：10^20 + 5、factorial(50)、x^3 * sin(x)、[[1,2],[3,4]] * [[5],[6]]、[1,2,3,4]。operation=help 时可空。',
+      '表达式、方程或数据。多方程逗号分隔。例：10^20+5、x^3*sin(x)、[[1,2],[3,4]]*[[5],[6]]。',
   },
   expressions: {
     type: 'array',
@@ -4285,8 +4357,7 @@ const PARAMETER_SPEC = {
     // 不逐个解释每个 operation 名称：enum 里已经列全，而 `help` 有完整说明。
     // 这里只给「怎么选」的判断线索，那才是 AI 真正需要的。
     description:
-      '默认 auto。简易算式用 evaluate；数据用 stats/dist/regression；' +
-      '改动设定后用 world/derivation；不确定就调 help 看全表。',
+      '默认 auto。简易算式 evaluate；数据 stats；改设定 world/derivation；不确定调 help。',
   },
   variable: {
     type: 'string',
@@ -4301,9 +4372,7 @@ const PARAMETER_SPEC = {
   unitFrom: {
     type: 'string',
     description:
-      '源单位。operation=units 时使用。支持中文古制（里/丈/尺/寸/步/亩/顷/斤/两/石/斗/刻/时辰/更）、' +
-      '英制（英里/英尺/磅/加仑）、天文（AU/光年/秒差距/地球半径/太阳半径）。' +
-      '只给单位不给参数则列出全部可用单位。',
+      '源单位（units）。支持中文古制（里/丈/斤/亩/时辰/刻）、英制（英里/磅/加仑）、天文（AU/光年）。只给单位不给数值则列全表。',
   },
   unitTo: {
     type: 'string',
@@ -4319,14 +4388,12 @@ const PARAMETER_SPEC = {
     type: 'object',
     additionalProperties: true,
     description:
-      '收支盘点（operation=balance）：每项 {demand, supply, unit?}，给最短板。' +
-      '只判社会收支；单项生理/工程上限用 feasibility。',
+      '收支盘点（balance）：每项 {demand, supply, unit?}，给最短板。单项上限用 feasibility。',
   },
   bodyName: {
     type: 'string',
     description:
-      '查单个天体（operation=bodies）。可给 id（mars）或中文名（火星）。' +
-      '已收录太阳系全 8 大行星 + 月球类卫星 + 代表性系外行星 + 矮行星 + 各亮度级恒星。',
+      '查天体（bodies）：id（mars）或中文名（火星）。含行星、卫星、系外行星、矮行星、各级恒星。',
   },
   bodyKind: {
     type: 'string',
@@ -4336,8 +4403,7 @@ const PARAMETER_SPEC = {
   bodyConstant: {
     type: 'string',
     description:
-      'bodies：改常数后看哪些天体数据该重算。例 bodyConstant="alpha_fs", bodyFactor=2。' +
-      '输出分「必须重算」与「绝不该动」两块（行星质量/半径/轨道与 α 无关）。',
+      'bodies：改常数后看哪些天体数据该重算。例 alpha_fs + bodyFactor=2。分「必须重算」与「绝不该动」两块。',
   },
   bodyFactor: {
     type: 'number',
@@ -4368,8 +4434,7 @@ const PARAMETER_SPEC = {
   displayPrecision: {
     type: 'integer',
     description:
-      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数、整数永远完整，0 = 只留整数。' +
-      '可用 workspace set displayPrecision=N 固化（那里的 0 = 清除）。',
+      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数、整数完整，0=只留整数。可 workspace set 固化（0=清除）。',
   },
   data: {
     type: 'array',
@@ -4398,30 +4463,32 @@ const PARAMETER_SPEC = {
   formula: {
     type: 'string',
     description:
-      'operation="formula" 时要调的公式 id 或名称，例如 "escape_velocity"、"逃逸速度"、"cobb_douglas"。' +
-      '用 operation="formulas" 检索可用公式。',
+      'operation="formula"：公式 id 或名称，如 "escape_velocity"、"逃逸速度"。检索用 operation="formulas"；多条用 formulas 数组。',
   },
+  formulas: { type: 'array', items: { type: 'json', description: '"kleiber" 或 {formula, overrides?, label?}' }, description: '批量调多条公式；一条失败不影响其它条。' },
   overrides: {
     type: 'object',
     additionalProperties: true,
     description:
-      '覆盖公式任意参数 —— 架空世界改造的关键。例：重力 1.5 倍 {"g": 14.71}、光速 {"c": 1e8}。',
+      '覆盖公式任意参数（架空改造的关键）。例：重力 1.5 倍 {"g":14.71}、光速 {"c":1e8}。',
   },
   customExpression: {
     type: 'string',
     description:
-      'structure 级改造：临时替换公式表达式，沿用其参数名。例 formula="weight", customExpression="m*g*1.3" 表示重力 +30%。',
+      'structure 级改造：临时替换公式表达式，沿用参数名。例 customExpression="m*g*1.3" 即重力 +30%。',
   },
   query: {
     type: 'string',
     description: 'operation="formulas" 的检索关键词，例如 "重力"、"熵"、"人口"；传 "*" 或留空列出全部分类。',
   },
+  recurrence: { type: 'string', description: 'operation="recurrence"：下一期 = f(本期)，如 "P*2"、"P*min(1.2,1000/P)"。配 initial 与 periods 出逐期表。' },
+  periods: { type: 'integer', description: 'recurrence 的迭代期数（默认 12，上限 5000）。' },
+  at: { type: 'array', items: { type: 'number' }, description: 'ode 要精确输出的时点，如 [5,10,20]（写年表用）。' },
   initial: {
     type: 'object',
     additionalProperties: true,
     description:
-      'operation="ode" 的初值条件。例如 {"S": 999, "I": 1, "R": 0}。' +
-      '二阶方程降阶后可能还需要辅助变量（如 y_d 表示 dy/dt），缺了会提示补哪个。',
+      'ode/recurrence 初值，如 {"S":999,"I":1}。二阶降阶需辅助变量 y_d=dy/dt，缺了会提示。',
   },
   from: {
     type: 'number',
@@ -4445,9 +4512,7 @@ const PARAMETER_SPEC = {
     // 字段清单不写在 schema 里：schema 每轮都要付费，而这些字段只在
     // 真用 world 时才需要。全文见 help（operation="help", query="world"）。
     description:
-      '星球参数（operation=world），全部可选，默认地球。' +
-      '常用键：planetMass/planetRadius、starMass/starTemp、rotationHours、obliquityDeg。' +
-      '完整字段表见 help。',
+      '星球参数（world），可选，默认地球。常用键 planetMass、starMass、rotationHours、obliquityDeg。完整见 help。',
   },
   planetRadius: {
     type: 'number',
@@ -4470,16 +4535,14 @@ const PARAMETER_SPEC = {
     additionalProperties: true,
     // 同上：地形字段有九项，逐项列在 schema 里太贵。
     description:
-      '局部地形（operation=world 附带），给了就额外输出该地点气候细节。' +
-      '常用键：kind、elevation、latitudeDeg、oceanCurrent。完整键表见 help。',
+      '局部地形（world 附带）。常用键 kind、elevation、latitudeDeg、oceanCurrent。完整见 help。',
   },
   constants: {
     type: 'object',
     additionalProperties: true,
     // 旋钮清单移进 help：只有要改常数时才需要，不该每轮付费
     description:
-      '要改的物理常数（operation=constants），只能改基础旋钮，派生量自动重算。' +
-      '例：{c:1.5e8}。可用旋钮清单见 help 的 constants 节。',
+      '要改的物理常数（constants）：只改基础旋钮，派生量自动重算。例 {c:1.5e8}。旋钮清单见 help。',
   },
   helpTopic: {
     type: 'string',
@@ -4558,6 +4621,98 @@ function checkPrecisionTruncation(
     ' 位可能已失真。需要精确值时请用 precision:64（默认），' +
     '只想让输出短些请用 displayPrecision。'
 }
+
+/**
+ * 批量调公式（`formulas: [...]`）。
+ *
+ * ## 为什么复用 opFormula 而不是重写一套
+ *
+ * 单个调用涉及：严格解析、overrides 覆盖、单位换算、terse 精简、
+ * 适用域提示、未生效 key 上报 —— 这些逻辑**必须与单条完全一致**。
+ * 重写一套必然漂移，而「单条能算、批量算得不一样」正是这个项目
+ * 反复修过的那类缺陷（1107 报告的批量非有限值、单条/批量输出不一致）。
+ *
+ * 所以这里只做三件事：逐条调用、收集结果、汇总成败。
+ *
+ * ## 失败语义
+ *
+ * 一条失败 → 该条在输出里标 `失败[type]`，继续算下一条，
+ * 最后由 `ok`/`failed`/`succeeded` 如实汇总。**不因为一条错就中断整批**。
+ *
+ * @param args - 含 `formulas` 数组的入参
+ * @param engine - mathjs 实例
+ * @param precision - 计算精度
+ * @returns 批量结果
+ */
+function opFormulaBatch(args: MathArgs, engine: any, precision: number): Outcome {
+  const list = (args as any).formulas as any[]
+  const lines: string[] = []
+  const rows: Record<string, unknown>[] = []
+  let failed = 0
+  lines.push('═══ 批量公式（' + list.length + ' 条）═══')
+  lines.push('')
+  for (let index = 0; index < list.length; index += 1) {
+    const item = list[index]
+    const isObject = item !== null && typeof item === 'object'
+    const id = String(isObject ? (item.formula ?? item.id ?? '') : item).trim()
+    const label = isObject && item.label !== undefined ? String(item.label) : ''
+    /** 逐条构造入参：继承顶层公共参数（terse/unitFrom/unitTo/precision），再叠加元素自己的。 */
+    const oneArgs: MathArgs = {
+      ...args,
+      formulas: undefined,
+      formula: id,
+      expression: undefined,
+      overrides: isObject && item.overrides ? item.overrides : (isObject ? undefined : args.overrides),
+    } as MathArgs
+    (oneArgs as any).formulas = undefined
+    if (isObject && item.terse !== undefined) (oneArgs as any).terse = item.terse
+    const prefix = label === '' ? '' : label + '（' + id + '）'
+    try {
+      const outcome = opFormula(oneArgs, engine, precision)
+      const text = String(outcome.result ?? '').trim()
+      /**
+       * 抓「结果:」那一行 —— 公式输出的第一行是标题（名称 + 分类），
+       * 数值在「结果:」行上。只取首行会得到 `克莱伯定律（代谢率） [physics/scaling]`，
+       * 数值整个丢了，而批量恰恰是为了看一串数。
+       */
+      const valueLine = text.split(/\r?\n/).find(function (line) { return line.trim().startsWith('结果') })
+      const first = valueLine ?? (text.split(/\r?\n/).find(function (line) { return line.trim() !== '' }) ?? '')
+      /** terse 输出本身已是 `kleiber = 31622…`，别再加一层 `id = ` 变成 `kleiber = kleiber = …`。 */
+      const alreadyNamed = String(first).trim().startsWith(id + ' =')
+      const shown = String(first).replace(/^结果\s*[:：]\s*/, '').trim()
+      const body = alreadyNamed ? shown : id + ' = ' + shown
+      lines.push('  ' + (prefix === '' ? body : prefix + ' = ' + shown))
+      rows.push({ formula: id, label: label === '' ? null : label, ok: true, result: outcome.value ?? null })
+    } catch (error) {
+      failed += 1
+      const type = (error as any)?.type ?? 'unknown'
+      const message = String((error as any)?.message ?? error).slice(0, 120)
+      lines.push('  ' + (prefix === '' ? id : prefix) + ' → 失败[' + type + '] ' + message)
+      rows.push({ formula: id, label: label === '' ? null : label, ok: false, error: type })
+    }
+  }
+  const succeeded = list.length - failed
+  lines.push('')
+  lines.push(
+    failed === 0
+      ? '全部 ' + succeeded + ' 条都有结果（只表示公式存在且参数可算，不含结论正确性判断）'
+      : '成功 ' + succeeded + '，失败 ' + failed + '（失败条已逐条标注原因）',
+  )
+  /**
+   * 汇总字段必须**真的出现在返回值里**：`ok` / `failed` / `succeeded` / `partial`。
+   *
+   * 踩过：`{...cond ? {...} : {...}}` 这种写法在 Outcome 类型下会被类型断言吞掉，
+   * 实测返回 `ok=true` 却 `failed=undefined` —— 而正文里明明写着「成功 0，失败 3」。
+   * 正文与结构化字段不一致，比只给正文更糟（调用方读哪个？）。
+   * 所以改成显式赋值。
+   */
+  /** 汇总字段放进 `value`，由调用方（`runMathTool`）提升到顶层 `MathResult`。 */
+  return {
+    result: lines.join('\n'),
+    value: toJsonValue({ count: list.length, succeeded, failed, rows }),
+  }
+}
+
 /**
  * 数学计算工具（`math_execute`）。
  *

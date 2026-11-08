@@ -269,30 +269,67 @@ const STATS_BODY = (): string => `【统计与概率】
     A/B 结果差异是不是巧合 → t 分布`
 
 /** 【微分方程】ODE 数值解。 */
-const ODE_BODY = (): string => `【微分方程】ode 数值求解（RK4）
+const ODE_BODY = (): string => `【动力学】连续用 ode，离散用 recurrence
 
+  ★★ 先判断：你的模型是「连续变化」还是「按期结算」？
+     连续（每个人随时都在增长）→ ode
+     离散（年度结算、批次解锁、世代更替）→ recurrence
+     两者答案不同，写年表必须用离散值（见下面第 3 段）。
+
+══ 1. ode：连续时间积分（RK4）══
   一阶方程组（SIR / 捕食模型）与二阶方程（自动降阶）都能解。
 
   参数：
-    expression  状态方程，多个用分号分隔。等号左边是导数变量
-                例："S'=-k1*S*I; I'=k1*S*I-k2*I; R'=k2*I"   ← SIR 传染病
-                    "x'=y; y'=-k*x"                        ← 简谐振子
-    initial     初值对象 {S:999, I:1, R:0}
+    expression  状态方程，分号分隔。等号左边是导数变量
+                例："S'=-k1*S*I; I'=k1*S*I-k2*I; R'=k2*I"   ← SIR
+                    "x'=y; y'=-k*x"                        ← 简谐
+    initial     初值 {S:999, I:1, R:0}
     from/to     积分区间（默认 0 → 10）
-    steps       RK4 步数（默认 1000，刚性方程要加大）
-    samples     返回的采样点数（默认 24，只要不爆内存可以调大）
+    steps       RK4 步数（默认 1000，刚性方程加大）
+    samples     返回采样点数（默认 24）
+    at           ★ 要精确输出的时点，如 [5,10,20]
 
-  返回：轨迹（时间序列）、终点值、极值、**发散警告**
+  返回：轨迹、终点值、极值、指定时点的值、**发散警告**
 
-  ★ 二阶方程降阶：y'' 要写成 y'=y_d; y_d'=…，y_d 表示 dy/dt。
-    缺了辅助变量会提示补哪个，不会静默给错。
+  ★ at 是什么用的：默认采样是均匀的（t = 1, 2.9, 4.8, …），
+    写年表时「第 5 年、第 10 年」一个都对不上。传 at:[5,10,20] 就精确给那几个。
 
-  ★ 数值解不是解析解：steps 太少会失真，且刚性方程（变化极快）
-    容易发散——看到发散警告就加大 steps，或换解析思路。
+  ★ 二阶方程降阶：y'' 写成 y'=y_d; y_d'=…（y_d = dy/dt）。
+    缺辅助变量会提示补哪个，不会静默给错。
 
-  ★ 写故事时的常见用法：
-    传染病扩散（SIR）、捕食者-猎物振荡（Lotka-Volterra）、
-    碳循环、人口动态、冷却曲线`
+  ★ 数值解不是解析解：steps 太少会失真，刚性方程易发散 ——
+    看到发散警告就加大 steps，或换解析思路。
+
+══ 2. recurrence：离散递推（出逐年表）══
+  {operation:"recurrence", recurrence:"P*2", initial:{P:1}, periods:20}
+  → 逐期表 + 终值 + 与连续模型的差额
+
+  参数：
+    recurrence  下一期 = f(本期)。单状态最常见：
+                "P*2"                 ← 每期翻倍
+                "P*min(1.2, 1000/P)"   ← 带资源上限的年度增长
+    initial     初值，可多个状态（逗号/分号分隔的表达式各自求一次）
+    periods     迭代期数（默认 12，上限 5000）
+
+  ★ 支持 min()/max() 约束 —— 「增速 20% 但不超过 1000」这种写法直接可用，
+    结果会在第 38 期左右平滑收敛到 1000，不会越过。
+
+══ 3. 为什么非要区分（实测数字）══
+  同一件事「从 1 起每年 ×2」：
+     离散（recurrence）   2^19        = 524,288
+     连续（ode, 0.693P）  e^(0.693×19) = 522,824
+     差 0.28%
+
+  0.28% 看着可忽略，但第 33 年换成本「亿人」时差 0.5 亿 ——
+  **而写作时写的是「第 33 年，四十二亿人」这种具体整数。**
+  连续模型的 4.24e9 会让你在「42 亿还是 43 亿」上反复纠结。
+
+  ★ 所以 recurrence 会在结果末尾直接给出「连续近似 vs 离散」的差额，
+    让你一眼看出「用 ode 顶替会差多少」。
+
+★ 写故事时的常见用法：
+  传染病扩散（SIR）、捕食者-猎物振荡（Lotka-Volterra）、
+  碳循环、人口动态、冷却曲线、**逐年人口/资源年表**`
 
 /** 【公式库】442 条公式的调用与检索。 */
 const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自然科学公式
@@ -832,7 +869,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     tier: 'core',
     /** 实践文档信号量 250，断层第一：算术/带单位/批量/label 全落在这一节。 */
     weight: 250,
-    title: '求值（evaluate）',
+    title: '求值 evaluate',
     summary: '算一条式子。物理量带单位写，量纲错当场拦下；批量一次多条。',
     aliases: ['算式', '计算', '求值', 'mathjs', 'expression'],
     body: EVALUATE_BODY,
@@ -846,7 +883,7 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 前者要写方程、要看解的形式（唯一解/无穷多解/无解）。
      */
     weight: 59,
-    title: '解方程与微积分（solve / derivative / integral）',
+    title: '解方程与微积分（solve）',
     summary: '解方程与方程组、符号求导积分。退化方程组会说「无穷多解」而非静默给单解。',
     aliases: ['方程', '求解', 'solve', '积分', '求导', '微积分', 'algebra'],
     body: ALGEBRA_BODY,
@@ -856,7 +893,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     tier: 'core',
     /** 信号量 173：中制单位（里/丈/斤/亩）与 to 换算在各文档频繁出现。 */
     weight: 173,
-    title: '单位换算与输出单位（units）',
+    title: '单位换算 units',
     summary: '中外古今单位换算、自定义单位，以及输出为什么是大数配吨/公里。',
     aliases: ['单位', '换算', '里', '丈', '斤', '亩', 'unit', 'conversion'],
     body: UNITS_BODY,
@@ -877,7 +914,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     /** 信号量 26。 */
     weight: 26,
     title: '世界观推演（world / 地形 / 气候）',
-    summary: '星球参数得体感画像：重力昼夜气候、天空、恒星寿命、卫星、生命闸门。★ 完整字段表在这里。',
+    summary: '星球参数 → 体感画像：重力昼夜气候、天空、恒星寿命、卫星、生命闸门。★ 字段表在这。',
     aliases: ['星球', '世界', '重力', '气候', '恒星', '地形', 'world', 'planet'],
     body: WORLD_BODY,
   },
@@ -894,7 +931,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     /** 新增节，文档中尚无信号；按用户明确要求保留 core。 */
     weight: 0,
     title: '工程 / 生物 / 材料 / 财政 / 宏观（57 条领域公式）',
-    summary: '梁柱应力、热机煤耗、管流泵功率；扩散供氧、异速生长、遗传平衡；胡克与断裂韧性、熔点与结合能；财政赤字与债务螺旋、GDP 恒等式与增长核算。每条都写了 scaling 律或恒等式来源。',
+    summary: '梁柱应力、热机煤耗、泵功率；扩散供氧、异速生长；胡克与断裂韧性、熔点与结合能；财政赤字与债务螺旋。★ 每条都写了 scaling 律。',
     aliases: ['工程', '生物', '材料', '经济', '宏观', '财政', '税收', '债务', '建筑', '结构', '热机', '流体', '生态', '畜牧', '通胀', '作物'],
     body: DOMAINS_BODY,
   },
@@ -922,13 +959,30 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     key: 'ode',
-    tier: 'extra',
-    /** 信号量 4 —— 最低的一档。 */
-    weight: 4,
-    short: '微分方程',
-    title: '微分方程（ode）',
-    summary: 'RK4 数值解一阶方程组与二阶方程，返回轨迹/终点值/极值/发散警告。',
-    aliases: ['微分方程', 'ode', '传染病', '捕食模型', 'rk4'],
+    /**
+     * ★ 从 extra 提到 core（2026-11-08）。
+     *
+     * 实测反馈里最重的一条：该会话「写了 300 行 Python 做逐年迭代、参数扫描、
+     * 双状态耦合」，而 ode 就在那里 —— 只是排在「低频」栏的最后一行。
+     *
+     * 所以「低频」这个分档本身是错的：它表达的是「用得少」，
+     * 但用得少不等于「该在想建模时绕过它」。
+     */
+    tier: 'core',
+    /**
+     * 权重从 4 提到 60。
+     *
+     * 原来的 4 是「实践文档里出现 4 次」的信号量 —— 但这只反映**已经发生的使用**，
+     * 不反映**该用而没用的机会数**。实测那份会话里手写了 6 个脚本做逐年迭代，
+     * 那些都该是一次 ode/recurrence 调用。所以按「错过的机会」重估。
+     */
+    weight: 60,
+    short: '微分方程与递推',
+    title: '动力学：微分方程与离散递推（ode / recurrence）',
+    summary:
+      '连续用 ode（RK4，支持 min() 约束/多状态）；离散用 recurrence 出逐年表。' +
+      '★ 写年表用离散值；ode 传 at:[5,10,20] 精确取那几个年份。',
+    aliases: ['微分方程', 'ode', '递推', 'recurrence', '逐年', '年表', '增长模型', '传染病', '捕食模型', 'rk4'],
     body: ODE_BODY,
   },
   {
@@ -955,12 +1009,13 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     key: 'derivation',
-    tier: 'extra',
+    /** 同上，从 extra 提到 core：参数扫描与结论翻转是建模的一部分。 */
+    tier: 'core',
     /** 信号量 21。 */
     weight: 21,
     short: '推演栈 29 子命令',
     title: '推演栈（derivation 子命令）',
-    summary: '八层推演栈、混沌拦截、结论翻转、逆推校准、敏感度、相图、白皮书、算力、幻想层、文明极限。',
+    summary: '敏感度/结论翻转/逆推校准/相图/算力预算等 29 子命令。★ 全部子命令在这。',
     aliases: ['推演', 'derivation', '混沌', '白皮书', '相图', '敏感度', '算力'],
     body: DERIVATION_BODY,
   },
@@ -977,12 +1032,13 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     key: 'recipe',
-    tier: 'extra',
+    /** 同上：配方是「怎么把上面几个串起来」，属于建模段。 */
+    tier: 'core',
     /** 信号量 17。 */
     weight: 17,
     short: '锚点/账本/错误码',
     title: '常见配方（锚点/账本闭合/多步链/错误码）',
-    summary: '跨节组合用法：sanity 锚点比对你自己给的判据、账本闭合、多步链、错误码对照。',
+    summary: '锚点比对、账本闭合、多步链、三条推演配方（文明/巨兽/材料）、错误码。',
     aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '错误', '配方'],
     body: RECIPE_BODY,
   },
@@ -1057,12 +1113,45 @@ function renderIndex(): string {
   const byWeight = (a: HelpTopic, b: HelpTopic) => (b.weight ?? 0) - (a.weight ?? 0)
   const core = HELP_TOPICS.filter((item) => item.tier === 'core').sort(byWeight)
   const extra = HELP_TOPICS.filter((item) => item.tier === 'extra').sort(byWeight)
+  /**
+   * ## 目录分三段：算术 / 建模与推演 / 其余
+   *
+   * 实测反馈（能力评估文档第 4 节）是本轮最重的一条：
+   *
+   * > 「一个能做动力学 + 参数扫描 + 499 条领域公式的工具，被排在了『低频』栏里。」
+   * > 「我写了 300 行 Python 做逐年迭代、参数扫描、双状态耦合 ——
+   * >   而 ode、sensitivity、formula 就在那里，只是排在了『低频』栏的最后一行。」
+   *
+   * 原始证据也很硬：该会话调用 math_execute 18 次、手写 Python 6 个脚本约 300 行，
+   * 而脚本做的事（逐年迭代、参数扫描、状态耦合）工具全都有对应的 operation。
+   *
+   * ## 所以改动只有一处，但很关键
+   *
+   * 不是「再加一句说明」，而是**把建模类从『低频』栏里提出来单独成段**。
+   * 因为「低频」这个词本身就在劝退 —— 它表达的是「用得少」，
+   * 而 `ode` 用得少不代表不该在写增长模型时想起它。
+   *
+   * 并且在这一段的开头直接给一句**触发词**：「正在手写循环/逐年表/参数扫描？先看这几节」。
+   * 文档的建议原话也是这句：「能力不缺，缺的是一句『你正在手写循环？先看这里』」。
+   */
+  const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'world', 'domains']
+  const isModeling = (topic: HelpTopic) => MODELING_KEYS.includes(topic.key)
+  const arithmetic = core.filter((topic) => !isModeling(topic))
+  const modeling = core.filter(isModeling)
   const lines: string[] = [
     '══════ math_execute 能力目录（' + HELP_TOPICS.length + ' 节）══════',
     'helpTopic:"键名" 取该节全文；也可用中文词（矩阵/星球/单位…）。',
     '',
+    '  ── 一、算术 ──',
   ]
-  for (const topic of core) {
+  for (const topic of arithmetic) {
+    lines.push('  ' + topic.key.padEnd(10) + topic.title)
+    lines.push('    ' + topic.summary)
+  }
+  lines.push('')
+  lines.push('  ── 二、建模与推演 ──')
+  lines.push('  ★ 正在手写循环 / 逐年表 / 参数扫描？先看这几节，别用脚本重写')
+  for (const topic of modeling) {
     lines.push('  ' + topic.key.padEnd(10) + topic.title)
     lines.push('    ' + topic.summary)
   }
@@ -1072,7 +1161,7 @@ function renderIndex(): string {
    * 而它们本来只是「顺带知道一下」的存在。
    */
   lines.push('')
-  lines.push('  低频（同样可查，正文里有完整说明）:')
+  lines.push('  ── 三、其余能力（同样可查，正文里有完整说明）──')
   const folded = extra.map(function (item) {
     const label = item.short ?? item.title.slice(0, 8)
     return item.key + '=' + label

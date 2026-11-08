@@ -448,13 +448,36 @@ export const POWER_UNITS: UnitDef[] = [
   { name: 'TW', aliases: ['太瓦'], dimension: 'power', factor: 1e12 },
   { name: 'PW', aliases: ['拍瓦'], dimension: 'power', factor: 1e15 },
 
-  // ── 马力：两套差 1.4%，写车/机械题材会撞上 ──
-  { name: 'hp', aliases: ['马力', '英制马力'], dimension: 'power', factor: 745.6998715822702,
-    note: '英制机械马力 = 550 ft·lbf/s ≈ 745.7 W' },
-  { name: 'hp_metric', aliases: ['公制马力', 'PS'], dimension: 'power', factor: 735.49875,
-    note: '公制马力 = 735 W，比英制小 1.4%。欧洲车用 PS 标注' },
-  { name: 'hp_boiler', aliases: ['锅炉马力'], dimension: 'power', factor: 9809.5, note: '锅炉马力 ≈ 9.81 kW，蒸汽设备铭牌用' },
+  /**
+   * ── 马力：两套差 1.4%，写车/机械题材会撞上 ──
+   *
+   * ★ 别名里补上**行业里的实际写法**（实测反馈：只认 hp 不够）。
+   *
+   * 蒸汽朋克/机械题材里，铭牌上写的是 shp / ihp / bhp / PS，而 `hp` 只说得出
+   * 「英制机械马力」这一种。工具分不出这几种，使用者就只能手工乘系数 ——
+   * 而那正是历史事故里三起的源头（手算 745.7 时漏掉 0.735 这一档）。
+   *
+   * 所以这里把常见缩写全收进别名，**单位的物理值一个没改**，只是让它们查得到。
+   */
+  { name: 'hp', aliases: ['马力', '英制马力', 'bhp', '制动马力', '机械马力'],
+    dimension: 'power', factor: 745.6998715822702,
+    note: '英制机械马力 = 550 ft·lbf/s ≈ 745.7 W。bhp 是制动马力（飞轮输出），同值' },
+  { name: 'hp_metric', aliases: ['公制马力', 'PS', 'hp(metric)', 'hp_metrisch'], dimension: 'power', factor: 735.49875,
+    note: '公制马力 = 735 W，比英制小 1.4%。欧洲车与德国设备用 PS 标注' },
+  { name: 'hp_boiler', aliases: ['锅炉马力', 'bhp_boiler'], dimension: 'power', factor: 9809.5, note: '锅炉马力 ≈ 9.81 kW，蒸汽设备铭牌用' },
   { name: 'hp_electric', aliases: ['电马力'], dimension: 'power', factor: 746, note: '电马力 = 746 W（电机铭牌）' },
+  /**
+   * 轴马力（shaft horsepower）与指示马力（indicated horsepower）。
+   *
+   * 这两个是**蒸汽机/船用动力**的标准口径，且相差 5~10%（取决于机械效率）：
+   *   ihp 是气缸内的指示功，shp 是传给轴的实际输出，shp ≈ ihp × 机械效率。
+   * 机械效率取 0.85 时二者差 15% —— 写「这台蒸汽机 800 shp」时若按 ihp 算，
+   * 输出功率会多算 15%，而这在设定里是看得见的差（够不够拖动一艘船）。
+   */
+  { name: 'ihp', aliases: ['指示马力', 'indicated horsepower'], dimension: 'power', factor: 745.6998715822702,
+    note: '指示马力：气缸内指示功折算，比轴马力大（差机械效率，通常高 5~15%）' },
+  { name: 'shp', aliases: ['轴马力', 'shaft horsepower'], dimension: 'power', factor: 745.6998715822702,
+    note: '轴马力：实际传到轴上的功率 = ihp × 机械效率（约 0.85~0.95）' },
 
   { name: 'ftlb', aliases: ['ft·lbf/s', '英尺磅每秒'], dimension: 'power', factor: 1.3558179483314004, note: '1 ft·lbf/s ≈ 1.356 W' },
   { name: 'ton_refrig', aliases: ['冷吨', 'RT'], dimension: 'power', factor: 3516.8528420667,

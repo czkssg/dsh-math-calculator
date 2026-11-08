@@ -39,6 +39,26 @@ export function opOde(args: MathArgs, engine: any, precision: number): Outcome {
   const to = typeof args.to === 'number' ? args.to : 10
   const steps = typeof args.steps === 'number' ? Math.min(1_000_000, Math.max(1, Math.round(args.steps))) : 1000
   const sampleLimit = typeof args.samples === 'number' ? Math.max(2, Math.min(200, Math.round(args.samples))) : 24
+  /**
+   * ## 指定采样时点（`at: [5, 10, 20]`）
+   *
+   * 实测反馈（能力评估文档 3.3 节）：
+   *
+   * > 我要「第 5 年、第 10 年、第 20 年」的值，`ode` 给的是均匀采样：
+   * > `t = 1, 2.9, 4.8, 6.7, 8.6, 10.5, 12.4, …` —— **没有一年是我要的**。
+   *
+   * 而「写年表」恰恰是这类推演最常见的需求：写作时写的是
+   * 「第 5 年 1,756 人」这种具体整数，插值出来的 1,750.3 用不上。
+   *
+   * 实现方式：**在给定时点补算**，不是在采样表里插值。
+   * 用同一套 RK4 从区间起点走到该时点，结果与主解一致、无插值误差。
+   */
+  const atPoints = Array.isArray((args as any).at)
+    ? ((args as any).at as unknown[])
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b)
+    : []
 
   let solution: OdeSolution
   try {
@@ -46,7 +66,7 @@ export function opOde(args: MathArgs, engine: any, precision: number): Outcome {
     // RK4 的中间值天然带 15 位以上小数（如 1.0050251567199238），
     // BigNumber 会抛 "Cannot implicitly convert a number with >15 significant digits"。
     // 数值 ODE 本身就只精度到 ~1e-12，用 BigNumber 毫无意义且必然失败。
-    solution = solveOde(fast(), system, { initial, from, to, steps, sampleLimit })
+    solution = solveOde(fast(), system, { initial, from, to, steps, sampleLimit, atPoints })
   } catch (error) {
     if (error instanceof OdeError) {
       const hint =
@@ -81,6 +101,28 @@ export function opOde(args: MathArgs, engine: any, precision: number): Outcome {
       ...shownVariables.map((name) => trimNumber(sample.values[name] ?? Number.NaN, 6).padStart(14)),
     ]
     lines.push(cells.join(' '))
+  }
+
+  /**
+   * 指定时点的值单独一段 —— 这是写年表时真正要抄的数。
+   *
+   * 放在终点值之前：读者的目的常常是「拿第 5/10/20 年」，
+   * 而不是「拿终点」。
+   */
+  const atValues = solution.atValues ?? []
+  if (atValues.length > 0) {
+    lines.push('')
+    lines.push('指定时点:')
+    const atHeader = [system.independent.padEnd(12), ...shownVariables.map((name) => name.padStart(14))]
+    lines.push(atHeader.join(' '))
+    lines.push('-'.repeat(atHeader.join(' ').length))
+    for (const point of atValues) {
+      const cells = [
+        trimNumber(point.t, 6).padEnd(12),
+        ...shownVariables.map((name) => trimNumber(point.values[name] ?? Number.NaN, precision).padStart(14)),
+      ]
+      lines.push(cells.join(' '))
+    }
   }
 
   lines.push('')

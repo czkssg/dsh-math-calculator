@@ -44,8 +44,23 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 本来就能通过 alias 匹配命中，列出来只为「让人看见」，AI 并不需要。
    *
    * 现在折叠后目录约 700 字符。上限设 900 是为了防止将来又悄悄膨胀回去。
+   *
+   * ## 上限从 900 放宽到 1250（本轮）
+   *
+   * 触发原因不是膨胀，而是**按要求把三个节从折叠改为展开**：
+   * `ode` / `derivation` / `recipe` 从 extra 升到 core。
+   *
+   * 依据是《能力评估》文档最重的一条实测：那份会话「写了 300 行 Python 做逐年迭代、
+   * 参数扫描、双状态耦合」，而 `ode` 就在那里 —— 只是排在「低频」栏的最后一行。
+   * 文档给出的建议原话是：「能力不缺，缺的是一句『你正在手写循环？先看这里』」。
+   *
+   * 所以这不是「目录变啰嗦」，而是**把发现路径修对了**。
+   * 三个节的展开成本约 300 字符，换来的是「建模段不再藏在低频栏」。
+   *
+   * 上限仍要留着，且留得比 900 有依据：展开三节后实际 1083，
+   * 再给 167 的余量（够加一节），超过就说明又在膨胀。
    */
-  assert('目录压到 900 以内', index.length <= 900, index.length + ' 字符（旧版 1731）')
+  assert('目录压到 1250 以内', index.length <= 1250, index.length + ' 字符（旧版 1731）')
   assert('目录自称是目录', /目录/.test(index), '')
   assert('目录说明了两步查法', /helpTopic/.test(index), '')
 
@@ -66,8 +81,24 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
   assert('每节都有一句够具体的简介（≥15 字）', thin.length === 0,
     thin.map((t) => t.key + ':' + t.summary.length).join(', '))
 
+  /**
+   * ## core 档从 6 节扩到 9 节（本轮）
+   *
+   * 原来的 6 节是「按实践文档实测频率」定的：evaluate 250 / units 173 / solve 59 /
+   * formula 28 / world 26 / domains 0。
+   *
+   * 本轮 +3：`ode`、`derivation`、`recipe`。
+   *
+   * 理由是**分档依据本身有缺口** —— 实测频率只反映「已经发生的使用」，
+   * 不反映「该用而错过的机会」。《能力评估》那份会话里手写了 6 个脚本约 300 行
+   * 做逐年迭代与参数扫描，那些都该是一次 ode/recurrence 调用，
+   * 而在频率统计里它们记为零次（因为没用过）——**这正是需要靠人工判断补的那一类**。
+   *
+   * 所以这条断言的意图没有变：守「core 档是被论证过的，不是随手加的」。
+   * 只是论证依据从「纯频率」扩成「频率 + 错过的机会」。
+   */
   const coreTopics = TOPICS.filter((t) => t.tier === 'core')
-  assert('core 档节数（按实测频率定为 6）', coreTopics.length === 6, String(coreTopics.length))
+  assert('core 档节数（频率 + 错过机会，定为 9）', coreTopics.length === 9, String(coreTopics.length))
   const coreNoSummary = coreTopics.filter((t) => !index.includes(t.summary.slice(0, 10)))
   assert('高频节的简介都出现在目录里', coreNoSummary.length === 0,
     coreNoSummary.map((t) => t.key).join(', '))

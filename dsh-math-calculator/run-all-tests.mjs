@@ -78,7 +78,7 @@ const SUITES = [
   { file: 'quantities.mjs', expect: 42, label: '物理量分类与缩放' },
   { file: 'formula-table.mjs', expect: 33, label: '工作区公式表' },
   { file: 'feasibility.mjs', expect: 40, label: '设定一致性校验' },
-  { file: 'awareness.mjs', expect: 67, label: '模型感知（提示注入）' },
+  { file: 'awareness.mjs', expect: 68, label: '模型感知（提示注入）' },
   { file: 'detector.mjs', expect: 38, label: '计算需求检测器' },
   { file: 'hook.mjs', expect: 25, label: 'agent/pre-step 钩子' },
   { file: 'terrain.mjs', expect: 30, label: '局地地形气候' },
@@ -199,6 +199,8 @@ const SUITES = [
   { file: 'em-formulas.mjs', expect: 43, label: '电/光/核/化学计量公式（38 条/量纲全覆盖/不许用 ln）' },
   // 第十三批：宏观/财政/材料/生物通用 28 条 + 索引漏登修复
   { file: 'macro-materials-bio.mjs', expect: 67, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
+  // 三份实践文档的缺口补齐：马力族单位/批量公式/离散递推/指定采样时点
+  { file: 'gap-fills.mjs', expect: 43, label: '实践文档缺口（单位族/批量公式/离散递推/指定采样）' },
   // 防呆层：在数字旁边多放一句「这个数看起来不对劲」。
   // 来自一份 200 余条表达式的实测复盘 —— 最贵的错误不是算错，是算对了却没人觉得不对。
   // 第 4 节守「正确用例零误报」（误报会让整条通道被关掉，比漏报更糟）。
@@ -208,7 +210,7 @@ const SUITES = [
   { file: 'report-1106.mjs', expect: 64, label: '实测报告 1106（ok 契约/中文单位/units 精简/别名/锚点）' },
   // 工具定义是每轮重复计费的固定成本（基线 7789 字符 ≈ 4868 token/轮）。
   // 瘦身做法是把详细说明挪进 help，不是删参数；同时守住「改常数后缓存必须失效」。
-  { file: 'slim-and-cache.mjs', expect: 66, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
+  { file: 'slim-and-cache.mjs', expect: 67, label: 'schema 瘦身与结果缓存（每轮成本/缓存安全）' },
   // 三档分流替代单一阈值：simple 不提醒 / forced 提醒 / fuzzy 按阈值。
   // 关键：`2+2` 得分高但该心算，`20 个数字求和` 得分低但最该用工具——阈值把两者都判反了。
   { file: 'triage.mjs', expect: 50, label: '计算需求三档分流（心算/强制用工具）' },

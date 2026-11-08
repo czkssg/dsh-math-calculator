@@ -61,6 +61,7 @@ export type MathOperation =
   | 'formula'
   | 'formulas'
   | 'ode'
+  | 'recurrence'
   | 'world'
   | 'constants'
   | 'workspace'
@@ -157,6 +158,13 @@ export interface MathArgs {
   degree?: number
   /** operation=formula：公式 id 或名称。 */
   formula?: string
+  /**
+   * operation=formula：批量调多条公式。
+   *
+   * 元素两种写法：字符串 `"kleiber"`，或对象 `{formula, overrides?, label?}`。
+   * 一条失败不影响其它条（与 evaluate 的 expressions 同一条纪律）。
+   */
+  formulas?: Array<string | { formula?: string; id?: string; label?: string; overrides?: { [key: string]: number | string | number[] }; terse?: boolean }>
   /** operation=formula：覆盖公式里的任意参数（架空世界改造用）。 */
   overrides?: { [key: string]: number | string | number[] }
   /** operation=formulas：按关键词检索。 */
@@ -165,6 +173,12 @@ export interface MathArgs {
   customExpression?: string
   /** operation=ode：初值，如 {"S":999,"I":1,"R":0} */
   initial?: { [key: string]: number }
+  /** operation=ode：要精确输出的时点，如 [5, 10, 20]（写年表用，不是均匀采样）。 */
+  at?: number[]
+  /** operation=recurrence：离散递推式（下一期 = f(本期)）。 */
+  recurrence?: string
+  /** operation=recurrence：迭代期数。 */
+  periods?: number
   /** operation=ode：积分起点（自变量）。 */
   from?: number
   /** operation=ode：积分终点。 */
@@ -1049,6 +1063,25 @@ export function normalizeChineseUnits(source: string): string {
    * 而「两步除法」正是报告里两次把「吨」当成「亿吨」的直接成因。
    */
   let output = normalizeMagnitudeWords(source)
+  /**
+   * ## 括号形式的马力：`hp(metric)`、`HP(metric)`
+   *
+   * 这是行业里最常见的写法之一（发动铭牌、欧洲车资料），
+   * 但它含 ASCII 字母与括号，进不了下面那张「纯中文」的展开表；
+   * 而 `hp` 在 mathjs 里已经是英制马力，`hp(metric)` 会被解析成
+   * 「调用 hp 函数」→ 报 `没有名为 "hp" 的函数`。
+   *
+   * 所以这里单独做一次文本替换，换成中文别名「公制马力」——
+   * 那条路已经验证可用（`1 公制马力 to W` → 735.49875 W）。
+   *
+   * 顺带处理 `PS`：它在 mathjs 里是**电导单位**（量纲 S），
+   * 所以 `1 PS to W` 会报 `unit_mismatch`，而使用者以为自己写的是公制马力。
+   * 这类「名字被占用」的冲突无法靠注入解决（`known()` 会放过它），
+   * 只能在归一化层改写成中文别名。
+   */
+  output = output
+    .replace(/\bhp\s*\(\s*metric\s*\)/gi, '公制马力')
+    .replace(/(^|[^A-Za-z0-9_.])PS(?![A-Za-z0-9_])/g, '$1公制马力')
   /**
    * 长单位名优先：否则「公里」会先匹配成「里」，
    * 把 `3 公里` 换成 `3 * 500 m`（错了 2 倍）。
