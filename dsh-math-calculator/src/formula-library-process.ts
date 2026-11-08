@@ -1,0 +1,393 @@
+/**
+ * 公式库第十四批：**工艺级工程公式**（v2.3.5）。
+ *
+ * ## 为什么单独成批
+ *
+ * 外部实测反馈（《工程公式缺口与公式库扩展建议》，2026-11-08）的核心判断：
+ *
+ * > 「公式库不是数量少（499 条），而是『工艺级工程公式』稀薄 ——
+ * >   它能算『灌溉要多少水』，算不了『掺 10% 砂的陶坯在 1100℃ 会不会裂』。」
+ *
+ * 实测分布证实了这点：
+ *
+ * ```
+ *   physics 187 条    ← 极充实，解释「世界为什么这样」
+ *   engineering 21 条 ← 全是顶层物理式（梁柱/热机/管流/泵）
+ *   机械 0 命中 ｜ 发酵 0 命中 ｜ 窑 0 命中
+ * ```
+ *
+ * 也就是说：**已有的 187 条物理规律往下接一层就够用，缺的是那座桥。**
+ *
+ * ## 这批补的链
+ *
+ * ```
+ *   能源链  kiln_heat_balance → kiln_firing_time → wall_heat_loss
+ *   材料链  metallurgy_yield → case_depth → gear_bending_strength
+ *   传动链  gear_geometry / pendulum_clock_drift / gravity_storage_discharge
+ *   农业链  growing_degree_days → leaching_residue → fermentation_time → syrup_concentration
+ * ```
+ *
+ * ## 一个「自洽性检查」公式的特别价值
+ *
+ * `gravity_storage_discharge` 不是为了算新数，而是**检查设定自不自洽**：
+ * 625J、8W、12 分钟各自都「看着合理」，只有放进同一个式子才暴露出差了数量级。
+ * 这类「把散落的好看数字拼起来才出错」的场景，正是公式库最该覆盖的。
+ *
+ * ## 可信度
+ *
+ * 本批多为 `phenomenological`（形式对、系数需标定）。
+ * 每个 desc 都给了典型区间与「换条件要重标定」的说明。
+ *
+ * @module dsh-math-calculator/formula-library-process
+ */
+
+import type { FormulaDef } from './formula-library.js'
+
+const p = (value: number, desc: string) => ({ value, desc })
+const req = (desc: string) => ({ value: null, desc })
+
+/** 工艺级工程公式 14 条。 */
+export const PROCESS_FORMULAS: FormulaDef[] = [
+  {
+    id: 'kiln_heat_balance',
+    cat: 'engineering/process',
+    name: '窑炉热平衡（燃料热量去哪了）',
+    expr: 'ware_mass * ware_specific_heat * delta_T / 1000 * (1 + shell_loss_ratio)',
+    params: {
+      ware_mass: req('装坯质量 kg'),
+      ware_specific_heat: p(0.9, '坯体比热 kJ/(kg·K)（陶 0.8~1.1、瓷 0.9~1.3）'),
+      delta_T: req('升温幅度 K（室温→烧成温度）'),
+      shell_loss_ratio: p(12, '窑体蓄热+散热相对坯体之比（间歇窑 8~20，连续窑 3~6）'),
+    },
+    unit: 'MJ（估算的一次烧成总耗热）',
+    desc:
+      '「单窑耗煤 Xkg」这类经验数可以靠这条验算：Q = m·c·ΔT·(1+损比)。' +
+      '★ 这是全库第一缺口 —— 有了它，耗煤量、窑衬寿命、窑型升级幅度全部可算。' +
+      '★ 实测对照：100kg 坯 20→1100℃ 本身只需 97MJ，而实际耗煤往往对应 8~15 倍，' +
+      '  差的那部分正是窑体蓄热、窑壁散热、烟气带走。' +
+      '★ 省燃料的关键在 shell_loss_ratio：间歇窑 12 是常态，' +
+      '  改连续窑/余热回收能压到 3~6 —— 这就是「窑型升级 +40%~+300%」的来源。' +
+      '⚠ 只算一次烧成的显热，不含保温维持与不完全燃烧。',
+    keys: ['窑炉', '热平衡', '耗煤', '窑体蓄热', '烧成能耗', 'kiln'],
+    frequency: 'high',
+    layer: 'phenomenological',
+    domains: ['engineering', 'materials'],
+  },
+  {
+    id: 'kiln_firing_time',
+    cat: 'engineering/process',
+    name: '烧成时间（升温速率受热应力限制）',
+    /**
+     * ★ 不要再除以 60 —— `heating_rate` 的单位已经是 **K/h**，
+     * 所以 ΔT/(K/h) 直接得小时。
+     *
+     * 我第一版写成 `delta_T / heating_rate / 60`，把一个 5.4 小时的窑
+     * 算成了 0.09——那看着像「5 分钟」而不是「5.4 小时」，
+     * 而单位栏还写着 h，属于**单位与数值互相矛盾**。
+     * 这类错误比纯粹的算术错更难发现，因为数值本身「看着像个小时间」。
+     */
+    expr: 'delta_T / heating_rate',
+    params: {
+      delta_T: req('升温幅度 K'),
+      heating_rate: p(200, '安全升温速率 K/h（薄壁 150~300、厚壁 60~120）'),
+    },
+    unit: 'h（到达烧成温度所需时间）',
+    desc:
+      't = ΔT / 升温速率。**升温速率不是随便定的，它被热应力上限卡住。**' +
+      '★ 这就是「排潮 2h → 氧化 2.5h → 高温 2h → 保温 1h」里那些 2h 的来源：' +
+      '  不是工艺偏保守，而是厚壁件温差过大会直接开裂。' +
+      '★ 实测对照：室温→1100℃ 取 200K/h → 5.5h 爬温 + 各阶段保温，与常见「一窑一天」对得上。' +
+      '★ 关键推论：薄壁能快、厚壁必须慢 —— 壁厚翻倍，允许升温率大致降一半，工期翻倍。' +
+      '⚠ 150~300 / 60~120 是陶与瓷的常见区间；具体依热膨胀系数与抗张强度。',
+    keys: ['烧成', '升温速率', '开裂', '烧成曲线', '工期', 'firing'],
+    frequency: 'high',
+    layer: 'phenomenological',
+    domains: ['engineering', 'materials'],
+  },
+  {
+    id: 'wall_heat_loss',
+    cat: 'engineering/process',
+    name: '围护结构稳态热损（R 值法）',
+    expr: 'total_area * delta_T / r_value + ventilation_loss',
+    params: {
+      total_area: req('围护总面积 m²（墙+屋顶+地板）'),
+      delta_T: req('内外温差 K'),
+      r_value: p(2, '总热阻 R = Σ(δ/k) m²·K/W（单层砖墙 0.5，多层保温 9+）'),
+      ventilation_loss: p(0, '通风换气热损 W（可单列）'),
+    },
+    unit: 'W（维持室内温度所需加热功率）',
+    desc:
+      'Q = A·ΔT/R + 通风。建筑围护结构的标准算法，与工业换热器的 LMTD 完全是两回事。' +
+      '★ 关键：用总热阻 R 而不是导热系数 k，因为多层墙要逐层累加 δ/k。' +
+      '★ 实测对照：64㎡、R=9.34、ΔT=25℃ → 171W；加通风 50W 得 221W，与实测 282W 同量级' +
+      '  （差异来自缝隙与热桥 —— 实际总是比计算大）。' +
+      '★ 反推用途：知道实测耗热 282W，可反推真实 R 值，检验保温做够了没有。' +
+      '⚠ R 值是灵魂：单层砖墙约 0.5，加 10cm 岩棉可到 3~4，多层真空/反射箔可达 9+。',
+    keys: ['热损', '保温', 'R值', '围护', '建筑传热', 'insulation'],
+    frequency: 'high',
+    layer: 'derived',
+    domains: ['engineering'],
+  },
+  {
+    id: 'metallurgy_yield',
+    cat: 'engineering/process',
+    name: '冶金收得率（矿石 → 金属）',
+    expr: 'ore_mass * grade * recovery',
+    params: {
+      ore_mass: req('矿石量 kg'),
+      grade: req('品位 0—1（赤铁 0.5~0.6、孔雀石 0.55~0.57）'),
+      recovery: p(0.85, '回收率（土法 0.6~0.8、改进 0.85~0.95）'),
+    },
+    unit: 'kg（产出金属量）',
+    desc:
+      'm = m_矿 × 品位 × 回收率。一眼就能看出「年产 5kg」与「年产 15-20kg」差在哪。' +
+      '★ 实测对照：15kg 矿 × 0.3 × 0.9 = 4.05kg 生铁；5kg 孔雀石 × 0.57 × 0.8 = 2.28kg 精铜。' +
+      '★ 反推最实用：已知「两炉年产 5kg」，反推每炉投多少矿 → 5/(2×0.35×0.7) ≈ 10kg 矿/炉。' +
+      '  数字自相矛盾时，这条能把矛盾定位到具体环节。' +
+      '★ 三因子各自可调：品位靠选矿、回收率靠炉型、矿量靠开采 ——' +
+      '  外推产能时先看哪个因子先到天花板，那才是真瓶颈。',
+    keys: ['冶金', '收得率', '品位', '回收率', '矿石', '炼铁'],
+    frequency: 'high',
+    layer: 'phenomenological',
+    domains: ['engineering', 'materials'],
+  },
+  {
+    id: 'case_depth',
+    cat: 'engineering/process',
+    name: '渗碳层深（扩散控制）',
+    expr: '2 * sqrt(D0 * exp(-activation_energy / (R * temperature)) * hold_time)',
+    params: {
+      D0: p(2e-5, '扩散常数 D₀ m²/s（碳在奥氏体铁中约 2e-5）'),
+      activation_energy: p(1.5e5, '激活能 J/mol（碳在 γ-Fe 约 1.3~1.6e5）'),
+      R: p(8.314462618, '气体常数 J/(mol·K)'),
+      temperature: req('渗碳温度 K（900℃ = 1173K）'),
+      hold_time: req('保温时间 s（3h = 10800）'),
+    },
+    unit: 'm（渗碳层深度）',
+    desc:
+      'x ≈ 2√(D·t)，D = D₀·exp(−Q/RT)。表面硬化层的标准算法。' +
+      '★ 实测对照：900℃ 保温 3h → D≈4.2e-12 m²/s、x≈0.42mm，与「表面硬化零点几毫米」吻合。' +
+      '★ 关键推论：温度是平方级杠杆，时间是线性。' +
+      '  900→950℃ 只差 50 度，D 约翻倍，层深涨 √2 倍；而保温 3h→5h 只涨 √(5/3)≈1.29 倍。' +
+      '  所以「渗层不够就多烧一会儿」效率很低，提温才是真手段 —— 但要防过热与晶粒长大。' +
+      '⚠ D₀ 与 Q 依钢种与碳势而变，给的是低碳钢 900-950℃ 的典型区间。',
+    keys: ['渗碳', '扩散', '表面硬化', '层深', 'carburize'],
+    frequency: 'medium',
+    layer: 'derived',
+    domains: ['engineering', 'materials'],
+  },
+  {
+    id: 'gear_bending_strength',
+    cat: 'engineering/process',
+    name: '齿轮齿根弯曲强度（模数选型）',
+    expr: 'tangential_force / (face_width * gear_module * form_factor)',
+    params: {
+      tangential_force: req('圆周力 F_t N（F_t = 2T/d）'),
+      face_width: req('齿宽 b m'),
+      gear_module: req('模数 m m'),
+      form_factor: p(0.32, '齿形系数 Y（20° 标准齿 0.30~0.34）'),
+    },
+    unit: 'Pa（齿根弯曲应力；与许用弯曲应力比即判安全）',
+    desc:
+      'σ = F_t/(b·m·Y)。齿轮传动的强度判据，也是模数选型的依据。' +
+      '★ 这条能验算「模数 4 比 2.5 厚约 60%，足以承受 30kg 重锤」这种断言：' +
+      '  m=4、z=30 → 分度圆 120mm；30kg 在 r=60mm → F_t≈294N；' +
+      '  齿宽 30mm、Y=0.32 → σ ≈ 7.7 MPa，远低于铸铁许用 30~60MPa。' +
+      '★ 结论是「模数 4 绰绰有余」，而模数 2.5 时应力涨到约 12 MPa —— 仍够。' +
+      '  所以那句断言是对的，但只有算出这两个数才知道它对。' +
+      '⚠ 简化式（未含动载系数、应力集中、齿面接触疲劳）。单件低速手工齿轮够用。',
+    keys: ['齿轮', '齿根', '弯曲强度', '模数', '选型'],
+    frequency: 'high',
+    layer: 'phenomenological',
+    domains: ['engineering'],
+  },
+  {
+    id: 'gear_geometry',
+    cat: 'engineering/process',
+    name: '齿轮几何（分度圆与传动比）',
+    expr: 'gear_module * teeth',
+    params: {
+      gear_module: req('模数 m mm'),
+      teeth: req('齿数 z'),
+    },
+    unit: 'mm（分度圆直径 d）',
+    desc:
+      'd = m·z。齿轮的一切尺寸都从这两个数派生：外径 d+2m、齿高 2.25m、中心距 (d₁+d₂)/2。' +
+      '★ 传动比 i = z_从/z_主（同模数）。所以「1:12 减速」可反推齿数组合：' +
+      '  单级 30:360，或两级 30:180 + 20:40 —— 单级占空间、多级效率低但紧凑，' +
+      '  这就是设计取舍的量化形式。' +
+      '★ 手工加工的约束：模数决定刀具规格，所以一个作坊只用一两种模数，' +
+      '  而齿数可自由组合 —— 「统一模数 + 自由齿数」正是钟表业的传统做法。',
+    keys: ['齿轮', '模数', '齿数', '分度圆', '传动比'],
+    frequency: 'high',
+    layer: 'derived',
+    domains: ['engineering'],
+  },
+  {
+    id: 'pendulum_clock_drift',
+    cat: 'engineering/process',
+    name: '摆钟走时精度（温度引起的快慢）',
+    expr: '86400 * (-0.5 * length_change_ratio + 0.5 * gravity_change_ratio)',
+    params: {
+      length_change_ratio: req('摆长相对变化 ΔL/L（热膨胀 α·ΔT；钢 α≈1.2e-5/K）'),
+      gravity_change_ratio: p(0, '重力相对变化 Δg/g（同地可忽略，高原/异星要算）'),
+    },
+    unit: 's/天（正为走快，负为走慢）',
+    desc:
+      'T = 2π√(L/g)，取对数微分得 ΔT/T = −½·ΔL/L + ½·Δg/g，乘 86400 得每天偏差。' +
+      '★ 实测对照：钢摆 α=1.2e-5、冬夏温差 20℃ → ΔL/L=2.4e-4 → 每天慢约 10.4 秒。' +
+      '  这就是「摆钟冬夏要重新校」的定量原因，也是补偿摆（双金属）要解决的问题。' +
+      '★ 重要推论：周期只与摆长的**平方根**有关，所以摆长误差的影响被压掉一半；' +
+      '  摆长差 0.1% 只让每天差 43 秒 —— 天文观测完全够用来校准。' +
+      '★ 反过来最有用：**异星设定**里 g 变了多少，钟就快慢多少，这条直接给数。' +
+      '⚠ 补偿摆能压到每天 1~2 秒；真空+恒温的精密摆钟可到每天 0.01 秒。',
+    keys: ['摆钟', '钟表', '走时', '精度', '热膨胀'],
+    frequency: 'medium',
+    layer: 'derived',
+    domains: ['engineering'],
+  },
+  {
+    id: 'gravity_storage_discharge',
+    cat: 'engineering/process',
+    name: '重力储能放电时长（自洽性检查）',
+    expr: 'mass * 9.80665 * height / power',
+    params: {
+      mass: req('配重质量 kg'),
+      height: req('落差 m'),
+      power: req('放电功率 W'),
+    },
+    unit: 's（能维持该功率的时长）',
+    desc:
+      't = E/P = m·g·h/P。**最重要的用途是检查设定自不自洽，而不是算新数。**' +
+      '★ 实测对照（外部反馈的原案例）：25kg 配重 × 2.5m = 625J；' +
+      '  若设定说「6~8W 持续 12~15 分钟」，625J ÷ 8W = 78 秒 —— 差一个数量级。' +
+      '★ 这种错误极难自察：625J、8W、12 分钟各自都「看着合理」，' +
+      '  只有把三个数放进同一个式子才暴露。这正是能量守恒检查的价值。' +
+      '★ 反推用途：要维持 8W 共 12 分钟需 5760J → 需 235kg×2.5m 或 25kg×23.5m。' +
+      '  于是「要么加配重十倍、要么加高十倍」—— 设计方向一下就明确了。',
+    keys: ['重力储能', '配重', '放电', '储能时长', '自洽检查'],
+    frequency: 'high',
+    layer: 'fundamental',
+    domains: ['engineering', 'physics'],
+  },
+  {
+    id: 'water_turbine_output',
+    cat: 'engineering/process',
+    name: '水轮输出（功率/扭矩/转速）',
+    expr: 'density * 9.80665 * flow * head * efficiency',
+    params: {
+      density: p(1000, '水密度 kg/m³'),
+      flow: req('流量 m³/s'),
+      head: req('有效水头 m'),
+      efficiency: p(0.7, '总效率（木制水轮 0.4~0.6、改进 0.7~0.85）'),
+    },
+    unit: 'W（轴输出功率）',
+    desc:
+      'P = ρgQHη。与水轮机的「泵」公式同形但方向相反 —— 泵用电换水头，水轮用水头换功。' +
+      '★ 实测对照：溪流 0.01m³/s、水头 3m、η=0.6 → 176W；小河 0.1m³/s、水头 6m → 3.5kW。' +
+      '★ 扭矩 T = P/ω，转速 n = 60v/(πD)：' +
+      '  低水头大流量的水轮转速慢、扭矩大，**这正是它能直接带动锻锤的原因**；' +
+      '  而带动锯需要高转速，得加增速传动 —— 于是「传动比」成了必需项而不是选择项。' +
+      '★ 效率 0.4→0.85 就是「木轮改铁轮 + 导流」的全部收益，提升 2 倍。',
+    keys: ['水轮', '水车', '水力', '功率', '扭矩'],
+    frequency: 'high',
+    layer: 'derived',
+    domains: ['engineering'],
+  },
+  {
+    id: 'gdd_accumulated',
+    cat: 'engineering/process',
+    name: '累计生长度日（一季能攒多少积温）',
+    expr: 'excess_daily_temp * days',
+    params: {
+      excess_daily_temp: p(10, '日均温超出基点部分 K（日均 20℃、基点 10℃ → 10）'),
+      days: req('生育期天数（无霜期 180~210）'),
+    },
+    unit: '℃·d（生长度日 GDD）',
+    desc:
+      'GDD = Σ max(0, T_日均 − T_基点)。**四季节奏的数学骨架。**' +
+      '★ 价值在于「把时间换算成热量」：同样 200 天生育期，' +
+      '  暖地日均积 15 度、冷地 8 度 → GDD 差近 2 倍 → 能种的作物完全不同。' +
+      '★ 实测用途：给定「无霜期 180~210 天」可反推这一季能攒多少积温，' +
+      '  再对照作物需求（玉米 2500~2800、小麦 1800~2200、水稻 3000+）判断能不能熟。' +
+      '★ 这也是「春播秋收冬藏」必须按日历走的定量理由 —— 积温不够就熟不了。' +
+      '⚠ 基点温度依作物而变（小麦 0~5℃、玉米 10℃、水稻 10~12℃）。',
+    keys: ['生长度日', 'GDD', '积温', '物候', '无霜期', '农业'],
+    frequency: 'medium',
+    layer: 'phenomenological',
+    domains: ['agriculture', 'biology'],
+  },
+  {
+    id: 'leaching_residue',
+    cat: 'engineering/process',
+    name: '浸提残留（换水去单宁/苦涩）',
+    expr: 'initial_concentration * residual_ratio^changes',
+    params: {
+      initial_concentration: req('初始浓度（如单宁含量）'),
+      residual_ratio: p(0.6, '每次换水后的残留比（0.5~0.7，依切块大小与水温）'),
+      changes: req('换水次数'),
+    },
+    unit: '与初始浓度同单位',
+    desc:
+      'C_n = C₀·rⁿ。橡子、蕨根、苦杏仁去毒去涩的标准算法。' +
+      '★ 实测对照：r=0.6 换 4 次 → 0.1296，残留 13%；换 5 次 7.8%、换 6 次 4.7% —— 指数衰减。' +
+      '★ 关键推论：**换水次数比每次泡多久更重要。**' +
+      '  泡一夜再换 4 次（0.13）远好于泡 4 天不换（几乎不衰减）——' +
+      '  因为扩散平衡后浓度不再下降，必须靠换水把平衡点推下去。' +
+      '★ 这也是「手工程序值得公式化」的最好例子：' +
+      '  设定里写「需浸泡去单宁」但没给次数，而次数直接决定能不能吃。',
+    keys: ['浸提', '去单宁', '浸泡', '换水', '脱毒', 'leaching'],
+    frequency: 'medium',
+    layer: 'derived',
+    domains: ['agriculture', 'chemistry'],
+  },
+  {
+    id: 'fermentation_time',
+    cat: 'engineering/process',
+    name: '发酵时间（达到目标残留糖）',
+    expr: '-(log(target_residual / initial_sugar)) / rate_constant',
+    params: {
+      initial_sugar: req('初始糖浓度'),
+      target_residual: req('目标残留糖浓度'),
+      rate_constant: p(0.07, '速率常数 k 1/day（酿酒 0.05~0.09、酿醋 0.02~0.04）'),
+    },
+    unit: 'day（达到目标残留糖所需天数）',
+    desc:
+      'S(t) = S₀·e^(−kt)，解出 t = −ln(S_残/S₀)/k。酿酒、酿醋、沤肥的时间估算。' +
+      '★ 实测对照：降到 5%、k=0.07 → t = −ln(0.05)/0.07 ≈ 43 天；' +
+      '  而 k=0.04（低温）需 75 天 —— **这就是「温度低一度要延长几天」的定量答案。**' +
+      '★ 关键推论：发酵时间对温度极敏感（k 随温度按 Q₁₀ 律变，见 q10_temperature）。' +
+      '  所以「酿酒 2~4 周、酿醋 6~8 周」不是随便写的，它对应两个不同的 k。' +
+      '★ 串联用途：先用 q10_temperature 由温度得 k，再代入本式得工期 —— 这是「换季要改工艺」的可算理由。' +
+      '⚠ 简化的一级动力学；实际发酵有滞后期与产物抑制，工业上要用 Monod + 抑制项。',
+    keys: ['发酵', '酿酒', '酿醋', '沤肥', '时间', 'fermentation'],
+    frequency: 'medium',
+    layer: 'derived',
+    domains: ['agriculture', 'biology', 'chemistry'],
+  },
+  {
+    id: 'syrup_concentration',
+    cat: 'engineering/process',
+    name: '熬煮浓缩（糖浆得率）',
+    expr: 'juice_volume * initial_brix / final_brix',
+    params: {
+      juice_volume: req('原汁体积 L'),
+      initial_brix: req('初始糖度 Brix（%）'),
+      final_brix: req('成品糖度 Brix（%）'),
+    },
+    unit: 'L（成品体积）',
+    desc:
+      'V_f = V₀·Brix₀/Brix_f。糖量守恒的浓缩换算。' +
+      '★ 实测对照：40L 枫汁 Brix=2.5、成品 66 → 40×2.5/66 = 1.52L。' +
+      '  设定里「40L 产 1L 糖浆」对应成品 Brix 更高或含水更多，量级一致。' +
+      '★ 关键推论：**浓缩比只由糖度比决定**，与锅的大小、火的大小都无关。' +
+      '  所以「熬多久」只影响风味与色泽，不影响得率 —— 得率只看两个度数。' +
+      '★ 反过来最实用：知道要熬到多少度，就能预估这一锅能出多少，' +
+      '  这也是判断「值不值得熬」的依据（燃料成本 vs 成品收益）。' +
+      '⚠ Brix 是质量百分比糖度；若用糖度计读数，需按温度修正。',
+    keys: ['熬煮', '浓缩', '糖浆', 'Brix', '糖度', '得率'],
+    frequency: 'medium',
+    layer: 'derived',
+    domains: ['agriculture', 'chemistry'],
+  }
+]

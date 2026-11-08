@@ -3810,7 +3810,7 @@ export function runMathTool(rawArguments: unknown): MathResult {
     if (hintNote) result.notice = hintNote
 
     /** 调低计算精度导致结果被截 —— 那种「看起来正常、末位是假的」情况。 */
-    const truncNote = checkPrecisionTruncation(requestedPrecision, precision, result.result)
+    const truncNote = checkPrecisionTruncation(requestedPrecision, precision, result.result, input)
     if (truncNote) {
       result.notice = result.notice ? result.notice + '\n' + truncNote : truncNote
     }
@@ -4602,6 +4602,7 @@ function checkPrecisionTruncation(
   requested: number | undefined,
   effective: number,
   text: string,
+  source: string,
 ): string {
   /**
    * 判据：调用方显式给的精度**低于默认 64** 才算「调低了」，
@@ -4611,15 +4612,62 @@ function checkPrecisionTruncation(
    * （effective 就是 clamp 过的 requested），于是这条永远不触发。
    */
   if (requested === undefined || requested >= DEFAULT_PRECISION) return ''
-  /** 只看纯数字结果：带单位的另有提示通道。 */
+  /**
+   * ## 两个判据，缺一不可（本轮补的是第二个）
+   *
+   * ① **结果装不下**：整数位数 > precision，末几位被截。
+   * ② **表达式本身超出精度**：即使结果看起来很小或干脆是 0。
+   *
+   * ★ ② 是本轮实测抓到的漏洞（外部反馈文档 2.3）：
+   *
+   * ```
+   *   (10^20+1)-(10^20), precision=20  →  0    ok=true, notice 空
+   * ```
+   *
+   * 结果被截成了 **0** —— 而 0 只有 1 位，判据① 立刻放行。
+   * 于是「两个 20 位数相减、结果被算成 0」这种最危险的失真，
+   * 恰恰因为结果太小而绕过了检查。
+   *
+   * 这类「结果越离谱、越容易逃过检查」的结构必须堵掉，
+   * 所以改成**看输入而不只看输出**：表达式里出现 10^n（n 超过 precision）
+   * 或长整数串时，无论结果多小都提示。
+   */
   const numeric = text.trim().match(/^-?([0-9]+)(?:\.([0-9]+))?$/)
-  if (!numeric) return ''
-  const integerDigits = numeric[1].replace(/^0+(?=.)/, '').length
-  if (integerDigits <= effective) return ''
-  return '本次结果有 ' + integerDigits + ' 位有效数字，而 precision=' + effective +
-    ' 只能精确表示 ' + effective + ' 位——末 ' + (integerDigits - effective) +
-    ' 位可能已失真。需要精确值时请用 precision:64（默认），' +
-    '只想让输出短些请用 displayPrecision。'
+  const integerDigits = numeric ? numeric[1].replace(/^0+(?=.)/, '').length : 0
+  const resultOverflows = numeric !== null && integerDigits > effective
+  /**
+   * 表达式里是否有超出 precision 的大数。
+   *
+   * 两种形态：
+   *   · 幂字面量 `10^20`、`1e20`
+   *   · 长整数串（连续 16 位以上数字）
+   *
+   * 阈值用 effective（而不是固定值）：precision=20 时 `10^20` 是边界，
+   * `10^21` 才必然丢位；而 precision=8 时 `10^9` 就丢。
+   */
+  /**
+   * 临界点是 `power >= effective`，不是 `>`。
+   *
+   * 因为 `10^20` 是「1 后跟 20 个零」= **21 位**数字，
+   * precision=20 只能表示 20 位有效数字，装不下它。
+   * 所以 precision=20 时 `10^20` 已在边界上，`10^20+1` 里的 +1 必然被吃掉。
+   *
+   * 第一版写成 `>` 时，`(10^20+1)-(10^20)` 恰好卡在边界外，漏掉了。
+   */
+  const powerMatch = source.match(/10\s*\^\s*(\d+)/)
+  const powerBeyond = powerMatch ? Number(powerMatch[1]) >= effective : false
+  /** 科学记数法字面量（`1e20`）同样算大数。 */
+  const expMatch = source.match(/[0-9][0-9.]*[eE]\s*(\d+)/)
+  const expBeyond = expMatch ? Number(expMatch[1]) >= effective : false
+  const longDigits = /(^|[^0-9.eE+-])[0-9]{16,}(?![0-9])/.test(source)
+  const sourceOverflows = powerBeyond || expBeyond || longDigits
+  if (!resultOverflows && !sourceOverflows) return ''
+  const reason = resultOverflows
+    ? '本次结果有 ' + integerDigits + ' 位有效数字，precision=' + effective +
+      ' 只能精确表示 ' + effective + ' 位——末 ' + (integerDigits - effective) + ' 位可能已失真。'
+    : '表达式里出现了超出 precision=' + effective + ' 能表示的大数，结果可能已失真' +
+      (numeric !== null ? '（本次结果 ' + text.trim() + '）' : '') + '。'
+  return reason + '需要精确值时请用 precision:64（默认），只想让输出短些请用 displayPrecision。'
 }
 
 /**

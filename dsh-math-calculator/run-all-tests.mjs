@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 499, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 513, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -174,7 +174,7 @@ const SUITES = [
   // 1107 报告：单条与批量的非有限判断一致、显式换算不被归位吞掉、to 报错分类、两套单位表打通
   { file: 'report-1107.mjs', expect: 63, label: '实测报告 1107（非有限一致/换算不被吞/to 报错分类/工程单位）' },
   // 分节帮助：目录小、单节小、目录可发现、内容没因拆而丢
-  { file: 'help-topics.mjs', expect: 99, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
+  { file: 'help-topics.mjs', expect: 101, label: '分节帮助（目录/按节取用/别名容错/内容完整/描述指引）' },
   // 公式与单位耦合：符号带单位运算、参数量纲校验、同体系折算
   { file: 'formula-units.mjs', expect: 35, label: '公式单位耦合（符号带单位/参数量纲校验/同体系折算）' },
   // 工程/生物/宏观公式：数值手算核对 + scaling 律（四次方/三次方/十分之一）
@@ -198,6 +198,8 @@ const SUITES = [
   // 第 6 节守「公式表达式不许用 ln」——公式库不经 evaluate 的归一化层，用 ln 会全部报错。
   { file: 'em-formulas.mjs', expect: 43, label: '电/光/核/化学计量公式（38 条/量纲全覆盖/不许用 ln）' },
   // 第十三批：宏观/财政/材料/生物通用 28 条 + 索引漏登修复
+  // 工艺级工程公式 14 条 + precision/label 两处护栏修复
+  { file: 'process-formulas.mjs', expect: 53, label: '工艺公式（窑炉/冶金/齿轮/发酵/护栏修复）' },
   { file: 'macro-materials-bio.mjs', expect: 67, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
   // 三份实践文档的缺口补齐：马力族单位/批量公式/离散递推/指定采样时点
   { file: 'gap-fills.mjs', expect: 43, label: '实践文档缺口（单位族/批量公式/离散递推/指定采样）' },

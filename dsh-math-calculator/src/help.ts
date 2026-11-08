@@ -624,6 +624,79 @@ const D_ECOLOGY_BODY = (): string => `【生物·生态（载畜量/料肉比/NP
                             这解释了为什么食物链一般不超过 5 级，也立刻否掉「满地猛兽」
 `
 
+/**
+ * 【工艺链】能源→材料→传动→农业。
+ *
+ * 外部反馈的核心判断：库里有 246 条物理规律，但缺「往下接一层到工艺参数」的桥。
+ * 这一节就是那座桥 —— 每条都给「什么场景该用」，而不只是式子。
+ */
+const D_PROCESS_BODY = (): string => `【工艺链】把物理规律接到工艺参数上（14 条，engineering/process）
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  参数可带单位，会校验量纲并换算。
+
+════ 能源链：窑炉 → 烧成 → 围护 ════
+  kiln_heat_balance          Q = m·c·ΔT·(1+损比)
+                             ★ 全库第一缺口：有了它「单窑耗煤 8kg」才能验算
+                             100kg 坯 20→1100℃ 本身只需 97MJ，实际耗煤对应 8~15 倍，
+                             差的那部分是窑体蓄热+窑壁散热+烟气带走
+                             ★ 省燃料的关键在损比：间歇窑 12、连续窑/余热回收 3~6
+  kiln_firing_time           t = ΔT / 升温速率（K/h）
+                             ★ 升温速率被热应力卡住，不是工艺保守：
+                             薄壁 150~300 K/h、厚壁 60~120 —— 壁厚翻倍，工期翻倍
+  wall_heat_loss             Q = A·ΔT/R + 通风
+                             ★ 用总热阻 R（多层墙要累加 δ/k），不是导热系数 k
+                             64㎡、R=9.34、ΔT=25℃ → 171W；实测常比计算大（缝隙与热桥）
+                             ★ 反推用途：有实测耗热 282W → 反推真实 R 值，检验保温够不够
+
+════ 材料链：矿石 → 金属 → 硬化 → 强度 ════
+  metallurgy_yield           m = m_矿 × 品位 × 回收率
+                             ★ 一眼看出「年产 5kg」与「15~20kg」差在哪
+                             反推最实用：两炉年产 5kg → 每炉投 5/(2×0.35×0.7)≈10kg 矿
+                             三因子（品位/回收率/矿量）各自可调，外推时先看哪个先到顶
+  case_depth                 x ≈ 2√(D·t)，D = D₀·exp(−Q/RT)
+                             ★ **温度是平方级杠杆、时间是线性**：
+                             900→950℃ 层深涨 √2 倍，而 3h→5h 只涨 1.29 倍
+                             所以「渗层不够多烧一会儿」效率低，提温才是真手段
+  gear_bending_strength      σ = F_t/(b·m·Y)
+                             ★ 能验算「模数 4 比 2.5 厚 60% 足以承受 30kg 重锤」
+                             实算：m4/z30 → d=120mm，30kg@r60 → F_t≈294N，σ≈7.7MPa（铸铁许用 30~60）
+                             ⚠ 简化式，未含动载/应力集中/齿面接触疲劳；手工低速齿轮够用
+  gear_geometry              d = m·z
+                             ★ 齿轮一切尺寸都从模数与齿数派生（外径 d+2m、中心距 (d₁+d₂)/2）
+                             传动比 i = z_从/z_主，同一模数下可自由组合齿数
+
+════ 传动/储能/水力 ════
+  pendulum_clock_drift       Δt/天 = 86400·(−½·ΔL/L + ½·Δg/g)
+                             ★ 钢摆冬夏差 20℃ → 每天慢约 10.4s（这就是要重新校的原因）
+                             周期只与 √L 有关，所以摆长误差的影响被压掉一半
+                             ★ 异星设定直接可用：g 变多少，钟就快慢多少
+  gravity_storage_discharge  t = m·g·h / P
+                             ★ 用途是**检查设定自不自洽**，不是算新数：
+                             25kg×2.5m=625J，若说「8W 撑 12 分钟」→ 实为 78 秒，差一个数量级
+                             ★ 反推：要 8W×12min 需 5760J → 235kg×2.5m 或 25kg×23.5m
+  water_turbine_output       P = ρgQHη
+                             ★ 与泵同形但反向：低水头大流量 → 转速慢扭矩大，能直驱锻锤
+                             ★ 效率 0.4→0.85 就是「木轮改铁轮+导流」的全部收益，翻 2 倍
+
+════ 农业与化工 ════
+  gdd_accumulated            GDD = 超出基点的日均温 × 天数
+                             ★ 四季节奏的数学骨架：把时间换算成热量
+                             无霜期 180~210 天 → 反推能攒多少积温，对照作物需求判断能不能熟
+                             （玉米 2500~2800、小麦 1800~2200、水稻 3000+）
+  leaching_residue           C_n = C₀·rⁿ（r 为每次换水的残留比）
+                             ★ **换水次数比每次泡多久更重要**：
+                             r=0.6 换 4 次剩 13%、6 次剩 4.7%；而泡 4 天不换几乎不衰减
+  fermentation_time          t = −ln(S_残/S₀)/k
+                             ★ 温度低 → k 小 → 时间成倍延长（k=0.07→43天，k=0.035→86天）
+                             与 q10_temperature 串联：由温度得 k，再得工期
+  syrup_concentration        V_f = V₀·Brix₀/Brix_f
+                             ★ **得率只由糖度比决定**，与锅大小、火大小无关
+                             所以「熬多久」只影响风味，不影响得率
+
+★ 共同点：这些式子大多**形式上简单，但接住了此前断开的链**。
+  「窑温、配比、精度、工期、产量」这些散落的经验数，有了它们才能互相验算。`;
+
 /** 【宏观·经济（劳力/产出/储蓄/货币/通胀）】按公式 id 调用，参数可带单位。 */
 const D_MACRO_BODY = (): string => `【宏观·经济（劳力/产出/储蓄/货币/通胀）】
 
@@ -1096,6 +1169,16 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: D_MACRO_BODY,
   },
   {
+    key: 'd-process',
+    tier: 'core',
+    weight: 18,
+    short: '工艺链',
+    title: '工艺链（窑炉/冶金/齿轮/发酵·14 条）',
+    summary: '把物理规律接到工艺参数：窑炉热平衡、烧成时间、围护热损、冶金收得率、渗碳层深、齿轮强度、摆钟漂移、重力储能、水轮、积温、浸提、发酵、浓缩。',
+    aliases: ['工艺', '窑炉', '烧成', '冶金', '渗碳', '齿轮', '发酵', '酿造', '糖浆', '窑', '工程工艺', 'process'],
+    body: D_PROCESS_BODY,
+  },
+  {
     key: 'd-material',
     tier: 'core',
     short: '材料本构',
@@ -1385,7 +1468,7 @@ function renderIndex(): string {
    * 拆开后它们仍然属于「建模」，因为它们都是公式（而不是算术）。
    */
   const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'recipe-errors', 'recipe-fiscal', 'recipe-bio', 'recipe-material', 'world',
-    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp']
+    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp', 'd-process']
   const isModeling = (topic: HelpTopic) => MODELING_KEYS.includes(topic.key)
   const arithmetic = core.filter((topic) => !isModeling(topic))
   const modeling = core.filter(isModeling)

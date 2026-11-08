@@ -29,6 +29,7 @@ import { ENGINEERING_FORMULAS } from './formula-library-engineering.js'
 import { BIOECON_FORMULAS } from './formula-library-bioecon.js'
 import { MACRO_MATERIAL_FORMULAS } from './formula-library-macro-materials.js'
 import { BIO_GENERAL_FORMULAS } from './formula-library-biol-general.js'
+import { PROCESS_FORMULAS } from './formula-library-process.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 import { findUnit, convert } from './units.js'
@@ -52,6 +53,7 @@ export const FORMULAS: FormulaDef[] = [
   ...BIOECON_FORMULAS,
   ...MACRO_MATERIAL_FORMULAS,
   ...BIO_GENERAL_FORMULAS,
+  ...PROCESS_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -80,6 +82,7 @@ for (const formula of ENGINEERING_FORMULAS) FORMULA_INDEX.set(formula.id, formul
 for (const formula of BIOECON_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of MACRO_MATERIAL_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of BIO_GENERAL_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of PROCESS_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

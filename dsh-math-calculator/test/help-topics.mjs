@@ -98,7 +98,7 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 只是论证依据从「纯频率」扩成「频率 + 错过的机会」。
    */
   const coreTopics = TOPICS.filter((t) => t.tier === 'core')
-  assert('core 档节数（含拆分出的领域与配方，定为 21）', coreTopics.length === 21, String(coreTopics.length))
+  assert('core 档节数（含拆分出的领域与配方，定为 22）', coreTopics.length === 22, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *
