@@ -27,6 +27,8 @@ import { GENERIC_FORMULAS } from './formula-library-generic.js'
 import { EM_OPTICAL_NUCLEAR_FORMULAS } from './formula-library-em.js'
 import { ENGINEERING_FORMULAS } from './formula-library-engineering.js'
 import { BIOECON_FORMULAS } from './formula-library-bioecon.js'
+import { MACRO_MATERIAL_FORMULAS } from './formula-library-macro-materials.js'
+import { BIO_GENERAL_FORMULAS } from './formula-library-biol-general.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 import { findUnit, convert } from './units.js'
@@ -48,6 +50,8 @@ export const FORMULAS: FormulaDef[] = [
   ...EM_OPTICAL_NUCLEAR_FORMULAS,
   ...ENGINEERING_FORMULAS,
   ...BIOECON_FORMULAS,
+  ...MACRO_MATERIAL_FORMULAS,
+  ...BIO_GENERAL_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -60,8 +64,22 @@ for (const formula of STORY2_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of POWER_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of BASIC_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of GENERIC_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+/**
+ * ★ 这一行曾经漏掉，导致 38 条电学/光学/核公式不在索引里。
+ *
+ * 后果不是「用户调不动」（`opFormula` 走的是 `currentFormulas()` 数组，不受影响），
+ * 而是 **`formula-bridge`（多步 pipeline 用）解析不到它们** ——
+ * 同一个公式，单独调用能用、写进 pipeline 就说 unknown_formula。
+ * 这种「换个入口就不一样」的缺陷最难发现，所以补上并留注释。
+ *
+ * 顺带说明为什么 `FORMULAS.length`(499) ≠ `FORMULA_INDEX.size`(457)：
+ * 差 42 = 上一条漏登的 38 + 4 个历史重复 id（后者被后批次覆盖，符合预期）。
+ */
+for (const formula of EM_OPTICAL_NUCLEAR_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of ENGINEERING_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of BIOECON_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of MACRO_MATERIAL_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of BIO_GENERAL_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 471, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 499, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -197,6 +197,8 @@ const SUITES = [
   // 公式库补齐：原空白 8 个量纲（磁通密度/立体角/照度/活度/剂量/催化活度…）现在都有公式产出。
   // 第 6 节守「公式表达式不许用 ln」——公式库不经 evaluate 的归一化层，用 ln 会全部报错。
   { file: 'em-formulas.mjs', expect: 43, label: '电/光/核/化学计量公式（38 条/量纲全覆盖/不许用 ln）' },
+  // 第十三批：宏观/财政/材料/生物通用 28 条 + 索引漏登修复
+  { file: 'macro-materials-bio.mjs', expect: 61, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
   // 防呆层：在数字旁边多放一句「这个数看起来不对劲」。
   // 来自一份 200 余条表达式的实测复盘 —— 最贵的错误不是算错，是算对了却没人觉得不对。
   // 第 4 节守「正确用例零误报」（误报会让整条通道被关掉，比漏报更糟）。
