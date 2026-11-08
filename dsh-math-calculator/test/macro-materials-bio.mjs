@@ -141,11 +141,39 @@ console.log('-- 4. 材料属性的微观决定 --')
 {
   assert('理论强度 = E/10 = 2e10', close(await num('ideal_strength', { E: 2e11 }), 2e10, 1));
   assert('E/5 时更大', (await num('ideal_strength', { E: 2e11, factor: 5 })) === 4e10);
-  /** Lindemann：T_m = 2E_k/(3k_B) = 2×4e-19/(3×1.380649e-23) = 19314.6 K */
-  assert('熔点 19314.6 K', close(await num('melting_from_cohesive', { cohesive_energy: 4e-19 }), 4e-19 * 2 / (3 * 1.380649e-23), 1));
-  /** ★ 反向对照：结合能翻倍 → 熔点翻倍（标度关系的核心）。 */
+  /**
+   * ★ 熔点系数 0.036 —— 这一条守的是本轮修出的**最严重错误**。
+   *
+   * 第一版写成 T_m ≈ (2/3)·(E_k/k_B)，那是把「结合能与 k_B·T_m 同量级」的说法
+   * 记成了等式。实测代入铁（415 kJ/mol）得 **32493 K**，而实测 1811 K —— 差 18 倍。
+   * 更糟的是它「看着合理」：3 万度是很高但并非不可能的数。
+   *
+   * 所以这里不验绝对常数，而是**用 5 种真实金属的实测熔点反守** ——
+   * 只有系数对，这一组才会全部落在容差内。
+   */
+  const NA = 6.02214076e23;
+  const metals = [
+    ['铁', 415, 1811], ['钨', 849, 3695], ['钼', 658, 2896], ['银', 284, 1235], ['钛', 473, 1941],
+  ];
+  let worst = 0;
+  for (const [name, ekKJ, tmRef] of metals) {
+    const got = await num('melting_from_cohesive', { cohesive_energy: ekKJ * 1000 / NA });
+    const err = Math.abs(got - tmRef) / tmRef;
+    worst = Math.max(worst, err);
+    assert('熔点推算接近实测 ' + name + '（实测 ' + tmRef + 'K）', err < 0.08,
+      '算出 ' + got.toFixed(0) + 'K，误差 ' + (err * 100).toFixed(1) + '%');
+  }
+  assert('五种金属最大误差 < 8%', worst < 0.08, (worst * 100).toFixed(1) + '%');
+  /**
+   * ★ 反向对照：**不能用 (2/3) 系数**。
+   * 若有人把它改回去，铁会算出 32493 K —— 这条断言会立刻红。
+   */
+  const feWrong = await num('melting_from_cohesive', { cohesive_energy: 415 * 1000 / NA });
+  assert('铁不得算出 30 万 K 级的荒谬值', feWrong > 1500 && feWrong < 2200, String(feWrong.toFixed(0)));
+  /** 结合能翻倍 → 熔点翻倍（标度关系的核心）。 */
   const doubleE = await num('melting_from_cohesive', { cohesive_energy: 8e-19 });
-  assert('结合能 ×2 → 熔点 ×2', close(doubleE, 4e-19 * 2 / (3 * 1.380649e-23) * 2, 2), String(doubleE));
+  const singleE = await num('melting_from_cohesive', { cohesive_energy: 4e-19 });
+  assert('结合能 ×2 → 熔点 ×2', close(doubleE / singleE, 2, 1e-9), String(doubleE / singleE));
   /** Pugh：G/K = 8e10/1.6e11 = 0.5 → 偏韧（< 0.57） */
   assert('Pugh 0.5（偏韧）', close(await num('pugh_ductility', { shear_modulus: 8e10, bulk_modulus: 1.6e11 }), 0.5));
   /** ★ 反向对照：G/K > 0.57 应判偏脆 —— 阈值方向不能反。 */
