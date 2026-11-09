@@ -40,6 +40,9 @@ import { FLUID_DYNAMICS_FORMULAS } from './formula-library-fluid-dynamics.js'
 import { CHEMICAL_ENGINEERING_FORMULAS } from './formula-library-chemical-engineering.js'
 import { FAMINE_DISEASE_FORMULAS } from './formula-library-famine-disease.js'
 import { NUTRITION_LIFE_FORMULAS } from './formula-library-nutrition-life-table.js'
+import { CRAFT_PRODUCTION_FORMULAS } from './formula-library-craft-production.js'
+import { GEOMORPHOLOGY_FORMULAS } from './formula-library-geomorphology.js'
+import { SOCIAL_INSTABILITY_FORMULAS } from './formula-library-social-instability.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 import { findUnit, convert } from './units.js'
@@ -74,6 +77,9 @@ export const FORMULAS: FormulaDef[] = [
   ...CHEMICAL_ENGINEERING_FORMULAS,
   ...FAMINE_DISEASE_FORMULAS,
   ...NUTRITION_LIFE_FORMULAS,
+  ...CRAFT_PRODUCTION_FORMULAS,
+  ...GEOMORPHOLOGY_FORMULAS,
+  ...SOCIAL_INSTABILITY_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -113,6 +119,9 @@ for (const formula of FLUID_DYNAMICS_FORMULAS) FORMULA_INDEX.set(formula.id, for
 for (const formula of CHEMICAL_ENGINEERING_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of FAMINE_DISEASE_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of NUTRITION_LIFE_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of CRAFT_PRODUCTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of GEOMORPHOLOGY_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of SOCIAL_INSTABILITY_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

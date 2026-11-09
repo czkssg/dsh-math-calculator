@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 646, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 669, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -238,6 +238,9 @@ const SUITES = [
   // 瘟疫/饥荒/营养/生命表（P1+P2）+ recurrence 内置期数变量 n（P0 能力修复）。
   // 最重要的断言：**平均寿命 42 的社会里仍有 23% 活到 60** —— 拆穿「古人活 35 岁」。
   { file: 'famine-disease-lifetable.mjs', expect: 63, label: '瘟疫饥荒生命表（P1+P2 15 条 + recurrence n）' },
+  // P3 日常生产 + P4 地质速率 + P5 社会失稳（23 条）。
+  // 最重要的断言：社会失稳公式**必须声明「不是预测」**，否则会被当预言用。
+  { file: 'craft-geology-instability.mjs', expect: 62, label: '生产/地质/失稳（P3+P4+P5 23 条）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },
