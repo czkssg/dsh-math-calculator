@@ -248,10 +248,64 @@ L.append("挂到某一条链上反而误导。测试里有断言守着这个决�
 L.append("")
 L.append("---")
 L.append("")
-L.append("## 八、已知的下一步（未做）")
+L.append("## 八、复合路径（跨多条链的现成路线）")
 L.append("")
-L.append("**复合路径（`compounds`）**：登记「从矿石到帝国崩溃」这类跨 4 条链的现成路径，")
-L.append("现在只能靠上图人工拼。这一项需要先确认要不要做 —— 它可能超出当前范围。")
+L.append("单条链只覆盖一步到十几步。真实推演里最难的**不是算某一步，而是跨 4 条链**：")
+L.append("")
+L.append("```")
+L.append("  「有铁矿」能不能变成「有帝国」？")
+L.append("  材料链 → 产能链 → 财政链 → 军事链")
+L.append("```")
+L.append("")
+L.append("这些路径在图上**本来就连通**（图直径 5 跳、单一连通分量），但读者要自己一段段拼。")
+L.append("`compounds` 把它们登记下来：")
+L.append("")
+L.append("```")
+L.append('  formulas query="sys:compound"                → 清单')
+L.append('  formulas query="sys:compound:mine-to-empire" → 逐跳展开')
+L.append("```")
+L.append("")
+# 从 lib 现取，不手抄
+JS_COMPOUND = r"""
+const sys = await import('file:///D:/0cengxu/5/dsh-math-calculator/lib/formula-systems.js')
+console.log(JSON.stringify(sys.COMPOUND_PATHS.map(p => ({
+  id: p.id, name: p.name, purpose: p.purpose, via: p.via,
+  hops: sys.traceCompound(p).map(h => ({ f: h.formula, ok: h.ok, kind: h.kind, note: h.note })),
+}))))
+"""
+proc2 = subprocess.run(["node", "--input-type=module", "-e", JS_COMPOUND],
+                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT))
+COMPOUNDS = json.loads(proc2.stdout) if proc2.returncode == 0 else []
+
+L.append(f"共 **{len(COMPOUNDS)} 条**：")
+L.append("")
+for cp in COMPOUNDS:
+    chain = " → ".join(cp["via"])
+    ok = sum(1 for h in cp["hops"] if h["ok"])
+    L.append(f'### `{cp["id"]}`　{cp["name"]}')
+    L.append("")
+    L.append(f'{cp["purpose"]}')
+    L.append("")
+    L.append(f"`{chain}`　（{ok}/{len(cp['hops'])} 跳已连通）")
+    L.append("")
+    for i, h in enumerate(cp["hops"]):
+        mark = "✓" if h["ok"] else "✗"
+        L.append(f'{i+1}. `{cp["via"][i]}` → `{cp["via"][i+1]}`　{mark} `{h["f"]}`'
+                 f'（{"bridge" if h["kind"] == "bridges" else "共用"}）　{h["note"]}')
+    L.append("")
+L.append("### 一条被删掉的假路径")
+L.append("")
+L.append("第一版我登记了 `civ-sustainability`（光→气候→食物→财政），")
+L.append("用 `gdd_accumulated` 当作气候与食物之间的接点。")
+L.append("")
+L.append("**实测发现这两条链之间根本没有任何真实接点** —— 那条路径是拼出来的，已删除。")
+L.append("")
+L.append("现在 `traceCompound` 每次都回到 `FORMULA_SYSTEMS` 现查证据，依次尝试：")
+L.append("本链声明的 bridges → 对方链声明的 bridges → 两链 steps 里的共用公式。")
+L.append("三条都不成立就判 `ok: false`。测试里还构造了一条假路径做反向对照，")
+L.append("防止 `traceCompound` 永远返回 true。")
+L.append("")
+L.append("**假关系比没有关系更糟** —— 这是本项目的既定原则，这里也照办。")
 L.append("")
 
 out = ROOT / "体系全景.md"

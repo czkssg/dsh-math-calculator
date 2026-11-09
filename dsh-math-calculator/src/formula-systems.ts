@@ -664,3 +664,209 @@ export function systemsOfFormula(formulaId: string): FormulaSystem[] {
     return isStep || isBridge
   })
 }
+
+/**
+ * ## 复合路径（compound）
+ *
+ * 用户最初的问法是「公式能连的尽量连」，而 22 条链各自只覆盖一步到十几步。
+ * 真实推演里最难的**不是算某一步，而是跨 4 条链回答一个问题**：
+ *
+ * ```
+ *   一颗星的光度 → 气候 → 能源 → 产能 → 财政能不能撑住
+ *   水渠容量     → 食物 → 财政 → 这支军队打不打得起
+ * ```
+ *
+ * 这些路径在图上**已经连通**（图直径 5 跳、单一连通分量），但读者要自己一段段拼。
+ * `compounds` 就是把已知的真实路径**登记下来**，让「从矿石到帝国崩溃」可以一次查到。
+ *
+ * ## 为什么只登记 `via` 而不复制公式与参数
+ *
+ * ```
+ *   复制 → 公式改了、链条调整了，复合路径不会跟着变 → 必然漂移
+ *   引用 → 每次都从 FORMULA_SYSTEMS 现查 → 永远与代码一致
+ * ```
+ *
+ * 所以一条复合路径只写：**经过哪几条链（按顺序）+ 每一步用哪个接点公式（可选）+ 一句话说明**。
+ * 至于每一步该填什么参数，去查那条链的 `sys:<id>`。
+ *
+ * ## 为什么不是所有链都能组合
+ *
+ * 只登记**真实存在接点**的路径。两道校验（测试守）：
+ * 1. `via` 里的每条链必须真实存在；
+ * 2. **相邻两链之间必须有真实接点**（`steps[].feeds` 或 `bridges` 任一方向），
+ *    否则就是「拼出来的假路径」—— 那比不登记更糟。
+ */
+export interface CompoundPath {
+  /** 路径 id（检索用）。 */
+  id: string;
+  /** 中文名：它回答什么问题。 */
+  name: string;
+  /** 这条路径解决什么问题（一句话）。 */
+  purpose: string;
+  /** 按推演顺序排列的体系 id。 */
+  via: string[];
+  /**
+   * 每一跳用的接点公式（长度 = via.length − 1，可为空数组表示「不必指明」）。
+   *
+   * 用于让读者知道「这两条链靠哪个公式接上」，而不必自己去比对两张步骤表。
+   */
+  hops?: string[];
+  /** 检索关键词。 */
+  keys: string[];
+}
+
+/**
+ * 复合路径登记表。
+ *
+ * 只收**真实可走通**的路径，且每条都标清楚它回答的问题。
+ * 「能连的尽量连」不等于「全部串成一条」—— 这里收的是**有实用目的的**那几条。
+ */
+export const COMPOUND_PATHS: CompoundPath[] = [
+  {
+    id: 'mine-to-empire',
+    name: '从矿石到帝国（材料 → 产能 → 财政 → 军事）',
+    purpose: '「有铁矿」能不能变成「有帝国」。四个环节各是一道门槛，断哪一环都不成立。',
+    via: ['sys-material', 'sys-capacity', 'sys-fiscal', 'sys-military'],
+    hops: ['metallurgy_yield', 'gdp_from_labor', 'fiscal_burden_ratio'],
+    keys: ['矿石', '帝国', '军事', '财政', '工业化', '铁'],
+  },
+  {
+    id: 'water-to-army',
+    name: '水渠容量能养多少兵（水利 → 食物 → 财政 → 军事）',
+    purpose: '灌溉能力最终能转化成多少军事力量。适合回答「这个国家打得起多大的仗」。',
+    via: ['sys-water', 'sys-food', 'sys-fiscal', 'sys-military'],
+    hops: ['irrigation_volume', 'population_fed_by_grain', 'fiscal_burden_ratio'],
+    keys: ['水渠', '灌溉', '军队', '兵员', '粮草'],
+  },
+  {
+    id: 'info-to-capacity',
+    name: '治理半径决定产能上限（信息 → 财政 → 产能）',
+    purpose: '通信速度决定能管多宽，管辖半径决定征管成本，最终决定能组织多大的生产。',
+    via: ['sys-info', 'sys-fiscal', 'sys-capacity'],
+    hops: ['admin_radius_from_info', 'gdp_from_labor'],
+    keys: ['治理', '行政半径', '信息', '产能', '帝国规模'],
+  },
+  {
+    id: 'material-to-fly',
+    name: '材料到飞行（材料 → 结构 → 交通）',
+    purpose: '「这个世界的材料能造出飞行器吗」—— 强度决定结构，结构决定能不能做轻。',
+    via: ['sys-material', 'sys-structure', 'sys-travel'],
+    hops: ['hooke_law', 'impact_speed_freefall'],
+    keys: ['材料', '飞行', '航空', '结构', '轻量化'],
+  },
+  {
+    id: 'energy-to-output',
+    name: '燃料到年产量（能源 → 产能）',
+    purpose: '这座窑/这个工坊一年能出多少货，瓶颈卡在燃料还是工艺。',
+    via: ['sys-energy', 'sys-capacity'],
+    hops: ['thermal_efficiency_carnot'],
+    keys: ['燃料', '年产量', '窑', '工坊', '瓶颈'],
+  },
+  {
+    id: 'quantum-to-industry',
+    name: '从半导体到工业（量子 → 信息控制 → 产能）',
+    purpose: '能不能做出电子工业。带隙定器件，器件定通信与控制，控制定产能组织方式。',
+    via: ['sys-quantum', 'sys-info-control', 'sys-capacity'],
+    hops: ['band_gap_wavelength', 'channel_capacity'],
+    keys: ['半导体', '电子', '工业', '通信', '器件'],
+  },
+  {
+    id: 'queue-to-output',
+    name: '作坊够不够用（排队 → 产能）',
+    purpose: '服务能力与到达率决定积压，积压决定实际产出 —— 回答「再加一个人有没有用」。',
+    via: ['sys-queue', 'sys-capacity'],
+    hops: ['mtbf_availability'],
+    keys: ['作坊', '排队', '积压', '产能', '够不够用'],
+  },
+]
+
+/**
+ * 查某条复合路径的**实际可走通性**。
+ *
+ * 不信任登记表：每次都回到 `FORMULA_SYSTEMS` 核实相邻两链之间是否真有接点。
+ * 返回每一跳的证据（是 feeds 还是 bridges、用的哪个公式），供展示与测试共用。
+ *
+ * @param path - 复合路径
+ * @returns 每一跳的连通证据；某跳不通则该项的 `ok` 为 false
+ */
+export function traceCompound(
+  path: CompoundPath,
+): Array<{ from: string; to: string; ok: boolean; formula: string; kind: 'feeds' | 'bridges' | 'none'; note: string }> {
+  const result: Array<{ from: string; to: string; ok: boolean; formula: string; kind: 'feeds' | 'bridges' | 'none'; note: string }> = []
+  for (let index = 0; index < path.via.length - 1; index += 1) {
+    const fromId = path.via[index]
+    const toId = path.via[index + 1]
+    const from = FORMULA_SYSTEMS.find(function (s) { return s.id === fromId })
+    const to = FORMULA_SYSTEMS.find(function (s) { return s.id === toId })
+    const hint = path.hops?.[index] ?? ''
+
+    /** ① 先看有没有登记好的 bridges（任一方向）。 */
+    let kind: 'feeds' | 'bridges' | 'none' = 'none'
+    let formula = ''
+    let note = ''
+
+    if (from) {
+      for (const bridge of from.bridges ?? []) {
+        if (bridge.toSystem !== toId) continue
+        if (hint && bridge.formula !== hint) continue
+        /** 接点公式必须真的在目标链的步骤里，否则是「死链」（本项目踩过两次）。 */
+        const inTarget = (to?.steps ?? []).some(function (step) { return step.formula === bridge.formula })
+        if (!inTarget) continue
+        kind = 'bridges'
+        formula = bridge.formula
+        note = bridge.note
+        break
+      }
+    }
+    /** ② 再看反方向的 bridges（别的链声明指向我）。 */
+    if (kind === 'none' && to) {
+      for (const bridge of to.bridges ?? []) {
+        if (bridge.toSystem !== fromId) continue
+        if (hint && bridge.formula !== hint) continue
+        const inSource = (from?.steps ?? []).some(function (step) { return step.formula === bridge.formula })
+        if (!inSource) continue
+        kind = 'bridges'
+        formula = bridge.formula
+        note = '（对方链声明）' + bridge.note
+        break
+      }
+    }
+    /**
+     * ③ 最后看「共用公式」：两链的 steps 里有同一个公式。
+     * 这比 bridges 弱，但也是真实的连接 —— 同一个公式出现在两条链上。
+     */
+    if (kind === 'none' && from && to) {
+      const toFormulas = new Set<string>(to.steps.map(function (step) { return step.formula }))
+      for (const step of from.steps) {
+        if (!toFormulas.has(step.formula)) continue
+        if (hint && step.formula !== hint) continue
+        kind = 'feeds'
+        formula = step.formula
+        note = '两链共用此公式'
+        break
+      }
+    }
+
+    result.push({ from: fromId, to: toId, ok: kind !== 'none', formula, kind, note })
+  }
+  return result
+}
+
+/**
+ * 找一条复合路径（按 id 或名称/关键词）。
+ *
+ * @param needle - 用户输入
+ * @returns 匹配到的路径，没有则 undefined
+ */
+export function findCompound(needle: string): CompoundPath | undefined {
+  const raw = needle.trim()
+  if (raw === '') return undefined
+  const lower = raw.toLowerCase()
+  const exact = COMPOUND_PATHS.find(function (path) {
+    return path.id.toLowerCase() === lower || path.name === raw
+  })
+  if (exact) return exact
+  return COMPOUND_PATHS.find(function (path) {
+    return path.name.includes(raw) || path.id.includes(lower) || path.keys.some(function (key) { return key.includes(raw) })
+  })
+}

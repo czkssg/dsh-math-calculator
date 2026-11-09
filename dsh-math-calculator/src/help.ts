@@ -348,6 +348,8 @@ const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自
                                              金融/天文/生理/信息控制/决策/量子/排队）
     formulas query="sys:sys-energy"       → 看能源链的逐步（每步公式、输出单位、需自备参数）
     formulas query="sys:formula:材料"      → 看某条公式属于哪几条链（体系间的接点）
+    formulas query="sys:compound"           → 看 7 条**复合路径**（跨 4 条链的现成路线）
+    formulas query="sys:compound:mine-to-empire" → 从矿石到帝国：每一跳的接点公式
     ★ 每步都标「← 上一步的谁作为本步的哪个参数」，照着填即可
     ★ 体系之间靠共用公式连接（如 metallurgy_yield 同时属于材料链与产能链）
     ★ 不必追求全部串成一条 —— 按推演目的取一条链，参数才不会拖家带口

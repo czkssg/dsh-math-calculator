@@ -231,6 +231,10 @@ const SUITES = [
   // 化学工程（八）：反应器/精馏/萃取/吸附/传质/干燥/结晶/放大困境 11 条。
   // 核心断言：放大困境（放热 ∝L³ 而面积 ∝L²）与 CSTR 返混代价。
   { file: 'chemical-engineering.mjs', expect: 46, label: '化学工程放大（反应器/精馏/萃取 11 条）' },
+  // 复合路径（compounds）：跨多条链的现成路线。
+  // 核心断言：**不许登记假路径** —— 每一跳都要回到 FORMULA_SYSTEMS 现查证据；
+  // 并构造一条假路径做反向对照，防止 traceCompound 永远返回 ok。
+  { file: 'compound-paths.mjs', expect: 34, label: '复合路径（跨链路线/不许假路径/反向对照）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },

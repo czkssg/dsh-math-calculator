@@ -209,7 +209,7 @@ import {
 } from './precision-report.js'
 import { opOde } from './ops/ode-op.js'
 import { opRecurrence } from './ops/recurrence-op.js'
-import { FORMULA_SYSTEMS, findSystem, systemsOfFormula } from './formula-systems.js'
+import { FORMULA_SYSTEMS, COMPOUND_PATHS, findSystem, findCompound, systemsOfFormula, traceCompound } from './formula-systems.js'
 import { opWorld } from './ops/world-op.js'
 import { opConstants } from './ops/constants-op.js'
 import { opWorkspace } from './ops/workspace-op.js'
@@ -3077,6 +3077,66 @@ function opFormulas(args: MathArgs): Outcome {
         }
       }
       return { result: lines.join('\n'), value: toJsonValue({ formula: formula.id, systems: owning.map((s) => s.id) }) }
+    }
+    /** `sys:compound:xxx` → 查一条复合路径（跨多条链的现成路线）。 */
+    const compoundProbe = target.match(/^(?:compound|path|复合|路径)[:：]\s*(.+)$/i)
+    if (compoundProbe) {
+      const needle = compoundProbe[1].trim()
+      const path = findCompound(needle)
+      if (!path) {
+        const names = COMPOUND_PATHS.map((p) => '  ' + p.id + ' —— ' + p.name).join('\n')
+        throw new CalcError(
+          'unknown_argument',
+          '没有匹配 "' + needle + '" 的复合路径',
+          '已登记的有：\n' + names,
+        )
+      }
+      const hops = traceCompound(path)
+      const lines = ['═══ ' + path.name + ' ═══', '', path.purpose, '', '经过 ' + path.via.length + ' 条链：']
+      path.via.forEach(function (systemId, index) {
+        const system = FORMULA_SYSTEMS.find((s) => s.id === systemId)
+        lines.push('')
+        lines.push('  ' + (index + 1) + '. ' + (system ? system.name : systemId))
+        if (system) lines.push('     ' + system.purpose)
+        const hop = hops[index]
+        if (hop) {
+          lines.push('     ↓ 接点：' + (hop.ok ? hop.formula + '（' + (hop.kind === 'bridges' ? 'bridge' : '共用') + '）' : '⚠ 未找到真实接点'))
+          if (hop.note) lines.push('       ' + hop.note)
+        }
+      })
+      lines.push('')
+      lines.push('★ 每一跳的具体参数，去查那条链：formulas query="sys:' + path.via[0] + '"')
+      lines.push('★ 全部路径：formulas query="sys:compound"')
+      return {
+        result: lines.join('\n'),
+        value: toJsonValue({
+          id: path.id,
+          name: path.name,
+          via: path.via,
+          hops: hops.map((h) => ({ from: h.from, to: h.to, formula: h.formula, ok: h.ok, kind: h.kind })),
+        }),
+      }
+    }
+    /** `sys:compound` → 列出全部复合路径。 */
+    if (/^(compound|path|复合|路径)$/i.test(target)) {
+      const lines = ['═══ 复合路径（' + COMPOUND_PATHS.length + ' 条，跨多条链的现成路线）═══', '']
+      lines.push('★ 单条链只覆盖一步到十几步；这里登记的是「跨 4 条链回答一个问题」的路线。')
+      lines.push('')
+      for (const path of COMPOUND_PATHS) {
+        const hops = traceCompound(path)
+        const ok = hops.filter((h) => h.ok).length
+        lines.push('  ' + path.name)
+        lines.push('    ' + path.purpose)
+        lines.push('    ' + path.via.join(' → ') + '（' + ok + '/' + hops.length + ' 跳已连通）')
+        lines.push('    查: formulas query="sys:compound:' + path.id + '"')
+        lines.push('')
+      }
+      return {
+        result: lines.join('\n'),
+        value: toJsonValue({
+          compounds: COMPOUND_PATHS.map((p) => ({ id: p.id, name: p.name, via: p.via })),
+        }),
+      }
     }
     const system = findSystem(target)
     if (!system) {
