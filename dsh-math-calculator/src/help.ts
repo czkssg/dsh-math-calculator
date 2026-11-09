@@ -913,6 +913,51 @@ const D_ECOLOGY_BODY = (): string => `【生物·生态（载畜量/料肉比/NP
  * 外部反馈的核心判断：库里有 246 条物理规律，但缺「往下接一层到工艺参数」的桥。
  * 这一节就是那座桥 —— 每条都给「什么场景该用」，而不只是式子。
  */
+/** 【化学工程】反应器/分离/放大 —— 「能不能量产」的判据。 */
+const D_CHEMENG_BODY = (): string => `【化学工程（反应器/分离/放大）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  与 chemistry/* 的分工：那 23 条是**实验室尺度**（浓度/摩尔/滴定/pH），
+  这 11 条是**工厂尺度**（反应器多大、几级分离、放大后会不会飞温）。
+
+
+  reactor_residence_time    τ = V/Q
+                            ★ 物料在装置里的平均寿命，直接决定装置体积
+  reactor_conversion_first_order   X = 1 − e^(−kτ)
+                            ★ **指数饱和**：kτ=3→95%、kτ=6.9→99.9%
+                            「最后几个百分点最贵」—— 精制/制药贵的数学根源
+  cstr_conversion           X = kτ/(1+kτ)
+                            ★ 同 kτ 下远低于活塞流（kτ=3：75% vs 95%）
+                            **返混的代价** —— 所以工业用多釜串联/管式
+  reactor_volume_from_throughput   V = 产能×τ/收率
+                            ★ **收率减半，体积翻倍**
+                            忽略收率是最常见的设定错误（会低估设备规模 2~10 倍）
+  distillation_min_stages   Fenske: N_min ∝ 1/ln α
+                            ★ α 从 2.2 降到 1.2，板数 7.5→32（4.3 倍）
+                            α→1 时板数发散 —— **这就是共沸物蒸不出来的数学形态**
+  extraction_stages         级数 ∝ log(纯度)
+                            ★ K_D 从 0.5 提到 5，级数 11.4→2.6（差 4.4 倍）
+                            **选对溶剂比多加级数重要得多**
+  adsorption_breakthrough   t_b = Vρq/(Q·C₀)
+                            ★ 穿透时间 ∝ 1/浓度：进水浓度翻倍，寿命减半
+                            所以「预处理」能极大延长吸附剂寿命
+  mass_transfer_rate        N = K·A·ΔC（与传热完全同形）
+                            ★ 三个因子都线性 → 设备能做多小取决于哪项容易提
+  drying_rate_constant      dM/dt = k(M − M_e)
+                            ★ 越接近平衡越慢 → **先猛吹后慢烘**
+                            急烘会外干内湿（表面干了、内部还湿）
+  crystallization_supersaturation   S = (C − C_sat)/C_sat
+                            ★ **过饱和度越大晶体越细**
+                            想要大晶体必须**慢冷却**（数天到数周），不是快点结晶
+  heat_exchanger_area_chemical   A = Q/(U·ΔT)
+                            ★★ **放大困境**：放热 ∝ L³ 而面积 ∝ L²
+                            体积放大 10 倍时单位体积散热降到 1/2.15
+                            —— 「小试能控温、中试就飞温」的物理原因
+
+★ 共同点：这 11 条全部围绕**放大（scale-up）**，不是「实验室化学」。
+  ⚠ 所有系数（k、K、U、q、α）都必须实测或查手册 —— 本批只给结构式与量级。
+`;
+
 const D_PROCESS_BODY = (): string => `【工艺链】把物理规律接到工艺参数上（14 条，engineering/process）
 
   调用方式：{operation:"formula", formula:"id", overrides:{参数}}
@@ -1536,6 +1581,20 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: D_PROCESS_BODY,
   },
   {
+    key: 'd-chemeng',
+    tier: 'core',
+    /** 与 d-process 分节的理由：那节是「单件工艺」（窑炉/冶金），这节是「工业放大」。 */
+    weight: 10,
+    short: '化工放大',
+    title: '化学工程（反应器/分离/放大）',
+    summary: '停留时间→反应器体积、一级反应转化率的指数饱和、CSTR 返混代价、' +
+      'Fenske 板数 ∝1/lnα、萃取级数 ∝log 纯度、吸附穿透、传质速率、干燥降速、' +
+      '过饱和度决定晶粒、**放大困境（放热 ∝L³ 而面积 ∝L²）**。★ 11 条，全部围绕 scale-up。',
+    aliases: ['化学工程', '反应器', '反应釜', '精馏', '萃取', '吸附', '传质', '干燥',
+      '结晶', '放大', '量产', '化工', 'scale-up', 'reactor', 'distillation'],
+    body: D_CHEMENG_BODY,
+  },
+  {
     key: 'd-material',
     tier: 'core',
     short: '材料本构',
@@ -1825,7 +1884,7 @@ function renderIndex(): string {
    * 拆开后它们仍然属于「建模」，因为它们都是公式（而不是算术）。
    */
   const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'recipe-errors', 'recipe-fiscal', 'recipe-bio', 'recipe-material', 'world',
-    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp', 'd-process', 'd-coldwar', 'd-modern-society']
+    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp', 'd-process', 'd-coldwar', 'd-modern-society', 'd-chemeng']
   const isModeling = (topic: HelpTopic) => MODELING_KEYS.includes(topic.key)
   const arithmetic = core.filter((topic) => !isModeling(topic))
   const modeling = core.filter(isModeling)

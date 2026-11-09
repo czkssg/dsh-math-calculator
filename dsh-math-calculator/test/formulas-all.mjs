@@ -110,6 +110,15 @@ function sampleOverrides(formula) {
   named(/^h_in$/i, 2.8e6)
   named(/^h_out/i, 2.0e5)
   named(/^h_pump/i, 2.01e5)
+  /**
+   * 萃取/精馏的浓度组：初始 > 目标 > 平衡，且 K_D 与溶剂比 > 0。
+   * 全填同一个值会让 log(0/0) 或 ln(1)=0 直接爆掉 —— 与焓值组同理。
+   */
+  named(/^initial_ratio$/i, 1.0)
+  named(/^final_ratio_target$/i, 0.01)
+  named(/^equilibrium_ratio$/i, 0.0001)
+  named(/^distribution_ratio$/i, 2)
+  named(/^solvent_ratio$/i, 1)
   // 比热比必须 > 1（默认值存在时不覆盖，这里只兜底）
   return overrides
 }

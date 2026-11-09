@@ -124,7 +124,12 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 一个新的学科若不在目录里出现，就等于没加 —— 这正是本文件开头
    * 反复论证过的那个反面风险（「省过头就是 AI 不知道有这个功能」）。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 24）', coreTopics.length === 24, String(coreTopics.length))
+  /**
+   * ## 24 → 25（2026-11-10）
+   * 新增 d-chemeng —— 与 d-process 分节的理由是「单件工艺 vs 工业放大」，
+   * 查「反应器多大」「几级萃取」的人不会去翻窑炉热平衡。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 25）', coreTopics.length === 25, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *
