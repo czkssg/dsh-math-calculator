@@ -130,7 +130,8 @@ console.log('-- 5. 体系接入 --')
 
 console.log('-- 6. 库与体系完整性 --')
 {
-  assert('公式总数 520（516+4）', fm.FORMULAS.length === 520, String(fm.FORMULAS.length));
+  /** 改成下限：每批都手改会让这条退化成「抄实际值」。真正守的是「没把别人挤掉」——由体系引用那条守。 */
+  assert('公式总数 >= 520（只增不减）', fm.FORMULAS.length >= 520, String(fm.FORMULAS.length));
   const badRef = [];
   for (const system of sys.FORMULA_SYSTEMS) {
     for (const step of system.steps) if (!fm.FORMULA_INDEX.has(step.formula)) badRef.push(system.id + '→' + step.formula);
