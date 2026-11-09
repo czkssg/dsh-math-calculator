@@ -36,6 +36,7 @@ import { MODERN_PHYSICS_FORMULAS } from './formula-library-modern-physics.js'
 import { SOCIAL_SCIENCE_FORMULAS } from './formula-library-social-science.js'
 import { DISTRIBUTION_FORMULAS } from './formula-library-distributions.js'
 import { HEAT_ENGINE_FORMULAS } from './formula-library-heat-engines.js'
+import { FLUID_DYNAMICS_FORMULAS } from './formula-library-fluid-dynamics.js'
 import { getActiveConstants } from './constants-graph.js'
 import { loadGlobalFormulas } from './formula-pack.js'
 import { findUnit, convert } from './units.js'
@@ -66,6 +67,7 @@ export const FORMULAS: FormulaDef[] = [
   ...SOCIAL_SCIENCE_FORMULAS,
   ...DISTRIBUTION_FORMULAS,
   ...HEAT_ENGINE_FORMULAS,
+  ...FLUID_DYNAMICS_FORMULAS,
 ]
 
 /** id 索引（后批次覆盖同名 id 时以后者为准，便于后续修订）。 */
@@ -101,6 +103,7 @@ for (const formula of MODERN_PHYSICS_FORMULAS) FORMULA_INDEX.set(formula.id, for
 for (const formula of SOCIAL_SCIENCE_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of DISTRIBUTION_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 for (const formula of HEAT_ENGINE_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
+for (const formula of FLUID_DYNAMICS_FORMULAS) FORMULA_INDEX.set(formula.id, formula)
 
 /**
  * 把全局公式包并入内置公式（幂等：已存在的 id 跳过）。

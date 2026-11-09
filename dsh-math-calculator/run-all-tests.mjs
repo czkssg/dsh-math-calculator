@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 607, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 620, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -225,6 +225,9 @@ const SUITES = [
   // 热机循环（六）：Rankine/Otto/Diesel/Brayton/联合循环/制冷/蓄热 11 条。
   // 核心断言是**结构性质**：Otto 里没有温度项、Rankine 里没有压缩比 → 两条技术树不同源。
   { file: 'heat-engines.mjs', expect: 40, label: '热机循环与制冷（Rankine/Otto/COP 11 条）' },
+  // 流体与气动（七）：伯努利/阻力/升力/失速/边界层/马赫角/波阻 13 条。
+  // 核心断言：**压差阻力 ∝v² 与粘性阻力 ∝v 是两种机制**，混用会得出「越快越省力」。
+  { file: 'fluid-dynamics.mjs', expect: 40, label: '流体与气动（升力/阻力/失速/激波 13 条）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },
