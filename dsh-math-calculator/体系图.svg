@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1904" height="1348" viewBox="0 0 1904 1348" font-family="Microsoft YaHei, Segoe UI, sans-serif">
 <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/></marker></defs>
 <rect width="1904" height="1348" fill="#f8fafc"/>
-<text x="952" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">22 条推演链 · 228 步 · 45 个跨链接点</text>
+<text x="952" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">22 条推演链 · 232 步 · 45 个跨链接点</text>
 <text x="952" y="72" text-anchor="middle" font-size="13" fill="#64748b">箭头＝「上一步的输出喂进下一步的输入」　曲线上标的是被共用的公式　★ 越大＝接入链越多　深蓝实线＝枢纽链（≥5 个接点）</text>
 <text x="56" y="232" font-size="14" font-weight="700" fill="#334155">Ⅰ 自然基础（世界为什么这样）</text>
 <text x="56" y="554" font-size="14" font-weight="700" fill="#334155">Ⅱ 物质与信息（能造什么、能传多远、能控多准）</text>
@@ -246,7 +246,7 @@
 <text x="613.0" y="630.0" text-anchor="end" font-size="10" font-weight="700" fill="#94a3b8">★4</text>
 <rect x="668.0" y="568.0" width="262" height="78" rx="9" fill="#ffffff" stroke="#1d4ed8" stroke-width="3.0"/>
 <text x="680.0" y="591.0" font-size="14" font-weight="700" fill="#0f172a">决策与可靠性链</text>
-<text x="919.0" y="591.0" text-anchor="end" font-size="10" fill="#94a3b8">12 步</text>
+<text x="919.0" y="591.0" text-anchor="end" font-size="10" fill="#94a3b8">16 步</text>
 <text x="680.0" y="611.0" font-size="10.2" fill="#64748b">赔率 → 概率 → 冗余 → 可用度</text>
 <text x="680.0" y="630.0" font-size="9.5" fill="#94a3b8">breakeven_probabili… → payback_period</text>
 <text x="919.0" y="630.0" text-anchor="end" font-size="10" font-weight="700" fill="#1d4ed8">★6</text>
