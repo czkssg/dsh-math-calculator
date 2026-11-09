@@ -241,6 +241,11 @@ const SUITES = [
   // P3 日常生产 + P4 地质速率 + P5 社会失稳（23 条）。
   // 最重要的断言：社会失稳公式**必须声明「不是预测」**，否则会被当预言用。
   { file: 'craft-geology-instability.mjs', expect: 62, label: '生产/地质/失稳（P3+P4+P5 23 条）' },
+  // ★ 耦合守卫：world 与公式库必须算出同一个数。
+  // 痛点：world.ts 曾完全不引用公式库（两套独立实现，数字碰巧一致）。
+  { file: 'world-formula-consistency.mjs', expect: 28, label: '耦合守卫（world ↔ 公式库逐项对账 + 推导链）' },
+  // ★ 函数层对账：core-physics（world 用）与公式库 expr（对外暴露）必须一致。
+  { file: 'core-physics-parity.mjs', expect: 25, label: 'core-physics 与公式库 expr 一致性（单一数据源）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },

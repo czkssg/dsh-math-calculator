@@ -134,6 +134,71 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   lines.push(`  地平线距离（1.7m 眼高）${f(profile.terrain.horizonKm, 2)} km`)
   lines.push(`  季节: ${profile.terrain.seasonStrength}`)
 
+  /**
+   * ## 【推导链】—— 这个数从哪来
+   *
+   * 上面每个数字都是「结果」，但读者看到「最大山高 4.9 km」时，
+   * 无法知道它是**哪个公式、用哪些输入**算出来的。
+   *
+   * 而本项目的核心主张是「可复核」——**推导链正是可复核的形式**。
+   *
+   * ### 为什么写在这两处之间
+   *
+   * 它紧跟在「地形与视野」之后、恒星结构之前：读者刚看完一批结果，
+   * 正好可以对照「这些结果用了什么」。
+   *
+   * ### 一个必须显式说明的地方
+   *
+   * 最大山高用的 `strength` 是 **1.3e8**（由精细结构常数 α 推出，ADR-0001 S2），
+   * **不是公式库默认的 2e8** —— 两者算出的山高差 54%（4.9 vs 7.54 km）。
+   * 这正是「同一物理量、不同输入口径」的典型，所以这里把来源写出来。
+   */
+  lines.push('')
+  lines.push('【推导链】（上面那些数用的是什么式子、什么输入）')
+  const g = profile.planet.surfaceGravity
+  lines.push(
+    `  表面重力  = G·M/R²  ← G=${(6.6743e-11).toExponential(4)}, ` +
+      `M=${profile.planet.massKg.toExponential(4)}, R=${profile.planet.radiusM.toExponential(4)}`,
+  )
+  lines.push(`  逃逸速度  = √(2GM/R)  ← 同上输入，得 ${f(profile.planet.escapeVelocity / 1000, 3)} km/s`)
+  lines.push(`  平均密度  = M/(4/3·πR³)  ← ${f(profile.planet.densityKgM3, 0)} kg/m³`)
+  lines.push(`  地平线    = √(2Rh + h²)  ← h=1.7m，得 ${f(profile.terrain.horizonKm, 2)} km`)
+  lines.push(
+    `  最大山高  = strength/(ρ·g)  ← strength=1.3e8 Pa（由 α 推出）、ρ=${f(2700, 0)}、g=${f(g, 2)}`,
+  )
+  lines.push('  ⚠ strength 不是通用常数：地球花岗岩约 1.3e8 Pa，而公式库默认值 2e8 会算出 7.54 km。')
+  lines.push('  这些式子与公式库共用同一份实现（src/core-physics.ts），改一处两边同时变。')
+
+  /**
+   * ## 【接着往下推】—— 这个画像能喂给哪条链
+   *
+   * 这一节是「耦合」的兑现处：**world 只是第一层，输出可以直接作为公式库的输入**。
+   *
+   * 之前的问题是：world 算出「重力 9.82、最大山高 4.9 km」，
+   * 但用户拿到这些数字后，**不知道该拿它们去算哪些下一步**。
+   *
+   * 现在把「哪些公式能吃这些输入」直接列出来，并给可复制的 overrides。
+   * 这不是自动执行（那是层三，已决定不做），而是**把接口摆明**。
+   */
+  lines.push('')
+  lines.push('【接着往下推】（把上面的值喂给公式库的下一步）')
+  const gravityValue = f(profile.planet.surfaceGravity, 3)
+  const massValue = profile.planet.massKg.toExponential(4)
+  const radiusValue = profile.planet.radiusM.toExponential(4)
+  lines.push('  ★ 以下 overrides 可以直接复制进 formula 调用：')
+  lines.push('')
+  lines.push(`  生物体型  formula="kleiber" overrides={m: <体重kg>}`)
+  lines.push(`             → 代谢率；再乘 q10_temperature 得到不同气温下的速率`)
+  lines.push(`  飞行可行  formula="lift_force" overrides={density: <空气密度>, velocity: <m/s>, wing_area: <m²>}`)
+  lines.push(`             → 这个重力下要多大的翅膀（g=${gravityValue} 已决定所需升力）`)
+  lines.push(`  结构极限  formula="buckling_euler" overrides={E: <Pa>, I: <m⁴>, L: <m>}`)
+  lines.push(`             → 山高上限 ${f(profile.terrain.maxMountainHeight / 1000, 2)} km 之外，木石建筑能到多高`)
+  lines.push(`  能量上限  formula="wind_power_available" overrides={density: <kg/m³>, area: <m²>, velocity: <m/s>}`)
+  lines.push(`  河流搬运  formula="sediment_trap_efficiency" 等 —— 用地形与降水推侵蚀`)
+  lines.push('')
+  lines.push('  ★ 想查全部可用链条：formulas query="sys"')
+  lines.push('  ★ 想查跨链路线：  formulas query="sys:compound"')
+
   lines.push('')
   lines.push('【恒星结构与寿命】')
   const st = profile.stellar

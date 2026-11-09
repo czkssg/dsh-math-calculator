@@ -19,6 +19,18 @@
 
 import { CONSTANTS } from './formula-library.js'
 import {
+  meanDensity,
+  surfaceGravity as physicsSurfaceGravity,
+  escapeVelocity as physicsEscapeVelocity,
+  horizonDistance as physicsHorizonDistance,
+  buildingHeightLimit as physicsBuildingHeightLimit,
+  centrifugalRatio as physicsCentrifugalRatio,
+  stellarLuminosity as physicsStellarLuminosity,
+  orbitalPeriod as physicsOrbitalPeriod,
+  orbitalVelocity as physicsOrbitalVelocity,
+  dryLapseRate as physicsDryLapseRate,
+} from './core-physics.js'
+import {
   computeLayeredClimate,
   noonElevation,
   dayLength,
@@ -469,7 +481,8 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
   const starTempK = num(params.starTemp, baseStar.tempK)
   const starMassKg = starMassSun * K.Msun
   const starRadiusM = starRadiusSun * K.Rsun
-  const luminosityW = 4 * Math.PI * starRadiusM ** 2 * K.sigma * starTempK ** 4
+  /** ★ 恒星光度改走 core-physics（与公式库 stellar_luminosity 同一实现）。 */
+  const luminosityW = physicsStellarLuminosity(K.sigma, starRadiusM, starTempK)
   const luminositySun = luminosityW / K.Lsun
 
   if (starTempK < 2400) warnings.push(`恒星表面温度 ${starTempK}K 低于红矮星下限，光谱以红外为主，光合作用可能无法进行。`)
@@ -492,9 +505,11 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
   const orbitAU = num(params.orbitAU, 1)
   const eccentricity = Math.min(0.95, Math.max(0, num(params.eccentricity, 0.0167)))
   const orbitM = orbitAU * K.AU
-  const yearSeconds = 2 * Math.PI * Math.sqrt(orbitM ** 3 / (K.G * starMassKg))
+  /** ★ 轨道周期改走 core-physics（与公式库 orbital_period 同一实现）。 */
+  const yearSeconds = physicsOrbitalPeriod(K.G, starMassKg, orbitM)
   const yearDays = yearSeconds / 86400
-  const orbitalVelocity = Math.sqrt((K.G * starMassKg) / orbitM)
+  /** ★ 轨道速度改走 core-physics（与公式库 orbital_velocity 同一实现）。 */
+  const orbitalVelocity = physicsOrbitalVelocity(K.G, starMassKg, orbitM)
 
   // 偏心率造成的温度季差（近似：距离比 (1+e)/(1-e) 的四次方根）
   const perihelionTempDeltaPercent = ((1 + eccentricity) / (1 - eccentricity)) ** 0.5 - 1
@@ -507,16 +522,28 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
   const planetRadiusEarth = num(params.planetRadius, 1)
   const planetMassKg = planetMassEarth * EARTH.mass
   const planetRadiusM = planetRadiusEarth * EARTH.radius
-  const densityKgM3 = planetMassKg / ((4 / 3) * Math.PI * planetRadiusM ** 3)
-  const surfaceGravity = (K.G * planetMassKg) / planetRadiusM ** 2
+  /**
+   * ★ 密度 / 重力 / 逃逸速度改走 `core-physics`（单一数据源）。
+   *
+   * 这三条原先是就地写的算式，与公式库里的 `surface_gravity`、
+   * `escape_velocity` 是**两套独立实现**。当前数字巧合一致，
+   * 但改一处不会带动另一处 —— 那正是本项目吃过亏的地方
+   * （README 写 404 条而代码 442 条）。
+   *
+   * 现在两边都指向 `core-physics.ts`，改一处两边同时变。
+   * 守卫测试 `test/world-formula-consistency.mjs` 守着这条不变式。
+   */
+  const densityKgM3 = meanDensity(planetMassKg, planetRadiusM)
+  const surfaceGravity = physicsSurfaceGravity(K.G, planetMassKg, planetRadiusM)
   const surfaceGravityEarth = surfaceGravity / EARTH.g
-  const escapeVelocity = Math.sqrt((2 * K.G * planetMassKg) / planetRadiusM)
+  const escapeVelocity = physicsEscapeVelocity(K.G, planetMassKg, planetRadiusM)
 
   // ── 自转与一天 ──
   const obliquityDeg = Math.min(90, Math.max(0, num(params.obliquityDeg, 23.44)))
   const rotationHours = num(params.rotationHours, EARTH.dayHours)
   const omega = (2 * Math.PI) / (rotationHours * 3600)
-  const centrifugalRatio = (omega ** 2 * planetRadiusM) / surfaceGravity
+  /** ★ 离心比改走 core-physics（与公式库 centrifugal_ratio 同一实现）。 */
+  const centrifugalRatio = physicsCentrifugalRatio(omega, planetRadiusM, surfaceGravity)
 
   if (centrifugalRatio > 0.5) {
     warnings.push(
@@ -638,7 +665,14 @@ export function generateWorld(params: WorldParams, options: WorldOptions = {}): 
     deriveScaleLadder({ ...OUR_UNIVERSE, alpha }).find((entry) => entry.id === 'material-strength')?.value ?? 1.3e8
   const materialStrength = num(params.materialStrength, derivedStrength)
   const materialDensity = Math.max(100, num(params.materialDensity, 2700))
-  const maxMountainHeight = materialStrength / (materialDensity * surfaceGravity)
+  /**
+   * ★ 最大山高改走 core-physics。
+   *
+   * 注意 strength 用的是「由 α 推出的 1.3e8」，不是公式库默认的 2e8 ——
+   * 两者差 54%（4.9 km vs 7.54 km）。 故意不提供默认值，
+   * 就是为了让这个选择显式化。
+   */
+  const maxMountainHeight = physicsBuildingHeightLimit(materialStrength, materialDensity, surfaceGravity)
 
   // 雪线：年均温度降到 0°C 的海拔
   // 若全球均温已低于冰点，雪线就是海平面（不是 0 这个数值巧合，而是"全球冰封"）

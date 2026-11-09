@@ -2,6 +2,125 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.3.21] — 2026-11-10
+
+**把公式库与世界观推导耦合起来。** 这是用户最初的诉求（「自动通过公式推导出整个世界」），
+也是本项目一直存在的结构性缺口。
+
+### 问题：两边各算一套，数字碰巧一致
+
+实测确认：
+
+```
+grep -c "formula" src/world.ts  →  1（那唯一一处是 import CONSTANTS 常量表）
+```
+
+**`world.ts` 完全不引用公式库。** 它自己算 surfaceGravity / escapeVelocity /
+maxMountainHeight…，而公式库里也有同一批公式。
+
+当前数字一致（实测对账 4 项全对），但那是**因为当初抄对了，不是结构保证一致**。
+本项目已经吃过一次同类的亏（README 写 404 条而代码 442 条）。
+
+### 为什么不能直接让 world import 公式库
+
+两个原因，实测都踩过：
+
+```
+① 重量：formulas.ts 会拉进 631 条公式与 mathjs 全依赖，而 world 只需 4 个算式
+② 口径：building_height_limit 的 strength，world 用 1.3e8（由 α 推出），
+        公式库默认 2e8 —— 算出的山高差 54%（4.9 km vs 7.54 km）
+```
+
+若直接让 world 调公式库，就得把「α → 材料强度」那条链也搬进去，
+而它依赖 `provenance.ts` 与 `constants-graph.ts` —— **会形成双向依赖**。
+
+### 做法：抽一层零依赖的纯函数（单一数据源）
+
+新增 `src/core-physics.ts`：11 个纯函数，**零依赖**。
+
+```
+core-physics.ts（本文件，纯函数）
+     ↑                    ↑
+world.ts            formula-library.ts
+（推演用）           （对外暴露成公式）
+```
+
+依赖单向：两边都指向它，它不指向任何人。**改一处，两边同时变。**
+
+替换了 world 里的 8 处重复实现：
+
+```
+meanDensity / surfaceGravity / escapeVelocity / stellarLuminosity
+orbitalPeriod / orbitalVelocity / centrifugalRatio / buildingHeightLimit
+```
+
+### 为什么公式库那边不换成函数
+
+公式库的公式是 **mathjs 表达式字符串**（`'G * M / R^2'`），不能调函数。
+所以「函数 + 字符串」必然是两份文本 —— **这时候靠断言把它们钉在一起**：
+
+新增 `test/core-physics-parity.mjs`（25 项）：
+- 逐项验证「函数值 == 公式库 expr 值」
+- **改参数再验一次**（火星/木星/虚构星）—— 单点一致可能是巧合，形式相同才会继续一致
+- **已知物理事实做锚**（地球重力 9.8、逃逸 11.2、公转 365.25 天、太阳光度 = Lsun）
+  —— 否则两边同时写错时对账仍会通过
+
+### 新增 `test/world-formula-consistency.mjs`（28 项）
+
+守 `world` 与公式库的逐项对账，含一条**反向对照**：
+
+```
+用默认 strength=2e8 会得到 7.54 km ≠ world 的 4.9 km
+→ 证明这条对账真的能抓到不一致
+```
+
+### world 输出新增两段（层二：推导可追溯）
+
+**①【推导链】** —— 每个数从哪来：
+
+```
+表面重力  = G·M/R²  ← G=6.6743e-11, M=5.9722e+24, R=6.3710e+6
+最大山高  = strength/(ρ·g)  ← strength=1.3e8 Pa（由 α 推出）
+⚠ strength 不是通用常数：地球花岗岩约 1.3e8，公式库默认 2e8 会算出 7.54 km
+```
+
+**②【接着往下推】** —— 这些值能喂给公式库的哪些下一步：
+
+```
+生物体型  formula="kleiber" overrides={m: <体重kg>}
+飞行可行  formula="lift_force" overrides={density:..., velocity:..., wing_area:...}
+          → 这个重力下要多大的翅膀（g=9.82 已决定所需升力）
+结构极限  formula="buckling_euler" ...
+★ formulas query="sys" / query="sys:compound"
+```
+
+这是「耦合」的兑现处：**world 只是第一层，输出可直接作为公式库的输入**。
+
+### 测试里抓出我自己的一个错
+
+`centrifugalRatio` 的地球值我第一版断言写 0.034，实算 **0.00345**（差 10 倍）。
+校验方法：赤道自转线速度 ωR = 464.7 m/s（应 465），
+则 v²/(Rg) = 465²/(6.371e6×9.82) ≈ 0.00345。
+
+**这正是这条测试的价值：它对账的是「我的记忆」与「实现」。**
+
+### 明确不做的：层三
+
+**不让 world 变成「复合路径的一次执行」。**
+理由：复合路径的定位是「给人看的路线」，不是「给机器执行的程序」。
+硬做会把 world 变成僵化流水线，失去按需计算的灵活性。
+
+### 状态
+
+| 指标 | 之前 | 之后 |
+|---|---|---|
+| 测试 | 115 套 / 5766 项 | **117 套 / 5819 项** |
+| world 输出 | 3496 字符 | **4519 字符**（含推导链与衔接） |
+
+公式数不变（669）—— 这一批改的是**结构**，不是内容。
+
+---
+
 ## [2.3.20] — 2026-11-10
 
 缺口分析的 P3~P5 三批：**日常生产（23 条 + 地质 + 失稳）**。
