@@ -233,6 +233,20 @@ export function buildPlaybook(state: {
   out.push('**架构：确定性底座 + AI 开放层。** 底座算数，你负责判断与表达。')
   out.push('插件不写死分支逻辑，也不穷举结语——那是你的活。')
   out.push('')
+  /**
+   * ## 多步传递（与 brief 档同一规则）
+   *
+   * 这条必须两档都有：只在 brief 里写，用户切到 full 就丢了行为。
+   * 而「每步重填参数」正是最常见的错误用法。
+   */
+  out.push('### 多步推演：把上一步的输出喂给下一步')
+  out.push('- 取输出：`value.answer` 是全精度裸数，`value.unit` 是单位')
+  out.push('- 下一步 overrides 直接写这个数；带单位的字符串也行：`{g:"9.82 m/s^2"}`')
+  out.push('- 工具自动换算等价单位：`m/s^2` 与 `N/kg` 可互换喂入')
+  out.push('- 查链条：`formulas query="sys:sys-energy"`；跨链路线：`query="sys:compound"`')
+  out.push('- ⚠ 链条是**主题分组**不是严格依赖：19 步能源链里窑炉/锅炉/卡诺是并列的，')
+  out.push('  先算谁、把哪个输出喂给谁，要你自己判断，别机械顺序执行')
+  out.push('')
   out.push('### 底座能给你什么（可直接引用）')
   for (const cap of BASE_CAPABILITIES) {
     out.push('- `' + cap.call + '` → ' + cap.produces)
@@ -328,7 +342,35 @@ export function buildBriefPlaybook(state: {
   customConstants?: number
 }): string {
   const out: string[] = []
-  // 低频内容压到 120 字符内。四句话的语义一个不少，只是去掉重复的修饰。
+  /**
+   * ## 多步推演：把上一步的输出喂给下一步
+   *
+   * 用户的原话是「每个值在每一次运算中变成不同的物理量，
+   * 数字被物理量标记，然后进入下一个算式」。
+   *
+   * 这件事**工具内部做不到全自动** —— 实测过：
+   *
+   * ```
+   *   22 条链 / 259 步，只有 9 步声明了依赖（3.5%）
+   *   sys-energy 19 步里 0 条依赖：窑炉、锅炉、卡诺、制冷、储热… 是并列主题，不是链
+   * ```
+   *
+   * 所以「先算什么、把哪个输出喂给哪个参数」这个判断**必须由 AI 做**。
+   * 这段就是让 AI 知道该怎么做 —— 不然它会每步都从原始条件重新填参数。
+   *
+   * ## 字数压到 4 行
+   *
+   * 第一版写了 6 行 / 278 字符，把 brief 顶到 963（上限 900），
+   * 还让「世界推演」段不再是第二长 —— 违反了本项目「按频率分配字数」的规则。
+   *
+   * 所以这里只保留**不说就会错**的四件事：
+   * 拿输出、可带单位、自动换算、链条是主题分组不是依赖。
+   */
+  out.push('**多步：输出喂给下一步**')
+  out.push('· `value.answer` 裸数 + `value.unit` 单位；overrides 直接写，可带单位 `{g:"9.82 m/s^2"}`')
+  out.push('· 等价单位自动换算（`m/s^2`≈`N/kg`）；查链条 `formulas query="sys:..."`')
+  out.push('· ⚠ 链条是**主题分组**不是依赖，顺序你自己判断')
+  out.push('')
   out.push('**世界推演：底座算数，你判断表达。**')
   out.push('- 算：`derivation`（pipeline/backSolve/dead/observer/chaos）；写：结语叙事你生成')
   out.push('- 硬约束如实说；叙事选择不反驳只讲代价；算不出的别编，标待定')

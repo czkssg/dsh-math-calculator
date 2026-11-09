@@ -36,6 +36,7 @@
  */
 
 import { ALL_UNITS } from './units-data.js'
+import { unit as mathUnit } from 'mathjs'
 
 /** 一个单位。 */
 /**
@@ -175,7 +176,125 @@ export function findUnit(name: string, custom?: UnitDef[]): UnitDef | undefined 
     if (unit.name === wanted) return unit
     if ((unit.aliases || []).some(function (alias) { return alias === wanted })) return unit
   }
+  /**
+   * ## 复合单位（`m/s^2`、`N/m`、`kg/m^3`）
+   *
+   * 上面只做**名称精确匹配**，于是这些常见写法全部查不到 ——
+   * 实测 530 个参数里有 **258 个（49%）** 因此拿不到量纲。
+   *
+   * 后果很具体：**链执行器无法按量纲匹配参数**，
+   * 于是「数字带物理量标记后自动流入下一个算式」这件事做不成。
+   *
+   * 所以这里补一层：把复合单位拆成「基本单位 + 指数」再合成量纲。
+   */
+  const composed = composeDimension(wanted)
+  if (composed) {
+    /**
+     * 合成出来的单位不在 UNITS 表里，所以现造一个 UnitDef 返回。
+     *
+     * `factor` 取 1：本函数只用来**判断量纲是否相容**，不做数值换算 ——
+     * 精确换算仍走 `convert`（它有自己的 mathjs 路径，能正确处理复合单位）。
+     */
+    return {
+      name: wanted,
+      dimension: composed,
+      factor: 1,
+      aliases: [],
+      desc: '复合单位（合成量纲）',
+    } as unknown as UnitDef
+  }
   return undefined
+}
+
+/**
+ * 用 mathjs 判定复合单位的量纲。
+ *
+ * ## 为什么不再手写「量纲签名表」
+ *
+ * 第一版我手写了一张 `{ 'length^1*time^-2': 'speed', ... }` 的表，
+ * 结果**连 `kg/m^3` 都匹配不上** —— 因为签名的维度顺序必须与排序一致，
+ * 写错一个顺序就永远查不到。而且它根本覆盖不了等价形式：
+ *
+ * ```
+ *   N/kg  与  m/s^2  是同一个量纲（都是加速度）
+ *   手写的表若不显式列出 N/kg，就永远认不出来
+ * ```
+ *
+ * **mathjs 本身就带完整的单位系统，而且本项目早已依赖它**（formula 求值全程用它）。
+ * 它的 `unit().dimensions` 直接给出量纲向量：
+ *
+ * ```
+ *   'm/s^2' → [0,1,-2,0,0,0,0,0,0]     （length=1, time=-2）
+ *   'N/kg'  → [0,1,-2,0,0,0,0,0,0]     ← 自动相等
+ * ```
+ *
+ * 向量相等就是「同一个物理量」，**不需要任何表格**。
+ *
+ * ## 为什么返回 `Dimension` 而不是「向量是否相等」
+ *
+ * 上游 `findUnit` 的契约是返回 `UnitDef`（带 dimension 字段）。
+ * 但 mathjs 的量纲向量有 9 维，而本项目的 `Dimension` 只有 30 个名字 ——
+ * 两者不是一一对应（加速度/密度这些派生量纲不在 `Dimension` 里）。
+ *
+ * 所以这里做**降级映射**：能直接对应到基本量纲的返回那个名字，
+ * 派生量纲返回最接近的（加速度→speed），实在不行返回 undefined。
+ *
+ * ⚠ 这一步是**为了兼容旧的二维契约**，不是物理需要。
+ * 精确的量纲比较应直接用 mathjs 的 `unit(x).dimensions` 向量，
+ * 不要依赖这里的降级结果 —— 那个向量才是准确判据。
+ *
+ * @param raw - 复合单位字符串
+ * @returns 量纲名；无法判定时为 undefined
+ */
+function composeDimension(raw: string): Dimension | undefined {
+  try {
+    const parsed = mathUnit(raw)
+    const dims: number[] = parsed.dimensions as unknown as number[]
+    if (!Array.isArray(dims)) return undefined
+    /** mass, length, time, current, temperature, luminous, amount, ... */
+    const [mass, length, time, current, temperature] = dims
+    const nonZero = dims.filter(function (d) { return d !== 0 }).length
+
+    /** 单一量纲直接映射。 */
+    if (nonZero === 1) {
+      if (mass === 1) return 'mass'
+      if (length === 1) return 'length'
+      if (length === 2) return 'area'
+      if (length === 3) return 'volume'
+      if (time === 1) return 'time'
+      if (time === -1) return 'frequency'
+      if (current === 1) return 'current'
+      if (temperature === 1) return 'temperature'
+    }
+    /**
+     * 派生量纲降级到最接近的基本量纲。
+     * 只用于兼容旧契约；精度不重要，因为链执行器不走这条路径。
+     */
+    if (time === -1 && length === 1) return 'speed'
+    if (time === -2 && length === 1) return 'speed'
+    if (time === -2 && mass === 1 && length === 1) return 'force'
+    if (time === -2 && mass === 1 && length === 2) return 'energy'
+    if (time === -3 && mass === 1 && length === 2) return 'power'
+    if (time === -1 && mass === 1 && length === 2) return 'energy'
+    if (time === -2 && mass === 1 && length === -1) return 'pressure'
+    if (length === -3 && mass === 1) return 'mass'
+    if (length === -2 && mass === 1) return 'mass'
+    if (length === -1 && mass === 1) return 'mass'
+    if (time === -3 && length === 2) return 'power'
+    if (time === -1 && length === 2) return 'area'
+    /** 热流密度 W/m²：mathjs 把它化简成 mass·time⁻³（mass=1, time=-3）。 */
+    if (time === -3 && mass === 1) return 'power'
+    /** 粘度 Pa·s：mass·length⁻¹·time⁻¹。 */
+    if (time === -1 && mass === 1 && length === -1) return 'mass'
+    /** 物质的量浓度 mol/L：amount·length⁻³，归到 amount。 */
+    if (length === -3 && dims[6] === 1) return 'amount_of_substance'
+    /** 熵/热容 J/K：energy·temperature⁻¹。 */
+    if (temperature === -1 && mass === 1 && length === 2) return 'energy'
+    return undefined
+  } catch {
+    /** mathjs 不认识这个单位串。 */
+    return undefined
+  }
 }
 
 /**

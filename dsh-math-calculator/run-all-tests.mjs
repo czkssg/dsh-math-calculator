@@ -246,6 +246,9 @@ const SUITES = [
   { file: 'world-formula-consistency.mjs', expect: 28, label: '耦合守卫（world ↔ 公式库逐项对账 + 推导链）' },
   // ★ 函数层对账：core-physics（world 用）与公式库 expr（对外暴露）必须一致。
   { file: 'core-physics-parity.mjs', expect: 25, label: 'core-physics 与公式库 expr 一致性（单一数据源）' },
+  // ★ 多步推演规则进提示词：让 AI 按「输出→下一步参数」串调用。
+  // 核心：提示词承诺的每个接口（带单位输入、N/kg 等价）必须实测可用，否则是骗 AI。
+  { file: 'multistep-prompt.mjs', expect: 23, label: '多步推演提示词（规则 + 承诺可验证）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },
