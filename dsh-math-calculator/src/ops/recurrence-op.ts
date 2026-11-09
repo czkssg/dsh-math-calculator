@@ -116,7 +116,28 @@ export function opRecurrence(args: MathArgs, precision: number): Outcome {
   for (let period = 1; period <= periods; period += 1) {
     try {
       const next: Record<string, any> = {}
-      for (const name of names) next[name] = node.evaluate(state)
+      /**
+       * ## 内置期数变量 `n`
+       *
+       * 用户问「资源逐年枯竭」「债务逐年膨胀」这类问题时，递推式里**必须要用到期数**：
+       *
+       * ```
+       *   R - 2000/(1+0.03*n)      ← 开采成本逐年上升（EROI 下降）
+       *   P * (1 + 0.02/(1+n/50))  ← 增长率逐年衰减
+       * ```
+       *
+       * 但原来 `n` 不在求值域里（只注入 initial 的变量），实测报
+       * `Undefined symbol n` —— 于是所有「每期变化的量」都写不出来，
+       * 而这恰恰是过程建模最常用的一类。
+       *
+       * 命名取 `n`（期数，从 1 开始）而不是 `t`：`t` 在 mathjs 里没有，但
+       * `i` 是虚数单位（实测会得到 `Unexpected type of argument i`），
+       * 所以选一个明确不撞名的。
+       *
+       * ⚠ 若用户在 initial 里自己定义了 `n`，以用户的为准（不覆盖）。
+       */
+      const scope = names.includes('n') ? state : { ...state, n: period }
+      for (const name of names) next[name] = node.evaluate(scope)
       for (const name of names) {
         const value = Number(next[name]);
         if (!Number.isFinite(value)) {
@@ -126,7 +147,7 @@ export function opRecurrence(args: MathArgs, precision: number): Outcome {
       }
     } catch (error) {
       if (error instanceof CalcError) throw error;
-      throw new CalcError('evaluation', `第 ${period} 期求值失败: ${error instanceof Error ? error.message : String(error)}`, '检查递推式里的符号是否都在 initial 里。')
+      throw new CalcError('evaluation', `第 ${period} 期求值失败: ${error instanceof Error ? error.message : String(error)}`, '检查递推式里的符号是否都在 initial 里（内置变量只有 n = 当前期数）。')
     }
     snapshot(period);
     for (const name of names) {

@@ -129,7 +129,11 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 新增 d-chemeng —— 与 d-process 分节的理由是「单件工艺 vs 工业放大」，
    * 查「反应器多大」「几级萃取」的人不会去翻窑炉热平衡。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 25）', coreTopics.length === 25, String(coreTopics.length))
+  /**
+   * ## 25 → 26（2026-11-10）
+   * 新增 recipe-process —— 缺口分析的 P0：把 ode/recurrence 写成可直接抄的模板。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 26）', coreTopics.length === 26, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *
