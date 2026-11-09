@@ -206,6 +206,8 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'gdd_accumulated', note: '无霜期 → 一季能攒多少积温（能种什么）' },
       { formula: 'crop_yield_npp', note: 'NPP + 收获指数 → 可收获干物质' },
       { formula: 'grain_yield_total', note: '面积 × 单产 → 粮食总产' },
+      { formula: 'drying_time', note: '含水率 → 入仓前要晾多少天（没干透就入仓，后面全发霉）' },
+      { formula: 'storage_loss', note: '存 t 年还剩多少（总产 ≠ 可吃量，中间这一段最容易被忽略）' },
       { formula: 'population_fed_by_grain', note: '粮食 → 能养多少人',
         feeds: [{ from: 'grain_yield_total', to: 'grain_kg' }] },
       { formula: 'food_surplus_ratio', note: '总产 − 自耗 → 剩余率（决定能不能脱产）' },
@@ -260,6 +262,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'pendulum_period', note: '摆长 → 周期（所有摆钟的基准）' },
       { formula: 'pendulum_clock_drift', note: '热膨胀/重力变化 → 每天快慢多少' },
       { formula: 'thermal_expansion', note: '温差 → 摆长变化（漂移的物理源头）' },
+      { formula: 'tolerance_stack', note: '单件公差 → 装配公差（精度链条的终点：能不能造出这个钟）' },
       { formula: 'gear_geometry', note: '齿数组合 → 传动比（把秒送到分针时针）' },
     ],
     bridges: [

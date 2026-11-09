@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 525, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 528, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -207,6 +207,9 @@ const SUITES = [
   // 反馈 A9：取用率上限是「增量」不是「存量」（MSY=rK/4）。
   // 核心断言是 MSY 与 N=K/2 处增长率内部一致 —— 4 写成 2 立刻红。
   { file: 'ecology-msy.mjs', expect: 31, label: '逻辑斯谛增长与最大可持续猎获（A9/MSY）' },
+  // 反馈 A6/A10/P12：补「总产 → 能吃的」与「单件精度 → 装配精度」两段空白。
+  // 核心断言：指数衰减不能写成线性（线性式 50 年后为负）；均方根叠加仅在误差独立时成立。
+  { file: 'storage-drying-tolerance.mjs', expect: 45, label: '储备损耗/干燥时间/公差叠加（A6/A10/P12）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 25, label: '公式体系（18 链/接点双向可达/覆盖率）' },
