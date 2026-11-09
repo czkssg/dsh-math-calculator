@@ -43,7 +43,19 @@ console.log('-- 1. 体系登记完整性 --')
   * 「能连的尽量连」不等于「全部塞进一个大体系」。
   * 所以按推演目的分 18 个，每个 3~13 步。步数太少说明还没想清，太多说明该拆。
   */
-  assert('18 个体系', sys.FORMULA_SYSTEMS.length === 18, String(sys.FORMULA_SYSTEMS.length));
+  /**
+   * ## 从 18 增到 22（2026-11-09，冷战学科扩充）
+   *
+   * 新增 4 条链不是「拆细」，而是**4 个原本完全空白的学科方向**：
+   *   sys-info-control  信息与控制（信道→采样→反馈校准）
+   *   sys-decision      决策与可靠性（赔率→概率→冗余→可用度）
+   *   sys-quantum       量子与固体（黑体→能带→器件→核）
+   *   sys-queue         排队与产能（负载ρ→等待→库存）
+   *
+   * 判据与前 18 条一致：按**推演目的**分，不按学科目录分。
+   * 例：「这个作坊够不够用」不会去翻热机链，所以排队必须自成一链。
+   */
+  assert('22 个体系', sys.FORMULA_SYSTEMS.length === 22, String(sys.FORMULA_SYSTEMS.length));
   const tooShort = sys.FORMULA_SYSTEMS.filter((s) => s.steps.length < 3)
   assert('每条链至少 3 步', tooShort.length === 0, tooShort.map((s) => s.id + ':' + s.steps.length).join(','));
   /** 每个体系都必须有 purpose —— 它决定「什么时候想起这条链」。 */

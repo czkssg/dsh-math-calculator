@@ -50,13 +50,17 @@ GROUPS = [
         "sys-astronomy", "sys-material", "sys-structure",
         "sys-energy", "sys-climate", "sys-water",
     ]),
-    ("Ⅱ 生产与机体（能产出多少、能活多大）", [
-        "sys-capacity", "sys-food", "sys-body",
-        "sys-physiology", "sys-building", "sys-travel",
+    ("Ⅱ 物质与信息（能造什么、能传多远、能控多准）", [
+        "sys-quantum", "sys-info-control", "sys-decision",
+        "sys-capacity", "sys-queue", "sys-travel",
     ]),
-    ("Ⅲ 社会与经济（能管多宽、能撑多久）", [
-        "sys-info", "sys-military", "sys-finance",
-        "sys-growth", "sys-fiscal", "sys-time",
+    ("Ⅲ 生产与机体（能产出多少、能活多大）", [
+        "sys-food", "sys-body", "sys-physiology",
+        "sys-building", "sys-military", "sys-time",
+    ]),
+    ("Ⅳ 社会与经济（能管多宽、能撑多久）", [
+        "sys-info", "sys-finance", "sys-growth",
+        "sys-fiscal",
     ]),
 ]
 assert sum(len(g[1]) for g in GROUPS) == len(SYSTEMS), "分组必须覆盖全部链且不重复"
@@ -64,12 +68,12 @@ allg = [i for _, g in GROUPS for i in g]
 assert sorted(allg) == sorted(SYS), "分组与代码里的链不一致：" + str(set(allg) ^ set(SYS))
 
 CARD_W, CARD_H = 262, 78
-GAP_X, GAP_Y = 44, 158
+GAP_X, GAP_Y = 44, 210   # 22 条链后跨组连线增至 24 条，158 不够分槽（实测标签压卡片）
 GROUP_H = 34          # 组标题占高
 ROW_CHANNEL = 46      # 行内连线通道：从卡片上沿往上 46px 放标签
 PAD_X, PAD_Y = 56, 212   # 上边距要够第Ⅰ组走一条行内通道 + 标签（46px 装不下，实测压到标题）
 COLS = 6
-ROWS = 3
+ROWS = len(GROUPS)
 
 W = PAD_X * 2 + COLS * CARD_W + (COLS - 1) * GAP_X
 CONTENT_BOTTOM = PAD_Y + ROWS * (CARD_H + GAP_Y + GROUP_H) - GAP_Y  # 最后一行卡片底部
@@ -333,7 +337,7 @@ for s in SYSTEMS:
 
 out.append(f'<text x="{W/2:.0f}" y="{CONTENT_BOTTOM + 36}" text-anchor="middle" font-size="12.5" fill="#64748b">'
            f'图直径 5 跳（天文 ↔ 增长）· 单一连通分量（没有孤岛链）· '
-           f'3 条链只有 1 个接点：finance / info / astronomy — 它们是「端点」而非枢纽</text>')
+           f'接点最少的是 finance / astronomy（各 1 个）— 它们是「端点」而非枢纽</text>')
 out.append("</svg>")
 
 (ROOT / "体系图.svg").write_text("\n".join(out), encoding="utf-8")

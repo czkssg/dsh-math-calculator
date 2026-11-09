@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 528, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 585, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -210,6 +210,15 @@ const SUITES = [
   // 反馈 A6/A10/P12：补「总产 → 能吃的」与「单件精度 → 装配精度」两段空白。
   // 核心断言：指数衰减不能写成线性（线性式 50 年后为负）；均方根叠加仅在误差独立时成立。
   { file: 'storage-drying-tolerance.mjs', expect: 45, label: '储备损耗/干燥时间/公差叠加（A6/A10/P12）' },
+  // 冷战—千禧年学科扩充（一、二）：控制论/信息论/信号处理 + 运筹/博弈/可靠性。
+  // 最重的两条断言：ρ/(1−ρ) 的悬崖（负载+5.6% 等待×2.1）、假阳性压倒真阳性（1% 发病率 → 后验 8.3%）。
+  { file: 'coldwar-cybernetics-or.mjs', expect: 87, label: '控制论/信息论/运筹/博弈（31 条）' },
+  // 现代物理基础（三）：量子/统计/固体/半导体/核 16 条。
+  // 断言重点不是数值而是**标度律方向**：T⁴ 是 16 倍、λ∝1/T、费米能 ∝n^(2/3)、比热 ∝T³。
+  { file: 'coldwar-modern-physics.mjs', expect: 52, label: '现代物理基础（量子/固体/核 16 条）' },
+  // 社科（四）：人口转变/网络科学/组织/城市标度/不平等 13 条。
+  // 断言三层：边界值、单调性、内部一致性。并强制每条声明「统计 vs 因果」的界线。
+  { file: 'coldwar-social-science.mjs', expect: 50, label: '社科（人口/网络/组织/城市 13 条）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },

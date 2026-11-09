@@ -37,7 +37,11 @@
 
 import type { Outcome } from './ops/shared.js'
 import { FORMULAS } from './formulas.js'
+import { FORMULA_SYSTEMS } from './formula-systems.js'
 import { DERIVATION_SUBCOMMANDS } from './ops/derivation-op.js'
+
+/** 体系链数：从数据源动态取，避免 help 里的数字与代码脱节（已踩过一次）。 */
+const FORMULA_SYSTEM_COUNT = FORMULA_SYSTEMS.length
 
 /**
  * 一节帮助：目录简介 + 正文生成器。
@@ -338,10 +342,10 @@ const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自
                例：把重力改成 1.5 倍地球 {"g": 14.71}；光速 {"c": 1e8}
                ★ 错拼的 key 会点名上报，不会静默忽略
 
-  【体系】公式不是散着的 —— 18 条推演链按「一条链算一遍」组织：
-    formulas query="sys"                  → 列出全部体系（材料/结构/能源/产能/食物/
-                                             生物/时间/财政/增长/建筑/气候/交通/军事/信息/
-                                             水利/金融/天文/生理）
+  【体系】公式不是散着的 —— ${FORMULA_SYSTEM_COUNT} 条推演链按「一条链算一遍」组织：
+    formulas query="sys"                  → 列出全部体系（材料/结构/能源/产能/食物/生物/
+                                             时间/财政/增长/建筑/气候/交通/军事/信息/水利/
+                                             金融/天文/生理/信息控制/决策/量子/排队）
     formulas query="sys:sys-energy"       → 看能源链的逐步（每步公式、输出单位、需自备参数）
     formulas query="sys:formula:材料"      → 看某条公式属于哪几条链（体系间的接点）
     ★ 每步都标「← 上一步的谁作为本步的哪个参数」，照着填即可
@@ -610,6 +614,203 @@ const D_FLUID_BODY = (): string => `【工程·流体与管路（管流/水头/�
                             ★ 水头的**平方根**：流量翻倍要水头 4 倍
                             水库泄洪、攻城水攻、倒水时间估算都用它
 `
+
+/** 【生物·生态（载畜量/料肉比/NPP/营养级）】按公式 id 调用，参数可带单位。 */
+/** 【冷战支柱】控制论 / 信息论 / 排队 / 可靠性 / 决策 31 条。 */
+const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排队/可靠性/决策）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  这 31 条不是「物理的延伸」，而是 1940—1970 另一套语言：处理**信息与调控**。
+  共同点：都只收有闭式解的那一层（需要迭代求解的线性规划一律不收）。
+
+
+════ 控制论：为什么闭环、增益能加到多少 ════
+  open_loop_error            残差 = 扰动 / (1 + 增益)
+                             ★ 纠错能力等于增益：增益 10 压到 1/10，增益 100 压到 1/100
+                             所以「把传感器做准」与「把增益做大」等价，而后者通常便宜
+  loop_stability_limit       增益上限 ≈ 1 / (延迟 × 带宽)
+                             ★ 增益不能无限加：延迟让反馈信号「过期」，纠错变助推振荡
+                             想提高增益**必须先减延迟**，调参数没用
+                             历史印证：蒸汽机调速器轻载飞车、重载迟钝；远距离调压难
+  second_order_settling      建立时间 ≈ 4 / (ζ·ω_n)
+                             ★ 4 来自 ln(50)≈3.9（衰减到 2% 的时刻），不是随手写的
+  overshoot_from_damping     超调 = exp(−πζ/√(1−ζ²))
+                             ★ ζ=0.3→37%、0.5→16.3%、0.7→4.6%、1→0
+                             ⚠ 欠阻尼不是「又快又冲」，是**又冲又慢**（要振荡几次才进误差带）
+                             ζ=0.7 被偏爱不是审美：超调只剩 4.6% 且建立时间接近最优
+
+════ 信息论与信号：上限、门槛、换算 ════
+  channel_capacity           C = B·log₂(1 + S/N)
+                             ★ 带宽**线性**、信噪比**对数** —— 加功率收益递减，加带宽才是主路
+                             实测：3000Hz + 30dB → 29.9 kbit/s（正是 33.6k 猫的物理天花板）
+  shannon_limit_min_snr      S/N ≥ 2^η − 1（由容量式反解）
+                             ★ 最反直觉：η<1 时 S/N 可以小于 1，**信号弱于噪声也能传**
+                             代价是带宽 —— 这就是扩频/深空通信的原理
+  nyquist_rate               采样率 ≥ 2·最高频率
+                             ★ 低于它不是「变模糊」，而是**凭空造出不存在的低频**（混叠）
+                             车轮倒转、摩尔纹都是这条
+  quantization_snr           SNR ≈ 6.02n + 1.76 dB
+                             ★ 每多一位 +6dB。8 位 49.9、16 位 98.1、24 位 146.2
+                             ⚠ 超过硬件本底就是浪费：前端只有 90dB 时，24 位存了 6 位噪声
+  shannon_hartley_bits       I = log₂(状态数)
+                             ★ 同样刻一道痕：二进制 1 位、六十四卦 6 位 —— 密度差 6 倍
+  redundancy_ratio           冗余 = 1 − H/H_max
+                             ★ 冗余不是浪费，是**抗噪预算**；英语约 0.5~0.75
+                             电报体压冗余提速，公文加冗余防误，同一机制
+  signal_to_noise_db         dB = 10·log₁₀(功率比)
+                             ★ 必记：3dB=2 倍、10dB=10 倍、20dB=100 倍、30dB=1000 倍
+                             ⚠ 功率比用 10log、电压比用 20log，混用差 2 倍
+  path_loss_freespace        L = 20·log₁₀(4πd/λ)
+                             ★ 距离翻倍 +6dB；频率翻倍也 +6dB → 远程通信用低频
+                             唯一可无限扩展的解法是**中继**（卫星、驿站、烽火台）
+  fresnel_zone_radius        r = √(λ·d₁·d₂/(d₁+d₂))
+                             ★ 通信不是「连一条线」，要清出一个椭球管道
+                             山脊上方 1m 通不了、20m 就通了 —— 视线没断但管道被切
+                             r ∝ √λ，所以频率高 10 倍只需降 3.2 倍高度
+  rc_cutoff_frequency        f_c = 1/(2πRC)
+                             ★ 带宽与响应速度是同一件事的两面（因果律要求）
+                             滤波越重 → 延迟越大 → 能加的增益越小，三处同一条限制
+  mmc_queue_length           多服务台近似（看「该加 1 个还是 10 个」）
+
+════ 排队与库存：为什么忙时突然崩 ════
+  little_law                 L = λ·W
+                             ★ 排队论唯一**无条件成立**的式子（不含概率假设，本质是守恒）
+                             ⚠ W 必须含服务时间，只算等待会少算好几倍
+                             实战用法：验证「店里积压几件」与「日接几单」是否自洽
+  queue_utilization          ρ = λ/µ
+                             ★★ 全批最该记住：等待 ∝ ρ/(1−ρ)
+                             ρ=0.5→1 倍、0.8→4 倍、0.9→9 倍、0.95→**19 倍**
+                             负载只多 5%，等待翻倍 —— 留 20% 余量不是浪费，是止损
+  mm1_wait_time              等待 = 服务时间 × ρ/(1−ρ)
+                             ⚠ 服务时间很规律时，实际等待约为本式一半
+  eoq                        Q* = √(2DS/H)
+                             ★ 需求 ×4 → 批量只 ×2（平方根）
+                             总成本在最优点附近是平的：Q 偏 2 倍只贵约 25%
+  safety_stock               SS = z·σ·√L
+                             ★ 提前期 ×4 → 安全库存只 ×2
+                             95%→99% 服务水平，库存要多 41%（2.33/1.65），典型边际递减
+
+════ 可靠性与决策 ════
+  reliability_series         R_total = R^n
+                             ★ 0.99 跑 100 环 → 只剩 0.366。简单机械比精巧机械可靠，是环节数问题
+                             想提高可靠度，**减少环节比提高单环有效**
+  reliability_parallel       R = 1 − (1−R)^n
+                             ★ 0.9 单件 → 2 份 0.99、3 份 0.999。两份就压一个数量级
+                             ⚠ 前提是失效独立：两条船同处会被同一场洪水冲走，那就不是并联
+  mtbf_availability          A = MTBF/(MTBF+MTTR)
+                             ★ **修得快 ≡ 不容易坏**：MTTR 减半与 MTBF 翻倍效果完全相同
+                             这解释了为什么现实中「修得快」的文化更常见
+  spares_required            期望故障数 = 装机数 × 时间 / MTBF
+                             ⚠ 期望≠保证：期望坏 2 件时，备 2 件约 32% 概率不够
+  expected_value_decision    EV = p·G − (1−p)·L
+  breakeven_probability      p* = L/(G+L) ← 更好用：不需知道概率就能判断
+                             ★ 收益 9 倍只需 10% 把握；**损失 9 倍则需 90%**
+  nash_bargaining_split      先拿回退路，再把剩余对半分
+                             ★ 分的是**剩余**不是总数；唯一能改变分配的杠杆是提高退路
+  winner_curse_markup        赢家平均高估 ≈ σ·(n+1)/n
+                             ★ 「赢了」这个事实本身携带坏消息 —— 出价最高者往往最乐观
+  bayes_posterior            P(病|阳) = p·Se / [p·Se + (1−p)(1−Sp)]
+                             ★★ 1% 发生率 + 90%/90% 检测 → 阳性后只有 **8.33%**
+                             假阳是真阳的 11 倍。检测在低发人群里几乎没有意义
+  bayes_evidence_strength    证据强度 = log₁₀(Se/(1−Sp))
+                             ★ 对数让证据可**相加**：+1 分 = 10 倍把握
+                             孤证不立：Se=0.8、Sp=0.5 的证词只有 0.2 分（1.6 倍）
+  base_rate_neglect_error    量化「基础率忽视」错得有多离谱（1% 时高估 12 倍）
+★ 共同点：这批的价值不在算式（都只有一两行），而在**它们推翻了哪些直觉**：
+  人多一倍不是慢一倍、检测阳性不是有病、多备冗余不是更安全、
+  欠阻尼不是更快、加增益不是更准。
+  现代物理与社会科学的同类清单见 helpTopic:"d-modern-society"。`;
+
+/** 【现代物理与社会科学】1900—2000 两条主线：经典失效 + 社会可测。 */
+const D_MODERN_SOCIETY_BODY = (): string => `【现代物理与社会科学（1900—2000）】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  这两块原本是库里的整片空白：量子只 3 条、统计固体 0 条、核只有衰变一侧；
+  社科有经典（基尼/SIR/洛卡-伏特拉）但缺 1960 年以后那一层。
+  共同判据：**只收有闭式解、参数可填的那一层** —— 需要数据集或迭代求解的一律不收。
+
+
+════ 现代物理：1900—1950 为什么经典失效 ════
+  wien_displacement          峰值波长 = b/T
+                             ★ 颜色就是温度：3000K→966nm（暗红）、铁熔点1811K→1.6µm（全在红外）
+                             ⚠ 「炉火纯青」需 8000K 以上，柴火/煤火只有 1500~2000K，只能看到红橙
+  stefan_boltzmann           P = ε·σ·A·T⁴
+                             ★★ 四次方：温度翻倍功率 ×16。铁熔点比沸水辐射强 **557 倍**
+                             ⚠ ε 是最易错处：抛光金属 0.05~0.1，氧化后跳到 0.7~0.9
+  photoelectric_threshold    阈频 = W/h
+                             ★ 红光再强也打不出电子 —— 这推翻了波动说（能量是一份份的）
+                             只有碱金属（铯 662nm）能被可见光打出电子，这才是光电管的门槛
+  compton_shift              Δλ = (h/mₑc)(1−cos θ)
+                             ★ 位移与入射波长无关 → 可见光测不出（1e-5），**必须用 X 射线**
+  heisenberg_uncertainty     Δx·Δp ≥ ℏ/2
+                             ★ 不是「测不准」而是「本来就没有同时确定的值」
+                             电子困在原子尺度 → 速度 0.2%c，**所以不可能静止在核旁**
+  fermi_energy               E_F ∝ n^(2/3)
+                             ★ 金属为什么导电：只有费米面附近约 1% 的电子能动
+                             铜 n=8.5e28 → 7.03 eV（实测 7.00，自由电子气模型的经典成功）
+  debye_temperature_heat_capacity  低温 C ∝ T³
+                             ★ 温度减半热容降到 1/8 —— 经典「热容恒定 3R」在低温失效的证据
+  band_gap_wavelength        λ = hc/E_g
+                             ★ 整张颜色对照：Si 1107nm｜红光 649｜绿 521｜蓝 449｜**GaN 365（紫外）**
+                             ⚠ 纯 GaN 是紫外不是蓝光；蓝光靠 InGaN 掺铟调下来（这就是它晚到 1993 的原因）
+  pn_junction_builtin_voltage  V_bi ∝ ln(N_D·N_A)
+                             ★ 只随浓度**对数**变化 → 硅 0.7V、锗 0.3V 是材料常数，不是设计选择
+  drift_velocity_mobility    v_d = μ·E
+                             ★ 铜导线里电子漂移约**每小时 14 厘米**；亮灯是场建立了，不是电子跑到了
+  fission_energy_per_mass    E/m = E_f·N_A/M
+                             ★★ U-235 约 **8.2e13 J/kg**，是煤的 **273 万倍**（差六个数量级，不是「更厉害」）
+                             ⚠ 完全裂变值；实际堆只烧掉燃料 1~5%
+  nuclear_binding_energy_curve  B/A 峰值在 Fe-56（8.79 MeV）
+                             ★★ 往铁走就放能，两边都是 —— 所以「铁是恒星聚变的终点」
+                             ★ 文明能碰到元素周期表哪一段，决定它的能源上限（化学→裂变→聚变，三级断崖）
+  shielding_attenuation      I = I₀·e^(−μx)
+                             ★ 指数衰减，**永远不为零**：屏蔽没有「挡住」，只有「减弱」
+                             铅对 1MeV γ 半值层约 1cm；7cm 剩 0.68%
+                             ⚠ 按本式设计常偏薄（宽束累积因子未计），这是真实事故成因之一
+
+════ 社会科学：1960 年以后那一层 ════
+  doubling_time_population   t₂ = ln2/ln(1+r)
+                             ★ 70 法则：1%→70 年、2%→35 年。**长期 1% 不可能持续**
+                             自查：「三千年前百人、现在千万」= 年增 0.38%，合理
+  demographic_transition_rate  r = b − d
+                             ★★ 人口爆炸的唯一机制：**死亡率先降、出生率后降**，中间落差就是爆炸
+                             不是「生得多」，是「死得少了但生得还没少」
+  tfr_replacement            更替水平 ≈ 2·(1+育龄前死亡率)
+                             ★ 现代 2.04；育龄前死亡率 40% 时需 **2.8**
+                             所以「古代生 5 个」不是不节制，是接近生存必需
+  dependency_ratio           抚养比 = (幼+老)/劳力
+                             ★ 人口红利的窗口：生育率先降、老龄化还没到，中间那段抚养比低谷
+  clustering_coefficient     C = 2T/(k(k−1))
+                             ★ 村庄 C≈0.5、随机网络 C≈0。**高聚集 + 少量长程连接 = 小世界**
+  diffusion_threshold        φ_c ≈ 1/⟨k⟩
+                             ★ 圈子越密越难动摇：⟨k⟩=5 需 20% 核心，⟨k⟩=20 只需 5%
+                             这就是「城市更宽容」的定量形式之一
+  olson_group_size_effect    个体份额 ≈ 1/N
+                             ★ 团体越大越易搭便车 —— 推翻了「人多力量大」
+                             所以工会/行会/教派都要有排他性福利，那不是温暖，是解决搭便车
+  span_of_control            h = log N / log s（s 有效 4~8）
+                             ★★ 规模 ×1000 只多约 3.9 层（对数）—— **层级不爆炸**
+                             真正的瓶颈不是层数，是每一级的信息衰减
+  parkinson_law_growth       S = S₀(1+g)^n，g≈6%
+                             ★ 帕金森实测英国海军部 5.6~6.5%；6% 意味着 12 年翻倍
+                             运转 200 年的机构若无裁撤会膨胀 11 万倍 → 真实机构必须周期整顿
+  rank_size_city             P_r = P₁/r^q
+                             ★ 齐普夫：第二城恰为首位一半。q 偏离 1 本身是有含义的设定信息
+                             q≈0.3 → 多中心均衡；q≈2 → 首位城市极端压倒（集权帝国/单一港口）
+  social_mobility_percentile R² = β²
+                             ★ 出身能解释的地位差异：北欧 4%、美国 22%、传统社会 49%
+  gini_from_lorenz           G = 1 − 2A
+                             ★ 洛伦兹曲线下面积 A∈[0,0.5]，所以 1−2A 直接落在 0~1
+                             财富基尼通常比收入基尼高 0.2 以上，不可混引
+  urban_scaling              Y ∝ N^β
+                             ★★ β≈0.85（基础设施，人均下降）vs β≈1.15（GDP/犯罪，人均上升）
+                             人口翻倍 → 人均产出 ×1.11、人均基础设施 ×0.90
+
+★ 共同点：这批公式的价值不在算式本身（都只有一两行），
+  而在**它们推翻了哪些直觉**：人多一倍不是慢一倍、检测阳性不是有病、
+  多备冗余不是更安全、欠阻尼不是更快、加增益不是更准、
+  温度不是「越来越亮」而是 T⁴、电子在导线里不是「跑过去」的、
+  铁不是随便一种金属而是核能的终点、大城市不是「效率低」而是人均更富也更乱。`;
 
 /** 【生物·生态（载畜量/料肉比/NPP/营养级）】按公式 id 调用，参数可带单位。 */
 const D_ECOLOGY_BODY = (): string => `【生物·生态（载畜量/料肉比/NPP/营养级）】
@@ -1141,7 +1342,7 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 而不只是「有多少条公式」。一条 summary 里塞不下 18 条链的名字，
      * 所以只给入口 `query="sys"`。
      */
-    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 18 条推演链（公式怎么连起来）；formulas:[…] 一次算多条。`,
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链（公式怎么连起来）；formulas:[…] 一次算多条。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
     body: FORMULA_BODY,
   },
@@ -1194,6 +1395,38 @@ export const HELP_TOPICS: HelpTopic[] = [
     summary: '管道流量、达西水头损失、水泵轴功率、孔口出流、风功率、水轮机。★ 管径平方律、风功率随 v³。',
     aliases: ['流体', '管流', '水头', '泵', '孔口', '风功率', '水轮机', 'darcy'],
     body: D_FLUID_BODY,
+  },
+  {
+    key: 'd-coldwar',
+    tier: 'core',
+    short: '冷战学科',
+    /** 1940—1970 最被低估的一层：不是「物理的延伸」，而是处理「信息与调控」的另一套语言。 */
+    weight: 12,
+    title: '冷战支柱（控制论/信息论/排队/可靠性/决策）',
+    summary: '反馈把残差压 1/(1+K)、延迟卡死增益上限、信道容量 B·log₂(1+S/N)、' +
+      'ρ/(1−ρ) 排队悬崖、串联可靠度 R^n、贝叶斯假阳性。★ 31 条，全是有闭式解的那一层。',
+    aliases: ['冷战支柱', '冷战学科', '控制论', '信息论', '反馈', '信道', '排队', '运筹', '可靠性', '博弈', '贝叶斯',
+      'cybernetics', 'shannon', 'queue', 'reliability', 'bayes'],
+    body: D_COLDWAR_BODY,
+  },
+  {
+    key: 'd-modern-society',
+    tier: 'core',
+    short: '现代物社',
+    /**
+     * 1900—2000 的两条主线：物理进入「经典失效」区，社科进入「可测量」区。
+     * 与 d-coldwar 分节的理由：那节是「信息与调控」的语言，
+     * 这节是「物质底层与社会规模」的结论，两者的查询场景不重叠。
+     */
+    weight: 11,
+    title: '现代物理与社会科学（量子/固体/核 · 人口/网络/城市）',
+    summary: 'T⁴ 辐射与峰值波长、费米能、带隙颜色表、裂变 8.2e13 J/kg、铁峰；' +
+      '人口转变的爆炸机制、更替生育率 2.8、幂律与扩散阈值、帕金森 6%、城市标度 β=1.15。' +
+      '★ 26 条，每条都标了「统计/经验 vs 因果」的界线。',
+    aliases: ['现代物理', '量子', '黑体', '固体', '半导体', '核物理', '裂变', '聚变',
+      '人口转变', '生育率', '网络科学', '幂律', '城市标度', '齐普夫', '帕金森', '社科',
+      'quantum', 'solid state', 'nuclear', 'demography', 'network', 'urban'],
+    body: D_MODERN_SOCIETY_BODY,
   },
   {
     key: 'd-ecology',
@@ -1517,7 +1750,7 @@ function renderIndex(): string {
    * 拆开后它们仍然属于「建模」，因为它们都是公式（而不是算术）。
    */
   const MODELING_KEYS = ['ode', 'formula', 'derivation', 'recipe', 'recipe-errors', 'recipe-fiscal', 'recipe-bio', 'recipe-material', 'world',
-    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp', 'd-process']
+    'd-struct', 'd-thermal', 'd-fluid', 'd-ecology', 'd-macro', 'd-material', 'd-bio', 'd-fiscal', 'd-gdp', 'd-process', 'd-coldwar', 'd-modern-society']
   const isModeling = (topic: HelpTopic) => MODELING_KEYS.includes(topic.key)
   const arithmetic = core.filter((topic) => !isModeling(topic))
   const modeling = core.filter(isModeling)
@@ -1570,7 +1803,7 @@ function renderIndex(): string {
         lines.push('    ' + labels.slice(index, index + 3).join('  ·  '))
       }
     }
-    lines.push('  ★ 公式不是散着的：formulas query="sys" 看 18 条推演链（材料/能源/产能/食物/财政/军事…）')
+    lines.push(`  ★ 公式不是散着的：formulas query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链（材料/能源/产能/食物/财政/军事…）`)
     if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
     if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }
