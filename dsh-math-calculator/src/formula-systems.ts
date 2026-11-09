@@ -100,7 +100,9 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'melting_from_cohesive', note: '结合能 → 熔点（耐热上限）' },
       { formula: 'thermal_expansion', note: '热膨胀系数（温差变形与热应力来源，接点自时间链）' },
       { formula: 'ideal_strength', note: '模量 E → 理论强度上限' },
+      { formula: 'hall_petch', note: '晶粒尺寸 → 实际屈服强度（理论强度是天花板，这条是工艺能到达的高度）' },
       { formula: 'pugh_ductility', note: 'G/K → 偏脆还是偏韧（决定能不能锻）' },
+      { formula: 'ashby_index', note: 'E/强度/密度 → 性能指数（同工况下横向比较，替代「感觉这材料不错」）' },
       { formula: 'hooke_law', note: '给定应力 → 弹性应变' },
       { formula: 'safety_factor_check', note: '屈服强度 → 许用应力（判安全的基准）' },
       { formula: 'beam_bending_stress', note: '弯矩 + 截面 → 实际弯曲应力',
@@ -186,8 +188,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'food_surplus_ratio', note: '食物剩余率（决定多少人能脱产做工，接点自食物链）' },
       { formula: 'feed_conversion_ratio', note: '料肉比（养殖的转化效率，决定肉食成本）' },
       { formula: 'livestock_growth_time', note: '出栏周期（养殖产能的时间约束）' },
-      { formula: 'labor_force', note: '人口 × 参与率 → 可动员劳力' },
-      { formula: 'gdp_from_labor', note: '劳力 × 人均产出 → 总产出',
+      { formula: 'gdp_from_labor', note: '劳动力 × 人均产出 → 总产出',
         feeds: [{ from: 'labor_force', to: 'labor' }] },
     ],
     bridges: [
@@ -201,6 +202,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
     purpose: '「这块地能养多少人」。四季节奏与人口上限的定量链。',
     keys: ['食物链', '积温', '单产', '粮食', '人口上限', 'food chain'],
     steps: [
+      { formula: 'q10_temperature', note: '温度 → 生长/发酵速率（四季节奏的速率项，积温是它的时间积分）' },
       { formula: 'gdd_accumulated', note: '无霜期 → 一季能攒多少积温（能种什么）' },
       { formula: 'crop_yield_npp', note: 'NPP + 收获指数 → 可收获干物质' },
       { formula: 'grain_yield_total', note: '面积 × 单产 → 粮食总产' },
@@ -221,6 +223,8 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'nutrient_sustainable_input', note: '令地力不降的最低年投入（决定休耕周期）' },
       { formula: 'labor_force', note: '劳力（人口 × 参与率）—— 与产能链共用' },
       { formula: 'trophic_chain_support', note: '副产：营养级能支撑多少肉食量' },
+      { formula: 'logistic_growth_rate', note: '剩余空间 → 每年真正多出多少个体（N=K/2 时最快）' },
+      { formula: 'sustainable_harvest', note: '年增量峰值 → 长期可拿走的猎获上限（MSY）' },
     ],
     bridges: [
       { formula: 'food_surplus_ratio', toSystem: 'sys-capacity', note: '剩余率决定有多少人可以不种地而做工' },

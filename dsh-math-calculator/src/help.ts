@@ -331,7 +331,7 @@ const ODE_BODY = (): string => `【动力学】连续用 ode，离散用 recurre
   传染病扩散（SIR）、捕食者-猎物振荡（Lotka-Volterra）、
   碳循环、人口动态、冷却曲线、**逐年人口/资源年表**`
 
-/** 【公式库】442 条公式的调用与检索。 */
+/** 【公式库】全部公式的调用与检索（条数由 FORMULAS.length 动态填）。 */
 const FORMULA_BODY = (): string => `【公式库】共 ${FORMULAS.length} 条自然科学公式
   formula      调一条公式：formula="escape_velocity", overrides={M,r}
                ★ overrides 可覆盖任意参数 —— 这是架空世界改造的关键
@@ -702,6 +702,13 @@ const D_PROCESS_BODY = (): string => `【工艺链】把物理规律接到工艺
   syrup_concentration        V_f = V₀·Brix₀/Brix_f
                              ★ **得率只由糖度比决定**，与锅大小、火大小无关
                              所以「熬多久」只影响风味，不影响得率
+  logistic_growth_rate       dN/dt = r·N·(1−N/K)
+                             ★ N = K/2 时增长最快，速率恰为 rK/4
+                             这是「今年到底多出来多少」——猎获只该取这一块增量
+  sustainable_harvest        H_max = r·K/4（最大可持续猎获 MSY）
+                             ★ 增量 ≠ 存量：「猎走一半」是吃本金，「每年取 r/2 成」才是可持续
+                             鹿 r=0.4、K=400 → 40 只/年；猎 15~25 只 = 38%~63% MSY，属保守
+                             ⚠ 不含 Allee 效应（小种群反而负增长）与年龄结构
 
 ★ 共同点：这些式子大多**形式上简单，但接住了此前断开的链**。
   「窑温、配比、精度、工期、产量」这些散落的经验数，有了它们才能互相验算。`;
