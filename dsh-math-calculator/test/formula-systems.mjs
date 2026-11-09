@@ -146,6 +146,27 @@ console.log('-- 4. 体系之间确实连得上 --')
   }
   const reachable = pairs.filter(([, , formula]) => sys.systemsOfFormula(formula).length >= 2)
   assert('接点公式可在两侧查到', reachable.length >= pairs.length * 0.5, reachable.length + '/' + pairs.length);
+
+  /**
+   * ★ 上面那条只统计「比例」，抓不到个别死链 —— 实测漏掉过 2 个：
+   *
+   *   sys-energy  --wall_heat_loss-->      sys-structure  （结构链里根本没这条）
+   *   sys-fiscal  --gdp_from_labor-->      sys-growth     （增长链里根本没这条）
+   *
+   * 它们让「跳过去就回不来」这个老毛病以另一种形态复发了：
+   * 声明了接点，但目标链上找不到落脚点，读者点过去是一片空白。
+   * 所以这里逐条核对，不留比例空间。
+   */
+  const dead = []
+  for (const system of sys.FORMULA_SYSTEMS) {
+    for (const b of system.bridges ?? []) {
+      const target = sys.FORMULA_SYSTEMS.find((s) => s.id === b.toSystem)
+      if (!target || !target.steps.some((st) => st.formula === b.formula)) {
+        dead.push(system.id + ' --' + b.formula + '--> ' + b.toSystem)
+      }
+    }
+  }
+  assert('没有死链（接点公式必须在目标链的步骤里）', dead.length === 0, dead.join(' | '));
 }
 
 console.log('-- 5. 覆盖率（「孤立公式」还剩多少）--')

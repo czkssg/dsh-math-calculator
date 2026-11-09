@@ -135,6 +135,7 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
       { formula: 'wood_beam_moment_capacity', note: '木梁按材质强度反算能承受多少弯矩' },
       { formula: 'hoop_stress', note: '环形截面（管/筒）的环向应力' },
       { formula: 'thermal_stress', note: '温差引起的约束应力（与材料线膨胀系数联动）' },
+      { formula: 'wall_heat_loss', note: '围护热损也算一种「荷载」：R 值与截面一样是被查的约束（接点自能源链）' },
       { formula: 'column_axial_capacity', note: '墙柱轴压承载（接点自建筑链）' },
       { formula: 'impact_speed_freefall', note: '落地冲击速度（抗冲击设计要接住它，接点自交通链）' },
     ],
@@ -303,7 +304,8 @@ export const FORMULA_SYSTEMS: FormulaSystem[] = [
     purpose: '「这个文明会变富还是停滞」。增长从哪来、追赶上要多久。',
     keys: ['增长链', 'GDP', '储蓄', '资本', '趋同', 'TFP', 'growth chain'],
     steps: [
-      { formula: 'gdp_expenditure', note: 'C+I+G+NX → 总产出（检查设定是否闭合）' },
+      { formula: 'gdp_from_labor', note: '劳力 × 人均产出 → 总产出（增长的起点，也是税基；接点自财政/产能链）' },
+      { formula: 'gdp_expenditure', note: 'C+I+G+NX → 总产出（另一口径：检查设定是否闭合）' },
       { formula: 'macro_savings_rate', note: '产出 × 储蓄率 → 可投资额' },
       { formula: 'capital_output_ratio', note: '储蓄率/增长率 → 所需资本产出比（判目标现不现实）' },
       { formula: 'growth_accounting', note: '技术+资本+劳动 → 增长率拆解（停滞文明为何停滞）' },

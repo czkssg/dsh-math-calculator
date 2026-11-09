@@ -212,7 +212,7 @@ const SUITES = [
   { file: 'storage-drying-tolerance.mjs', expect: 45, label: '储备损耗/干燥时间/公差叠加（A6/A10/P12）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
-  { file: 'formula-systems.mjs', expect: 25, label: '公式体系（18 链/接点双向可达/覆盖率）' },
+  { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },
   { file: 'process-formulas.mjs', expect: 53, label: '工艺公式（窑炉/冶金/齿轮/发酵/护栏修复）' },
   { file: 'macro-materials-bio.mjs', expect: 67, label: '第十三批 28 条（宏观恒等式/财政链/材料本构/生物通用）' },
   // 三份实践文档的缺口补齐：马力族单位/批量公式/离散递推/指定采样时点
