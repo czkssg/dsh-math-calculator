@@ -502,7 +502,8 @@ export function scoreFormulas(
     if (name === query) score += 3000
     else if (name.includes(query)) score += 700
     else if (name.toLowerCase().includes(text)) score += 350
-    if (formula.desc.toLowerCase().includes(text)) score += 80
+    /** 整串进 desc 只对 ≥2 字查询开放（理由同上：单字无区分度）。 */
+    if (text.length >= 2 && formula.desc.toLowerCase().includes(text)) score += 80
     if (formula.cat.toLowerCase().includes(text)) score += 20
 
     // ── 词元匹配（同义词 / 中文子词）──
@@ -525,11 +526,56 @@ export function scoreFormulas(
 
       if (name === token) tokenScore = Math.max(tokenScore, 800 + weight)
       else if (name.includes(token)) tokenScore = Math.max(tokenScore, 380 + weight)
-      else if (formula.desc.includes(token)) tokenScore = Math.max(tokenScore, 40 + Math.floor(weight / 3))
+      /**
+       * ## 描述匹配：**单字查询不参与**
+       *
+       * 实测缺陷：`query="机械"` 返回「指数分布的均值」——
+       * 因为它的 desc 里有「已经用了 10 年的器**件**…」，而更巧的是
+       * 另一条 desc 里恰好含「机」与「械」两个字。
+       *
+       * 中文里单字几乎无区分度：「机」出现在「机械/机率/随机/时机」里含义完全不同。
+       * 所以单字只在 id/name/keys 里查（那些是人工维护的精确标签），
+       * **不进 desc 模糊匹配** —— 否则噪声会淹没正确结果。
+       *
+       * 双字及以上仍进 desc：`发酵`、`作用量` 这类词有真实区分度。
+       */
+      else if (token.length >= 2 && formula.desc.includes(token)) {
+        tokenScore = Math.max(tokenScore, 40 + Math.floor(weight / 3))
+      }
 
       if (tokenScore > bestTokenScore) bestTokenScore = tokenScore
     }
-    score += bestTokenScore
+    /**
+     * ## 滑窗子词必须打折
+     *
+     * 实测缺陷：`query="作用量"` 返回 5 条无关公式。
+     *
+     * 根因在分词：中文滑窗会把「作用量」切成「作用」「用量」两个子词，
+     * 而它们各自都真实出现在别的公式描述里（`beam_self_weight_moment` 里有「作用」，
+     * `lime_plaster_need` 里有「用量」）—— 于是整串**零命中**的查询，
+     * 却靠子词凑满了结果列表。
+     *
+     * 这与「机械」那类是同一个病：
+     *
+     * ```
+     *   用户输完整词  → 期望精确命中
+     *   拿不到        → 却被拆碎的子词喂了一堆近似结果
+     * ```
+     *
+     * ## 判据
+     *
+     * 若**整串在任何字段里都没有命中**（`matchedWhole` 为 false），
+     * 则子词分只保留 1/3 —— 让真正的精确命中稳居前列，
+     * 而纯子词凑数者掉到后面（配合调用方只取前几条）。
+     *
+     * 不直接丢弃子词：`"梁 强度"` 这种多词查询本来就该靠子词工作。
+     */
+    const matchedWhole =
+      id.includes(text) || name.includes(query) || name.toLowerCase().includes(text) ||
+      (formula.keys ?? []).some(function (k) { return k.toLowerCase().includes(text) }) ||
+      formula.cat.toLowerCase().includes(text) ||
+      (text.length >= 2 && formula.desc.toLowerCase().includes(text))
+    score += matchedWhole ? bestTokenScore : Math.floor(bestTokenScore / 3)
 
     if (score > 0) scored.push({ formula, score })
   }

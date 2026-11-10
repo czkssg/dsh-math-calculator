@@ -1495,6 +1495,33 @@ function opEvaluateBatch(
         if (anchorWarn) {
           const anchorEcho = label || rawExpression
           magnitudeWarnings.push(anchorEcho + ' → ' + anchorWarn)
+          /**
+           * ## 逐条记录锚点判定（不只靠汇总计数）
+           *
+           * 实测问题：越界时 `items[].ok` 仍是 `true`，程序化调用方
+           * 只看 `ok` 会认为这条通过。汇总计数 `magnitudeWarnings: 1`
+           * 只说「有 1 条警告」，说不出是**哪一条**。
+           *
+           * ## 为什么不直接把 ok 改成 false
+           *
+           * `ok` 的语义是「**算得出来吗**」，而锚点越界是「**算出来了但不符合你的判据**」。
+           * 两者混为一谈会让调用方误以为公式算错 —— 而这个工具最核心的性质
+           * 就是「不猜判据、只比对」。所以单独一个字段：
+           *
+           * ```
+           *   ok: true,  sanityStatus: 'violated'   ← 算对了，但越过你给的锚点
+           *   ok: false, error: 'non_finite'        ← 根本没算出来
+           * ```
+           */
+          const last = values[values.length - 1]
+          if (last) {
+            ;(last as { sanityStatus?: string; sanityNote?: string }).sanityStatus = 'violated'
+            ;(last as { sanityNote?: string }).sanityNote = anchorWarn
+          }
+        } else if (sanity !== undefined) {
+          /** 给了判据且通过 —— 明确标注，让「没检查」与「检查通过」可区分。 */
+          const last = values[values.length - 1]
+          if (last) (last as { sanityStatus?: string }).sanityStatus = 'passed'
         }
       }
       successCount++
@@ -3307,7 +3334,34 @@ function opFormulas(args: MathArgs): Outcome {
     }
   }
 
-  const lines = [`匹配 "${query}" 的公式（${matches.length} 条）：`]
+  /**
+   * ## 区分「精确命中」与「子词凑数」
+   *
+   * 实测缺陷：`query="作用量"` 返回 12 条，首条是「两平行导线间的作用力」。
+   * 整串「作用量」其实**一次都没命中** —— 是中文滑窗把它切成「作用」「用量」
+   * 之后各自命中了别的公式描述。
+   *
+   * `"机械"` 同理：命中的是「指数分布」里那句「机械件的磨损不是」。
+   *
+   * 后果：用户以为库里有这么多相关内容，逐个点开才发现全不相干；
+   * 更糟的是**看起来像有**，于是不会去补那条真缺的公式。
+   *
+   * 所以这里把两类分开标注：让「只在子词里命中」的结果显式降级。
+   */
+  const lower = query.toLowerCase()
+  const exactish = (formula: FormulaDef): boolean =>
+    formula.id.toLowerCase().includes(lower) ||
+    formula.name.includes(query) ||
+    formula.name.toLowerCase().includes(lower) ||
+    (formula.keys ?? []).some((key) => key.toLowerCase().includes(lower))
+  const exactCount = matches.filter(exactish).length
+  const looseCount = matches.length - exactCount
+
+  const lines = [exactCount > 0
+    ? (looseCount === 0
+      ? `匹配 "${query}" 的公式（${matches.length} 条）：`
+      : `匹配 "${query}" 的公式（${matches.length} 条，前 ${exactCount} 条精确命中）：`)
+    : `⚠ 没有精确匹配 "${query}" 的公式；以下 ${matches.length} 条只是描述里出现了相近的词：`]
   for (const formula of matches) {
     const required = Object.entries(formula.params)
       .filter(([, spec]) => spec.value === null)
@@ -3766,6 +3820,38 @@ export function runMathTool(rawArguments: unknown): MathResult {
         batchResult.partial = succeededCount > 0
         batchResult.failed = failedCount
         batchResult.succeeded = succeededCount
+        /**
+         * ## 失败类型汇总（不塞 `error`）
+         *
+         * 上面的注释解释了为什么顶层 `error` 保持 `undefined` ——
+         * 那是「批量里有几条错」，不是「整个调用错」，塞进去会造成误读。
+         *
+         * 但实测发现另一个问题：**调用方拿不到任何失败原因**。
+         *
+         * ```
+         *   想知道「为什么失败」→ 只能读中文 result 文本
+         *   或逐条翻 value.items[].error
+         * ```
+         *
+         * 后者可行但要求调用方知道 items 结构。所以给一个顶层汇总：
+         *
+         * ```
+         *   errorTypes: { non_finite: 1, unknown_symbol: 1 }
+         * ```
+         *
+         * 这**不改变** `ok` / `error` 的语义，只是把已有的逐条信息
+         * 提升到顶层可读位置 —— 既服务自动化，又不会让人误读成败。
+         */
+        const items = Array.isArray(batchValue.items) ? (batchValue.items as Array<Record<string, unknown>>) : []
+        const typeCounts: Record<string, number> = {}
+        for (const item of items) {
+          if (item.ok === true) continue
+          const type = typeof item.error === 'string' ? item.error : 'unknown'
+          typeCounts[type] = (typeCounts[type] ?? 0) + 1
+        }
+        if (Object.keys(typeCounts).length > 0) {
+          ;(batchResult as unknown as { errorTypes?: Record<string, number> }).errorTypes = typeCounts
+        }
       }
       /**
        * 被跳过的变量键在**批量路径**也要告知。

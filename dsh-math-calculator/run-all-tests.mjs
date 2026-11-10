@@ -252,6 +252,12 @@ const SUITES = [
   // ★ 公式库结构不变量：id 唯一 / INDEX 与数组一致 / 字段完整。
   // 重构时发现 4 个 id 在不同文件各定义一次，后者静默覆盖前者。
   { file: 'formula-integrity.mjs', expect: 9, label: '公式库结构不变量（id 唯一/索引一致/字段完整）' },
+  // ★ 三处「半修」缺陷：sanity 逐条状态 / 批量失败汇总 / 标签适用范围。
+  // 共同危害：看起来正常、实际语义反了。
+  { file: 'semantics-status.mjs', expect: 30, label: '语义状态（sanityStatus/errorTypes/标签范围）' },
+  // ★ 检索诚实性：没精确命中就明说，不拿子词凑数。
+  // 缺陷标本：query=作用量 返回 11 条无关结果（滑窗切成「作用」「用量」）。
+  { file: 'search-honesty.mjs', expect: 16, label: '检索诚实性（精确/子词可区分 + 反向对照）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },
