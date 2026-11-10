@@ -2,6 +2,102 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.3.25] — 2026-11-10
+
+**`derivation` 缺参数提示：从「一句话」改成「照着做」。**
+
+### 问题
+
+6 个子命令在缺参数时只回一句话：
+
+```
+backSolve  70 字符「缺参数：anchor（锚点 id）与 anchorValue」
+impact     21 字符「需要 traceTarget（要改的量名）」
+compare    24 字符「缺 compareFrom（起始版本，如 v1）」
+diff       21 字符「需要 diffA 与 diffB 两张表名」
+```
+
+用户看完仍不知道该填什么，尤其：
+
+```
+① anchor 是驼峰 id（creatureHeight），拼错就找不到
+② traceTarget 必须是依赖图里的节点名（76 个里的一个）
+③ compare 需要先 archive 一版，而新工作区根本没有版本
+④ diffA/diffB 其实是工作区名 —— 原提示写「表名」是错的
+```
+
+### 第 ④ 条是实质错误，不只是提示不足
+
+读 `diffTables` 的实现：
+
+```ts
+const names = listWorkspaces().map(item => item.name)
+if (!names.includes(aName)) return { message: 'A 表不存在' }
+```
+
+它比对的是**两个工作区**。用户按「表名」去填七张推演表的名字
+（「项目卡」「变更清单」…）**必然失败**。已改为「两个工作区名（不是七张表的名字）」。
+
+### 修法：给真实候选 + 可复制调用 + 前置条件
+
+**① backSolve** —— 直接列出现有锚点：
+
+```
+需要两个参数：
+  anchor      锚点 id（驼峰，如 creatureHeight）
+  anchorValue 你想要的叙事值（正数）
+
+  {"operation":"derivation","derivation":"backSolve","anchor":"creatureHeight","anchorValue":50}
+
+可用的 anchor（共 4 个）：
+  creatureHeight · flyingCreatureMass · buildingHeight · mountainHeight
+```
+
+**② compare** —— 先查有没有版本，没有就直说该先做什么：
+
+```
+这个工作区还没有归档版本，无法对比。
+先存一版：{"operation":"derivation","derivation":"archive"}
+改点东西后再存一版，然后：{... "compareFrom":"v1"}
+```
+
+**③ impact** —— 从依赖图取真实节点清单：
+
+```
+需要 traceTarget（要改的量名，须与依赖图里的节点同名）
+可查的量（共 76 个，前 12 个）：hbar · h · R · kB · NA · mu0 · epsilon0 · c · …
+```
+
+**④ diff** —— 纠正说法并给出工作区情况。
+
+### 关键判据：提示里的每个示例都必须真能跑
+
+否则就是把用户从「不知道填什么」变成「填了报错」—— 比原来更糟。
+
+新增 `test/derivation-hints.mjs`（28 项），核心断言：
+
+```
+从提示文本里抽出 JSON 示例 → 直接拿去 runMathTool → 断言 ok
+清单里出现的第一个节点名 → 拿去查 → 断言真的存在
+```
+
+**实测确认**：`backSolve` 与 `impact` 的示例都真能跑通。
+
+### `graph` 与 `fantasy` 检查后未改
+
+- `graph` 已有真实数据（节点 40 / 连线 62 / 4 层）+ 指向 `value.graph`
+- `fantasy` 已有完整字段说明、三种 source、永动机禁令提醒（218 字符）
+
+测试里加了断言防止将来把它们改坏。
+
+### 状态
+
+| 指标 | 之前 | 之后 |
+|---|---|---|
+| 测试 | 121 套 / 5893 项 | **122 套 / 5921 项** |
+
+---
+
 ## [2.3.24] — 2026-11-10
 
 **审视 29 份实践文档，修掉 3 处「半修」缺陷 + 1 处检索误导。**

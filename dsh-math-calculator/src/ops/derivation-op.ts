@@ -27,7 +27,7 @@ import { runPipeline, renderPipeline } from '../pipeline.js'
 import { opWorld } from './world-op.js'
 import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
 import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
-import { currentWorkspace } from '../workspace.js'
+import { currentWorkspace, listWorkspaces } from '../workspace.js'
 import { overlay, computeCost, checkFields, renderFantasy } from '../fantasy-layer.js'
 import { checkChaos, CHAOS_LIBRARY, linkInherit, syncInheritance, loadInheritLinks, diffTables } from '../universe-ops.js'
 import { runCivilization } from '../civilization.js'
@@ -273,8 +273,35 @@ export function opDerivation(args: MathArgs): Outcome {
     const anchor = typeof args.anchor === 'string' ? args.anchor : ''
     const anchorValue = typeof args.anchorValue === 'number' ? args.anchorValue : 0
     if (anchor === '' || anchorValue <= 0) {
-      out.push('缺参数：anchor（锚点 id）与 anchorValue（想要的值）')
-      out.push('先用 derivation="anchors" 看有哪些锚点可用。')
+      /**
+       * ## 缺参数时给出可复制的完整调用
+       *
+       * 实测问题：原来只回两行「缺参数：anchor…先用 derivation="anchors"」。
+       * 用户知道要看 anchors，但**看完还得自己拼 JSON** —— 而 anchor 的 id
+       * 拼写（`creatureHeight` 这种驼峰）最容易错。
+       *
+       * 所以直接把 anchors 输出里那句现成的用法抄过来，并给一个真锚点做例子。
+       */
+      out.push('需要两个参数：')
+      out.push('  anchor      锚点 id（驼峰，如 creatureHeight）')
+      out.push('  anchorValue 你想要的叙事值（正数）')
+      out.push('')
+      out.push('  ' + JSON.stringify({ operation: 'derivation', derivation: 'backSolve', anchor: 'creatureHeight', anchorValue: 50 }))
+      out.push('')
+      const anchorHint: string[] = []
+      try {
+        for (const a of listAnchors()) anchorHint.push(a.id)
+      } catch {
+        /* 拿不到就不列 */
+      }
+      if (anchorHint.length > 0) {
+        out.push('可用的 anchor（共 ' + anchorHint.length + ' 个）：')
+        out.push('  ' + anchorHint.slice(0, 10).join(' · ') + (anchorHint.length > 10 ? ' …' : ''))
+        out.push('')
+        out.push('完整清单与各自的量纲/当前上限：derivation="anchors"')
+      } else {
+        out.push('看全部锚点：derivation="anchors"')
+      }
     } else {
       const solution = backSolve(anchor, anchorValue, (args.world ?? {}) as Record<string, unknown>)
       if (!solution) {
@@ -330,7 +357,35 @@ export function opDerivation(args: MathArgs): Outcome {
     const from = typeof args.compareFrom === 'string' ? args.compareFrom : ''
     const to = typeof args.compareTo === 'string' ? args.compareTo : undefined
     if (from === '') {
-      out.push('缺 compareFrom（起始版本，如 v1）')
+      /**
+       * ## 说明「对比什么」与前置条件
+       *
+       * 实测问题：原来只回「缺 compareFrom（起始版本，如 v1）」。
+       * 但**新工作区根本没有版本** —— 用户按提示填 v1 会得到「找不到」，
+       * 而真正该做的是先 archive 一版。
+       *
+       * 所以这里先查有没有版本，没有就直说该先做什么。
+       */
+      const knownVersions = (() => {
+        try {
+          return loadArchive(currentWorkspace()).versions.map(function (v) { return v.version })
+        } catch {
+          return [] as string[]
+        }
+      })()
+      if (knownVersions.length === 0) {
+        out.push('这个工作区还没有归档版本，无法对比。')
+        out.push('')
+        out.push('先存一版：' + JSON.stringify({ operation: 'derivation', derivation: 'archive' }))
+        out.push('改点东西后再存一版，然后：')
+        out.push('  ' + JSON.stringify({ operation: 'derivation', derivation: 'compare', compareFrom: 'v1' }))
+      } else {
+        out.push('缺 compareFrom（起始版本）')
+        out.push('')
+        out.push('已有版本：' + knownVersions.join(' · '))
+        out.push('示例：' + JSON.stringify({ operation: 'derivation', derivation: 'compare', compareFrom: knownVersions[0] }))
+        out.push('（不给 compareTo 时默认对比最新一版）')
+      }
     } else {
       const diff = compareVersions(currentWorkspace(), from, to)
       out.push('═══ 版本对比 ═══', '')
@@ -426,7 +481,32 @@ export function opDerivation(args: MathArgs): Outcome {
     // 补丁4 反向：改一个量会波及什么
     const target = typeof args.traceTarget === 'string' ? args.traceTarget : ''
     if (target === '') {
-      out.push('需要 traceTarget（要改的量名）')
+      /**
+       * ## 缺参数时列出真实可查的量
+       *
+       * 实测问题：原来只回「需要 traceTarget（要改的量名）」21 字符。
+       * 用户不知道有哪些量名可用 —— 而这个名字必须与依赖图里的节点一致，
+       * 写错一个字母就找不到。
+       *
+       * 所以直接去图上取节点清单，给前若干个做例子。
+       */
+      out.push('需要 traceTarget（要改的量名，须与依赖图里的节点同名）')
+      out.push('')
+      out.push('  ' + JSON.stringify({ operation: 'derivation', derivation: 'impact', traceTarget: 'c' }))
+      out.push('')
+      const graphNodes = (() => {
+        try {
+          return Array.from(allNodes(buildGraph()))
+        } catch {
+          return [] as string[]
+        }
+      })()
+      if (graphNodes.length > 0) {
+        out.push('可查的量（共 ' + graphNodes.length + ' 个，前 12 个）：')
+        out.push('  ' + graphNodes.slice(0, 12).join(' · ') + (graphNodes.length > 12 ? ' …' : ''))
+        out.push('')
+        out.push('完整清单：derivation="trace"')
+      }
     } else {
       const result = impact(target)
       out.push(renderImpact(target, result))
@@ -634,7 +714,45 @@ export function opDerivation(args: MathArgs): Outcome {
     const aName = typeof args.diffA === 'string' ? args.diffA : ''
     const bName = typeof args.diffB === 'string' ? args.diffB : ''
     if (aName === '' || bName === '') {
-      out.push('需要 diffA 与 diffB 两张表名')
+      /**
+       * ## 缺参数时列出真实表名
+       *
+       * 实测问题：原来只回「需要 diffA 与 diffB 两张表名」21 字符。
+       * 「表名」有哪几张、叫什么，提示里没说 —— 用户只能猜。
+       */
+      /**
+       * ★ 原来写「需要 diffA 与 diffB 两张**表名**」—— 这个说法是**错的**。
+       *
+       * 读 `diffTables` 的实现可知，它要的是**工作区名**：
+       *
+       * ```
+       *   const names = listWorkspaces().map(item => item.name)
+       *   if (!names.includes(aName)) return { message: 'A 表不存在' }
+       * ```
+       *
+       * 也就是说 diffA/diffB 指的是「拿哪个工作区跟哪个工作区比」，
+       * 而不是七张推演表里的某两张。用户按「表名」去填只会得到「A 表不存在」。
+       */
+      const wsNames = (() => {
+        try {
+          return listWorkspaces().map(function (w) { return w.name })
+        } catch {
+          return [] as string[]
+        }
+      })()
+      out.push('需要 diffA 与 diffB 两个**工作区名**（不是七张表的名字）')
+      out.push('')
+      if (wsNames.length >= 2) {
+        out.push('现有工作区（' + wsNames.length + ' 个）：' + wsNames.join(' · '))
+        out.push('')
+        out.push('示例：' + JSON.stringify({ operation: 'derivation', derivation: 'diff', diffA: wsNames[0], diffB: wsNames[1] }))
+      } else if (wsNames.length === 1) {
+        out.push('当前只有 1 个工作区：' + wsNames[0])
+        out.push('要比对得先建第二个：{operation:"workspace", action2:"create", workspace:"另一版"}')
+        out.push('再把常数/变量分别写进两个工作区，然后对比。')
+      } else {
+        out.push('还没有可对比的工作区。先建两个：{operation:"workspace", action2:"create", ...}')
+      }
     } else {
       const diff = diffTables(aName, bName)
       out.push('═══ A/B 对比：' + aName + ' vs ' + bName + ' ═══', '')
