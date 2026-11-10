@@ -23,6 +23,7 @@ import {
   type Verdict,
 } from './derivation-stack.js'
 import { evalFormula, constantValue } from './formula-bridge.js'
+import { fmtNumber } from './format.js'
 
 /** 一层推演的结果。 */
 export interface LayerResult {
@@ -377,10 +378,5 @@ export function renderPipeline(result: PipelineResult): string {
 }
 
 /** 数字格式化。 */
-function fmtNum(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs === 0) return '0'
-  if (abs >= 1e5 || abs < 1e-2) return value.toExponential(2)
-  return Number(value.toPrecision(4)).toString()
-}
+const fmtNum = (value: number): string =>
+  fmtNumber(value, { expHigh: 1e5, expLow: 1e-2, expDigits: 2, precision: 4 })

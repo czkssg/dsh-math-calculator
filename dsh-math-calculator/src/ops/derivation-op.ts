@@ -44,7 +44,8 @@ import { buildDeadBriefPrompt } from '../ai-brief.js'
 import { checkFlip } from '../flip.js'
 import { FLIP_CLAIMS } from '../flip-claims.js'
 import { toJsonValue } from '../format.js'
-import { CalcError, type MathArgs, type Outcome } from './shared.js'
+import { CalcError, mergeWorldArgs, type MathArgs, type Outcome } from './shared.js'
+import { fmtSci } from '../format.js'
 
 /**
  * 全部 `derivation` 子命令（**唯一真相**）。
@@ -71,14 +72,7 @@ export const DERIVATION_SUBCOMMANDS = [
 ] as const
 
 /** 数字格式化（大/小值用科学计数）。 */
-function sci(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs === 0) return '0'
-  if (abs >= 1e5 || abs < 1e-3) return value.toExponential(3)
-  return Number(value.toPrecision(5)).toString()
-}
-
+const sci = fmtSci
 /** 检查表渲染。 */
 function renderChecklist(items: ChecklistItem[]): string {
   const out: string[] = ['═══ 检查表（13 项）═══', '']
@@ -255,13 +249,7 @@ export function opDerivation(args: MathArgs): Outcome {
   } else if (sub === 'pipeline') {
     // 正向推演链路：跑一次 world，把结果逐层喂给接口卡判定。
     // 这是「推演栈真正跑起来」的部分——不是展示卡片，而是串成流水线。
-    const worldParams = (args.world ?? {}) as Record<string, unknown>
-    const merged: Record<string, unknown> = {}
-    for (const key of ['planetRadius', 'planetMass', 'rotationHours', 'obliquityDeg']) {
-      const value = (args as unknown as Record<string, unknown>)[key]
-      if (typeof value === 'number') merged[key] = value
-    }
-    Object.assign(merged, worldParams)
+    const merged = mergeWorldArgs(args)
 
     const worldOut = opWorld({ world: merged } as never, 64)
     const pipelineReport = runPipeline((worldOut as any).value)

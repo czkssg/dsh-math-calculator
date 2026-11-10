@@ -26,28 +26,25 @@ import { toJsonValue } from '../format.js'
 import {
   BASE_UNIT,
   DIMENSION_LABEL,
+  DIMENSION_ORDER,
   UNITS,
   convert,
   type Dimension,
   type UnitDef,
 } from '../units.js'
 import { CalcError, safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
+import { fmtShow } from '../format.js'
 
-/** 量纲的展示顺序（先写日常用的）。 */
-const ORDER: Dimension[] = [
-  // 力学与几何
-  'length', 'mass', 'time', 'area', 'volume',
-  'energy', 'power', 'temperature', 'speed', 'pressure',
-  'force', 'angle', 'data', 'frequency',
-  // 电学
-  'current', 'charge', 'voltage', 'capacitance', 'resistance',
-  'conductance', 'magnetic_flux', 'magnetic_flux_density', 'inductance',
-  // 光学
-  'solid_angle', 'luminous_intensity', 'luminous_flux', 'illuminance',
-  // 化学与核物理
-  'amount_of_substance', 'activity', 'absorbed_dose',
-  'dose_equivalent', 'catalytic_activity',
-]
+/**
+ * 量纲展示顺序 —— 直接从 `units-data` 取，不再本地复制一份。
+ *
+ * ## 为什么必须共用
+ *
+ * 这里原来抄了一份完整的 `DIMENSION_ORDER`（30 个量纲）。
+ * 后果：新增一个量纲时若只改 `units-data`，**单位清单里就看不到它**，
+ * 而且不会有任何报错 —— 用户只会在「可用量纲」那一行里发现少了一项。
+ */
+const ORDER: Dimension[] = DIMENSION_ORDER
 
 /**
  * 把作者传来的自定义单位规范化。
@@ -99,13 +96,7 @@ function normalizeCustom(raw: MathArgs['customUnits']): UnitDef[] {
  * @param value - 数值
  * @returns 显示串
  */
-function show(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs !== 0 && (abs >= 1e15 || abs < 1e-4)) return value.toExponential(4)
-  // 用 toPrecision 截到 6 位再转回数字，去掉尾巴的 0
-  return String(Number(value.toPrecision(6)))
-}
+const show = fmtShow
 
 /**
  * 显示单位系数（清单里用）。

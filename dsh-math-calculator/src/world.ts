@@ -19,6 +19,7 @@
 
 import { CONSTANTS } from './formula-library.js'
 import {
+  numOr,
   meanDensity,
   surfaceGravity as physicsSurfaceGravity,
   escapeVelocity as physicsEscapeVelocity,
@@ -292,9 +293,7 @@ const EARTH = {
 }
 
 /** 取参数或默认值。 */
-function num(value: number | undefined, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
-}
+const num = numOr
 
 /** 弧度转角度。 */
 const toDeg = (rad: number): number => (rad * 180) / Math.PI

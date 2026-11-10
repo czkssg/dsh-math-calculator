@@ -52,17 +52,6 @@ const MATERIALS: FormulaDef[] = [
     frequency: 'high',
   },
   {
-    id: 'thermal_stress',
-    cat: 'materials/structures',
-    name: '热应力',
-    expr: 'E * alpha * dT',
-    params: { E: req('弹性模量 Pa'), alpha: req('热膨胀系数 1/K'), dT: req('温差 K') },
-    unit: 'Pa',
-    desc: '约束状态下温度变化产生的应力 σ = EαΔT；玻璃杯骤冷骤裂就是这个。',
-    keys: ['thermal stress', '热应力', '热裂'],
-    frequency: 'high',
-  },
-  {
     id: 'beam_center_deflection',
     cat: 'materials/structures',
     name: '简支梁跨中挠度',

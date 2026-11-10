@@ -33,6 +33,7 @@ import {
 import { CONSTANT_GRAPH, setActiveConstants, standardValues } from './constants-graph.js'
 import {
   validateCustomConstant,
+  buildCustomConstant,
   resolveCustomConstants,
   checkDimension,
   dimensionText,
@@ -642,18 +643,7 @@ export function handleApiRequest(path: string, request: ApiRequest): ApiResponse
       const errors = validateCustomConstant(input)
       if (errors.length > 0) return fail(400, '定义不合法：' + errors.join('；'))
       const item = input as Record<string, unknown>
-      const custom: CustomConstant = {
-        name: String(item.name),
-        label: String(item.label),
-        value: Number(item.value),
-        unit: String(item.unit),
-        dimension: item.dimension as Dimension,
-        meaning: String(item.meaning),
-        origin: item.origin === 'derived' ? 'derived' : 'author',
-        ...(Array.isArray(item.dependsOn) ? { dependsOn: item.dependsOn.map(String) } : {}),
-        ...(typeof item.derive === 'string' ? { derive: item.derive } : {}),
-        createdAt: new Date().toISOString(),
-      }
+      const custom: CustomConstant = buildCustomConstant(item)
       const data = updateWorkspace(name, function (current) {
         const rest = (current.customConstants ?? []).filter(function (existing) {
           return existing.name !== custom.name

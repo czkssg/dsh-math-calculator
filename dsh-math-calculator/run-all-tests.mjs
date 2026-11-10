@@ -33,7 +33,7 @@ const SUITES = [
   { file: 'run.mjs', expect: 66, label: '主功能（契约/运算/作用域）' },
   { file: 'formulas.mjs', expect: 35, label: '公式库' },
   // 每条公式一项，公式总数变化时同步（404 → 442，新增电/光/核/化学计量 38 条）
-  { file: 'formulas-all.mjs', expect: 669, label: '全部公式可求值' },
+  { file: 'formulas-all.mjs', expect: 665, label: '全部公式可求值' },
   { file: 'formulas-sanity.mjs', expect: 15, label: '常识值反算' },
   { file: 'constants.mjs', expect: 51, label: '物理常数耦合' },
   { file: 'constants-core.mjs', expect: 40, label: '无量纲常数与尺度阶梯' },
@@ -249,6 +249,9 @@ const SUITES = [
   // ★ 多步推演规则进提示词：让 AI 按「输出→下一步参数」串调用。
   // 核心：提示词承诺的每个接口（带单位输入、N/kg 等价）必须实测可用，否则是骗 AI。
   { file: 'multistep-prompt.mjs', expect: 23, label: '多步推演提示词（规则 + 承诺可验证）' },
+  // ★ 公式库结构不变量：id 唯一 / INDEX 与数组一致 / 字段完整。
+  // 重构时发现 4 个 id 在不同文件各定义一次，后者静默覆盖前者。
+  { file: 'formula-integrity.mjs', expect: 9, label: '公式库结构不变量（id 唯一/索引一致/字段完整）' },
   { file: 'process-chem.mjs', expect: 28, label: '化工单元与误差传播（蒸馏/结晶/收缩/误差）' },
   { file: 'process-finish.mjs', expect: 26, label: '材料成品性能（烧结致密度/淬火硬度/炉膛效率）' },
   { file: 'formula-systems.mjs', expect: 26, label: '公式体系（18 链/接点无死链/覆盖率）' },

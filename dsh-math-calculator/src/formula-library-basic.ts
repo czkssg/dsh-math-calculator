@@ -526,22 +526,6 @@ export const BASIC_FORMULAS: FormulaDef[] = [
     domains: ['physics'],
   },
   {
-    id: 'lc_resonance',
-    cat: 'physics/em',
-    name: 'LC 谐振频率',
-    expr: '1 / (2 * pi * sqrt(L * C))',
-    params: {
-      L: req('电感 H'),
-      C: req('电容 F'),
-    },
-    unit: 'Hz',
-    desc: 'LC 回路自振频率。此频率下容抗与感抗相等、相互抵消。',
-    keys: ['resonance', '谐振', 'lc'],
-    frequency: 'medium',
-    layer: 'derived',
-    domains: ['physics'],
-  },
-  {
     id: 'voltage_divider',
     cat: 'physics/em',
     name: '分压电路输出',
@@ -673,21 +657,6 @@ export const BASIC_FORMULAS: FormulaDef[] = [
     frequency: 'medium',
     layer: 'derived',
     domains: ['materials'],
-  },
-  {
-    id: 'spring_energy',
-    cat: 'physics/mechanics',
-    name: '弹簧储能',
-    expr: '0.5 * k * x^2',
-    params: { k: req('弹性系数 N/m'), x: req('形变量 m') },
-    unit: 'J',
-    desc:
-      '压缩或拉伸储存的能量。这正是弓弩、投石机、钟表发条的储能原理：' +
-      '能量与形变量的**平方**成正比，所以拉两倍距离储能四倍。',
-    keys: ['spring', '弹簧', '储能'],
-    frequency: 'high',
-    layer: 'derived',
-    domains: ['physics'],
   },
   {
     id: 'hydraulic_force',

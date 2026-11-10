@@ -301,7 +301,12 @@ console.log('-- 收敛检查 --')
   assert('都有 ≥3 关键词', noKeys.length === 0, noKeys.join(','))
   assert('都标了局限（⚠）', noCaveat.length === 0, noCaveat.join(','))
 
-  assert('公式总数 ≥ 669', fm.FORMULAS.length >= 669, String(fm.FORMULAS.length))
+  /**
+   * 669 → 665：重构时删掉 4 条**重复 id 的副本**
+   * （同 id 在不同文件各定义一次，后者覆盖前者，前者永远不会被加载）。
+   * 这是修正而非删内容 —— 数值下降是预期结果。
+   */
+  assert('公式总数 ≥ 665', fm.FORMULAS.length >= 665, String(fm.FORMULAS.length))
 }
 
 rmSync(home, { recursive: true, force: true })

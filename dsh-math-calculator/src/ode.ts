@@ -19,6 +19,11 @@
  */
 
 /** 一条微分方程。 */
+import { splitEquations } from './systems.js'
+
+/**
+ * 一条已解析的 ODE 方程。
+ */
 export interface OdeEquation {
   /** 状态变量名，如 y、S、I、R */
   variable: string
@@ -76,23 +81,19 @@ function splitEquation(text: string): { left: string; right: string } | undefine
   return undefined
 }
 
-/** 按顶层逗号/分号/换行拆分多条方程。 */
+/** 按顶层逗号/分号/换行拆分多条方程（与 systems.splitEquations 同一实现）。
+ *
+ * ## 为什么合并
+ *
+ * 这里原来有一份与 `systems.ts` 几乎相同的实现，唯一差别是
+ * `systems` 版多认了 `{}` 括号。两份并存意味着：
+ *
+ *    改一处忘另一处 → ODE 与线性方程组对同一输入拆出不同结果
+ *
+ * 现在统一由 `systems.splitEquations` 承载，本函数只做转发。
+ */
 export function splitOdeEquations(source: string): string[] {
-  const pieces: string[] = []
-  let depth = 0
-  let current = ''
-  for (const char of source) {
-    if (char === '(' || char === '[' || char === '{') depth += 1
-    if (char === ')' || char === ']' || char === '}') depth -= 1
-    if ((char === ',' || char === ';' || char === '\n') && depth === 0) {
-      if (current.trim() !== '') pieces.push(current.trim())
-      current = ''
-      continue
-    }
-    current += char
-  }
-  if (current.trim() !== '') pieces.push(current.trim())
-  return pieces
+  return splitEquations(source)
 }
 
 /**

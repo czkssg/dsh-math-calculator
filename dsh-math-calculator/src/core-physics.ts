@@ -197,6 +197,68 @@ export function buildingHeightLimit(strength: number, rho: number, g: number): n
  * @param R - 气体常数（J/(mol·K)）
  * @returns 直减率（K/m）
  */
+/**
+ * 普朗克黑体辐射函数 B_λ(T)（相对强度，未乘 2hc²）。
+ *
+ * ## 为什么收在这里
+ *
+ * `sky.ts` 与 `stellar.ts` 各自抄了一份**完全相同的实现**，
+ * 并且都在函数里硬编码 h、c、k —— 而这些常数 `CONSTANTS` 里都有。
+ * 若哪天改 α 联动常数（本项目就支持），这三处硬编码会静默不同步。
+ *
+ * 现在收为单一实现，常数由调用方注入（保持 core-physics 零依赖的约定）。
+ *
+ * @param h - 普朗克常数
+ * @param c - 光速
+ * @param kB - 玻尔兹曼常数
+ * @param lambdaNm - 波长（nm）
+ * @param tempK - 温度（K）
+ * @returns B_λ 的相对值（量纲任意，只用于形状比较）
+ */
+/**
+ * 取参数或默认值（`undefined` / 非有限 → fallback）。
+ *
+ * `moons.ts` 与 `world.ts` 各有一份完全相同的实现。
+ * 这是最典型的「两行工具函数」重复 —— 收进来统一。
+ *
+ * @param value - 调用方传入的值
+ * @param fallback - 默认值
+ * @returns 有效值或默认值
+ */
+export function numOr(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+/**
+ * 普朗克黑体辐射函数 B_λ(T)（相对强度，未乘 2hc²）。
+ *
+ * `sky.ts` 与 `stellar.ts` 曾各抄一份完全相同的实现，且在函数里硬编码 h/c/k ——
+ * 而 `CONSTANTS` 里都有。若改 α 联动常数，三处会静默不同步。
+ *
+ * 常数由调用方注入，保持 `core-physics` 零依赖的约定。
+ *
+ * @param h - 普朗克常数
+ * @param c - 光速
+ * @param kB - 玻尔兹曼常数
+ * @param lambdaNm - 波长（nm）
+ * @param tempK - 温度（K）
+ * @returns B_λ 的相对值（只用于形状比较，量纲任意）
+ */
+export function planckRadiance(h: number, c: number, kB: number, lambdaNm: number, tempK: number): number {
+  const lambda = lambdaNm * 1e-9
+  const exponent = (h * c) / (lambda * kB * tempK)
+  if (exponent > 700) return 0
+  return 1 / (lambda ** 5 * (Math.exp(exponent) - 1))
+}
+/**
+ * 干绝热直减率（双原子气体，第一性原理）。
+ *
+ * Γ = g·M_molar/(3.5·R_gas)，其中 3.5 = γ/(γ−1)，γ=7/5。
+ *
+ * @param g - 重力（m/s²）
+ * @param molarMass - 摩尔质量（kg/mol）
+ * @param R - 气体常数（J/(mol·K)）
+ * @returns 直减率（K/m）
+ */
 export function dryLapseRate(g: number, molarMass: number, R: number): number {
   return (g * molarMass) / (3.5 * R)
 }

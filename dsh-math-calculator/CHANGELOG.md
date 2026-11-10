@@ -2,6 +2,104 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.3.23] — 2026-11-10
+
+**重构：消除 34 处跨文件重复，修掉 4 个静默覆盖的公式 id。**
+
+按用户要求「检查插件代码，参考成熟开源方案重构」。先做诊断再动手。
+
+### 诊断结果
+
+```
+117 个 .ts 文件 / 54341 行
+最大文件 src/index.ts 5305 行（但无重复代码，是 50 个函数的平铺集合）
+跨文件重复片段：34 组
+```
+
+### ① 数字格式化：7 个文件各写一份
+
+这是最大的重复。各文件阈值与位数都不同：
+
+```
+anchor-solve / summary   fmt    ≥1e6 或 <1e-2 → exp(2)，否则 prec(3)
+pipeline                 fmtNum ≥1e5 或 <1e-2 → exp(2)，否则 prec(4)
+custom-op / derivation   sci    ≥1e5 或 <1e-3 → exp(3)，否则 prec(5)
+units-op / units         show   ≥1e15 或 <1e-4 → exp(4)，否则 prec(6)
+param-units              fmt    ≥1e6 或 <1e-3 → exp(3)，否则 prec(4)
+```
+
+**为什么不用 d3-format**（周下载 1 亿、0 依赖的成熟库）：
+
+```
+① 本项目非有限值显示 —，d3 显示 NaN
+② 指数阈值是硬阈值，d3 的 ~g 是「有效位数」语义，行为不同
+③ 51 处测试锁定这些输出，换库会连锁破坏行为契约
+```
+
+所以**学它的接口设计（单一职责、可参数化），不学它的实现**：
+新增 `fmtNumber(value, opt)` + 三个语义化包装（`fmtShort`/`fmtSci`/`fmtShow`），
+7 处变体全部改为调用。行为逐位不变（118 套测试验证）。
+
+### ② planck：两处硬编码物理常数
+
+`sky.ts` 与 `stellar.ts` 各有一份**完全相同**的 `planck`，且都在函数里写死
+`h = 6.62607015e-34`、`c`、`k` —— 而 `CONSTANTS` 里都有。
+
+若哪天改 α 联动常数，这三处会**静默不同步**。已收进 `core-physics.planckRadiance`。
+
+### ③ 量纲顺序清单：抄了一份 30 项数组
+
+`ops/units-op.ts` 复制了 `units-data.ts` 的完整 `DIMENSION_ORDER`。
+后果：新增量纲时若只改 `units-data`，**单位清单里看不到它**，且不报错。
+
+### ④ world 顶层参数：两处抄同一份
+
+`derivation-op` 与 `feasibility-op` 各自写了一遍
+`['planetRadius', 'planetMass', 'rotationHours', 'obliquityDeg']`。
+加一个新便捷参数时只改一处，两个操作就会对同一份输入给出不同结论。
+
+已抽成 `shared.WORLD_TOP_LEVEL_KEYS` + `mergeWorldArgs`。
+
+### ⑤ ★ 4 个公式 id 被静默覆盖（最严重）
+
+```
+spring_energy        formula-library.ts  ← 被覆盖，永不加载
+                     formula-library-basic.ts  ← 实际生效
+lc_resonance         同上
+thermal_stress       formula-library.ts  ← 被 formula-library-story.ts 覆盖
+city_wall_perimeter  perception.ts       ← 被 story2.ts 覆盖
+```
+
+`FORMULA_INDEX.set` 是「后者覆盖前者」，**没有任何报错**。
+症状：按名字查「弹簧势能」查不到，`FORMULAS.length` 比预期少 4 —— 但少 4 没人会注意。
+
+已删除 4 条重复副本（保留原版，内容完全相同），公式数 669 → **665**。
+新增 `test/formula-integrity.mjs`（9 项）守：id 唯一、INDEX 与数组一致、字段完整。
+
+### ⑥ 分隔符解析：两个版本行为不一致
+
+`ode.splitOdeEquations` 认 `{}`，`systems.splitEquations` 不认。
+同一份输入（含 `{}`）在两条路径上拆出不同结果。已统一由 `systems` 承载。
+
+### 结果
+
+| 指标 | 之前 | 之后 |
+|---|---|---|
+| 跨文件重复片段 | 34 | **3**（剩余均为 import 语句等合理重复） |
+| 重复公式 id | 4 | **0** |
+| 公式库 | 669 | **665**（删 4 条重复副本） |
+| 测试 | 118 套 / 5842 项 | **119 套 / 5851 项** |
+
+改动：23 文件，+278 / −209 行。
+
+### 一条自我提醒
+
+补 `doccheck` 时连续被挤掉 7 处导出注释（我插入代码时覆盖了相邻的 JSDoc）。
+这是本项目第二次犯同类错误（历史记录里也有）。
+教训：**改完 src/ 立刻跑 doccheck**，它会逐一点名，比事后用正则修补可靠。
+
+---
+
 ## [2.3.22] — 2026-11-10
 
 **多步推演：把规则写进提示词，让 AI 按工具的真实接口串调用。**

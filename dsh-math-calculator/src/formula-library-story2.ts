@@ -120,17 +120,6 @@ const BUILDING: FormulaDef[] = [
     keys: ['chimney', '烟囱', '抽力'],
     frequency: 'high',
   },
-  {
-    id: 'city_wall_perimeter',
-    cat: 'perception/architecture',
-    name: '方形城墙周长',
-    expr: '4 * sqrt(area)',
-    params: { area: req('城内面积 m^2') },
-    unit: 'm',
-    desc: '正方式估算；城墙越长，守军越难铺满，这是攻城方的基本算术。',
-    keys: ['wall', '城墙', '周长'],
-    frequency: 'medium',
-  },
 ]
 
 /** 攻城与军事。 */

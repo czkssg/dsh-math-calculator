@@ -110,6 +110,48 @@ const RESERVED = new Set([
  * @param input - 待校验的定义
  * @returns 错误信息数组（空数组表示通过）
  */
+/**
+ * 把（已校验过的）输入规范成 `CustomConstant`。
+ *
+ * ## 为什么要收进来
+ *
+ * `api.ts`（HTTP 面板）与 `ops/custom-op.ts`（工具调用）各写了一遍，
+ * **10 行字段逐一 `String()` / `Number()` 强转，完全相同**。
+ *
+ * 这是最危险的一种重复：校验走的是同一个 `validateCustomConstant`，
+ * 但规范化各写一遍 —— 哪天加一个字段（如 `source`），
+ * 只改一处就会让「从面板建」和「从工具建」产生**不同结构的常数**，
+ * 而且不会有任何报错。
+ *
+ * ## 调用前必须已过 `validateCustomConstant`
+ *
+ * 本函数假设输入合法（字段存在且类型可转），不做二次校验 ——
+ * 两次校验会让「哪次才是真的」变模糊。
+ *
+ * @param input - 已校验的输入对象
+ * @returns 规范化的自定义常数
+ */
+export function buildCustomConstant(input: Record<string, unknown>): CustomConstant {
+  return {
+    name: String(input.name),
+    label: String(input.label),
+    value: Number(input.value),
+    unit: String(input.unit),
+    dimension: input.dimension as Dimension,
+    meaning: String(input.meaning),
+    origin: input.origin === 'derived' ? 'derived' : 'author',
+    ...(Array.isArray(input.dependsOn) ? { dependsOn: input.dependsOn.map(String) } : {}),
+    ...(typeof input.derive === 'string' ? { derive: input.derive } : {}),
+    createdAt: new Date().toISOString(),
+  }
+}
+
+/**
+ * 校验自定义常数的定义是否可用。
+ *
+ * @param input - 待校验的输入
+ * @returns 错误信息数组；空数组表示合法
+ */
 export function validateCustomConstant(input: unknown): string[] {
   const errors: string[] = []
   const value = input as Record<string, unknown> | undefined

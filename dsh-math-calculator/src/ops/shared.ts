@@ -82,6 +82,44 @@ export type MathOperation =
  * 不同 operation 只读取自己关心的字段，其余忽略；所以字段注释必须标明归属
  * （例如 "operation=formula：…"），否则调用方不知道该在什么时候传。
  */
+/**
+ * `world` 的四个「顶层便捷参数」。
+ *
+ * ## 为什么要抽成常量
+ *
+ * `derivation-op` 与 `feasibility-op` 各自抄了一份这个数组。
+ * 后果很隐蔽：**加一个新的便捷参数（如 `axialTilt`）时只改一处**，
+ * 于是 `derivation` 认得它、`feasibility` 不认 —— 两个操作对同一份 world 输入
+ * 给出不同结论，而用户看到的是「明明写了这个参数却没用」。
+ *
+ * ## 为什么允许顶层传
+ *
+ * `world` 的字段正式位置是 `world:{...}` 对象。但这几个太高频，
+ * 允许平铺在顶层（`{planetRadius:1.5}`）—— 两条路径落到同一个 merged 上。
+ */
+export const WORLD_TOP_LEVEL_KEYS = ['planetRadius', 'planetMass', 'rotationHours', 'obliquityDeg'] as const
+
+/**
+ * 把「顶层便捷参数 + world 对象」合并成一份环境参数。
+ *
+ * 顶层只能写数字（写了字符串会被忽略——那是 `world` 对象的职责）。
+ *
+ * @param args - 工具入参
+ * @returns 合并后的世界参数（world 对象优先于顶层）
+ */
+export function mergeWorldArgs(args: MathArgs): Record<string, unknown> {
+  const merged: Record<string, unknown> = {}
+  for (const key of WORLD_TOP_LEVEL_KEYS) {
+    const value = (args as unknown as Record<string, unknown>)[key]
+    if (typeof value === 'number') merged[key] = value
+  }
+  Object.assign(merged, (args.world ?? {}) as Record<string, unknown>)
+  return merged
+}
+
+/**
+ * `math_execute` 的入参（按 operation 取用其中一部分）。
+ */
 export interface MathArgs {
   expression?: string
   variables?: { [key: string]: number | string }

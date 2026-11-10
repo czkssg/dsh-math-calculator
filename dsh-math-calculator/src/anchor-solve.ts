@@ -24,6 +24,7 @@
  */
 
 import { opWorld } from './ops/world-op.js'
+import { fmtShort } from './format.js'
 
 /** 支持的锚点类型。 */
 export type AnchorKind = 'gravity' | 'escapeVelocity' | 'creatureHeight' | 'dayLength'
@@ -57,13 +58,7 @@ export interface AnchorResult {
  * @param digits - 位数
  * @returns 显示串
  */
-function fmt(value: number, digits = 3): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs >= 1e6 || (abs < 1e-2 && abs > 0)) return value.toExponential(2)
-  return Number(value.toPrecision(digits)).toString()
-}
-
+const fmt = fmtShort
 /**
  * 读一个世界参数的当前值（缺省则用默认）。
  *

@@ -136,6 +136,7 @@ export type Dimension =
  * 定义在 `units-data.ts`，这里再导出，保持旧的导入路径可用。
  */
 import { DIMENSION_BASE, DIMENSION_LABEL, DIMENSION_ORDER } from './units-data.js'
+import { fmtShow } from './format.js'
 
 /** 每个量纲的基准单位 —— 即「公制中转点」。 */
 export const BASE_UNIT = DIMENSION_BASE
@@ -336,12 +337,7 @@ export interface Conversion {
  * @param value - 数值
  * @returns 显示串
  */
-function show(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs !== 0 && (abs >= 1e15 || abs < 1e-4)) return value.toExponential(4)
-  return String(Number(value.toPrecision(6)))
-}
+const show = fmtShow
 
 /**
  * 换算。

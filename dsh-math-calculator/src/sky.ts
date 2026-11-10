@@ -21,6 +21,7 @@
  */
 
 import { OUR_UNIVERSE } from './constants-core.js'
+import { planckRadiance } from './core-physics.js'
 
 /** 维恩位移常数 m·K。 */
 const WIEN = 2.897771955e-3
@@ -262,15 +263,8 @@ export function describeStar(input: SkyInput): StarVisual {
  * @param lambdaNm - 波长 nm。
  * @param tempK - 温度 K。
  */
-function planck(lambdaNm: number, tempK: number): number {
-  const h = 6.62607015e-34
-  const c = 2.99792458e8
-  const k = 1.380649e-23
-  const lambda = lambdaNm * 1e-9
-  const exponent = (h * c) / (lambda * k * tempK)
-  if (exponent > 700) return 0
-  return 1 / (lambda ** 5 * (Math.exp(exponent) - 1))
-}
+const planck = (lambdaNm: number, tempK: number): number =>
+  planckRadiance(6.62607015e-34, 2.99792458e8, 1.380649e-23, lambdaNm, tempK)
 
 /** 三通道高斯响应（近似人眼/胶片的分色响应，不是 CIE）。 */
 const CHANNELS: Array<{ center: number; sigma: number }> = [

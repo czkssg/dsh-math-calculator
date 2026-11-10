@@ -15,6 +15,7 @@
  */
 
 import { OUR_UNIVERSE } from './constants-core.js'
+import { planckRadiance } from './core-physics.js'
 
 /** 太阳光度 W。 */
 const LSUN = 3.828e26
@@ -88,15 +89,8 @@ export function mainSequenceLifetime(massSun: number): number {
 }
 
 /** 普朗克谱（任意单位）。 */
-function planck(lambdaNm: number, tempK: number): number {
-  const h = 6.62607015e-34
-  const c = 2.99792458e8
-  const k = 1.380649e-23
-  const lambda = lambdaNm * 1e-9
-  const exponent = (h * c) / (lambda * k * tempK)
-  if (exponent > 700) return 0
-  return 1 / (lambda ** 5 * (Math.exp(exponent) - 1))
-}
+const planck = (lambdaNm: number, tempK: number): number =>
+  planckRadiance(6.62607015e-34, 2.99792458e8, 1.380649e-23, lambdaNm, tempK)
 
 /** 紫外（<400nm）能量占比（普朗克积分，精确到采样精度）。 */
 export function uvFractionOf(tempK: number): number {

@@ -826,6 +826,71 @@ function trimUnitNumber(
  * @param value - 数值
  * @returns 文本
  */
+/**
+ * ## 数字显示的统一入口（参数化）
+ *
+ * 本项目里曾有 7 个文件各自实现「数字 → 人读字符串」，阈值与位数各不相同：
+ *
+ * ```
+ *   anchor-solve / summary   fmt    ≥1e6 或 <1e-2 → exp(2)，否则 prec(3)
+ *   pipeline                 fmtNum ≥1e5 或 <1e-2 → exp(2)，否则 prec(4)
+ *   custom-op / derivation   sci    ≥1e5 或 <1e-3 → exp(3)，否则 prec(5)
+ *   units-op / units         show   ≥1e15 或 <1e-4 → exp(4)，否则 prec(6)
+ *   param-units              fmt    ≥1e6 或 <1e-3 → exp(3)，否则 prec(4)
+ * ```
+ *
+ * 抽到这里统一定义。**为什么不用 d3-format**：
+ *
+ * - 本项目非有限值显示 `—`，d3 显示 `NaN`；
+ * - 指数阈值是**硬阈值**（1e6/1e-2），d3 的 `~g` 是「有效位数」语义，行为不同；
+ * - 51 处测试锁定这些输出，换库会连锁破坏行为契约。
+ *
+ * 于是保留自己的格式，但消除 7 份重复 —— 这正是「参考成熟库」的正确用法：
+ * 学它的接口设计（单一职责、可参数化），不学它的实现。
+ */
+export interface FmtOptions {
+  /** 绝对值 ≥ 此值时用科学计数法。 */
+  expHigh: number
+  /** 0 < 绝对值 < 此值时用科学计数法。 */
+  expLow: number
+  /** 科学计数法的小数位数。 */
+  expDigits: number
+  /** 普通区间的有效位数。 */
+  precision: number
+  /** 非有限值的显示（默认 `—`）。 */
+  nanDisplay?: string
+}
+
+/**
+ * 按传入的阈值格式化数字 —— 本项目所有「数字 → 人读串」的唯一通道。
+ *
+ * @param value - 数值
+ * @param opt - 阈值与位数配置
+ * @returns 显示串
+ */
+export function fmtNumber(value: number, opt: FmtOptions): string {
+  if (!Number.isFinite(value)) return opt.nanDisplay ?? '—'
+  const abs = Math.abs(value)
+  /** 0 无论走哪条路径都输出 '0'（toPrecision 后 Number() 会去掉尾零）。 */
+  if (abs >= opt.expHigh || (abs > 0 && abs < opt.expLow)) return value.toExponential(opt.expDigits)
+  return Number(value.toPrecision(opt.precision)).toString()
+}
+
+/** 原 anchor-solve / summary 的口径。 */
+export function fmtShort(value: number, digits = 3): string {
+  return fmtNumber(value, { expHigh: 1e6, expLow: 1e-2, expDigits: 2, precision: digits })
+}
+
+/** 原 custom-op / derivation-op 的口径。 */
+export function fmtSci(value: number): string {
+  return fmtNumber(value, { expHigh: 1e5, expLow: 1e-3, expDigits: 3, precision: 5 })
+}
+
+/** 原 units-op / units 的口径。 */
+export function fmtShow(value: number): string {
+  return fmtNumber(value, { expHigh: 1e15, expLow: 1e-4, expDigits: 4, precision: 6 })
+}
+
 function formatScalar(value: number): string {
   if (!Number.isFinite(value) || value === 0) return '0'
   const abs = Math.abs(value)

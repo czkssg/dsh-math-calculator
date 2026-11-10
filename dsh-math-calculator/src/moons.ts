@@ -116,9 +116,9 @@ export interface MoonSystemInput {
 }
 
 /** 取参数或默认值。 */
-function num(value: number | undefined, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
-}
+const num = numOr
+
+import { numOr } from './core-physics.js'
 
 /** 由质量与密度推半径（m）。 */
 function radiusFromMass(massKg: number, densityKgM3: number): number {

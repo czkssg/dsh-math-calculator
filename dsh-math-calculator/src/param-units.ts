@@ -34,6 +34,8 @@
  * @module dsh-math-calculator/param-units
  */
 
+import { fmtNumber } from './format.js'
+
 /**
  * 从参数描述里抠出单位符号：取描述里**最后一个像单位的片段**。
  *
@@ -47,6 +49,7 @@
  * @param isKnownUnit - 判断某字符串是否为已知单位（由调用方注入，避免模块耦合）
  * @returns 单位名；抠不出时返回空串
  */
+
 export function unitFromDescription(desc: string, isKnownUnit: (name: string) => boolean): string {
   if (typeof desc !== 'string' || desc === '') return ''
   /**
@@ -307,15 +310,8 @@ function compoundTraditionalNote(
 }
 
 /** 折算结果的位数：保留 4 位有效数字，够看又不啰嗦。 */
-function fmt(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  if (value === 0) return '0'
-  const abs = Math.abs(value)
-  if (abs >= 1e6 || abs < 1e-3) return value.toExponential(3)
-  return String(Number(value.toPrecision(4))
-  )
-}
-
+const fmt = (value: number): string =>
+  fmtNumber(value, { expHigh: 1e6, expLow: 1e-3, expDigits: 3, precision: 4 })
 /**
  * 默认换算适配器：直接接 `units.ts` 的 `convert`。
  *

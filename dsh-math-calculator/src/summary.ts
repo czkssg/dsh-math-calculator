@@ -27,6 +27,7 @@ import { runCivilization } from './civilization.js'
 import { ecosystemFromWorld } from './ecosystem.js'
 import { CONSTRAINTS, deriveConstraintContext } from './feasibility.js'
 import { paramsByGroup, WORLD_PARAMS } from './world-params.js'
+import { fmtShort } from './format.js'
 
 /** 一个派生量（只读）。 */
 export interface DerivedValue {
@@ -79,13 +80,7 @@ export interface Summary {
  * @param digits - 有效位数
  * @returns 显示串
  */
-function fmt(value: number, digits = 3): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs >= 1e6 || (abs < 1e-2 && abs > 0)) return value.toExponential(2)
-  return Number(value.toPrecision(digits)).toString()
-}
-
+const fmt = fmtShort
 /**
  * 把不可用的数字归一化为 `undefined`。
  *

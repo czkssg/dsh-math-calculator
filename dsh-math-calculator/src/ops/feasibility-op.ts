@@ -8,7 +8,7 @@
 
 import { CONSTRAINTS, checkFeasibility, deriveConstraintContext, type ConstraintResult } from '../feasibility.js'
 import { toJsonValue } from '../format.js'
-import { safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
+import { mergeWorldArgs, safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
 
 /**
  * `feasibility`：校验设定是否超出物理上限。
@@ -22,14 +22,7 @@ import { safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
  */
 export function opFeasibility(args: MathArgs): Outcome {
   // 世界参数：允许用 world 参数，未给则用地球
-  const worldParams = (args.world ?? {}) as Record<string, unknown>
-  const merged: Record<string, unknown> = {}
-  // 顶层便捷参数
-  for (const key of ['planetRadius', 'planetMass', 'rotationHours', 'obliquityDeg']) {
-    const value = (args as unknown as Record<string, unknown>)[key]
-    if (typeof value === 'number') merged[key] = value
-  }
-  Object.assign(merged, worldParams)
+  const merged = mergeWorldArgs(args)
 
   const environment = deriveConstraintContext(merged)
   const lines: string[] = []

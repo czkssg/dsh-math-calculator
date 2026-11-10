@@ -10,6 +10,7 @@
 
 import {
   validateCustomConstant,
+  buildCustomConstant,
   resolveCustomConstants,
   checkDimension,
   dimensionText,
@@ -22,16 +23,10 @@ import { standardValues } from '../constants-graph.js'
 import { currentWorkspace, loadWorkspace, updateWorkspace } from '../workspace.js'
 import { toJsonValue } from '../format.js'
 import type { MathArgs, Outcome } from './shared.js'
+import { fmtSci } from '../format.js'
 
 /** 数字格式化。 */
-function sci(value: number): string {
-  if (!Number.isFinite(value)) return '—'
-  const abs = Math.abs(value)
-  if (abs === 0) return '0'
-  if (abs >= 1e5 || abs < 1e-3) return value.toExponential(3)
-  return Number(value.toPrecision(5)).toString()
-}
-
+const sci = fmtSci
 /**
  * `custom`：自创常数 / 新物理量。
  *
@@ -82,18 +77,7 @@ export function opCustom(args: MathArgs): Outcome {
       return { result: out.join('\n'), value: toJsonValue({ errors: errors }) }
     }
     const item = input as Record<string, unknown>
-    const custom: CustomConstant = {
-      name: String(item.name),
-      label: String(item.label),
-      value: Number(item.value),
-      unit: String(item.unit),
-      dimension: item.dimension as Dimension,
-      meaning: String(item.meaning),
-      origin: item.origin === 'derived' ? 'derived' : 'author',
-      ...(Array.isArray(item.dependsOn) ? { dependsOn: item.dependsOn.map(String) } : {}),
-      ...(typeof item.derive === 'string' ? { derive: item.derive } : {}),
-      createdAt: new Date().toISOString(),
-    }
+    const custom: CustomConstant = buildCustomConstant(item)
     updateWorkspace(workspace, function (current) {
       const rest = (current.customConstants ?? []).filter(function (existing) {
         return existing.name !== custom.name
