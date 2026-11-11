@@ -230,6 +230,7 @@ import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
 import { opLedger } from './ops/ledger-op.js'
+import { opInterval } from './ops/interval-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
@@ -365,6 +366,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'units',
   'balance',
   'ledger',
+  'interval',
   'bodies',
   'help',
 ]
@@ -3476,6 +3478,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'threshold', 'worstLimit', 'variableName', 'constantName',
   // 台账闭合
   'ledger',
+  // 区间运算
+  'interval',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
   // world 的简版输出（N16：省 90% token 的推演成本门槛）
@@ -3561,6 +3565,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   constants: ['constants', 'preview'],
   balance: ['balance'],
   ledger: ['ledger'],
+  interval: ['interval'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
@@ -4186,6 +4191,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'ledger':
         outcome = opLedger(args)
+        break
+      case 'interval':
+        outcome = opInterval(args)
         break
       case 'bodies':
         outcome = opBodies(args)
@@ -4824,7 +4832,15 @@ const PARAMETER_SPEC = {
   bodyKind: {
     type: 'string',
     description:
-      'bodies：按类别筛。star / planet-terrestrial / planet-gas-giant / moon / dwarf-planet 等，全文见 help。',
+      /**
+       * 压到 40 字符以内。
+       *
+       * 原来的 90 字符把全部取值列了一遍，而 `bodyKind` 的合法值本身就写在
+       * operation=bodies 的行为里（不传就列全部），照着清单读没有额外价值。
+       * 省下的长度留给 operation 枚举里的新能力（ledger / interval）——
+       * 那才是「AI 必须看见」的信息。
+       */
+      'bodies 按类别筛（星/行星/卫星/矮行星…），取值见 help。',
   },
   bodyConstant: {
     type: 'string',

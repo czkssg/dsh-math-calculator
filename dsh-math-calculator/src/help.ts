@@ -511,6 +511,30 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## interval 的正文
+ *
+ * 反馈包 15 号的核心发现：AI 在推演时**全程用区间思考**
+ * （「大约一万吨」「20–40%」「21–25 亿」），但工具只支持点值，
+ * 逼它把区间压成单个数再算 —— **那一步压缩就是失真的源头**。
+ */
+const INTERVAL_BODY = (): string => `【区间运算】interval 上下界进来，上下界出去
+
+  {operation:"interval", interval:{expr:"[21,25] * [2000,2500]"}}
+  → [42000, 62500]，并给出相对宽度与「把握」分档
+
+  输入形态（都认）：[20,50] / 20-50 / 20~50 / 20 到 50 / {low,high} / 单个数字
+  ★ 无方括号时运算符两侧留空格（20-50 * 2000-2500），否则连字符有歧义。
+
+  三种用法：
+    ① 纯四则：a / op / b
+    ② 阈值判定：加 against:25 → below / above / crosses
+    ③ 带单位：unit:"元"，只影响显示
+
+  ★ 输出会分档「把握」：±5% 可直接写设定 / ±20% 建议给区间 / 更宽只能当方向。
+  ★ 只给上下界时**不猜分布** —— 中点只是算术中点，不是「最可能的值」。
+  除数跨零会直接报错（结果不是单个区间，是两段）。`
+
+/**
  * ## ledger 的正文
  *
  * 反馈包统计 282 条硬伤里 **48% 是账本问题**，而工具此前**零覆盖** ——
@@ -1896,7 +1920,14 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     key: 'ledger',
-    tier: 'extra',
+    /**
+     * ## 为什么是 core 而不是 extra
+     *
+     * 它是**两段共用**的（反馈包 14 号的关键发现）：
+     * 推演段分配比（士农工商合计要 100%），对账段查闭合（99.011%）。
+     * 而账本问题占全部硬伤的 48% —— 这个频率不该只值一个折叠标签。
+     */
+    tier: 'core',
     /** 信号量按「两段共用」估：推演分配比 + 对账查闭合。 */
     weight: 20,
     short: '台账闭合',
@@ -1904,6 +1935,24 @@ export const HELP_TOPICS: HelpTopic[] = [
     summary: '分项之和 vs 总量：占比合计 99.01% 差在哪、哪一项疑似 10 倍笔误。★ 推演分配比与对账查闭合共用。',
     aliases: ['台账', '闭合', '占比', '合计', '配比', 'ledger'],
     body: LEDGER_BODY,
+  },
+  {
+    key: 'interval',
+    /**
+     * ## 为什么是 core
+     *
+     * 推演段的设定**天然是区间**（「大约一万吨」「20–50%」），
+     * 而工具此前只支持点值 —— 反馈包 15 号判定这是「推演失真的源头之一」。
+     * 修这类失真的能力该在目录首页，不是折叠区。
+     */
+    tier: 'core',
+    /** 推演段高频：设定天然是区间。 */
+    weight: 18,
+    short: '区间运算',
+    title: '区间运算（interval）',
+    summary: '上下界进来、上下界出去。"[21,25]*[2000,2500]" → [42000,62500]，并给把握分档。★ 不把区间压成单值。',
+    aliases: ['区间', '范围', '上下界', '大约', 'interval'],
+    body: INTERVAL_BODY,
   },
   {
     key: 'feasibility',
@@ -2166,13 +2215,12 @@ function renderIndex(): string {
       }
     }
     /**
-     * 这一行原本是「★ 公式不是散着的：query="sys" 看 N 条推演链…」，
-     * 与 formula 节重复。但**完全不提链也不对** —— 目录是唯一每轮注入的地方。
+     * 这一行原本是「★ 公式不是散着的：query="sys" 看 N 条推演链…」，与 formula 节重复。
      *
-     * 折中：一句话把「怎么连」指向 formula，把「每步填什么」指向 recipe。
-     * 比原来省 20 字符，信息量不减（两边都还能查到）。
+     * 但完全不提链也不对。折中成一句话，并从「领两节」缩到只领一节 ——
+     * recipe 的用途已经写在它自己的简介里，这里重复领它等于付两次钱。
      */
-    lines.push('  ★ 链怎么连见 helpTopic:"formula"；每步填什么见 helpTopic:"recipe"。')
+    lines.push('  ★ 链怎么连、每步填什么，见 helpTopic:"formula"。')
     if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
     if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }

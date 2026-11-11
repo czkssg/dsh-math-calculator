@@ -74,6 +74,7 @@ export type MathOperation =
   | 'units'
   | 'balance'
   | 'ledger'
+  | 'interval'
   | 'bodies'
   | 'help'
 

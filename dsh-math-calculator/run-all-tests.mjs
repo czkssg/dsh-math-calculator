@@ -260,6 +260,7 @@ const SUITES = [
   { file: 'search-honesty.mjs', expect: 16, label: '检索诚实性（精确/子词可区分 + 反向对照）' },
   { file: 'stop-bleed.mjs', expect: 124, label: '止血项（参数分片/复合单位/物理可行域/常数/子命令/help）' },
   { file: 'ledger.mjs', expect: 40, label: '台账闭合（分项 vs 总量 + 三类可疑判据 + 不越权）' },
+  { file: 'interval.mjs', expect: 47, label: '区间运算（四点乘法 / 除数跨零 / 把握分档 / 阈值判定）' },
   // ★ derivation 缺参数提示：必须给真实候选与可复制调用，且示例能跑。
   // 顺带纠正 diff 的一处错误说法（diffA/diffB 是工作区名，不是表名）。
   { file: 'derivation-hints.mjs', expect: 28, label: 'derivation 缺参提示（真实候选 + 示例可跑）' },
