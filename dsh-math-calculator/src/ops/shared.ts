@@ -80,6 +80,7 @@ export type MathOperation =
   | 'hierarchy'
   | 'quick_feasible'
   | 'consistency'
+  | 'world_state'
   | 'bodies'
   | 'help'
 

@@ -511,6 +511,33 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## world_state 的正文
+ *
+ * 反馈包 `16` 号实测：朱庇特项目 **203 轮对话撞了 6 次上限**，
+ * 每次只能把前面压成一份「对话继承总结」（有损压缩）。
+ *
+ * > 每次压缩都损失：细节、口径、推导链、例外情况。
+ *
+ * 桌面版的解法不是「压缩得更好」，而是**不压缩**：状态存在文件里，按 id 取。
+ */
+const WORLD_STATE_BODY = (): string => `【设定库】world_state 对话继承的无损替代
+
+  建条目：{operation:"world_state", world_state:{action:"set", entries:[
+    {id:"T086", title:"政客默契维持温战", body:"（可很长）", tags:["政治"]}]}}
+
+  取全文：{world_state:{action:"get", id:"T086"}}   ← 按需取，不占对话上下文
+  列表：  {world_state:{action:"list", tag:"政治"}}  ← 只给标题，正文不吐
+  检查：  {world_state:{action:"check"}}             ← 悬空引用/引用已废弃/同主题多版本
+
+  ★ 与 workspace 的分工：workspace 存**数值**（常数/星球参数/变量），
+    world_state 存**文本设定**（条目/口径/废弃链/术语）。
+  ★ **改设定不覆盖**：旧条目 status:"deprecated"，新条目 supersedes:["旧id"]
+    → 后人能看到完整演化史（九层项目「全部推到西周重来」就靠这个）。
+
+  ⚠ 设定库文件读坏了会**报错而不是当空库** —— 否则你会以为设定丢了，
+    重建一份把可恢复的文件覆盖掉。`
+
+/**
  * ## consistency 的正文
  *
  * 借鉴 dsh-novel-writer 的跨章结构视图。它的开场白说准了病根：
@@ -1806,7 +1833,8 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 所以只给入口 `query="sys"`。
      */
     /** 压缩：去掉「（公式怎么连起来）」那半句重复解释，省 9 字符。 */
-    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条链；formulas:[…] 批量。`,
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数（架空世界的关键）。` +
+      `★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链；formulas:[…] 一次算多条。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
     body: FORMULA_BODY,
   },
@@ -2035,7 +2063,8 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 是同一句。合并后省 28 字符，信息量不减 —— 细节都在 ODE_BODY 里。
      */
     summary:
-      '连续用 ode（RK4，支持 min() 约束）；离散年表用 recurrence。★ at:[5,10,20] 精确取点。',
+      '连续变化用 ode（RK4，支持 min() 约束与多状态）；按期结算用 recurrence 出逐年表。' +
+      '★ 写年表要第 5/10/20 年这类具体年份时，用 ode 的 at:[5,10,20] 精确取点。',
     aliases: ['微分方程', 'ode', '递推', 'recurrence', '逐年', '年表', '增长模型', '传染病', '捕食模型', 'rk4'],
     body: ODE_BODY,
   },
@@ -2196,12 +2225,28 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 17,
     short: '结构体检',
     title: '结构体检（consistency）',
-    summary: '同一量在不同处写了不同值？查这个。★ 不查「多久没提到」（那是小说的检查）。',
+    summary: '同一量在不同处写了不同值？查这个。★ 它不查「多久没提到」——那是小说的检查。',
     aliases: [
       '一致', '体检', '口径', '冲突', 'consistency',
       '前后矛盾', '对不上', '三套口径', '数值不一致',
     ],
     body: CONSISTENCY_BODY,
+  },
+  {
+    key: 'state',
+    tier: 'core',
+    /**
+     * 对话继承的无损替代 —— 朱庇特 203 轮撞 6 次上限，每次都有损压缩。
+     */
+    weight: 21,
+    short: '设定库',
+    title: '设定库（world_state）',
+    summary: '设定条目存文件、按 id 取，不压缩。★ 改设定留废弃链，不覆盖。',
+    aliases: [
+      '设定库', '条目', '存档', '对话继承', 'world_state',
+      '设定条目', '不丢状态', '设定表',
+    ],
+    body: WORLD_STATE_BODY,
   },
   {
     key: 'feasibility',

@@ -264,10 +264,34 @@ export function opWorkspace(args: MathArgs): Outcome {
           }
           return next
         })
+        /**
+         * ★ 写了变量之后必须提示「开关没开」。
+         *
+         * 实测的坑（反馈包 N-5 报过）：
+         *
+         * ```
+         *   set workspaceVariables:{yy:7}  → ✓ 已更新（变量 1 个）
+         *   evaluate expression:"yy*2" useWorkspaceVariables:true
+         *   → 错误[unknown_symbol]: Undefined symbol yy
+         * ```
+         *
+         * 调用方看到「写入成功」再看到「找不到符号」，会以为**功能坏了**。
+         * 实际是 `useWorkspaceVariables` 默认 false（为保「同输入同输出」）。
+         *
+         * 不提示的话，这个开关永远不会被发现 —— 而它正是让变量生效的唯一入口。
+         */
+        const varCount = Object.keys(data.variables).length
+        const switchOff = varCount > 0 && data.useWorkspaceVariables !== true
         return {
-          result: `✓ 已更新工作区 "${name}"（星球参数 ${Object.keys(data.world).length} 项，变量 ${Object.keys(data.variables).length} 个）` +
-            (data.displayPrecision ? `，显示精度 ${data.displayPrecision} 位` : ''),
-          value: toJsonValue({ action: 'set', workspace: data }),
+          result: `✓ 已更新工作区 "${name}"（星球参数 ${Object.keys(data.world).length} 项，变量 ${varCount} 个）` +
+            (data.displayPrecision ? `，显示精度 ${data.displayPrecision} 位` : '') +
+            (switchOff
+              ? '\n\n⚠ 变量已存下，但**变量参与计算的开关是关闭的**（默认关闭，为保「同输入同输出」）。' +
+                '\n  现在直接在表达式里写 ' + Object.keys(data.variables).slice(0, 3).join('/') +
+                ' 会报 Undefined symbol —— 不是没存进去，是开关没开。' +
+                '\n  要让它生效：{operation:"workspace", action2:"set", useWorkspaceVariables:true}'
+              : ''),
+          value: toJsonValue({ action: 'set', workspace: data, useWorkspaceVariables: data.useWorkspaceVariables === true }),
         }
       }
 

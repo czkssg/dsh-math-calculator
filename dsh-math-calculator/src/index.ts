@@ -236,6 +236,7 @@ import { opExtractNumbers } from './ops/extract-numbers-op.js'
 import { opHierarchy } from './ops/hierarchy-op.js'
 import { opQuickFeasible } from './ops/quick-feasible-op.js'
 import { opConsistency } from './ops/consistency-op.js'
+import { opWorldState } from './ops/world-state-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
@@ -377,6 +378,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'hierarchy',
   'quick_feasible',
   'consistency',
+  'world_state',
   'bodies',
   'help',
 ]
@@ -673,7 +675,30 @@ function translateError(raw: unknown, fallbackType = 'internal', source = ''): C
           '；可用 operation="help", helpTopic="evaluate" 看支持的函数清单。',
       )
     }
-    return new CalcError('unknown_symbol', text, '先定义变量，或通过 variables 参数传入，例如 {"m": 500}。')
+    /**
+     * ★ 兜底提示要把「工作区变量开关」这条最常见的坑说出来。
+     *
+     * 实测场景（反馈包 N-5 报过）：
+     *
+     * ```
+     *   set workspaceVariables:{yy:7}      → ✓ 已更新（变量 1 个）
+     *   evaluate expression:"yy*2"          → Undefined symbol yy
+     * ```
+     *
+     * 调用方此时只会想「我刚存过，怎么找不到」—— 而真相是
+     * `useWorkspaceVariables` 默认 false（为保「同输入同输出」）。
+     *
+     * 这条提示不猜「你是不是这个原因」，只把它列为一个可能性，
+     * 并给出确切修法。
+     */
+    return new CalcError(
+      'unknown_symbol',
+      text,
+      '先定义变量，或通过 variables 参数传入，例如 {"m": 500}。' +
+        '若你**刚用 workspace 存过这个变量**：它默认不参与计算（为保「同输入同输出」），' +
+        '要先开开关 {operation:"workspace", action2:"set", useWorkspaceVariables:true}，' +
+        '或在本次调用里用 variables:{"' + (text.match(/Undefined symbol\s+(\S+)/i)?.[1] ?? '变量名') + '":值} 直接传入。',
+    )
   }
   /**
    * 未定义的函数也归 `unknown_symbol`，不归 `internal`。
@@ -3527,6 +3552,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'quickFeasible',
   // 结构体检
   'consistency',
+  // 设定条目库
+  'world_state',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
   // world 的简版输出（N16：省 90% token 的推演成本门槛）
@@ -3618,6 +3645,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   hierarchy: ['hierarchy'],
   quick_feasible: ['quickFeasible'],
   consistency: ['consistency'],
+  world_state: ['world_state'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
@@ -4265,6 +4293,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
       case 'consistency':
         outcome = opConsistency(args)
         break
+      case 'world_state':
+        outcome = opWorldState(args)
+        break
       case 'bodies':
         outcome = opBodies(args)
         break
@@ -4910,7 +4941,15 @@ const PARAMETER_SPEC = {
        * 省下的长度留给 operation 枚举里的新能力（ledger / interval）——
        * 那才是「AI 必须看见」的信息。
        */
-      'bodies 按类别筛（星/行星/卫星/矮行星…），取值见 help。',
+      /**
+       * 恢复完整取值列表。
+       *
+       * 2026-11-12 用户明确「不要为省字符压缩信息」：一次推演是百万到亿级
+       * 用量，这里的几十字符不值一提，而**列全取值能省掉一次 help 查询**。
+       */
+      'bodies 按类别筛：star（恒星）/ planet-terrestrial（岩质行星）/' +
+      ' planet-gas-giant（气态巨行星）/ moon（卫星）/ dwarf-planet（矮行星）等。' +
+      '不传则列出全部；完整清单见 help。',
   },
   bodyConstant: {
     type: 'string',
@@ -4940,12 +4979,15 @@ const PARAMETER_SPEC = {
   precision: {
     type: 'integer',
     description:
-      '计算精度（有效位，默认 64）。调低会算错大数；只想短些用 displayPrecision。',
+      '**计算精度**（BigNumber 有效位，默认 64，范围 1-256）。' +
+      '⚠ 调低会算错大数：(10^20+1)-(10^20) 在 precision=20 时得 0。' +
+      '只想输出短些请用 displayPrecision，不要动这个。',
   },
   displayPrecision: {
     type: 'integer',
     description:
-      '显示精度：小数点后几位（默认 8）。只截小数、整数完整。',
+      '**显示精度：小数点后几位**（0-64，默认 8）。只截小数、整数永远完整。' +
+      '0 = 只留整数。可用 workspace set 固化，此后不再需要每次传。',
   },
   data: {
     type: 'array',

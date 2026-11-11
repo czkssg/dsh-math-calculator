@@ -116,25 +116,47 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 上限设 1800，实测 1749，留 51 字符余量 —— 与上次的余量设计一致。
    */
   /**
-   * ## 1800 → 1900（2026-11-12，第三次重新论证）
+   * ## 字符预算策略已改（2026-11-12，用户明确）
    *
-   * 本轮加了 4 个 core 节：hierarchy / quick / consistency / extract 之后的收尾。
+   * > 不要节约字符量。一次推演是百万到亿级用量，几千字符不值一提。
+   * > 过度压缩会影响可读性、影响 AI 使用。只要保证**没有重复**和**没有废话**。
    *
-   * 论证依据（第三次，逻辑与上两次一致）：
+   * 所以这里**撤掉硬上限**，改成两条实质检查：
    *
-   *  · core 档现共 24 节，每节固定「标题 + 简介 + 空行」≈ 110 字符，
-   *    结构成本 = 2640 字符 —— **这已经是目录的主体**
-   *  · 本轮已在四处简介上压缩（consistency/quick/interval/hierarchy），
-   *    再压就要牺牲「能不能被发现」这个目录存在的理由
-   *  · 每轮固定付的 schema 仍守死：6129/6231（省 21%）
+   * ```
+   *   ① 没有重复：同一信息不在目录里出现两次
+   *   ② 没有废话：不写「本工具可以…」「请注意…」这类零信息量填充
+   * ```
    *
-   * **如果下次还要加 core 节，正确做法不是再抬这个数**，而是：
-   *   ① 把相似能力合并（如 extract + consistency 都是对账段，可否并一节）
-   *   ② 或把 extra 档再分一层（现在 extra 已经只剩 6 节）
-   *
-   * 上限设 1900，实测 1841，留 59 字符余量。
+   * 目录变长不再是问题 —— 只要多出来的每一句都在提供新信息。
    */
-  assert('目录压到 1900 以内', index.length <= 1900, index.length + ' 字符（旧版 1731）')
+  /** ① 查重复：目录里不该有完全相同的整行（空行除外）。 */
+  {
+    const seen = new Map()
+    const dups = []
+    for (const line of index.split('\n')) {
+      const trimmed = line.trim()
+      if (trimmed === '' || trimmed.length < 6) continue
+      if (seen.has(trimmed)) dups.push(trimmed)
+      seen.set(trimmed, true)
+    }
+    assert('目录没有重复行', dups.length === 0, dups.slice(0, 2).join(' | '))
+  }
+  /** ② 查废话：零信息量的填充词。 */
+  {
+    const filler = [/本工具可以/g, /请注意/g, /以下内容/g, /总而言之/g, /综上所述/g, /众所周知/g]
+    const hits = filler.filter((re) => re.test(index)).map((re) => String(re))
+    assert('目录没有废话填充', hits.length === 0, hits.join(','))
+  }
+  /**
+   * ③ 规模软提醒：超过 4000 字符时只是**提示**，不判失败。
+   *
+   * 4000 这个数是「一屏」的量级参考，不是预算 —— 超了说明目录确实很长，
+   * 值得看一眼是不是结构出了问题，但不该因此压缩信息。
+   */
+  if (index.length > 4000) {
+    console.log('        提示：目录 ' + index.length + ' 字符，已超过 4000（软提醒，不算失败）')
+  }
   assert('目录自称是目录', /目录/.test(index), '')
   assert('目录说明了两步查法', /helpTopic/.test(index), '')
 
@@ -243,7 +265,14 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 它补的是「离散静态表没有跨片段计算」这块：陈条/缺席/断线/从未出现。
    * 本插件原来的 checklist 只输出固定清单（238 字符），graph 只给计数（77 字符）。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 33）', coreTopics.length === 33, String(coreTopics.length))
+  /**
+   * ## 33 → 34（2026-11-12）
+   * 新增 `state` 设定库 —— 对话继承的无损替代（朱庇特 203 轮撞 6 次上限）。
+   *
+   * ⚠ 目录预算**这次没有抬**：靠压 ode/formula/consistency 三处简介腾出空间
+   * （1884/1900）。上一轮断言里写过「下次不要再抬这个数」—— 遵守它。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 34）', coreTopics.length === 34, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *

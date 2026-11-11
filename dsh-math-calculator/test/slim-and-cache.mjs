@@ -48,16 +48,48 @@ const paramLen = JSON.stringify(tool.parameters).length
 console.log('-- 1. 工具定义已瘦身（每轮成本）--')
 {
   const total = descLen + paramLen
-  // 基线是 7789；要求至少省下 20%
-  assert('定义总长比基线（7789）省 20% 以上',
-    total <= 7789 * 0.8, total + ' 字符（省 ' + Math.round((1 - total / 7789) * 100) + '%）')
-  assert('description 控制在 450 字符内', descLen <= 450, String(descLen))
   /**
-   * 加了 expressions（批量求值）与 terse（批量省 token）后略增，但仍须比基线省 20%。
-   * 上限从 5800 提到 5900 是因为 terse 的声明约 90 字符 —— 那是一个真实参数，
-   * 不该为了维持某个数字而砍掉它。省 20% 的**总长**断言才是真正要守的那条。
+   * ## 预算策略已改（2026-11-12，用户明确）
+   *
+   * > 不要节约字符量。一次推演是百万到亿级用量，几千字符不值一提。
+   * > 过度压缩会影响可读性、影响 AI 使用。只要保证**没有重复**和**没有废话**。
+   *
+   * 所以撤掉「省 20%」与「5900 以内」这两条硬上限，改成两条实质检查：
+   *
+   * ```
+   *   ① 没有重复：同一个参数不在 shcema 与 help 里各写一遍
+   *   ② 没有废话：不写「本工具可以…」「请注意…」这类零信息量填充
+   * ```
+   *
+   * 同时保留一条**软提醒**（超过 9000 只打印，不判失败）：
+   * 那个量级说明声明确实很厚，值得看一眼有没有结构问题，但不该压缩信息。
    */
-  assert('parameters 控制在 5900 字符内', paramLen <= 5900, String(paramLen))
+  console.log('        当前：description ' + descLen + ' + parameters ' + paramLen +
+    ' = ' + total + ' 字符')
+
+  /** ① 查废话。 */
+  {
+    const filler = [/本工具可以/g, /请注意/g, /以下内容/g, /总而言之/g, /众所周知/g]
+    const hits = filler.filter((re) => re.test(JSON.stringify(tool))).map((re) => String(re))
+    assert('schema 没有废话填充', hits.length === 0, hits.join(','))
+  }
+  /**
+   * ② 查重复：同一个参数的说明不该在 description 与参数描述里各写一遍。
+   *
+   * 判据是「参数名出现在 description 里」—— 如果 description 把某个参数的
+   * 用法讲了一遍，而该参数自己的 description 又讲一遍，那就是付了两次钱。
+   */
+  {
+    const desc = tool.description || ''
+    const dupParams = Object.keys(tool.parameters?.properties || {}).filter(
+      (key) => key.length >= 4 && new RegExp('\b' + key + '\b').test(desc),
+    )
+    assert('description 不重复讲参数用法', dupParams.length === 0, dupParams.join(','))
+  }
+  /** ③ 软提醒（不判失败）。 */
+  if (total > 9000) {
+    console.log('        提示：定义总长 ' + total + ' 已超过 9000（软提醒，不判失败）')
+  }
 }
 
 console.log('-- 2. 参数一个都没少（功能未缩水）--')
