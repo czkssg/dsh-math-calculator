@@ -54,7 +54,15 @@ function assert(name, cond, detail) {
 
 const skillsDir = join(root, 'skills')
 const skillPath = join(skillsDir, 'world-deduction', 'SKILL.md')
-const skill = existsSync(skillPath) ? readFileSync(skillPath, 'utf8') : ''
+/**
+ * ★ 读进来先统一换行。
+ *
+ * 仓库在 Windows 上 `core.autocrlf` 会把 LF 转成 CRLF，于是 `split('---\n')`
+ * 切不开 frontmatter —— 表现为「name/description 全都读不到」，
+ * 而文件本身完全正常。这是测试环境差异，不是文件问题。
+ */
+const skillRaw = existsSync(skillPath) ? readFileSync(skillPath, 'utf8') : ''
+const skill = skillRaw.replace(/\r\n/g, '\n')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const operations = mathExecuteTool.parameters.properties.operation.enum
 

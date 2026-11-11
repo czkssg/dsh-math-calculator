@@ -81,6 +81,7 @@ export type MathOperation =
   | 'quick_feasible'
   | 'consistency'
   | 'world_state'
+  | 'dependency'
   | 'bodies'
   | 'help'
 

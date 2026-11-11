@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 39 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 40 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -39,6 +39,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 单条公式 | `formula` | `formula` + `overrides` |
 | 多条公式一次算 | `formulas` | `formulas:[{formula,overrides,label}]` |
 | 查公式参数表 | `formula-table` | 不传参就看全表 |
+| 依赖传导 / 编制结构 | `dependency` | 给 `node` 查上下游；`levels`+`tree` 可简写编制 |
 | 微分方程 / 离散递推 | `ode` / `recurrence` | `initial` + `periods`；年表用 `at:[5,10,20]` |
 | 改物理常数看后果 | `constants` | 传新值；`preview:true` 只算不存 |
 | 工作区（存变量/切世界） | `workspace` | `action2:"set"`、`workspaceVariables` |
@@ -158,7 +159,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（47 节带简介）
+{operation:"help"}                        能力目录（48 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数 25 个字段带默认值
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）

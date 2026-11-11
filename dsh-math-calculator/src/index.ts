@@ -237,6 +237,7 @@ import { opHierarchy } from './ops/hierarchy-op.js'
 import { opQuickFeasible } from './ops/quick-feasible-op.js'
 import { opConsistency } from './ops/consistency-op.js'
 import { opWorldState } from './ops/world-state-op.js'
+import { opDependency } from './ops/dependency-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
@@ -379,6 +380,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'quick_feasible',
   'consistency',
   'world_state',
+  'dependency',
   'bodies',
   'help',
 ]
@@ -3554,6 +3556,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'consistency',
   // 设定条目库
   'world_state',
+  // 依赖传导
+  'dependency',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
   // world 的简版输出（N16：省 90% token 的推演成本门槛）
@@ -3646,6 +3650,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   quick_feasible: ['quickFeasible'],
   consistency: ['consistency'],
   world_state: ['world_state'],
+  dependency: ['dependency'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
@@ -4295,6 +4300,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'world_state':
         outcome = opWorldState(args)
+        break
+      case 'dependency':
+        outcome = opDependency(args)
         break
       case 'bodies':
         outcome = opBodies(args)

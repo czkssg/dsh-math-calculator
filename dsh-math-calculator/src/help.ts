@@ -511,6 +511,34 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## dependency 的正文
+ *
+ * 补的是「抽象传导」这一层 —— 与**空间拓扑**（entity_topology，规划中）是两件事：
+ *
+ * ```
+ *   dependency        问「改 X 传导到谁」      → 无空间概念
+ *   entity_topology   问「A 到 B 多远」        → 有空间（见 docs/空间拓扑层规划.md）
+ * ```
+ *
+ * 也不替代 `hierarchy`（只算人数）与 `derivation graph`（只给坐标）。
+ */
+const DEPENDENCY_BODY = (): string => `【依赖传导】dependency 有向图的传导查询
+
+  编制简写：{dependency:{levels:["师","团","营","连","班"], tree:[3,3,3,3]}}
+  依赖网：  {dependency:{nodes:["G","g","vesc"],
+             edges:[{from:"G",to:"g"},{from:"g",to:"vesc"}], node:"g"}}
+
+  查四件事：
+    · 传导  给 node 时报告下游（改它影响谁）与上游（它受谁影响），带跳数
+    · 环    有环说明定义循环（物理不可能/编制死锁），必须先修
+    · 层深  从顶到底要传几级
+    · 体检  孤立节点、跨度 ≥8（超 7±2 管控失效）
+
+  ★ 与 hierarchy 分工：hierarchy 算**人数**，dependency 算**结构**（连着谁、多深）。
+  ★ 与 entity_topology 分工：那是**空间**拓扑（距离/行军/遮蔽），这是**抽象**传导。
+  ★ 与 derivation graph 分工：graph 给坐标（画图用），dependency 给查询（不含坐标）。`
+
+/**
  * ## world_state 的正文
  *
  * 反馈包 `16` 号实测：朱庇特项目 **203 轮对话撞了 6 次上限**，
@@ -2452,6 +2480,23 @@ export const HELP_TOPICS: HelpTopic[] = [
       '设定条目', '不丢状态', '设定表',
     ],
     body: WORLD_STATE_BODY,
+  },
+  {
+    key: 'dependency',
+    tier: 'core',
+    /**
+     * 抽象传导层：改 X 影响谁、有没有环、命令传几级。
+     * 与空间拓扑（entity_topology，规划中）是独立的两件事。
+     */
+    weight: 16,
+    short: '依赖传导',
+    title: '依赖传导（dependency）',
+    summary: '有向图传导查询：改 X 影响谁、有没有环、传几级、哪个节点辖太宽。★ 编制与依赖网通用。',
+    aliases: [
+      '传导', '依赖', '影响', '环', '层深', '跨度', '上下游',
+      'dependency', 'graph', 'topology',
+    ],
+    body: DEPENDENCY_BODY,
   },
   {
     key: 'feasibility',
