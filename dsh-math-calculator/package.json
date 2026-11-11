@@ -44,6 +44,7 @@
   "files": [
     "lib",
     "src",
+    "skills",
     "cordis.patch.yml",
     "dsh.plugin.json",
     "README.md",
