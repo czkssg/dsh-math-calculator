@@ -229,6 +229,7 @@ import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, 
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
+import { opLedger } from './ops/ledger-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
@@ -363,6 +364,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'custom',
   'units',
   'balance',
+  'ledger',
   'bodies',
   'help',
 ]
@@ -3472,6 +3474,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'flipClaim', 'flipEpsilon', 'flipBase',
   // 杂项
   'threshold', 'worstLimit', 'variableName', 'constantName',
+  // 台账闭合
+  'ledger',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
   // world 的简版输出（N16：省 90% token 的推演成本门槛）
@@ -3556,6 +3560,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   system: ['matrix', 'vector', 'expression'],
   constants: ['constants', 'preview'],
   balance: ['balance'],
+  ledger: ['ledger'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
@@ -4178,6 +4183,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'balance':
         outcome = opBalance(args)
+        break
+      case 'ledger':
+        outcome = opLedger(args)
         break
       case 'bodies':
         outcome = opBodies(args)

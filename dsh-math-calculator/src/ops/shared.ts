@@ -73,6 +73,7 @@ export type MathOperation =
   | 'custom'
   | 'units'
   | 'balance'
+  | 'ledger'
   | 'bodies'
   | 'help'
 

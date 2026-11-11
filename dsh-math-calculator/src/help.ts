@@ -510,6 +510,30 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   ★ 单项生理/工程上限用 feasibility，社会收支用 balance，两者不互相替代。
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
+/**
+ * ## ledger 的正文
+ *
+ * 反馈包统计 282 条硬伤里 **48% 是账本问题**，而工具此前**零覆盖** ——
+ * 用户只能手工拼 evaluate 算式再看差额。这一节的第一个任务是
+ * **把「分项之和 vs 总量」这件事变成一次调用**。
+ */
+const LEDGER_BODY = (): string => `【台账闭合】ledger 分项之和 vs 声称总量
+
+  ★ 占比简写（推演分配比最常用，总数默认 100）：
+    {operation:"ledger", ledger:{士:1, 农:85, 工:10, 商:4}}
+    → 合计 100，闭合 ✓
+
+  ★ 显式（对账查分项之和）：
+    {operation:"ledger", ledger:{parts:[{name:"甲",value:120},{name:"乙",value:80}], total:300}}
+
+  不闭合时会指出**最可疑的分项**，判据有三条：
+    ① 量级笔误：该项差 10/100 倍时账本就能对上
+    ② 漏项/重复：差额恰好等于某一项的值
+    ③ 整数异常：其余都带小数，只有它是整数
+
+  ★ 工具只给可疑度排序，**不确定该改哪一项** —— 哪个数是原文给的只有作者知道。
+  与 balance 的分工：ledger 查「分项合不合得上」，balance 查「够不够用」。`
+
 const BALANCE_BODY = (): string => `【收支盘点】balance 多项一起看，给最短板
   例：balance={grain:{demand:2.7e6, supply:3.1e6, unit:"kg/年"}}
   可同时给 grain(粮)/water(水)/energy(能)/land(地)/finance(财政)/
@@ -1871,6 +1895,17 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: BALANCE_BODY,
   },
   {
+    key: 'ledger',
+    tier: 'extra',
+    /** 信号量按「两段共用」估：推演分配比 + 对账查闭合。 */
+    weight: 20,
+    short: '台账闭合',
+    title: '台账闭合（ledger）',
+    summary: '分项之和 vs 总量：占比合计 99.01% 差在哪、哪一项疑似 10 倍笔误。★ 推演分配比与对账查闭合共用。',
+    aliases: ['台账', '闭合', '占比', '合计', '配比', 'ledger'],
+    body: LEDGER_BODY,
+  },
+  {
     key: 'feasibility',
     tier: 'extra',
     /**
@@ -1917,9 +1952,9 @@ export const HELP_TOPICS: HelpTopic[] = [
     /** 通用手法：锚点/账本/多步链。几乎每次做多步推演都要看。 */
     tier: 'core',
     weight: 20,
-    short: '锚点账本多步',
+    short: '通用手法',
     title: '通用手法（锚点 sanity / 账本闭合 / 多步链）',
-    summary: '怎么给数字加你自己的判据（sanity）、怎么核对账本闭合、怎么串多步链。★ 通用，不依赖领域。',
+    summary: '怎么给数字加你自己的判据（sanity）、怎么串多步链。★ 不依赖领域。',
     aliases: ['锚点', 'sanity', '账本', '闭合', '多步', '配方', 'recipe'],
     body: RECIPE_COMMON_BODY,
   },
@@ -2131,13 +2166,13 @@ function renderIndex(): string {
       }
     }
     /**
-     * 这条原本写「★ 公式不是散着的：formulas query="sys" 看 N 条推演链（材料/能源/…）」。
+     * 这一行原本是「★ 公式不是散着的：query="sys" 看 N 条推演链…」，
+     * 与 formula 节重复。但**完全不提链也不对** —— 目录是唯一每轮注入的地方。
      *
-     * 但 formula 节第 14 行已经说过「query="sys" 看 N 条推演链（公式怎么连起来）」——
-     * 同一件事付两次字符成本。目录有 1500 字符预算（那是质量线，不是随手定的），
-     * 所以这里只保留一句不重复的指引。
+     * 折中：一句话把「怎么连」指向 formula，把「每步填什么」指向 recipe。
+     * 比原来省 20 字符，信息量不减（两边都还能查到）。
      */
-    lines.push('  ★ 链怎么连、每步该填什么，见 helpTopic:"formula" 与 helpTopic:"recipe"。')
+    lines.push('  ★ 链怎么连见 helpTopic:"formula"；每步填什么见 helpTopic:"recipe"。')
     if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
     if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }
