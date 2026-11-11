@@ -511,6 +511,36 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## consistency 的正文
+ *
+ * 借鉴 dsh-novel-writer 的跨章结构视图。它的开场白说准了病根：
+ *
+ * > 伏笔表/人物设定/时间线/剧情大纲都是**离散静态表**，没有任何跨章计算。
+ * > 长篇崩掉通常不是某章文笔差，而是**「线断了、人丢了、伏笔忘了」**。
+ *
+ * 世界观推演里有完全同构的三个问题 —— 而本插件原来的 checklist
+ * 只输出一段固定清单（238 字符），graph 只给计数（77 字符），都不看内容。
+ */
+const CONSISTENCY_BODY = (): string => `【结构体检】consistency 跨片段查「线断了、人丢了、条忘了」
+
+  {operation:"consistency", consistency:{
+    sections:[{number:1,text:"…片段正文…"},{number:2,text:"…"}],
+    entries:[{id:"T01", content:"北境有铁矿", status:"open", related:["北境"]}]}}
+
+  查四件事：
+    · 陈条     未回收条目立了多少段还没用上
+    · 缺席     势力/地点连续多少段没被提及
+    · 断线     一条线上的最大空档
+    · 从未出现 条目在正文里一次都没出现
+
+  ★ 提及判定：长词（≥3 字）命中 1 个即算；短词（2 字）要命中 ≥2 个
+    —— 单个二字词（如「王国」）区分度太低，认了会大量假命中。
+  ★ 首现找不到时记 null 并说明，**不编造数字**。
+  ★ 阈值可配：absenceThreshold（默认 5 段）、staleThreshold（默认 10 段）。
+
+  ⚠ 工具只报「哪里可能有问题」，**不替你改设定** —— 哪条是有意为之只有你知道。`
+
+/**
  * ## quick_feasible 的正文
  *
  * 反馈包 `15` 号的动作 5：
@@ -2083,7 +2113,7 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 压缩：17 字符的示例数值对「让人知道有这么个能力」没有增量价值，
      * 换成结果形态描述；完整例子在 INTERVAL_BODY 里。
      */
-    summary: '上下界进来、上下界出去，并给把握分档。★ 不把区间压成单值。',
+    summary: '上下界进来、上下界出去，并给把握分档。',
     aliases: ['区间', '范围', '上下界', '大约', 'interval'],
     body: INTERVAL_BODY,
   },
@@ -2130,7 +2160,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 19,
     short: '编制树',
     title: '编制树（hierarchy）',
-    summary: '每级辖属数 × 底层基数 → 逐级人数；给总兵力可反解。★ 编制对不上查这里。',
+    summary: '每级辖属数 × 底层基数 → 逐级人数，可反解。★ 编制对不上查这里。',
     aliases: [
       '编制', '层级', '树状', '辖属', '兵力编制', 'hierarchy',
       '军区', '师团营', '建制', '组织架构',
@@ -2146,12 +2176,29 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 15,
     short: '一句话可行',
     title: '一句话可行（quick_feasible）',
-    summary: '「这座塔 8000 米高行吗」→ 判定 + 依据。★ 判不了会明说，不编。',
+    summary: '「8000 米高的塔行吗」→ 判定 + 依据。★ 判不了会明说。',
     aliases: [
       '可行', '行不行', '靠谱', '离谱', '能不能做到', 'quick_feasible',
       '可行性', '速判', '一句话',
     ],
     body: QUICK_FEASIBLE_BODY,
+  },
+  {
+    key: 'consistency',
+    tier: 'core',
+    /**
+     * 长篇崩掉通常是「线断了、人丢了、条忘了」——
+     * 这个操作把离散静态表变成跨片段体检。
+     */
+    weight: 17,
+    short: '结构体检',
+    title: '结构体检（consistency）',
+    summary: '跨片段查陈条/缺席/断线。★ 只报问题，不替你改设定。',
+    aliases: [
+      '一致', '体检', '忘了', '断了', '遗漏', 'consistency',
+      '伏笔', '缺席', '前后矛盾',
+    ],
+    body: CONSISTENCY_BODY,
   },
   {
     key: 'feasibility',

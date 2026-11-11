@@ -79,6 +79,7 @@ export type MathOperation =
   | 'extract_numbers'
   | 'hierarchy'
   | 'quick_feasible'
+  | 'consistency'
   | 'bodies'
   | 'help'
 
