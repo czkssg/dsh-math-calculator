@@ -239,6 +239,36 @@ console.log('-- 8. A1 constants preview 只算不存 --')
   assert('constants:{} 可恢复', (await gravity()) === before, '')
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 9. A21/A43 未知子命令与缺参必须报错 --')
+// ═══════════════════════════════════════════════════════════
+{
+  /** 未知子命令：原来 ok=true 只回一行文本，调用方会把「没这个功能」当成功。 */
+  const bogus = await run({ operation: 'derivation', derivation: '__nonsense__' })
+  assert('未知子命令 ok=false', bogus.ok === false, String(bogus.ok))
+  assert('未知子命令报 unknown_subcommand', bogus.error?.type === 'unknown_subcommand', String(bogus.error?.type))
+  assert('未知子命令的提示列了可用项', /backSolve/.test(bogus.error?.hint ?? ''), '')
+
+  /** 缺参数：原来 ok=true 且 error 为 undefined。 */
+  const noArgs = await run({ operation: 'derivation', derivation: 'backSolve' })
+  assert('缺参 ok=false', noArgs.ok === false, String(noArgs.ok))
+  assert('缺参报 missing_params', noArgs.error?.type === 'missing_params', String(noArgs.error?.type))
+  assert('缺参提示给出真实锚点', /creatureHeight/.test(noArgs.error?.hint ?? ''), '')
+  assert('缺参提示给出可复制 JSON', /"anchor"/.test(noArgs.error?.hint ?? ''), '')
+
+  /** 给了参数必须正常工作 —— 别把功能拦死。 */
+  const ok = await run({
+    operation: 'derivation', derivation: 'backSolve', anchor: 'creatureHeight', anchorValue: 50,
+  })
+  assert('backSolve 给参数后正常', ok.ok === true, txt(ok).slice(0, 60))
+
+  /** 无参就能跑的元信息子命令不许被误伤。 */
+  for (const sub of ['stack', 'cards', 'checklist', 'tables', 'anchors']) {
+    const r = await run({ operation: 'derivation', derivation: sub })
+    assert(`元信息子命令 ${sub} 仍可用`, r.ok === true, txt(r).slice(0, 50))
+  }
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

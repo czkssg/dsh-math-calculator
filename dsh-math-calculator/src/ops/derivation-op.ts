@@ -119,6 +119,24 @@ export function opDerivation(args: MathArgs): Outcome {
   const sub = typeof args.derivation === 'string' ? args.derivation : 'stack'
   const out: string[] = []
   const value: Record<string, unknown> = { subcommand: sub }
+  /**
+   * 缺参数的标记（A43 修复）。
+   *
+   * ## 原来错在哪
+   *
+   * 十几个子命令在缺参时只往 `out` 里塞一段「需要两个参数…」的说明，
+   * 而 `ok` 仍是 `true`、`error` 是 `undefined`。
+   * 调用方用 `if (r.ok)` 判断，会把「这次什么都没算」当成一次成功调用。
+   *
+   * ## 为什么不在每个分支现场 throw
+   *
+   * 那样每个分支各写一份错误文案，措辞必然漂移；而且这些分支里的说明
+   * （可用锚点清单、可查表名、可复制 JSON）正是调用方最需要的信息，
+   * 现场抛错会把它丢掉。
+   *
+   * 所以：分支只负责**记下缺失项与提示**，末尾统一转成结构化错误。
+   */
+  let missingParams: { subcommand: string; hint: string } | undefined
 
   if (sub === 'stack') {
     out.push('═══ 推演栈（8 层）═══', '')
@@ -325,6 +343,14 @@ export function opDerivation(args: MathArgs): Outcome {
         out.push('完整清单与各自的量纲/当前上限：derivation="anchors"')
       } else {
         out.push('看全部锚点：derivation="anchors"')
+      }
+      missingParams = {
+        subcommand: sub,
+        hint: anchorHint.length > 0
+          ? '需要的参数：anchor（锚点 id，可用：' + anchorHint.slice(0, 8).join(' / ') +
+            (anchorHint.length > 8 ? ' …' : '') + '）与 anchorValue（正数）。' +
+            '完整清单见 derivation="anchors"。'
+          : '需要的参数：anchor（锚点 id）与 anchorValue（正数）。清单见 derivation="anchors"。',
       }
     } else {
       const solution = backSolve(anchor, anchorValue, (args.world ?? {}) as Record<string, unknown>)
@@ -798,9 +824,36 @@ export function opDerivation(args: MathArgs): Outcome {
     out.push('  7. 版本记录   版本号 / 变更 / 受影响接口 / 结论变化 / 待定项 / 下轮任务')
     value.tables = 7
   } else {
-    out.push('未知子命令：' + sub)
-    out.push('可用（共 ' + DERIVATION_SUBCOMMANDS.length + ' 个）：' +
-      DERIVATION_SUBCOMMANDS.join(' / '))
+    /**
+     * 未知子命令必须报错，不能 `ok=true` 地回一个「可用列表」（A21 修复）。
+     *
+     * 原来这里只往 result 里塞一行文本，`ok` 仍是 true ——
+     * 调用方用 `if (r.ok)` 判断，会把「子命令不存在」当成一次成功调用。
+     * 这在自动化管线里尤其危险：错误被当成结果继续往下传。
+     *
+     * 报错时**仍附上可用列表**，因为那正是调用方最需要的信息。
+     */
+    throw new CalcError(
+      'unknown_subcommand',
+      '不认识 derivation 子命令 "' + sub + '"',
+      '可用（共 ' + DERIVATION_SUBCOMMANDS.length + ' 个）：' +
+        DERIVATION_SUBCOMMANDS.join(' / ') +
+        '。完整说明见 {operation:"help", helpTopic:"derivation"}。',
+    )
+  }
+
+  /**
+   * 缺参数的子命令：统一转成结构化错误（A43）。
+   *
+   * `result` 保留完整说明（锚点清单、可复制 JSON、可查表名都在里面），
+   * 而 `ok=false` + `error.type='missing_params'` 让程序化调用方能正确判断。
+   */
+  if (missingParams) {
+    throw new CalcError(
+      'missing_params',
+      'derivation 子命令 "' + missingParams.subcommand + '" 缺少必需参数',
+      missingParams.hint + '\n\n完整说明：\n' + out.join('\n'),
+    )
   }
 
   return { result: out.join('\n'), value: toJsonValue(value) }

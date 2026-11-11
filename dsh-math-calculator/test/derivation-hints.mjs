@@ -45,8 +45,22 @@ function assert(name, cond, detail) {
   if (cond) { pass++; console.log('  ok   ' + name + (detail ? ': ' + detail : '')) }
   else { fails.push(name); console.log('  FAIL ' + name + '\n         ' + (detail ?? '')) }
 }
-const hint = async (sub) =>
-  String((await run({ operation: 'derivation', derivation: sub })).result ?? '')
+/**
+ * 取某个子命令在**缺参数时**给出的全部提示文本。
+ *
+ * ## 为什么要把 result 与 error.hint 拼起来
+ *
+ * 缺参数此前是 `ok=true` + 一段说明文本（放在 `result` 里）。
+ * A43 修复后改成 `ok=false` + `error.type='missing_params'`，
+ * 说明文本移到了 `error.hint`。
+ *
+ * 断言关心的「提示够不够详细」这件事没变，变的是它挂在哪个字段。
+ * 所以这里两处都取 —— 否则这些断言会因为「字段搬了家」而假失败。
+ */
+const hint = async (sub) => {
+  const r = await run({ operation: 'derivation', derivation: sub })
+  return [String(r.result ?? ''), String(r.error?.hint ?? '')].filter(Boolean).join('\n')
+}
 
 /** 从提示文本里抽出可复制的 JSON 示例。 */
 function extractExamples(text) {

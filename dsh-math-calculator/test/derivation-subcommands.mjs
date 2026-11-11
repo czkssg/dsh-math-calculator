@@ -23,6 +23,27 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const derivationMod = await import(pathToFileURL(join(root, 'lib/ops/derivation-op.js')).href)
 const { DERIVATION_SUBCOMMANDS, opDerivation } = derivationMod
 
+/**
+ * 取「未知子命令」时给出的提示文本。
+ *
+ * A21 之后未知子命令**抛结构化错误**，提示挂在 `error.hint` 而不在 `result`。
+ * 断言关心的「提示必须列出全部子命令」没变，只是取值位置变了。
+ */
+function unknownHint(sub) {
+  try {
+    opDerivation({ derivation: sub })
+    return ''
+  } catch (error) {
+    /**
+     * 两段都取：`message` 说「不认识哪个子命令」，`hint` 给可用清单。
+     * 断言分别关心这两件事。
+     */
+    return [String((error && error.message) || ''), String((error && error.hint) || '')]
+      .filter(Boolean)
+      .join('\n')
+  }
+}
+
 let pass = 0
 const fails = []
 function assert(name, cond, detail) {
@@ -58,9 +79,22 @@ console.log('-- 1. 清单与实现分支一致（双向）--')
 console.log('-- 2. 每个子命令都能真正执行（不崩、有输出）--')
 {
   /**
-   * 有些子命令需要参数才能给出有意义结果，但**任何**子命令都不该抛异常。
-   * 这里只验「能跑通且有内容」，具体正确性由各自的测试套件负责。
+   * 有些子命令需要参数才能给出有意义结果，但**任何**子命令都不该抛未知异常。
+   *
+   * ## A43 之后判定变严了，也变准了
+   *
+   * 缺参数此前是 `ok=true` + 一段说明文本 —— 看起来「能执行」，
+   * 实际什么都没算。现在改成 `missing_params` 结构化错误。
+   *
+   * 这与本节的意图并不冲突：本节要防的是**崩溃**，不是缺参数。
+   * 所以把两种结果分别认掉：
+   *
+   * ```
+   *   missing_params / unknown_argument  → 合法（缺参数，已给出可读提示）
+   *   其它异常                           → 失败（真崩了）
+   * ```
    */
+  const acceptable = new Set(['missing_params', 'unknown_argument', 'invalid_argument'])
   for (const sub of DERIVATION_SUBCOMMANDS) {
     let result
     let error
@@ -69,11 +103,13 @@ console.log('-- 2. 每个子命令都能真正执行（不崩、有输出）--')
     } catch (e) {
       error = e
     }
+    const isParamError = error !== undefined && acceptable.has(String(error.type))
     assert(
-      'derivation="' + sub + '" 能执行',
-      error === undefined && Boolean(result) && typeof result.result === 'string' &&
-        result.result.length > 0,
-      error ? '抛异常: ' + error.message : String(result && result.result.length) + ' 字符',
+      'derivation="' + sub + '" 能执行（或明确报缺参）',
+      isParamError ||
+        (error === undefined && Boolean(result) && typeof result.result === 'string' &&
+          result.result.length > 0),
+      error ? '抛异常[' + String(error.type) + ']: ' + error.message : String(result && result.result.length) + ' 字符',
     )
     // 不认识的子命令才会走到「未知子命令」分支；清单里的都不该出现这句
     if (result) {
@@ -88,9 +124,9 @@ console.log('-- 2. 每个子命令都能真正执行（不崩、有输出）--')
 
 console.log('-- 3. 报错提示必须列出全部子命令 --')
 {
-  const r = opDerivation({ derivation: '__nonsense__' })
-  assert('未知子命令会报错提示', r.result.includes('未知子命令'), '')
-  const hintLine = r.result.split('\n').find((line) => line.includes('可用')) || ''
+  const hint = unknownHint('__nonsense__')
+  assert('未知子命令会报错提示', /不认识 derivation 子命令/.test(hint), '')
+  const hintLine = hint.split('\n').find((line) => line.includes('可用')) || ''
   assert('提示里带数量', /共 \d+ 个/.test(hintLine), hintLine.slice(0, 60))
 
   const missingInHint = DERIVATION_SUBCOMMANDS.filter((sub) => !hintLine.includes(sub))
@@ -110,8 +146,8 @@ console.log('-- 4. 9 个曾漏掉的子命令现在可发现 --')
   for (const sub of wereMissing) {
     assert('清单包含 ' + sub, DERIVATION_SUBCOMMANDS.includes(sub), '')
   }
-  const r = opDerivation({ derivation: '__nonsense__' })
-  const hintLine = r.result.split('\n').find((line) => line.includes('可用')) || ''
+  const hint = unknownHint('__nonsense__')
+  const hintLine = hint.split('\n').find((line) => line.includes('可用')) || ''
   for (const sub of wereMissing) {
     assert('报错提示里能查到 ' + sub, hintLine.includes(sub), '')
   }
