@@ -225,7 +225,7 @@ import { convert as convertUnitRaw, convert, findUnit } from './units.js'
 const formulaConverter = makeConverter(convertUnitRaw)
 import { WORLD_KEYS } from './world-params.js'
 import { opHelp, HELP_TOPICS } from './help.js'
-import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAngleUnit, checkLabelMagnitude, explainUnitResult, findBatchAnomalies } from './guards.js'
+import { annotateMagnitude, annotateMetricPrefix, checkAnchors, checkAnchorsDetailed, checkAngleUnit, checkLabelMagnitude, explainUnitResult, findBatchAnomalies } from './guards.js'
 import { opCustom } from './ops/custom-op.js'
 import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
@@ -1497,8 +1497,27 @@ function opEvaluateBatch(
        */
       if (typeof entry === 'object' && entry !== null) {
         const sanity = (entry as { sanity?: unknown }).sanity
-        const anchorWarn = checkAnchors(sanity, text)
-        if (anchorWarn) {
+        /**
+         * 用详细结果而不是纯文本 —— 因为要区分「没判」与「通过」。
+         *
+         * ```
+         *   violated      判了、不通过
+         *   incomparable  量纲不可比，**根本没判**（不能记成 passed）
+         *   passed        判了、通过
+         *   skipped       没给判据或结果非数
+         * ```
+         */
+        const anchorCheck = checkAnchorsDetailed(sanity, text)
+        const anchorWarn = anchorCheck.message
+        if (anchorCheck.status === 'incomparable') {
+          const anchorEcho = label || rawExpression
+          magnitudeWarnings.push(anchorEcho + ' → ' + anchorWarn)
+          const last = values[values.length - 1]
+          if (last) {
+            ;(last as { sanityStatus?: string; sanityNote?: string }).sanityStatus = 'incomparable'
+            ;(last as { sanityNote?: string }).sanityNote = anchorWarn
+          }
+        } else if (anchorCheck.status === 'violated') {
           const anchorEcho = label || rawExpression
           magnitudeWarnings.push(anchorEcho + ' → ' + anchorWarn)
           /**
@@ -1525,9 +1544,15 @@ function opEvaluateBatch(
             ;(last as { sanityNote?: string }).sanityNote = anchorWarn
           }
         } else if (sanity !== undefined) {
-          /** 给了判据且通过 —— 明确标注，让「没检查」与「检查通过」可区分。 */
-          const last = values[values.length - 1]
-          if (last) (last as { sanityStatus?: string }).sanityStatus = 'passed'
+          /**
+           * 给了判据且通过 —— 明确标注，让「没检查」与「检查通过」可区分。
+           *
+           * `skipped`（结果非数）不写这个字段：那是「没检查」，不是「通过」。
+           */
+          if (anchorCheck.status === 'passed') {
+            const last = values[values.length - 1]
+            if (last) (last as { sanityStatus?: string }).sanityStatus = 'passed'
+          }
         }
       }
       successCount++

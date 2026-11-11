@@ -339,6 +339,69 @@ console.log('-- 11. N16 world brief 省 token 但不删信息 --')
   assert('brief 生命行不是裸机器值', !/生命\s+open/.test(txt(brief)), '')
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 12. A17/A41 sanity 量纲对齐（双向失效修复）--')
+// ═══════════════════════════════════════════════════════════
+{
+  /** 取某一条的 sanityStatus。 */
+  const statusOf = async (expr, sanity) => {
+    const r = await run({ operation: 'evaluate', expressions: [{ label: 'x', expr, sanity }] })
+    return r.value?.items?.[0]?.sanityStatus ?? 'none'
+  }
+
+  /**
+   * ★ A17：带单位结果 + 裸数锚点 → **不可比，不能报 violated**。
+   *
+   * 修复前：`5 m` 配 `max:1` 报「超出上限 1 达 5 倍」——
+   * 把「米」当成无量纲数字比，是伪警报。
+   */
+  assert('5 m 配 max:1 判 incomparable', (await statusOf('5 m', { max: 1 })) === 'incomparable',
+    await statusOf('5 m', { max: 1 }))
+  assert('incomparable 不等于 passed（没判不能说成通过）',
+    (await statusOf('5 m', { max: 1 })) !== 'passed', '')
+
+  /**
+   * ★ A41：带单位结果 + 带单位锚点 → **要真比，不能跳过**。
+   *
+   * 修复前：`max:'1 m'` 是字符串，`typeof === 'number'` 不成立，
+   * 整段检查被跳过 → 报 passed。那是漏报，比伪警报更危险。
+   */
+  assert('500 cm 配 max:"1 m" 判 violated', (await statusOf('500 cm', { max: '1 m' })) === 'violated',
+    await statusOf('500 cm', { max: '1 m' }))
+  assert('2 m 配 max:"300 cm" 判 passed', (await statusOf('2 m', { max: '300 cm' })) === 'passed',
+    await statusOf('2 m', { max: '300 cm' }))
+  assert('5 m 配 max:"300 cm" 判 violated', (await statusOf('5 m', { max: '300 cm' })) === 'violated',
+    await statusOf('5 m', { max: '300 cm' }))
+
+  /** 反向：裸数配裸数照旧工作，不能被这次改动弄坏。 */
+  assert('裸数配裸数仍能判 violated', (await statusOf('5', { max: 1 })) === 'violated',
+    await statusOf('5', { max: 1 }))
+  assert('裸数配裸数仍能判 passed', (await statusOf('1', { max: 5 })) === 'passed',
+    await statusOf('1', { max: 5 }))
+
+  /** 结果裸数 + 锚点带单位 → 也不知道该怎么理解这个数，同样不可比。 */
+  assert('裸数结果配带单位锚点判 incomparable',
+    (await statusOf('5', { max: '1 m' })) === 'incomparable', await statusOf('5', { max: '1 m' }))
+
+  /**
+   * ★ 小数不能被当成单位。
+   *
+   * `extractResultUnit` 第一版有个漏洞：`2133.41184` 被切成
+   * 数值 `2133` + 单位 `.41184`，于是所有带小数的裸数都判成「带单位」，
+   * 锚点比对全部退化成 incomparable —— 等于把检查关了。
+   */
+  assert('带小数的裸数仍能判量级偏离',
+    (await statusOf('2645.6*28*3600*8000/1e9', { expect: 4 })) === 'violated',
+    await statusOf('2645.6*28*3600*8000/1e9', { expect: 4 }))
+  assert('带小数的裸数配上限仍能判 passed',
+    (await statusOf('0.25', { max: 1e12 })) === 'passed', await statusOf('0.25', { max: 1e12 }))
+
+  /** 不可比时必须给出说明，让调用方知道为什么没判。 */
+  const inco = await run({ operation: 'evaluate', expressions: [{ label: 'x', expr: '5 m', sanity: { max: 1 } }] })
+  assert('不可比时给了说明', /未作量纲比较/.test(txt(inco)), '')
+  assert('说明里给了补救方法', /max:"1 m"|加上同样的单位/.test(txt(inco)), '')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

@@ -25,6 +25,8 @@
  * @module dsh-math-calculator/guards
  */
 
+import { convert } from './units.js'
+
 /**
  * 「量级词 → 该词代表的 10 的幂」映射。
  *
@@ -531,23 +533,119 @@ export interface SanitySpec {
  * @returns 提示文本；无需提示时返回空串
  */
 export function checkAnchors(spec: unknown, result: string): string {
-  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return ''
+  return checkAnchorsDetailed(spec, result).message
+}
+
+/**
+ * 锚点检查的完整结果：既给提示文本，也给「判了没有」。
+ *
+ * ## 为什么要把「不可比」单独分出来
+ *
+ * `sanityStatus` 原来只有 `passed` / `violated` 两个值。但「量纲不可比」
+ * 既不是通过也不是不通过 —— 是**没判**。
+ *
+ * 把它记成 `passed` 会让调用方以为「检查过了、没问题」，
+ * 而实际是「根本没检查」。这与本项目最核心的性质（不猜、只比对）冲突：
+ * 没做的事必须说成没做。
+ *
+ * @param spec - sanity 规格
+ * @param result - 结果文本
+ * @returns `status` 与提示文本
+ */
+export function checkAnchorsDetailed(
+  spec: unknown,
+  result: string,
+): { status: 'passed' | 'violated' | 'incomparable' | 'skipped'; message: string } {
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) {
+    return { status: 'skipped', message: '' }
+  }
   const s = spec as SanitySpec
   const numeric = parseResultNumber(result)
-  if (!Number.isFinite(numeric) || numeric === 0) return ''
+  if (!Number.isFinite(numeric) || numeric === 0) {
+    return { status: 'skipped', message: '' }
+  }
+
+  /**
+   * ## 量纲对齐（A17 / A41 修复）
+   *
+   * ## 原来两个方向都错
+   *
+   * ```
+   *   ① 5 m  配 max:1      → 报「超出上限 1 达 5 倍」
+   *                          但 5 m 与裸数 1 量纲不同，本来不可比
+   *
+   *   ② 500 cm 配 max:'1 m' → 不报
+   *                          max 是字符串，`typeof === 'number'` 不成立，直接跳过
+   * ```
+   *
+   * 第一条把「米」当成无量纲数字比，是**伪警报**；
+   * 第二条是**漏报** —— 明显超限却不报，比伪警报更危险。
+   *
+   * ## 现在的规则
+   *
+   * ```
+   *   结果带单位 + 锚点带单位  → 换算到同一单位再比
+   *   结果带单位 + 锚点是裸数  → **不比较**，明确说「量纲不可比」
+   *   结果裸数   + 锚点带单位  → 不比较（裸数不知道该按什么单位理解）
+   *   两边都是裸数            → 照旧比
+   * ```
+   *
+   * 后两条的原则与工具一贯取向一致：**不知道就不猜**。
+   * 但「不比较」必须**说出来**，否则调用方以为检查过了。
+   */
+  const resultUnit = extractResultUnit(result)
+  const anchorHasUnit = hasUnitSpec(s)
+
+  if (resultUnit !== null && !anchorHasUnit) {
+    /**
+     * 结果有单位、锚点是裸数 → 不可比。
+     *
+     * 这是「没判」，不是「通过」。所以返回独立的 status，
+     * 并给一句说明（调用方需要知道为什么没判）。
+     */
+    return {
+      status: 'incomparable',
+      message: '⚠ 未作量纲比较：结果是 ' + resultUnit + '，而锚点 ' +
+        showAnchorValue(s.max ?? s.min) + ' 没有单位 —— 两者不可比' +
+        '（给锚点加上同样的单位就能比，如 max:"1 m"）',
+    }
+  }
+  if (resultUnit === null && anchorHasUnit) {
+    /** 结果裸数、锚点带单位 → 也不知道该怎么理解这个裸数。 */
+    return {
+      status: 'incomparable',
+      message: '⚠ 未作量纲比较：结果是无量纲数字，而锚点带单位 ' +
+        showAnchorValue(s.max ?? s.min) + ' —— 不知道该按什么单位理解这个数字',
+    }
+  }
 
   const note = typeof s.note === 'string' && s.note.trim() !== '' ? s.note.trim() : ''
   /** 引用依据时用它；没给就用中性说法，不编。 */
   const basis = note ? '（' + note + '）' : '（按你设定的锚点）'
   const shown = trimForWarn(result)
 
+  /** 把锚点值（裸数或带单位）换算到结果所用的单位。 */
+  const toComparable = (anchor: number | string | undefined): number | undefined => {
+    if (anchor === undefined) return undefined
+    if (typeof anchor === 'number') return Number.isFinite(anchor) ? anchor : undefined
+    if (typeof anchor !== 'string') return undefined
+    const parsed = parseQuantity(anchor)
+    if (!parsed) return undefined
+    if (resultUnit === null) return parsed.value
+    const converted = toUnit(parsed.value, parsed.unit, resultUnit)
+    return converted === undefined ? undefined : converted
+  }
+
+  const maxAnchor = toComparable(s.max)
+  const minAnchor = toComparable(s.min)
+
   const lines: string[] = []
-  if (typeof s.max === 'number' && Number.isFinite(s.max) && numeric > s.max) {
-    const ratio = numeric / s.max
+  if (maxAnchor !== undefined && numeric > maxAnchor * (1 + 1e-12)) {
+    const ratio = numeric / maxAnchor
     lines.push('⚠ 超出锚点上限 ' + showAnchorValue(s.max) + basis + ' 达 ' + formatRatio(ratio) + ' 倍')
   }
-  if (typeof s.min === 'number' && Number.isFinite(s.min) && numeric < s.min) {
-    const ratio = s.min / numeric
+  if (minAnchor !== undefined && numeric < minAnchor * (1 - 1e-12)) {
+    const ratio = minAnchor / numeric
     lines.push('⚠ 低于锚点下限 ' + showAnchorValue(s.min) + basis + ' 达 ' + formatRatio(ratio) + ' 分之一')
   }
   if (typeof s.expect === 'number' && Number.isFinite(s.expect)) {
@@ -560,9 +658,87 @@ export function checkAnchors(spec: unknown, result: string): string {
       )
     }
   }
-  if (lines.length === 0) return ''
+  if (lines.length === 0) return { status: 'passed', message: '' }
   lines.push('  若这个数要写进设定，请先确认口径。')
-  return lines.join('\n')
+  return { status: 'violated', message: lines.join('\n') }
+}
+
+/**
+ * 从结果文本里取出单位部分。
+ *
+ * @param result - 结果文本（如 `5 m`、`9e15 kg`、`2133 (~10³)`）
+ * @returns 单位串（无量纲时返回 null）
+ */
+export function extractResultUnit(result: string): string | null {
+  const text = String(result).replace(/\(~10[\^⁰¹²³⁴⁵⁶⁷⁸⁹\-]+\)/g, '').trim()
+  /**
+   * ## 数字部分必须整体吃掉小数点
+   *
+   * 原来的正则 `^[-+]?[\d.]+(?:e[-+]?\d+)?\s*([^\d\s].*)$` 有个漏洞：
+   *
+   * ```
+   *   2133.41184
+   *   → 贪婪的 [\d.]+ 只吃到 "2133"（因为后面跟着 "." 时算作分隔）
+   *   → 剩余 ".41184" 被当成 **单位**
+   *   → 于是判定「结果带单位 .41184」→ 触发量纲不可比
+   * ```
+   *
+   * 后果：所有带小数的裸数都被误判成「带单位」，
+   * 锚点比对全部退化成 `incomparable`，等于把检查关了。
+   *
+   * 修法：数字部分显式写成「整数部分 + 可选的小数部分」，
+   * 且小数部分必须紧贴整数部分（中间不许有空格）。
+   */
+  const m = text.match(/^[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?\s*([^\d\s.].*)$/i)
+  if (!m) return null
+  const unit = m[1].trim()
+  return unit === '' ? null : unit
+}
+
+/**
+ * 锚点里有没有带单位的项。
+ *
+ * @param spec - sanity 规格
+ * @returns 是否带单位
+ */
+function hasUnitSpec(spec: SanitySpec): boolean {
+  return [spec.max, spec.min].some((item) => typeof item === 'string' && parseQuantity(item) !== null)
+}
+
+/**
+ * 解析带单位数量串。
+ *
+ * @param text - 如 `1 m`、`5 km`
+ * @returns 数值与单位，解析不了返回 null
+ */
+function parseQuantity(text: string): { value: number; unit: string } | null {
+  const m = String(text).trim().match(/^([-+]?[\d.]+(?:e[-+]?\d+)?)\s*(.+)$/i)
+  if (!m) return null
+  const value = Number(m[1])
+  if (!Number.isFinite(value)) return null
+  return { value, unit: m[2].trim() }
+}
+
+/**
+ * 把一个「数值 + 原单位」换算到目标单位。
+ *
+ * 复用 `units.ts` 的 `convert`，因为那条路径已经修好了复合单位
+ * （A2）—— 这里若自己写一份，迟早与它不一致。
+ *
+ * @param value - 数值
+ * @param fromUnit - 原单位
+ * @param toUnit - 目标单位
+ * @returns 换算结果；不可换算时返回 undefined
+ */
+function toUnit(value: number, fromUnit: string, toUnit: string): number | undefined {
+  if (fromUnit === toUnit) return value
+  try {
+    const outcome = convert(value, fromUnit, toUnit)
+    if (!outcome.ok) return undefined
+    return outcome.conversion.result
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -590,7 +766,15 @@ function parseResultNumber(text: string): number {
  * @param value - 锚点数值
  * @returns 便于阅读的写法
  */
-function showAnchorValue(value: number): string {
+function showAnchorValue(value: number | string | undefined): string {
+  /**
+   * 带单位的锚点直接显示原文。
+   *
+   * 不能只显示换算后的数字 —— 用户写的是 `max:'1 m'`，
+   * 警告里若显示 `0.01`（换算到 cm 后）会让人以为工具读错了。
+   */
+  if (typeof value === 'string') return value
+  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value ?? '')
   const abs = Math.abs(value)
   if (abs !== 0 && (abs >= 1e6 || abs < 1e-4)) return value.toExponential(0).replace(/e\+/, 'e')
   return String(Number(value.toPrecision(6)))
