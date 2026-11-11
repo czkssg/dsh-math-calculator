@@ -272,7 +272,15 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * ⚠ 目录预算**这次没有抬**：靠压 ode/formula/consistency 三处简介腾出空间
    * （1884/1900）。上一轮断言里写过「下次不要再抬这个数」—— 遵守它。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 34）', coreTopics.length === 34, String(coreTopics.length))
+  /**
+   * ## 34 → 37（2026-11-12）
+   * `d-modern-society` 拆成 1 个目录页 + 3 个子节（净 +2）。
+   *
+   * 拆的理由是用户明确的 help 目的：**防止一次性注入让 AI 注意力分散**。
+   * 那节原来 5603 字符，查「维恩位移」也要读完整片社会科学。
+   * 拆开后查物理只付 2385 字符（省 57% 的无关内容）。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 37）', coreTopics.length === 37, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *
