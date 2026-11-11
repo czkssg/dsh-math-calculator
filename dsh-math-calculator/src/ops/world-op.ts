@@ -125,7 +125,18 @@ function renderWorldBrief(
   }
 }
 
-export function opWorld(args: MathArgs, precision: number): Outcome {  const params: WorldParams = (args.world ?? {}) as WorldParams
+/**
+ * 世界推演主入口：参数 → 体感画像。
+ *
+ * 做四件事：合并顶层简写与嵌套参数、校验物理可行域、生成画像、渲染文本。
+ * `brief:true` 时走简版渲染（关键值 7 行，细节仍在 value 里）。
+ *
+ * @param args - 工具参数（world 嵌套、顶层简写、brief 等）
+ * @param precision - 计算精度（本函数当前按 64 位算，此参数为统一签名保留）
+ * @returns 文本画像 + 结构化 value
+ */
+export function opWorld(args: MathArgs, precision: number): Outcome {
+  const params: WorldParams = (args.world ?? {}) as WorldParams
 
   /**
    * 允许把世界参数直接写在顶层，减少嵌套。
