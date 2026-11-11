@@ -43,6 +43,50 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
   }
   const merged: WorldParams = { ...(shorthand as WorldParams), ...params }
 
+  /**
+   * ## 物理可行域校验（A7 / A19 修复）
+   *
+   * ## 原来会发生什么
+   *
+   * ```
+   *   planetMass: -1    → ok=true，"重力是地球的 -1.00 倍，动作更轻、跳跃更高"
+   *   planetRadius: 0   → ok=true，重力 Infinity
+   *   rotationHours: 0  → ok=true，"一天 0.0 小时"
+   *   orbitAU: 0        → ok=true，输出里含 NaN 与 Infinity
+   * ```
+   *
+   * **四个都是 `ok=true` 且输出含"结论"**。`-1.00 倍重力` 读起来像一条发现，
+   * 而它物理上不存在。这比崩溃危险：崩溃会让人停下，荒谬的结论会被写进设定。
+   *
+   * 更糟的是【跨模块一致性】还给它盖章「矛盾 0」。
+   *
+   * ## 为什么放在这里而不是 `generateWorld` 内部
+   *
+   * `generateWorld` 是纯计算层，它的契约是「给我参数就还我画像」。
+   * 参数合法性的判断属于**入口层**，且只有入口层知道要给什么样的 hint
+   * （告诉用户「质量必须是正数」而不是抛一个数学错）。
+   */
+  const positiveParams: Array<[string, string, number | undefined]> = [
+    ['planetMass', '行星质量', merged.planetMass],
+    ['planetRadius', '行星半径', merged.planetRadius],
+    ['rotationHours', '自转周期', merged.rotationHours],
+    ['orbitAU', '轨道半径', merged.orbitAU],
+    ['starMass', '恒星质量', merged.starMass],
+    ['starRadius', '恒星半径', merged.starRadius],
+  ]
+  for (const [key, label, value] of positiveParams) {
+    if (value === undefined || value === null) continue
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+      throw new CalcError(
+        'invalid_argument',
+        `world 参数 ${key}（${label}）必须是正数，收到 ${String(value)}`,
+        '质量/半径/自转周期/轨道半径都必须 > 0。' +
+          '负质量会算出负重力，零半径会算出 Infinity —— 那些不是"极端世界"，' +
+          '而是输入错误。若想要极端设定，请给一个很小但为正的值（如 planetMass:0.05）。',
+      )
+    }
+  }
+
   let profile: WorldProfile
   try {
     profile = generateWorld(merged)

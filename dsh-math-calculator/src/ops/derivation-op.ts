@@ -25,6 +25,30 @@ import {
 import { recalculateConstants } from '../constants-graph.js'
 import { runPipeline, renderPipeline } from '../pipeline.js'
 import { opWorld } from './world-op.js'
+import { generateWorld } from '../world.js'
+
+/**
+ * 推演栈里的 world 调用**绕过入口校验**。
+ *
+ * ## 为什么
+ *
+ * `opWorld` 现在会拦住非法参数（A7/A19）并抛 `invalid_argument`。
+ * 但推演栈有几处**故意要渲染非法世界**——它们的存在意义就是
+ * 「让 `dead` 子命令看到 Infinity 后判 invalid，并说明是参数不成立而非设定极端」。
+ *
+ * ```
+ *   planetRadius: 0 → gravity Infinity → judgeDead 判 invalid
+ *   → 输出「这不是设定太极端，是参数不成立；请检查 planetRadius」
+ * ```
+ *
+ * 若这里也抛异常，那套诊断就永远走不到，用户只能看到一个 400。
+ *
+ * 注意：**用户直接调 `operation:'world'` 仍然会被拦住**（那是入口，该拦）。
+ * 这里只影响推演栈内部那几个"要看到坏世界"的位置。
+ */
+function worldForDiagnosis(params: Record<string, unknown>, precision: number): { value: unknown } {
+  return { value: generateWorld(params as never) }
+}
 import { backSolve, listAnchors, renderBackSolve } from '../back-solve.js'
 import { archiveDerivation, loadArchive, compareVersions } from '../derivation-log.js'
 import { currentWorkspace, listWorkspaces } from '../workspace.js'
@@ -251,7 +275,7 @@ export function opDerivation(args: MathArgs): Outcome {
     // 这是「推演栈真正跑起来」的部分——不是展示卡片，而是串成流水线。
     const merged = mergeWorldArgs(args)
 
-    const worldOut = opWorld({ world: merged } as never, 64)
+    const worldOut = worldForDiagnosis(merged as Record<string, unknown>, 64)
     const pipelineReport = runPipeline((worldOut as any).value)
     out.push(renderPipeline(pipelineReport))
     value.pipeline = pipelineReport
@@ -314,7 +338,7 @@ export function opDerivation(args: MathArgs): Outcome {
   } else if (sub === 'archive') {
     // 七张表持久化 + 版本记录：把本次链路结果存进工作区
     const worldParams = (args.world ?? {}) as Record<string, unknown>
-    const worldOut = opWorld({ world: worldParams } as never, 64)
+    const worldOut = worldForDiagnosis(worldParams, 64)
     const pipelineReport = runPipeline((worldOut as any).value)
     const anchorsUsed: any[] = []
     if (typeof args.anchor === 'string' && typeof args.anchorValue === 'number') {
@@ -566,7 +590,7 @@ export function opDerivation(args: MathArgs): Outcome {
       massValues,
       orbitValues,
       function (mass, orbit) {
-        const world = opWorld({ world: { planetMass: mass, orbitAU: orbit } } as never, 32).value as any
+        const world = worldForDiagnosis({ planetMass: mass, orbitAU: orbit }, 32).value as any
         const verdict = judgeDead(world)
         const level = verdict.level === 'alive' ? 'ok' : verdict.level === 'marginal' ? 'warn' : 'danger'
         return {
@@ -621,7 +645,7 @@ export function opDerivation(args: MathArgs): Outcome {
       out.push('可选：' + OBSERVERS.map(function (item) { return item.kind + '（' + item.label + '）' }).join(' / '))
     } else {
       const worldParams = (args.world ?? {}) as Record<string, unknown>
-      const worldOut = opWorld({ world: worldParams } as never, 32)
+      const worldOut = worldForDiagnosis(worldParams, 32)
       const value2 = (worldOut as any).value || {}
       const gravity = value2?.planet?.surfaceGravity ?? 9.80665
       const scaleHeight = value2?.atmosphere?.scaleHeightM ?? 8500
@@ -631,7 +655,7 @@ export function opDerivation(args: MathArgs): Outcome {
   } else if (sub === 'dead') {
     // 补丁6：宇宙死寂态兜底——说清"这个参数意味着什么"，不评判设定。
     const worldParams = (args.world ?? {}) as Record<string, unknown>
-    const worldOut = opWorld({ world: worldParams } as never, 64)
+    const worldOut = worldForDiagnosis(worldParams, 64)
     const worldValue = (worldOut as any).value || {}
     const verdict = judgeDead(worldValue)
     out.push(renderDead(verdict))

@@ -36,6 +36,14 @@ process.env.DSH_MATH_CALC_HOME = home
 const mod = await import(pathToFileURL(join(root, 'lib/index.js')).href)
 const dead = await import(pathToFileURL(join(root, 'lib/dead-universe.js')).href)
 const { opWorld } = await import(pathToFileURL(join(root, 'lib/ops/world-op.js')).href)
+/**
+ * `generateWorld` 是**纯计算层**，不做参数校验 —— 本套件要测的正是
+ * 「下游的 findPhysicsIssues 能否检出非法参数造成的物理问题」。
+ *
+ * 而 `opWorld` 现在会在入口就拦住非法参数（A7/A19 修复），
+ * 所以这里必须绕过入口，直接喂给计算层。
+ */
+const { generateWorld: rawGenerateWorld } = await import(pathToFileURL(join(root, 'lib/world.js')).href)
 
 let pass = 0
 const fails = []
@@ -70,7 +78,7 @@ console.log('-- 1. findPhysicsIssues 能嗅出无穷/负值 --')
     ['orbitAU', 0, '零轨道 → 大量 Infinity'],
   ]
   for (const [key, value, why] of cases) {
-    const world = opWorld({ world: { [key]: value } }, 32).value
+    const world = rawGenerateWorld({ [key]: value })
     const issues = dead.findPhysicsIssues(world)
     assert(`${key}=${value} 被检出（${why}）`, issues.length > 0, String(issues.length))
     assert(`${key}=${value} 的问题名说清了是什么`,
@@ -88,7 +96,7 @@ console.log('-- 1. findPhysicsIssues 能嗅出无穷/负值 --')
 
 console.log('-- 2. judgeDead 把 invalid 与 dead 分开 --')
 {
-  const badWorld = opWorld({ world: { planetRadius: 0 } }, 32).value
+  const badWorld = rawGenerateWorld({ planetRadius: 0 })
   const v = dead.judgeDead(badWorld)
   assert('零半径判为 invalid', v.level === 'invalid', v.level)
   assert('invalid 有结构化原因', v.causes.length > 0, String(v.causes.length))
@@ -122,7 +130,7 @@ console.log('-- 2. judgeDead 把 invalid 与 dead 分开 --')
 
 console.log('-- 3. 渲染层不输出裸 Infinity/NaN --')
 {
-  const badWorld = opWorld({ world: { planetRadius: 0 } }, 32).value
+  const badWorld = rawGenerateWorld({ planetRadius: 0 })
   const v = dead.judgeDead(badWorld)
   const text = dead.renderDead(v)
   assert('渲染里有「参数不成立」标记', text.includes('参数不成立'), text.split(String.fromCharCode(10))[0])

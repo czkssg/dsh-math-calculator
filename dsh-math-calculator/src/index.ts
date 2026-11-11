@@ -3504,15 +3504,161 @@ const WORLD_SHORTHAND_KEYS: readonly string[] = WORLD_KEYS
  * @param rawArguments - 调用方原样的参数对象
  * @returns 认不出的键；空数组表示全部可识别
  */
-function findUnknownArguments(rawArguments: unknown): string[] {
+/**
+ * ## 参数归属：哪些键属于哪个 operation（E1 修复）
+ *
+ * ## 为什么需要它
+ *
+ * 原来只有一个全局白名单：**只要键名在任何一个 operation 里合法，就放行**。
+ * 实测 5/5 跨 operation 参数被静默接受：
+ *
+ * ```
+ *   world    + unitFrom    → 静默接受（这个参数属于 units）
+ *   units    + planetMass  → 静默接受（属于 world）
+ *   evaluate + diffA       → 静默接受（属于 derivation）
+ *   stats    + recurrence  → 静默接受（属于 recurrence）
+ * ```
+ *
+ * 后果：调用方以为参数生效了，实际什么都没发生。这是 7 条缺陷的共同根因
+ * （A9 / A29 / A35 / A36 / A37 / A38 / N33 都有这个成分）。
+ *
+ * ## 为什么只登记「高置信」的 operation
+ *
+ * 全量分片的风险是**误报**——某个 operation 实际读了某个键，但表里没登记，
+ * 于是合法调用被拦下。本项目历史上踩过一次：白名单只抄了 4 个 world 参数，
+ * 导致 `{operation:'world', starMass:10}` 被拦，world 套件当场红。
+ *
+ * 所以这里**只对参数集合明确、且实测过的 operation 生效**；
+ * 不在表里的 operation 仍走原来的全局白名单（宽松但不会误报）。
+ */
+const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
+  world: [...WORLD_KEYS],
+  units: [
+    'unitValue', 'unitFrom', 'unitTo', 'customUnits', 'unitScales', 'unitScale',
+    'units',
+  ],
+  formula: ['formula', 'overrides', 'customExpression', 'formulas', 'unitFrom', 'unitTo'],
+  formulas: ['query', 'formula', 'formulas', 'unitFrom', 'unitTo'],
+  evaluate: ['expression', 'expressions', 'variables'],
+  ode: [
+    'expression', 'expressions', 'initial', 'from', 'to', 'steps', 'samples', 'at',
+    'variables',
+  ],
+  recurrence: ['recurrence', 'expression', 'initial', 'periods'],
+  stats: ['data', 'dataY', 'expression'],
+  dist: ['distribution', 'params', 'x'],
+  regression: ['data', 'dataY', 'degree', 'expression'],
+  solve: ['expression', 'expressions', 'variable'],
+  system: ['matrix', 'vector', 'expression'],
+  balance: ['balance'],
+  feasibility: ['claims', 'listConstraints'],
+  bodies: [
+    'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
+  ],
+  help: ['helpTopic'],
+  derivation: [
+    'derivation', 'anchor', 'anchorValue', 'compareFrom', 'compareTo',
+    'fantasyAbility', 'fantasyDemand', 'fantasyPhysical', 'fantasyBodyArea',
+    'lyapunov', 'inheritDerived', 'inheritBase', 'inheritSync', 'diffA', 'diffB',
+    'observerKind', 'graphDepths', 'timelineFrom', 'timelineTo', 'timelineSteps',
+    'whitepaperMode', 'traceTarget', 'costKind', 'costX', 'costY',
+    'costIterations', 'costCombos', 'costWithPipeline',
+    'sensitivityBase', 'sensitivityExponent', 'threshold',
+    'flipClaim', 'flipEpsilon', 'flipBase',
+  ],
+}
+
+/**
+ * 所有 operation 都接受（或至少不能一律拒绝）的公共参数。
+ *
+ * ## 三个必须豁免的
+ *
+ * ```
+ *   world        多数推演类 operation 都接受嵌套的世界参数
+ *   expression   多数 operation 允许用它代替专门字段
+ *   unitFrom/To  formula 也支持（把 overrides 的裸数按整批单位理解）
+ * ```
+ *
+ * 这三条都是**实测出来的**：第一版没豁免，导致
+ * `{operation:'world', world:{...}}`、`{operation:'help', expression:...}`、
+ * `{operation:'formula', unitFrom:'L'}` 全被误拦，12 个套件红。
+ */
+const COMMON_ARGUMENTS: readonly string[] = [
+  'operation', 'terse', 'precision', 'displayPrecision', 'promptMode', 'workspace',
+  'world', 'expression',
+]
+
+/**
+ * 查有没有拼错/多余/不属于当前 operation 的参数名。
+ *
+ * 三段判定（从严到宽）：
+ *
+ * ```
+ * ① 完全认不出的名字        → 一律报错
+ * ② 认得出、但不属于当前 op  → 报错（E1 新增，仅对登记过的 op 生效）
+ * ③ 其余                    → 放行
+ * ```
+ *
+ * @param rawArguments - 调用方原样的参数对象
+ * @param operation - 已经解析出的 operation（用于第 ② 段）
+ * @returns 有问题的键及其原因
+ */
+function findUnknownArguments(
+  rawArguments: unknown,
+  operation?: MathOperation,
+): Array<{ key: string; reason: 'unknown' | 'not_in_operation'; owner?: string }> {
   if (rawArguments === null || typeof rawArguments !== 'object' || Array.isArray(rawArguments)) return []
-  const unknown: string[] = []
+  const out: Array<{ key: string; reason: 'unknown' | 'not_in_operation'; owner?: string }> = []
+  const owner = operation ? OPERATION_ARGUMENTS[operation] : undefined
+
   for (const key of Object.keys(rawArguments as Record<string, unknown>)) {
-    if (KNOWN_ARGUMENT_KEYS.has(key)) continue
-    if (WORLD_SHORTHAND_KEYS.includes(key)) continue
-    unknown.push(key)
+    if (COMMON_ARGUMENTS.includes(key)) continue
+    /**
+     * ★ world 的顶层简写参数**只在 operation === 'world' 时豁免**。
+     *
+     * 原来无条件豁免，于是 `units{planetMass:2}` 因为 `planetMass` 在简写表里
+     * 被放行 —— 而它属于 world，不属于 units。这正是 E1 要治的病。
+     */
+    if (operation === 'world' && WORLD_SHORTHAND_KEYS.includes(key)) continue
+    if (operation === undefined && WORLD_SHORTHAND_KEYS.includes(key)) continue
+
+    /**
+     * ① 全局都不认识 → 拼写错误。
+     *
+     * ★ 但 world 的简写键要特殊处理：它不在 `KNOWN_ARGUMENT_KEYS` 里
+     * （接口里没有、由 `WORLD_PARAMS` 决定），所以对非 world 的 operation
+     * 它会被判成「不认识」。那不是拼写错，是**用错了 operation**。
+     */
+    if (!KNOWN_ARGUMENT_KEYS.has(key)) {
+      if (WORLD_SHORTHAND_KEYS.includes(key) && operation && operation !== 'world') {
+        out.push({ key, reason: 'not_in_operation', owner: 'world' })
+      } else {
+        out.push({ key, reason: 'unknown' })
+      }
+      continue
+    }
+
+    /**
+     * ② 全局认识，但当前 operation 不该收。
+     *
+     * 只在**登记过**的 operation 上判（`owner` 存在），否则放行。
+     * 且要求该键**确实属于别的 operation** —— 若它不属于任何登记表，
+     * 说明是我们没登记全，不该拦。
+     */
+    if (owner && !owner.includes(key)) {
+      const belongsTo = (Object.keys(OPERATION_ARGUMENTS) as MathOperation[]).find((op) =>
+        (OPERATION_ARGUMENTS[op] ?? []).includes(key),
+      )
+      if (belongsTo && belongsTo !== operation) {
+        out.push({ key, reason: 'not_in_operation', owner: belongsTo })
+      }
+      /**
+       * belongsTo 为空 = 这个键不属于任何登记表（比如 tableAction / dryRun 等
+       * 尚未分片的），此时**放行**——宁可漏判，不可误拦。
+       */
+    }
   }
-  return unknown.sort()
+  return out.sort((a, b) => a.key.localeCompare(b.key))
 }
 
 /**
@@ -3541,11 +3687,17 @@ export function runMathTool(rawArguments: unknown): MathResult {
      * 不静默继续算 —— 那样调用方会以为某个参数已经生效
      * （实测见过：`displayPrecision:0`、`format`、`sigfigs` 都是这样被吞的）。
      */
-    const unknownArguments = findUnknownArguments(rawArguments)
-    if (unknownArguments.length > 0) {
+    /**
+     * 第一段：**拼写检查**（此时还不知道 operation，所以只查全局白名单）。
+     *
+     * 分片校验（「这个参数不属于当前 operation」）放在 operation 解析之后，
+     * 见下方 `operation = ...` 之后的第二段。
+     */
+    const misspelled = findUnknownArguments(rawArguments, undefined).filter((item) => item.reason === 'unknown')
+    if (misspelled.length > 0) {
       throw new CalcError(
         'unknown_argument',
-        '这些参数名认不出来，已经被忽略（本次没有生效）: ' + unknownArguments.join('、'),
+        '这些参数名认不出来，已经被忽略（本次没有生效）: ' + misspelled.map((item) => item.key).join('、'),
         '按名字传给 help 可查用法: {operation:"help"}。' +
           '常见原因：拼写笔误、大小写、把某个 operation 的子字段提到了顶层' +
           '（如 terrain 的字段要放在 terrain 对象里）。',
@@ -3659,6 +3811,35 @@ export function runMathTool(rawArguments: unknown): MathResult {
     const scope = buildScope(engine, scopeVariables)
 
     operation = requested === 'auto' ? detectOperation(input, args) : requested
+
+    /**
+     * ## 第二段：**分片校验**（E1 修复）
+     *
+     * 拼写都对、但参数不属于当前 operation —— 这是「静默忽略」的真正来源。
+     *
+     * ```
+     *   world + unitFrom   → 调用方以为单位生效了，实际什么都没发生
+     *   units + planetMass → 同上
+     * ```
+     *
+     * 只对 `OPERATION_ARGUMENTS` 登记过的 operation 生效（避免误拦）。
+     * 且要求该键**确实属于另一个已登记的 operation** —— 未分片的键一律放行。
+     */
+    const misplaced = findUnknownArguments(rawArguments, operation).filter(
+      (item) => item.reason === 'not_in_operation',
+    )
+    if (misplaced.length > 0) {
+      const detail = misplaced
+        .map((item) => '`' + item.key + '`（属于 ' + item.owner + '）')
+        .join('、')
+      throw new CalcError(
+        'unknown_argument',
+        '这些参数不属于 ' + operation + '，已被拒绝: ' + detail,
+        '把它们传给对应的 operation，或从本次调用里删掉。' +
+          '传了也不会生效 —— 直接报错比静默忽略安全。' +
+          '当前 ' + operation + ' 接受的参数见 {operation:"help", helpTopic:"' + operation + '"}。',
+      )
+    }
 
     // 提示档位切换（不影响计算，只影响注入给模型的内容）
     if (args.promptMode !== undefined) {

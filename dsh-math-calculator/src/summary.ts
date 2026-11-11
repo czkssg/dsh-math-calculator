@@ -22,6 +22,7 @@
  */
 
 import { opWorld } from './ops/world-op.js'
+import { generateWorld } from './world.js'
 import { judgeDead } from './dead-universe.js'
 import { runCivilization } from './civilization.js'
 import { ecosystemFromWorld } from './ecosystem.js'
@@ -118,7 +119,22 @@ export function deriveAll(params: Record<string, unknown> = {}): Summary {
     clean[key] = value
   }
 
-  const world = (opWorld({ world: clean } as never, 32) as any).value || {}
+  /**
+   * ## 这里必须绕过 `opWorld` 的入口校验（A7/A19 修复的连带影响）
+   *
+   * `opWorld` 现在会在入口拦住非法参数（负质量/零半径）并抛 `invalid_argument`。
+   * 但**本模块的职责恰恰是「把非法参数也渲染出来」**：
+   *
+   * ```
+   *   planetRadius: 0 → gravity = Infinity
+   *   → deriveAll 把它标成 invalid 并说明「这不是设定太极端，是参数不成立」
+   * ```
+   *
+   * 上面的 `finite()` 与 `judgeDead` 都是为这个场景写的。
+   * 如果这里也抛异常，那套诊断就永远走不到了 —— 而它比"400 报错"有用得多：
+   * 报错只说「参数不合法」，诊断还说「哪个派生量炸了、怎么改」。
+   */
+  const world = (generateWorld(clean as never) as any) || {}
   const planet = world.planet || {}
   const orbit = world.orbit || {}
   const temp = world.temperature || {}

@@ -350,6 +350,46 @@ const show = fmtShow
  * @param custom - 自定义单位
  * @returns 换算结果；单位不存在或量纲不符时返回错误信息
  */
+/**
+ * 用 mathjs 换算复合单位。
+ *
+ * `evaluate` 的 `X to Y` 路径一直是正确的——这里直接复用同一套引擎，
+ * 避免「同一个换算两条路径给不同答案」。
+ *
+ * @param value - 数值
+ * @param fromName - 源单位（可含 `/`、`^`、上标）
+ * @param toName - 目标单位
+ * @returns 换算结果或失败原因
+ */
+function convertByMathjs(
+  value: number,
+  fromName: string,
+  toName: string,
+): { ok: true; result: number } | { ok: false; error: string } {
+  try {
+    /** 归一化：中点→乘号、上标→^，与 evaluate 的归一化保持一致。 */
+    const norm = (raw: string): string =>
+      raw.replace(/·/g, '*').replace(/²/g, '^2').replace(/³/g, '^3').replace(/／/g, '/').trim()
+    const f = norm(fromName)
+    const t = norm(toName)
+    const parsed = mathUnit(value + ' ' + f).to(t)
+    const result = parsed.toNumber(t)
+    if (!Number.isFinite(result)) return { ok: false, error: '换算结果是 ' + String(result) }
+    return { ok: true, result }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+/**
+ * 两个单位之间换算。
+ *
+ * @param value - 数值
+ * @param fromName - 源单位名（中文/英文/符号均可）
+ * @param toName - 目标单位名
+ * @param custom - 调用方临时定义的单位（`customUnits`）
+ * @returns 成功时给完整换算过程；失败时给原因与修法
+ */
 export function convert(
   value: number,
   fromName: string,
@@ -380,6 +420,79 @@ export function convert(
       error: '量纲不符：' + fromName + ' 是' + DIMENSION_LABEL[from.dimension] +
         '，' + toName + ' 是' + DIMENSION_LABEL[to.dimension] + '，不能直接换算',
       hint: '换到同量纲单位，或先乘/除得到正确量纲（例如速度 = 长度 / 时间）。',
+    }
+  }
+
+  /**
+   * ## 复合单位：转交 mathjs，而不是用 factor=1 瞎算（A2 修复）
+   *
+   * ## 原来错在哪
+   *
+   * `findUnit` 对复合单位（`kg/m^3`）会现造一个 `{ factor: 1 }` 的合成单位
+   * —— 那是为「判断量纲是否相容」加的，本意不是用来换算。
+   *
+   * 但 `convert` 拿到它以后按 `result = value * from.factor / to.factor`
+   * 一算，两个 factor 都是 1，于是 **result = value**：
+   *
+   * ```
+   *   units{1000, 'kg/m^3', 'g/cm^3'}  →  1000   （应 1，错 1000 倍）
+   *   units{7,    'm^2/s', 'cm^2/s'}   →  7      （应 70000）
+   * ```
+   *
+   * 危险在于它**返回 ok=true、无任何警告**，而 1000 是个合法数字。
+   *
+   * ## 现在的做法
+   *
+   * 复合单位交给 mathjs 的 `unit()` —— `evaluate` 那条路径本来就是对的
+   * （`1000 kg/m^3 to g/cm^3` 给 `1 g/cm^3`）。这里复用同一套。
+   *
+   * 若 mathjs 也不认识（生僻写法），**报错而不是返回输入值**。
+   */
+  /**
+   * ## 什么才算「复合单位」
+   *
+   * 只有**真正的复合结构**交给 mathjs：
+   *
+   * ```
+   *   kg/m^3    ← 有斜杠
+   *   m^2/s     ← 有斜杠与幂
+   *   W/m^2     ← 有斜杠与幂
+   * ```
+   *
+   * ## 三个不能算复合的（踩过）
+   *
+   * ```
+   *   sr   球面度      —— 单字母代号，但正则 r 会误判（这里用白名单排除）
+   *   公顷 / 平方米     —— 中文别名，单位表里有，只是 name 含多字
+   *   deg^2           —— 幂形式，但 deg 是单位表里的别名
+   * ```
+   *
+   * 判据：**必须同时有「斜杠」或「乘号」才算复合**。
+   * 单纯的上标（`m²`）由单位表处理，不走 mathjs。
+   */
+  const isCompound = (name: string): boolean => /[/·*]/.test(name)
+  if (isCompound(fromName) || isCompound(toName)) {
+    const converted = convertByMathjs(value, fromName, toName)
+    if (!converted.ok) {
+      return {
+        ok: false,
+        error: '复合单位「' + fromName + ' → ' + toName + '」无法换算：' + converted.error,
+        hint: '改用 evaluate 的写法（那条路径支持复合单位）：' +
+          'evaluate{expression:"' + show(value) + ' ' + fromName + ' to ' + toName + '"}',
+      }
+    }
+    return {
+      ok: true,
+      conversion: {
+        value,
+        from,
+        to,
+        result: converted.result,
+        dimension: from.dimension,
+        steps: ['复合单位由 mathjs 换算：' + show(value) + ' ' + fromName + ' = ' +
+          show(converted.result) + ' ' + toName],
+        warnings: [],
+      },
     }
   }
 
