@@ -130,7 +130,16 @@ export const DEFAULT_WORKSPACE = 'default'
 let activeWorkspaceName: string = DEFAULT_WORKSPACE
 
 /** 内存缓存：避免每次调用都读盘。 */
-const cache = new Map<string, { data: WorkspaceData; stamp: string }>()
+/**
+ * 工作区读缓存。
+ *
+ * `health` / `reason` 也缓存 —— 否则每次读损坏的工作区都要重新解析一遍
+ * 并产生一条新错误，而 `fileStamp` 没变时结果必然相同。
+ */
+const cache = new Map<
+  string,
+  { data: WorkspaceData; stamp: string; health?: WorkspaceHealth; reason?: string }
+>()
 
 /**
  * 工作区目录。
@@ -221,40 +230,129 @@ function fileStamp(path: string): string {
  * 文件不存在 → 返回空工作区（不落盘）。
  * 文件损坏 → 返回空工作区并记警告（绝不让插件起不来）。
  */
-export function loadWorkspace(name: string): WorkspaceData {
+/**
+ * 工作区读取的健康状态。
+ *
+ * ## 借鉴来源：dsh-novel-writer 的 `degraded`
+ *
+ * 它的注释写得极准：
+ *
+ * > **读不到 ≠ 没写过**。调用方把 null 当作「这本书没有创作资料」，
+ * > 于是权限/编码类失败会**伪装成「还没建创作资料」**——
+ * > 用户照提示去 init 也没用。
+ *
+ * 本插件原来犯的是同一个错：`loadWorkspace` 的 catch 里写着
+ * 「损坏就当作空工作区，不抛错」，于是：
+ *
+ * ```
+ *   broken.json 里是非法 JSON
+ *   → show 返回 ok=true，显示「物理常数：现实值（未改动）／星球参数：未设定」
+ *   → 用户以为这个工作区本来就是空的，不会去修它
+ * ```
+ *
+ * **静默降级比报错有害**：报错会让人修，伪装成「空的」会让人重建。
+ *
+ * ## 三态而不是两态
+ *
+ * ```
+ *   ok        读到了
+ *   missing   文件不存在（真的没建过 —— 这是常态，不该报警）
+ *   corrupt   文件存在但读不出（JSON 坏了 / 权限不足 / 编码错）
+ * ```
+ *
+ * 只有 `corrupt` 需要惊动调用方。`missing` 是新工作区的正常状态。
+ */
+export type WorkspaceHealth = 'ok' | 'missing' | 'corrupt'
+
+/** 工作区读取结果（带健康状态）。 */
+export interface WorkspaceLoad {
+  /** 数据（corrupt 时是空骨架，但**不可当作"没设过"**）。 */
+  data: WorkspaceData
+  /** 读取健康状态。 */
+  health: WorkspaceHealth
+  /** corrupt 时的原因（给用户看的一句话）。 */
+  reason?: string
+}
+
+/**
+ * 读工作区，**并说清是「没建过」还是「读不出来」**。
+ *
+ * 这是给需要区分这两件事的调用方用的（`show` 列表、诊断、任何要报错的场合）。
+ * 只关心数据本身的调用方仍可用 `loadWorkspace`（它退化成 `.data`）。
+ *
+ * @param name - 工作区名
+ * @returns 数据 + 健康状态 + 原因
+ */
+export function loadWorkspaceDetailed(name: string): WorkspaceLoad {
   const normalized = normalizeWorkspaceName(name)
   const path = workspaceFile(normalized)
   const stamp = fileStamp(path)
 
   const cached = cache.get(normalized)
-  if (cached && cached.stamp === stamp) return cached.data
-
-  let data: WorkspaceData
-  if (stamp === '') {
-    data = emptyWorkspace(normalized)
-  } else {
-    try {
-      const raw = readFileSync(path, 'utf8')
-      const parsed = JSON.parse(raw) as Partial<WorkspaceData>
-      data = {
-        name: normalized,
-        description: typeof parsed.description === 'string' ? parsed.description : undefined,
-        constants: sanitizeNumberMap(parsed.constants),
-        world: sanitizeObject(parsed.world),
-        terrains: sanitizeTerrains(parsed.terrains),
-        variables: sanitizeNumberMap(parsed.variables),
-        formulaTable: sanitizeFormulaTable(parsed.formulaTable),
-        createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
-        updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date().toISOString(),
-      }
-    } catch {
-      // 损坏就当作空工作区，不抛错
-      data = emptyWorkspace(normalized)
-    }
+  if (cached && cached.stamp === stamp) {
+    return { data: cached.data, health: cached.health ?? 'ok', reason: cached.reason }
   }
 
-  cache.set(normalized, { data, stamp })
-  return data
+  if (stamp === '') {
+    const data = emptyWorkspace(normalized)
+    cache.set(normalized, { data, stamp, health: 'missing' })
+    return { data, health: 'missing' }
+  }
+
+  try {
+    const raw = readFileSync(path, 'utf8')
+    const parsed = JSON.parse(raw) as Partial<WorkspaceData>
+    const data: WorkspaceData = {
+      name: normalized,
+      description: typeof parsed.description === 'string' ? parsed.description : undefined,
+      constants: sanitizeNumberMap(parsed.constants),
+      world: sanitizeObject(parsed.world),
+      terrains: sanitizeTerrains(parsed.terrains),
+      variables: sanitizeNumberMap(parsed.variables),
+      formulaTable: sanitizeFormulaTable(parsed.formulaTable),
+      createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
+      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date().toISOString(),
+    }
+    /** 保留可选字段（它们在 sanitize 之外，漏掉就丢设定）。 */
+    if (parsed.displayPrecision !== undefined) data.displayPrecision = parsed.displayPrecision
+    if (Array.isArray(parsed.customConstants)) data.customConstants = parsed.customConstants
+    if (parsed.useWorkspaceVariables !== undefined) {
+      data.useWorkspaceVariables = parsed.useWorkspaceVariables
+    }
+    cache.set(normalized, { data, stamp, health: 'ok' })
+    return { data, health: 'ok' }
+  } catch (error) {
+    /**
+     * ★ 读失败**不再伪装成空工作区**。
+     *
+     * 返回空骨架是为了让调用方能继续（不让整个工具挂掉），
+     * 但 `health='corrupt'` + `reason` 会一路带到输出里，
+     * 调用方据此就知道「这里坏了，该修文件或重建」。
+     */
+    const reason =
+      error instanceof SyntaxError
+        ? 'JSON 解析失败（文件内容不是合法 JSON）'
+        : error instanceof Error
+          ? error.message
+          : String(error)
+    const data = emptyWorkspace(normalized)
+    cache.set(normalized, { data, stamp, health: 'corrupt', reason })
+    return { data, health: 'corrupt', reason }
+  }
+}
+
+/**
+ * 读工作区（只要数据，不问健康状态）。
+ *
+ * 这是给「拿到数据就行」的调用方用的薄包装。若你需要区分
+ * 「没建过」与「读不出来」，请用 `loadWorkspaceDetailed` ——
+ * 本函数在文件损坏时会**静默返回空骨架**，那是历史行为的兼容。
+ *
+ * @param name - 工作区名
+ * @returns 工作区数据（损坏时为空骨架）
+ */
+export function loadWorkspace(name: string): WorkspaceData {
+  return loadWorkspaceDetailed(name).data
 }
 
 /** 清洗数字表，只保留有限正数。 */

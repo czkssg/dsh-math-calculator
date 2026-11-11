@@ -402,6 +402,48 @@ console.log('-- 12. A17/A41 sanity 量纲对齐（双向失效修复）--')
   assert('说明里给了补救方法', /max:"1 m"|加上同样的单位/.test(txt(inco)), '')
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 13. 工作区读失败不许伪装成「空的」（借鉴 dsh-novel-writer）--')
+// ═══════════════════════════════════════════════════════════
+{
+  /**
+   * dsh-novel-writer 的注释指出的缺陷：
+   * 「**读不到 ≠ 没写过**。调用方把 null 当作『没有创作资料』，
+   * 于是权限/编码类失败会伪装成『还没建』——用户照提示去 init 也没用。」
+   *
+   * 本插件原来犯的是同一个错：`loadWorkspace` 的 catch 写「损坏就当作空工作区」。
+   */
+  const wsName = 'corrupt-test'
+  await run({ operation: 'workspace', action2: 'create', name: wsName })
+
+  /** 正常状态不该有警告。 */
+  const healthy = await run({ operation: 'workspace', action2: 'show', name: wsName })
+  assert('正常工作区不报损坏', !/读不出来/.test(txt(healthy)), '')
+
+  /** 把文件写成非法 JSON。 */
+  const { writeFileSync } = await import('node:fs')
+  const filePath = join(home, 'workspaces', wsName + '.json')
+  writeFileSync(filePath, '{ 这不是合法 JSON', 'utf8')
+
+  const broken = await run({ operation: 'workspace', action2: 'show', name: wsName })
+  assert('损坏的工作区仍能返回（不崩）', broken.ok === true, String(broken.ok))
+  assert('★ 损坏被显式提示', /读不出来/.test(txt(broken)), txt(broken).slice(0, 80))
+  assert('★ 明说「不代表没设过」', /不代表这个工作区没设过/.test(txt(broken)), '')
+  assert('给出了修法', /修法/.test(txt(broken)), '')
+  assert('报出了失败原因', /JSON|解析/.test(txt(broken)), '')
+
+  /**
+   * 缺文件（真的没建过）不该报损坏 —— 那是常态。
+   *
+   * ⚠ 注意：`show` 传一个不存在的名字会**回退到 default**，
+   * 而 default 在前面的用例里可能被写坏过。所以这里显式建一个
+   * 干净的新工作区再验，不然测的是别的东西。
+   */
+  await run({ operation: 'workspace', action2: 'create', name: 'fresh-ok-xyz' })
+  const missing = await run({ operation: 'workspace', action2: 'show', name: 'fresh-ok-xyz' })
+  assert('新建的空工作区不报损坏', !/读不出来/.test(txt(missing)), txt(missing).slice(0, 60))
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

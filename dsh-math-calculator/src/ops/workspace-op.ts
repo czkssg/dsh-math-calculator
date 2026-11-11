@@ -22,6 +22,7 @@ import {
   deleteWorkspace,
   listWorkspaces,
   loadWorkspace,
+  loadWorkspaceDetailed,
   normalizeWorkspaceName,
   removeTerrain,
   removeVariable,
@@ -30,6 +31,7 @@ import {
   switchWorkspace,
   updateWorkspace,
   workspaceDirectory,
+  workspaceFilePath,
   type SavedTerrain,
 } from '../workspace.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
@@ -74,8 +76,26 @@ export function opWorkspace(args: MathArgs): Outcome {
 
       case 'show': {
         const name = normalizeWorkspaceName(args.workspace ?? currentWorkspace())
-        const data = loadWorkspace(name)
+        /**
+         * ★ 用 `loadWorkspaceDetailed` 而不是 `loadWorkspace`（借鉴 dsh-novel-writer）
+         *
+         * 它的注释指出一类真实缺陷：**读不到 ≠ 没写过**。
+         * 原来这里 `loadWorkspace` 的 catch 写着「损坏就当作空工作区」，
+         * 于是文件坏了会显示成「物理常数：现实值（未改动）／星球参数：未设定」——
+         * 用户以为这个工作区本来就是空的，**不会去修它**。
+         *
+         * 现在读坏了会在最前面显式警告。
+         */
+        const loaded = loadWorkspaceDetailed(name)
+        const data = loaded.data
         const lines = [`工作区 "${data.name}"`]
+        if (loaded.health === 'corrupt') {
+          lines.push('')
+          lines.push('⚠ 这个工作区的**文件读不出来**（不是空的）：' + (loaded.reason ?? '原因未知'))
+          lines.push('  下面显示的是空骨架，**不代表这个工作区没设过东西**。')
+          lines.push('  可能原因：文件被手工改坏、磁盘/权限问题、编码不符。')
+          lines.push('  修法：检查或删除 ' + workspaceFilePath(name) + ' 后重建。')
+        }
         if (data.description) lines.push(`  ${data.description}`)
         lines.push('')
 

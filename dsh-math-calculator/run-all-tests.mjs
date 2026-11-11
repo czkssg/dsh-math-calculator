@@ -258,7 +258,7 @@ const SUITES = [
   // ★ 检索诚实性：没精确命中就明说，不拿子词凑数。
   // 缺陷标本：query=作用量 返回 11 条无关结果（滑窗切成「作用」「用量」）。
   { file: 'search-honesty.mjs', expect: 16, label: '检索诚实性（精确/子词可区分 + 反向对照）' },
-  { file: 'stop-bleed.mjs', expect: 136, label: '止血项（参数分片/复合单位/物理可行域/常数/子命令/help）' },
+  { file: 'stop-bleed.mjs', expect: 143, label: '止血项（参数分片/复合单位/物理可行域/常数/子命令/help）' },
   { file: 'ledger.mjs', expect: 40, label: '台账闭合（分项 vs 总量 + 三类可疑判据 + 不越权）' },
   { file: 'interval.mjs', expect: 47, label: '区间运算（四点乘法 / 除数跨零 / 把握分档 / 阈值判定）' },
   { file: 'help-search.mjs', expect: 41, label: 'help 搜索（任务描述→能力 / 排序 / 弱匹配诚实）' },
