@@ -436,6 +436,67 @@ const SEARCH_ALIASES: Record<string, string[]> = {
  * @param query - 原始查询
  * @returns 去重后的词元列表（长词在前，评分时优先）
  */
+/**
+ * 中文检索的停用词（虚词滑窗产物）。
+ *
+ * ## 为什么需要它
+ *
+ * 中文按 2–4 字滑窗切词时，会切出大量**没有区分度的虚词组合**：
+ *
+ * ```
+ *   "铁有多硬"  →  铁有 / 有多 / 多硬 / 有多硬 / …
+ *   "山能长多高" →  山能 / 能长 / 长多 / 多高 / …
+ * ```
+ *
+ * 这些词在任何一条公式的 `desc` 里都可能出现（因为中文里「有多」太常见），
+ * 于是**虚词命中压过了实义命中**。实测过两次：
+ *
+ * ```
+ *   查「铁有多硬」  首位是 base_rate_neglect_error（靠"有多"命中）
+ *                   而 hardness_to_yield 零命中（它的 keys 里没有"铁"）
+ *   查「山能长多高」 首位是 fresnel_zone_radius（靠"山多高"巧合）
+ * ```
+ *
+ * ## 借鉴来源
+ *
+ * `dsh-memory` 的知识图谱有一份 `GRAPH_STOP_WORDS`，用的正是同一套思路：
+ * **关键词 ≠ 实体，泛词不成节点**。这里把它借到检索打分上。
+ *
+ * ## 收录原则
+ *
+ * 只收**在任何领域描述里都可能出现的功能词/疑问词/量词**。
+ * 收多了会误杀真词（例如「多少」在「多少卡路里」里是实义），
+ * 所以宁少不多，且每条都注明为什么。
+ */
+const CJK_STOP_WORDS = new Set([
+  // 疑问与程度（几乎每条中文描述里都可能出现，零区分度）
+  '有多', '多高', '多大', '多快', '多重', '多长', '多久', '多少',
+  '怎么', '怎样', '什么', '为什么', '是否', '能否', '能不能',
+  // 系词与连接（纯语法功能词）
+  '这个', '那个', '这些', '那些', '一个', '以及', '或者', '还是',
+  '如果', '但是', '因为', '所以', '而且', '并且', '然后', '这样', '那样',
+  /**
+   * ⚠ 这里**不含**含实义词的组合（如「山能」「铁有」「能长」）。
+   *
+   * 第一版把它们也收进来，结果「山能长多高」的滑窗被滤得一个词不剩，
+   * 直接返回 0 条 —— 比伪命中更糟。
+   *
+   * 判据：**滤掉后原句还剩几个有意义的词**。
+   * 「山能长多高」滤掉"山能/能长/长多/多高"后只剩"山"与"高"，
+   * 而单字不进滑窗 → 空。所以含实义词的组合必须留给打分阶段自然淘汰。
+   */
+])
+
+/**
+ * 判断一个滑窗产物是不是虚词。
+ *
+ * @param token - 候选词
+ * @returns 是虚词则 true（不应参与打分）
+ */
+function isCjkStopWord(token: string): boolean {
+  return CJK_STOP_WORDS.has(token)
+}
+
 function tokenizeQuery(query: string): string[] {
   const raw = query.trim()
   const tokens = new Set<string>()
@@ -454,11 +515,18 @@ function tokenizeQuery(query: string): string[] {
     }
   }
 
-  // 中文滑窗：2—4 字
+  /**
+   * 中文滑窗：2—4 字。
+   *
+   * ★ 虚词在**加入前**就被滤掉（不是等打分时再减分）——
+   * 因为滤掉之后滑窗还会产生别的有效组合，而减分只能压住单个词。
+   */
   const cjkOnly = raw.replace(/[^\u4e00-\u9fa5]/g, '')
   for (let size = 4; size >= 2; size -= 1) {
     for (let start = 0; start + size <= cjkOnly.length; start += 1) {
-      tokens.add(cjkOnly.slice(start, start + size))
+      const piece = cjkOnly.slice(start, start + size)
+      if (isCjkStopWord(piece)) continue
+      tokens.add(piece)
     }
   }
 
