@@ -468,6 +468,48 @@ const CONSTANTS_BODY = (): string => `【常数推演】改变物理常数，自
   ★ 常数指纹进缓存键：改了常数后绝不会拿到旧宇宙的数`
 
 /** 【收支与天体】balance / bodies。 */
+/**
+ * ## feasibility 节的正文（N19 / A33 根因修复）
+ *
+ * ## 为什么这一节必须存在
+ *
+ * 反馈包把 `feasibility` 的「假通过」评为致命级，而它的根因不是代码 bug，
+ * 是**这一节根本不存在**：
+ *
+ * ```
+ *   helpTopic:'feasibility'  →  「没有名为 feasibility 的节」
+ * ```
+ *
+ * 没有文档，调用方只能猜入参形态。最常见的一猜就错——
+ * 把 `claims` 写成数组 `[{claim, value, unit}]`，而正确形态是对象
+ * `{cityPopulation: 9.2e10}`。猜错之后：
+ *
+ * ```
+ *   claims:[{...}]  →  1 项 claim 被整批丢弃
+ *                  →  返回「全部 0 项设定都在物理允许范围内」「自洽」
+ * ```
+ *
+ * **假通过比报错危险得多**：使用者会以为「已通过物理校验」，
+ * 而这个项目里 `feasibility` 被用了 31 次，是高频功能。
+ *
+ * 所以这一节的首要任务不是介绍能力，而是**把正确入参形态钉死**。
+ */
+const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项所列的上限判定
+
+  ★ 入参是**对象**，不是数组：
+    {operation:"feasibility", claims:{cityPopulation:9.2e10, soldierCount:2e6}}
+    键名可自取（英文/拼音都行），值是数字或带单位字符串（"9.2e10 人"）。
+
+  ✗ 常见错法：claims:[{claim:"…", value:1, unit:"…"}]
+    数组形态会被整批丢弃，然后报「自洽 0 项」—— 那是**假通过**。
+    现在传数组会直接报错，不再静默。
+
+  不带 claims 调用 → 列出本世界的物理上限表（11 项固定约束），
+  回答「这个世界最多能容纳多少人/多高的建筑/多大的生物」。
+
+  ★ 单项生理/工程上限用 feasibility，社会收支用 balance，两者不互相替代。
+  社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
+
 const BALANCE_BODY = (): string => `【收支盘点】balance 多项一起看，给最短板
   例：balance={grain:{demand:2.7e6, supply:3.1e6, unit:"kg/年"}}
   可同时给 grain(粮)/water(水)/energy(能)/land(地)/finance(财政)/
@@ -1829,6 +1871,25 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: BALANCE_BODY,
   },
   {
+    key: 'feasibility',
+    tier: 'extra',
+    /**
+     * 信号量 31：反馈包实测它是高频功能（被用了 31 次）。
+     *
+     * 但它在 help 里**整节缺失**——`helpTopic:'feasibility'` 报「没有此节」。
+     * 这正是 A33「claims 数组假通过」的根因：没有文档 → 猜入参 → 猜成数组 → 整批丢弃。
+     *
+     * 权重给 31 与实测一致；放 extra 档是因为它一次调用就能答完，
+     * 不像 evaluate/world 那样贯穿全程。
+     */
+    weight: 31,
+    short: '物理上限',
+    title: '物理可行域（feasibility）',
+    summary: 'claims 传**对象**（不是数组）：这个世界能不能容纳这么多人/这么高的楼。不带 claims 列出 11 项上限。',
+    aliases: ['可行', '上限', '能不能', '容纳', 'feasibility', '限制'],
+    body: FEASIBILITY_BODY,
+  },
+  {
     key: 'derivation',
     /** 同上，从 extra 提到 core：参数扫描与结论翻转是建模的一部分。 */
     tier: 'core',
@@ -2032,7 +2093,7 @@ function renderIndex(): string {
   }
   lines.push('')
   lines.push('  ── 二、建模与推演 ──')
-  lines.push('  ★ 正在手写循环 / 逐年表 / 参数扫描？先看这几节，别用脚本重写')
+  lines.push('  ★ 正在手写循环 / 逐年表 / 参数扫描？先看这几节')
   /**
    * ## 领域公式节在目录里只给一行
    *
@@ -2069,7 +2130,14 @@ function renderIndex(): string {
         lines.push('    ' + labels.slice(index, index + 3).join('  ·  '))
       }
     }
-    lines.push(`  ★ 公式不是散着的：formulas query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链（材料/能源/产能/食物/财政/军事…）`)
+    /**
+     * 这条原本写「★ 公式不是散着的：formulas query="sys" 看 N 条推演链（材料/能源/…）」。
+     *
+     * 但 formula 节第 14 行已经说过「query="sys" 看 N 条推演链（公式怎么连起来）」——
+     * 同一件事付两次字符成本。目录有 1500 字符预算（那是质量线，不是随手定的），
+     * 所以这里只保留一句不重复的指引。
+     */
+    lines.push('  ★ 链怎么连、每步该填什么，见 helpTopic:"formula" 与 helpTopic:"recipe"。')
     if (domainSections.length > 0) pushCompact('领域公式（各 600~1600 字符，按需查）:', domainSections)
     if (recipeSections.length > 0) pushCompact('推演配方（场景特定，按需查）:', recipeSections)
   }

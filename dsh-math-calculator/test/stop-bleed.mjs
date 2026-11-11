@@ -269,6 +269,34 @@ console.log('-- 9. A21/A43 未知子命令与缺参必须报错 --')
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 10. N19/A33 feasibility 有 help 节，且数组不再假通过 --')
+// ═══════════════════════════════════════════════════════════
+{
+  /**
+   * A33 的根因是「这一节不存在」：没有文档 → 猜入参 → 猜成数组 → 整批丢弃。
+   * 所以先验文档在，再验行为对。
+   */
+  const help = await run({ operation: 'help', helpTopic: 'feasibility' })
+  assert('helpTopic feasibility 有正文', help.ok === true && txt(help).length > 50, txt(help).slice(0, 60))
+  assert('help 写清了正确入参是对象', /claims/.test(txt(help)) && /对象/.test(txt(help)), '')
+  assert('help 点名了数组是错法', /数组/.test(txt(help)), '')
+
+  /** 数组必须报错，不能静默丢弃后报「自洽」。 */
+  const arr = await run({ operation: 'feasibility', claims: [{ claim: 'x', value: 1 }] })
+  assert('claims 传数组被拒', arr.ok === false, String(arr.ok))
+  assert('报 invalid_argument', arr.error?.type === 'invalid_argument', String(arr.error?.type))
+  assert('提示给了对象写法', /claims/.test(arr.error?.hint ?? '') && /cityPopulation/.test(arr.error?.hint ?? ''), '')
+
+  /** 对象形态必须正常工作 —— 别把功能拦死。 */
+  const obj = await run({ operation: 'feasibility', claims: { cityPopulation: 9.2e10 } })
+  assert('claims 传对象正常', obj.ok === true, txt(obj).slice(0, 60))
+
+  /** 不带 claims 时列上限表。 */
+  const none = await run({ operation: 'feasibility' })
+  assert('不带 claims 列物理上限', none.ok === true && /物理上限/.test(txt(none)), '')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

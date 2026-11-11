@@ -8,7 +8,7 @@
 
 import { CONSTRAINTS, checkFeasibility, deriveConstraintContext, type ConstraintResult } from '../feasibility.js'
 import { toJsonValue } from '../format.js'
-import { mergeWorldArgs, safeNumberForJson, type MathArgs, type Outcome } from './shared.js'
+import { mergeWorldArgs, safeNumberForJson, CalcError, type MathArgs, type Outcome } from './shared.js'
 
 /**
  * `feasibility`：校验设定是否超出物理上限。
@@ -45,6 +45,33 @@ export function opFeasibility(args: MathArgs): Outcome {
   lines.push('')
 
   // ── 只列上限 ──
+  /**
+   * ## claims 传数组必须报错（A33 / N19 修复）
+   *
+   * 正确形态是**对象**：`claims:{cityPopulation:9.2e10}`。
+   *
+   * 但 `Object.keys([...])` 对数组也返回 `['0','1',…]`，于是数组会「通过」这层检查，
+   * 再往下走时因为没有可识别的键而被**整批丢弃**，最后返回：
+   *
+   * ```
+   *   「全部 0 项设定都在物理允许范围内」「自洽」
+   * ```
+   *
+   * **假通过比报错危险得多** —— 使用者会以为「已通过物理校验」。
+   * 而这个项目里 feasibility 被用了 31 次，是高频功能。
+   *
+   * 所以在这里显式拒绝数组，并给出正确写法。
+   */
+  if (Array.isArray(args.claims)) {
+    throw new CalcError(
+      'invalid_argument',
+      'feasibility 的 claims 必须是对象，收到的是数组',
+      '正确写法：{"operation":"feasibility","claims":{"cityPopulation":9.2e10,"soldierCount":2e6}}。' +
+        '键名可自取，值是数字或带单位字符串（如 "9.2e10 人"）。' +
+        '数组形态 [{claim,value,unit}] 不受支持 —— 直接报错好过静默丢弃后报「自洽」。',
+    )
+  }
+
   if (args.listConstraints === true || !args.claims || Object.keys(args.claims).length === 0) {
     lines.push('【本世界的物理上限】（未给 claims，只列上限）')
     lines.push('')
