@@ -511,6 +511,32 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## hierarchy 的正文
+ *
+ * 反馈包 `14` 号实测：99层项目**连续 7 轮返工，其中 5 轮是它**。
+ *
+ * > 层级树要「树状 + 闭合」：每级辖属数、底层基数、总兵力三者必须自洽。
+ * > 而 AI 只能一层一层算，每回都漏掉某一级。
+ *
+ * 这是「算一张表」而不是「算一个数」—— 单点公式覆盖不了。
+ */
+const HIERARCHY_BODY = (): string => `【编制树】hierarchy 每级辖属数 × 底层基数 → 逐级人数
+
+  {operation:"hierarchy", hierarchy:{
+    levels:["师","团","营","连","班"], tree:[3,3,3,3], base:10}}
+
+  三种用法：
+    ① 给 base      → 正向：算出每级单位数与人数（一个满编师 = 810 人）
+    ② 给 total     → 反解：每级应有多少单位、每个含多少人
+    ③ 两个都给     → 校验是否自洽，不自洽时说差额 + 三种可能原因
+
+  ★ tree 长度必须 = levels.length − 1（每级一个下辖倍数）。
+  ★ 算错一次整棵树都错 —— 所以正算给出的每级数字**逐个列出来**，便于核对。
+
+  ⚠ 编制对不上时，工具只给「差额 + 可能原因」，**不替你改倍数** ——
+    哪个数字是原文给的只有你知道。`
+
+/**
  * ## extract_numbers 的正文
  *
  * 反馈包实测：整理 23 份 PDF 时，**22,115 行台账是用 Python 脚本抽的**。
@@ -1723,7 +1749,7 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 所以只给入口 `query="sys"`。
      */
     /** 压缩：去掉「（公式怎么连起来）」那半句重复解释，省 9 字符。 */
-    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链；formulas:[…] 一次算多条。`,
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条链；formulas:[…] 批量。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
     body: FORMULA_BODY,
   },
@@ -1952,8 +1978,7 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 是同一句。合并后省 28 字符，信息量不减 —— 细节都在 ODE_BODY 里。
      */
     summary:
-      '连续用 ode（RK4，支持 min() 约束）；离散年表用 recurrence。' +
-      '★ ode 传 at:[5,10,20] 精确取那几年。',
+      '连续用 ode（RK4，支持 min() 约束）；离散年表用 recurrence。★ at:[5,10,20] 精确取点。',
     aliases: ['微分方程', 'ode', '递推', 'recurrence', '逐年', '年表', '增长模型', '传染病', '捕食模型', 'rk4'],
     body: ODE_BODY,
   },
@@ -2071,6 +2096,22 @@ export const HELP_TOPICS: HelpTopic[] = [
       '识别数字', '表格化', '结构化',
     ],
     body: EXTRACT_BODY,
+  },
+  {
+    key: 'hierarchy',
+    tier: 'core',
+    /**
+     * 99层项目 7 轮返工里 5 轮是它 —— 推演段最痛的表计算。
+     */
+    weight: 19,
+    short: '编制树',
+    title: '编制树（hierarchy）',
+    summary: '每级辖属数 × 底层基数 → 逐级人数；给总兵力可反解。★ 编制对不上时查这里。',
+    aliases: [
+      '编制', '层级', '树状', '辖属', '兵力编制', 'hierarchy',
+      '军区', '师团营', '建制', '组织架构',
+    ],
+    body: HIERARCHY_BODY,
   },
   {
     key: 'feasibility',

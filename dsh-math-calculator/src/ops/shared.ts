@@ -77,6 +77,7 @@ export type MathOperation =
   | 'interval'
   | 'compare'
   | 'extract_numbers'
+  | 'hierarchy'
   | 'bodies'
   | 'help'
 
