@@ -237,6 +237,21 @@ export interface MathArgs {
   /** operation=constants：要改的物理常数（基础旋钮 → 新值）。派生量会自动重算。 */
   constants?: { [key: string]: number }
   /**
+   * operation=constants：只算后果，不落盘（`preview:true`）。
+   *
+   * ## 为什么需要它
+   *
+   * `constants` 默认会**写进当前工作区**并设为进程级生效常数。
+   * 实测后果：改一次 `G`，之后所有 `world` 调用的重力都跟着变 ——
+   * 而输出里不声明「本次用了改过的常数」。
+   *
+   * 这与「只看后果」的常见用法冲突：用户常想「如果 G 小一半会怎样」，
+   * 但不想让这个假设污染后面所有计算。
+   *
+   * `preview:true` 就是那个「只算不存」的开关。
+   */
+  preview?: boolean
+  /**
    * operation=workspace 的动作：
    * list / show / create / switch / delete / save / set / reset
    */

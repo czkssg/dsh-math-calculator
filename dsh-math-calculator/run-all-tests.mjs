@@ -258,7 +258,7 @@ const SUITES = [
   // ★ 检索诚实性：没精确命中就明说，不拿子词凑数。
   // 缺陷标本：query=作用量 返回 11 条无关结果（滑窗切成「作用」「用量」）。
   { file: 'search-honesty.mjs', expect: 16, label: '检索诚实性（精确/子词可区分 + 反向对照）' },
-  { file: 'stop-bleed.mjs', expect: 79, label: '止血三项（E1 参数分片 / A2 复合单位 / A7+A19 物理可行域）' },
+  { file: 'stop-bleed.mjs', expect: 86, label: '止血三项（E1 参数分片 / A2 复合单位 / A7+A19 物理可行域）' },
   // ★ derivation 缺参数提示：必须给真实候选与可复制调用，且示例能跑。
   // 顺带纠正 diff 的一处错误说法（diffA/diffB 是工作区名，不是表名）。
   { file: 'derivation-hints.mjs', expect: 28, label: 'derivation 缺参提示（真实候选 + 示例可跑）' },

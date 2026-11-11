@@ -214,6 +214,31 @@ console.log('-- 7. 诊断路径仍能看到坏世界（不被入口拦死） --'
   assert('deriveAll 把非法世界标成 invalid', bad.verdict?.level === 'invalid', String(bad.verdict?.level))
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 8. A1 constants preview 只算不存 --')
+// ═══════════════════════════════════════════════════════════
+{
+  const gravity = async () =>
+    Number(txt(await run({ operation: 'world' })).match(/重力是地球的 ([\d.]+) 倍/)?.[1])
+
+  const before = await gravity()
+  const preview = await run({ operation: 'constants', constants: { G: 1e-10 }, preview: true })
+  assert('preview 被接受', preview.ok === true, txt(preview).slice(0, 60))
+  assert('preview 声明了「未生效」', /未生效、未落盘/.test(txt(preview)), '')
+  assert('preview 不改变后续 world 重力', (await gravity()) === before, `期望 ${before}`)
+
+  /** 不带 preview 时必须真生效，且明确声明这是全局副作用。 */
+  const applied = await run({ operation: 'constants', constants: { G: 1e-10 } })
+  assert('不带 preview 会生效', (await gravity()) !== before, '')
+  assert('生效时声明了全局副作用', /全局副作用/.test(txt(applied)), '')
+  assert('生效时给了两种出路（preview / 恢复）',
+    /preview/.test(txt(applied)) && /constants:\{\}/.test(txt(applied)), '')
+
+  /** 恢复：传空对象回到现实宇宙。 */
+  await run({ operation: 'constants', constants: {} })
+  assert('constants:{} 可恢复', (await gravity()) === before, '')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

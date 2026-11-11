@@ -275,6 +275,31 @@ export function opConstants(args: MathArgs): Outcome {
 
   // ── 引导 ──
   lines.push('')
+
+  /**
+   * ## preview 模式：只算不存（A1 修复）
+   *
+   * `preview:true` 时**既不设进程级生效常数，也不写工作区**。
+   * 调用方能拿到「改成这组常数会怎样」的完整推演，但不污染后续计算。
+   *
+   * 这是对 A1（常数污染）最直接的补救：原来的 `constants` 只有
+   * 「改了就一直生效」一种模式，于是「只想看后果」的调用也会污染全局。
+   */
+  if (args.preview === true) {
+    lines.push('✓ 预览模式：以上推演已完成，但**未生效、未落盘**。')
+    lines.push('  之后 formula / world 仍使用原来的常数。')
+    lines.push('  要让它们真生效，去掉 preview 再调一次。')
+    return {
+      result: lines.join('\n'),
+      value: toJsonValue({
+        values: result.values,
+        preview: true,
+        applied: false,
+        persisted: false,
+      }),
+    }
+  }
+
   // 把推演结果设为「当前生效的常数」，后续 formula/world 都会用新值
   setActiveConstants(result.values)
 
@@ -299,6 +324,17 @@ export function opConstants(args: MathArgs): Outcome {
   )
   lines.push('  切换世界观请用 operation="workspace" action2="switch"，不同工作区的常数表互相隔离。')
   lines.push(`可用旋钮: ${FUNDAMENTAL_NAMES.join(', ')}`)
+  /**
+   * 明确告诉调用方「接下来会受影响」（A1 的另一半）。
+   *
+   * 原来改了常数之后，后续 `world` 输出里一个字都不提
+   * 「本次用的是改过的 G」——于是数字变了也无人察觉。
+   * 现在至少在这一步说清，并给出撤销与预演两种出路。
+   */
+  lines.push('')
+  lines.push('⚠ 这是一个**全局副作用**：之后所有 formula / world 都用新常数。')
+  lines.push('  只想看后果、不想污染后续 → 加 preview:true 重调一次。')
+  lines.push('  要恢复现实宇宙 → 传 constants:{}。')
 
   return {
     result: lines.join('\n'),

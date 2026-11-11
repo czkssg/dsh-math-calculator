@@ -3472,6 +3472,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'flipClaim', 'flipEpsilon', 'flipBase',
   // 杂项
   'threshold', 'worstLimit', 'variableName', 'constantName',
+  // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
+  'preview',
   'emptyOnly', 'dryRun', 'olderThanDays', 'keep', 'tempPrefixes',
   'sensitivityBase', 'sensitivityExponent',
 ]);
@@ -3550,6 +3552,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   regression: ['data', 'dataY', 'degree', 'expression'],
   solve: ['expression', 'expressions', 'variable'],
   system: ['matrix', 'vector', 'expression'],
+  constants: ['constants', 'preview'],
   balance: ['balance'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
