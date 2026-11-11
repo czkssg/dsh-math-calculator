@@ -76,6 +76,7 @@ export type MathOperation =
   | 'ledger'
   | 'interval'
   | 'compare'
+  | 'extract_numbers'
   | 'bodies'
   | 'help'
 

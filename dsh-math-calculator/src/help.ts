@@ -511,6 +511,33 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## extract_numbers 的正文
+ *
+ * 反馈包实测：整理 23 份 PDF 时，**22,115 行台账是用 Python 脚本抽的**。
+ * 工具在「对账入口第一件事」上零支撑 —— 而那是全部工作中耗时最多的一环。
+ *
+ * ## 分层：本操作不读 PDF
+ *
+ * 用户已确认「允许读 PDF」，但那不等于本插件要自己造解析器：
+ * 宿主已有 `read_pdf` / `async_parse_pdf`（dsh-pdf-mineru 证明完全可行）。
+ * 重复造只会两套都不一致。本操作只做「文本 → 台账」这一层。
+ */
+const EXTRACT_BODY = (): string => `【数字台账】extract_numbers 从文本抽结构化数字
+
+  先取文本（PDF 用宿主工具），再送进来：
+    read_pdf / async_parse_pdf → 拿到正文
+    {operation:"extract_numbers", text:"…正文…"} → 台账
+
+  每条给：原文、数值（中文量级已折算）、单位、上下文、行号。
+  区间的给上下界；噪音（页码/时间戳/思考耗时/轮次）默认滤掉。
+
+  ★ 中文量级会折算：1.49 亿 → 149000000，2.66 亿吨 → 266000000。
+  ★ 每个数字带**上下文**（所在那半句）—— 否则抽出来也不知道是什么。
+  ★ keepNoise:true 可保留噪音（会标出原因）；limit 控制上限（默认 2000）。
+
+  ⚠ 这是**台账**不是验算。要对账请把成组的数送进 ledger 或 evaluate。`
+
+/**
  * ## compare 的正文
  *
  * 反馈包 15 号的动作 4 是「方案对比」，真实例子是第 43 轮的列强国力表。
@@ -1695,7 +1722,8 @@ export const HELP_TOPICS: HelpTopic[] = [
      * 而不只是「有多少条公式」。一条 summary 里塞不下 18 条链的名字，
      * 所以只给入口 `query="sys"`。
      */
-    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链（公式怎么连起来）；formulas:[…] 一次算多条。`,
+    /** 压缩：去掉「（公式怎么连起来）」那半句重复解释，省 9 字符。 */
+    summary: `调 ${FORMULAS.length} 条公式、overrides 改参数。★ query="sys" 看 ${FORMULA_SYSTEM_COUNT} 条推演链；formulas:[…] 一次算多条。`,
     aliases: ['公式', 'formula', '检索', 'overrides', '覆盖参数'],
     body: FORMULA_BODY,
   },
@@ -1969,7 +1997,11 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 20,
     short: '台账闭合',
     title: '台账闭合（ledger）',
-    summary: '分项之和 vs 总量：占比合计 99.01% 差在哪、哪一项疑似 10 倍笔误。★ 推演分配比与对账查闭合共用。',
+    /**
+     * 压缩：60 → 41 字符。原句「推演分配比与对账查闭合共用」在正文里说，
+     * 目录这一行只需要让人知道「它能查占比合不上」。
+     */
+    summary: '分项之和 vs 总量：占比差在哪、哪项疑似 10 倍笔误。★ 两段共用。',
     /**
      * 别名要覆盖**用户的实际问法**，不只是名词。
      *
@@ -2022,6 +2054,23 @@ export const HELP_TOPICS: HelpTopic[] = [
       '对比表', '优劣',
     ],
     body: COMPARE_BODY,
+  },
+  {
+    key: 'extract',
+    tier: 'core',
+    /**
+     * 对账段的第一件事：把文档里的数字抠出来。
+     * 反馈包实测「40% 的工作量在这里，而工具零支撑」。
+     */
+    weight: 22,
+    short: '数字台账',
+    title: '数字台账（extract_numbers）',
+    summary: '从正文抽结构化数字：中文量级折算、区间给上下界、每个数带上下文。★ 对账第一步。',
+    aliases: [
+      '抽取', '台账', '抠数字', '抽数字', '提取', 'extract',
+      '识别数字', '表格化', '结构化',
+    ],
+    body: EXTRACT_BODY,
   },
   {
     key: 'feasibility',
@@ -2434,7 +2483,7 @@ function renderIndex(): string {
   const modeling = core.filter(isModeling)
   const lines: string[] = [
     '══════ math_execute 能力目录（' + HELP_TOPICS.length + ' 节）══════',
-    'helpTopic:"键名" 取该节全文；也可用中文词（矩阵/星球/单位…）。',
+    'helpTopic:"键名" 取全文；可中文词（矩阵/星球）。helpQuery:"…" 按任务搜。',
     '',
     '  ── 一、算术 ──',
   ]
@@ -2478,7 +2527,7 @@ function renderIndex(): string {
         return topic.key + '=' + (topic.short ?? topic.title.slice(0, 8))
       })
       for (let index = 0; index < labels.length; index += 3) {
-        lines.push('    ' + labels.slice(index, index + 3).join('  ·  '))
+        lines.push('    ' + labels.slice(index, index + 3).join(' · '))
       }
     }
     /**
@@ -2497,14 +2546,14 @@ function renderIndex(): string {
    * 而它们本来只是「顺带知道一下」的存在。
    */
   lines.push('')
-  lines.push('  ── 三、其余能力（同样可查，正文里有完整说明）──')
+  lines.push('  ── 三、其余能力 ──')
   const folded = extra.map(function (item) {
     const label = item.short ?? item.title.slice(0, 8)
     return item.key + '=' + label
   })
   /** 每行约三到四项，便于目视扫读，也不至于把一行拉得过长。 */
   for (let index = 0; index < folded.length; index += 3) {
-    lines.push('    ' + folded.slice(index, index + 3).join('  ·  '))
+    lines.push('    ' + folded.slice(index, index + 3).join(' · '))
   }
   lines.push('')
   lines.push('★ 物理量一律带单位写（(10 hp/0.475) to kW、5 cm to inch）：量纲错当场拦下。')
