@@ -78,6 +78,7 @@ export type MathOperation =
   | 'compare'
   | 'extract_numbers'
   | 'hierarchy'
+  | 'quick_feasible'
   | 'bodies'
   | 'help'
 

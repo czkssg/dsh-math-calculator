@@ -212,7 +212,12 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * 新增 `hierarchy` 编制树 —— 99层 7 轮返工里 5 轮是它，
    * 是「算一张表」这类运算形状的代表，单点公式覆盖不了。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 31）', coreTopics.length === 31, String(coreTopics.length))
+  /**
+   * ## 31 → 32（2026-11-11）
+   * 新增 `quick` 一句话可行 —— 推演段常被「感觉太离谱」否决，
+   * 这个操作把感觉变成可核对的判定（反馈包 15 号的动作 5）。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 32）', coreTopics.length === 32, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *

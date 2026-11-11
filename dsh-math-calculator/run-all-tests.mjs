@@ -265,6 +265,7 @@ const SUITES = [
   { file: 'compare.mjs', expect: 56, label: '方案对比（表/逐列胜者/权重不猜/与版本对比分工）' },
   { file: 'extract-numbers.mjs', expect: 45, label: '数字台账（中文量级折算/噪音过滤/区间/上下文）' },
   { file: 'hierarchy.mjs', expect: 51, label: '编制树（正算每级/反解/三数自洽校验）' },
+  { file: 'quick-feasible.mjs', expect: 37, label: '一句话可行（该判必判/判不了要说/不编上限）' },
   // ★ derivation 缺参数提示：必须给真实候选与可复制调用，且示例能跑。
   // 顺带纠正 diff 的一处错误说法（diffA/diffB 是工作区名，不是表名）。
   { file: 'derivation-hints.mjs', expect: 28, label: 'derivation 缺参提示（真实候选 + 示例可跑）' },

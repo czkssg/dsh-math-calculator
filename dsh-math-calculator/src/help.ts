@@ -511,6 +511,30 @@ const FEASIBILITY_BODY = (): string => `【物理可行域】feasibility 单项�
   社会收支（粮/水/能/财政）见 helpTopic:"balance"。`
 
 /**
+ * ## quick_feasible 的正文
+ *
+ * 反馈包 `15` 号的动作 5：
+ * > 用户常凭「感觉太离谱」否决（末日、南极各有一次），
+ * > 插件该给「有依据的一句话判断」。
+ *
+ * 现实是：作者说「这不行吧」，AI 只能说「确实有点勉强」—— 两边都没依据。
+ */
+const QUICK_FEASIBLE_BODY = (): string => `【一句话可行】quick_feasible 把「感觉离谱」变成可核对判定
+
+  {operation:"quick_feasible", quickFeasible:{claim:"这座塔能有 8000 米高"}}
+  → 判定：不可行｜依据：建筑高度上限 4903 m，声称 8000 m
+
+  它能判的维度（**词面匹配，不做语义理解**）：
+    尺寸（高/长/塔/楼/巨兽）→ 比 feasibility 的上限
+    能量（能量/功率/瓦）    → 比 civilization 的行星能量天花板
+    人口                   → **不判**：人口没有物理硬上限，真正的约束是粮/水/地
+    材料                   → 只给本世界材料基准，不判
+    时间                   → **不判**：靠工期模型，用 recurrence / ode
+
+  ★ 四态：可行 / 勉强（余量 < 2 倍）/ 不可行 / **判不了**。
+  ★ 判不了时**明说判不了并列出能判什么** —— 编一个「大概勉强」比说不知道有害。`
+
+/**
  * ## hierarchy 的正文
  *
  * 反馈包 `14` 号实测：99层项目**连续 7 轮返工，其中 5 轮是它**。
@@ -2073,7 +2097,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 16,
     short: '方案对比',
     title: '方案对比（compare）',
-    summary: '几个互斥选项比指标：表格 + 每列最强者。★ 不给权重就不给综合分（工具不猜哪个指标更重要）。',
+    summary: '几个互斥选项比指标：表格 + 每列最强者。★ 不给权重就不给综合分。',
     aliases: [
       '方案', '对比', '比较', '哪个好', '选哪个', '权衡', 'compare',
       '对比表', '优劣',
@@ -2090,7 +2114,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 22,
     short: '数字台账',
     title: '数字台账（extract_numbers）',
-    summary: '从正文抽结构化数字：中文量级折算、区间给上下界、每个数带上下文。★ 对账第一步。',
+    summary: '从正文抽结构化数字：中文量级折算、区间、上下文。★ 对账第一步。',
     aliases: [
       '抽取', '台账', '抠数字', '抽数字', '提取', 'extract',
       '识别数字', '表格化', '结构化',
@@ -2106,12 +2130,28 @@ export const HELP_TOPICS: HelpTopic[] = [
     weight: 19,
     short: '编制树',
     title: '编制树（hierarchy）',
-    summary: '每级辖属数 × 底层基数 → 逐级人数；给总兵力可反解。★ 编制对不上时查这里。',
+    summary: '每级辖属数 × 底层基数 → 逐级人数；给总兵力可反解。★ 编制对不上查这里。',
     aliases: [
       '编制', '层级', '树状', '辖属', '兵力编制', 'hierarchy',
       '军区', '师团营', '建制', '组织架构',
     ],
     body: HIERARCHY_BODY,
+  },
+  {
+    key: 'quick',
+    tier: 'core',
+    /**
+     * 推演段常被「感觉太离谱」否决 —— 这个操作把感觉变成可核对的判定。
+     */
+    weight: 15,
+    short: '一句话可行',
+    title: '一句话可行（quick_feasible）',
+    summary: '「这座塔 8000 米高行吗」→ 判定 + 依据。★ 判不了会明说，不编。',
+    aliases: [
+      '可行', '行不行', '靠谱', '离谱', '能不能做到', 'quick_feasible',
+      '可行性', '速判', '一句话',
+    ],
+    body: QUICK_FEASIBLE_BODY,
   },
   {
     key: 'feasibility',
@@ -2534,7 +2574,7 @@ function renderIndex(): string {
   }
   lines.push('')
   lines.push('  ── 二、建模与推演 ──')
-  lines.push('  ★ 正在手写循环 / 逐年表 / 参数扫描？先看这几节')
+  lines.push('  ★ 正在手写循环/逐年表/参数扫描？看这几节')
   /**
    * ## 领域公式节在目录里只给一行
    *
