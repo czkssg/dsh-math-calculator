@@ -282,6 +282,45 @@ console.log('-- 8. ★ 写死的数字必须与当前一致（防止 skill 过�
   }
 }
 
+// ───────────────────────────────────────────────────────────
+console.log('-- 9. ★ 开工前先查开源（用户铁律，必须有落地文档）--')
+// ───────────────────────────────────────────────────────────
+{
+  /**
+   * 用户指令（2026-11-12）：
+   * > 以后编写或者开工前，无论是什么功能，任何一个功能开工前，先查开源社区。
+   *
+   * 这条规则的落地不能只写在对话里 —— 那下一个接手的人看不到。
+   * 所以要有三处落地，这里逐个验：
+   *
+   * ```
+   *   ① docs/开工前先查开源.md   流程细则
+   *   ② AGENTS.md                接手必读（仓库根）
+   *   ③ skill                    让 AI 也知道
+   * ```
+   */
+  const ruleDoc = join(root, 'docs', '开工前先查开源.md')
+  assert('★ 有《开工前先查开源》细则文档', existsSync(ruleDoc), ruleDoc)
+
+  const agentsPath = join(root, 'AGENTS.md')
+  const agents = existsSync(agentsPath) ? readFileSync(agentsPath, 'utf8').replace(/\r\n/g, '\n') : ''
+  assert('★ AGENTS.md 存在', existsSync(agentsPath), agentsPath)
+  assert('★ AGENTS.md 首条就是这条规则', /开工前先查开源/.test(agents), '')
+  /** 规则要写成「硬门槛」，不是「建议」。 */
+  assert('规则被标为硬门槛', /硬门槛|缺一不可/.test(agents), '')
+
+  /** skill 里也要有（让 AI 知道加功能时的规矩）。 */
+  assert('skill 里提到了这条规则', /开工前.*查开源|查开源社区/.test(skill), '')
+
+  /** 细则文档要含四步流程。 */
+  const ruleText = existsSync(ruleDoc) ? readFileSync(ruleDoc, 'utf8').replace(/\r\n/g, '\n') : ''
+  for (const step of ['查', '评估', '记录', '开工']) {
+    assert('细则含「' + step + '」这一步', new RegExp('第 \\\\d 步').test(ruleText) || ruleText.includes(step), '')
+  }
+  /** 要能追溯「为什么」——列出返工案例。 */
+  assert('细则记录了返工案例', /graphology|turf|ucum/.test(ruleText), '')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 if (fails.length > 0) {
