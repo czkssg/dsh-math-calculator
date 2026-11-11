@@ -164,7 +164,32 @@ console.log('-- 10. help 含 derivation 全部子命令与账本闭合配方 --'
    */
   const h = String((await run({ operation: 'help' })).result || '')
   assert('目录列出 derivation', /derivation/.test(h), '')
-  assert('目录尺寸受控（≤2500）', h.length <= 2500, String(h.length))
+  /**
+   * ## 尺寸硬上限撤掉（2026-11-12，用户明确）
+   *
+   * > 不要节约字符量。一次推演是百万到亿级用量，几千字符不值一提。
+   * > 过度压缩会影响可读性、影响 AI 使用。
+   * > 只要保证**没有重复**和**没有废话**。
+   *
+   * 所以这里不再判长度，改判「分节有没有白做」的实质：
+   * **目录里不该出现子节的正文内容**（否则等于没拆）。
+   */
+  assert('目录不含子节正文', !/open_loop_error|香农容量计算过程|利特尔定律的推导/.test(h), '')
+  const dupLines = (() => {
+    const seen = new Set()
+    const dups = []
+    for (const line of h.split('\n')) {
+      const t = line.trim()
+      if (t.length < 6) continue
+      if (seen.has(t)) dups.push(t)
+      seen.add(t)
+    }
+    return dups
+  })()
+  assert('目录没有重复行', dupLines.length === 0, dupLines.slice(0, 2).join(' | '))
+  if (h.length > 4000) {
+    console.log('        提示：目录 ' + h.length + ' 字符（软提醒，不判失败）')
+  }
   const deriv = String((await run({ operation: 'help', helpTopic: 'derivation' })).result || '')
   assert('derivation 节含继承参数名', /inherit/i.test(deriv), '')
   const recipe = String((await run({ operation: 'help', helpTopic: 'recipe' })).result || '')

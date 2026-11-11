@@ -926,15 +926,30 @@ const D_FLUID_BODY = (): string => `【工程·流体与气动（管流/水头/�
 
 /** 【生物·生态（载畜量/料肉比/NPP/营养级）】按公式 id 调用，参数可带单位。 */
 /** 【冷战支柱】控制论 / 信息论 / 排队 / 可靠性 / 决策 31 条。 */
-const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排队/可靠性/决策）】
+/**
+ * ## 冷战支柱拆成四节（2026-11-12）
+ *
+ * 用户明确 help 的目的是**防止一次性注入让 AI 注意力分散**。
+ * 这一节原来 5198 字符，内含四个**互不相关**的学科：
+ *
+ * ```
+ *   控制论   为什么闭环、增益能加到多少
+ *   信息论   上限、门槛、换算
+ *   排队论   为什么忙时突然崩
+ *   可靠性   冗余与决策
+ * ```
+ *
+ * 查「反馈控制」时被迫读完信息论、排队论、可靠性 —— 注意力被摊薄到 3 个
+ * 无关主题上。拆开后查控制论只付约 1300 字符。
+ *
+ * 原 key `d-coldwar` 保留为目录页，老调用不失效。
+ */
+const D_COLDWAR_CYBER_BODY = (): string => `【控制论：闭环、增益能加到多少】
 
   调用方式：{operation:"formula", formula:"id", overrides:{参数}}
-  这 31 条不是「物理的延伸」，而是 1940—1970 另一套语言：处理**信息与调控**。
-  共同点：都只收有闭式解的那一层（需要迭代求解的线性规划一律不收）。
+  ★ 判据：只收有闭式解、参数可填的那一层 —— 需要迭代求解的（如线性规划）不收。
 
-
-════ 控制论：为什么闭环、增益能加到多少 ════
-  open_loop_error            残差 = 扰动 / (1 + 增益)
+open_loop_error            残差 = 扰动 / (1 + 增益)
                              ★ 纠错能力等于增益：增益 10 压到 1/10，增益 100 压到 1/100
                              所以「把传感器做准」与「把增益做大」等价，而后者通常便宜
   loop_stability_limit       增益上限 ≈ 1 / (延迟 × 带宽)
@@ -947,9 +962,17 @@ const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排�
                              ★ ζ=0.3→37%、0.5→16.3%、0.7→4.6%、1→0
                              ⚠ 欠阻尼不是「又快又冲」，是**又冲又慢**（要振荡几次才进误差带）
                              ζ=0.7 被偏爱不是审美：超调只剩 4.6% 且建立时间接近最优
+`;
 
-════ 信息论与信号：上限、门槛、换算 ════
-  channel_capacity           C = B·log₂(1 + S/N)
+/**
+ * 信息论与信号（拆自 `d-coldwar` 的第二节）。
+ */
+const D_COLDWAR_INFO_BODY = (): string => `【信息论与信号：上限、门槛、换算】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  ★ 判据：只收有闭式解、参数可填的那一层 —— 需要迭代求解的（如线性规划）不收。
+
+channel_capacity           C = B·log₂(1 + S/N)
                              ★ 带宽**线性**、信噪比**对数** —— 加功率收益递减，加带宽才是主路
                              实测：3000Hz + 30dB → 29.9 kbit/s（正是 33.6k 猫的物理天花板）
   shannon_limit_min_snr      S/N ≥ 2^η − 1（由容量式反解）
@@ -980,9 +1003,17 @@ const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排�
                              ★ 带宽与响应速度是同一件事的两面（因果律要求）
                              滤波越重 → 延迟越大 → 能加的增益越小，三处同一条限制
   mmc_queue_length           多服务台近似（看「该加 1 个还是 10 个」）
+`;
 
-════ 排队与库存：为什么忙时突然崩 ════
-  little_law                 L = λ·W
+/**
+ * 排队与库存（拆自 `d-coldwar` 的第三节）。
+ */
+const D_COLDWAR_QUEUE_BODY = (): string => `【排队与库存：为什么忙时突然崩】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  ★ 判据：只收有闭式解、参数可填的那一层 —— 需要迭代求解的（如线性规划）不收。
+
+little_law                 L = λ·W
                              ★ 排队论唯一**无条件成立**的式子（不含概率假设，本质是守恒）
                              ⚠ W 必须含服务时间，只算等待会少算好几倍
                              实战用法：验证「店里积压几件」与「日接几单」是否自洽
@@ -998,9 +1029,17 @@ const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排�
   safety_stock               SS = z·σ·√L
                              ★ 提前期 ×4 → 安全库存只 ×2
                              95%→99% 服务水平，库存要多 41%（2.33/1.65），典型边际递减
+`;
 
-════ 可靠性与决策 ════
-  reliability_series         R_total = R^n
+/**
+ * 可靠性与决策（拆自 `d-coldwar` 的第四节）。
+ */
+const D_COLDWAR_RELIABILITY_BODY = (): string => `【可靠性与决策：冗余、判据、取舍】
+
+  调用方式：{operation:"formula", formula:"id", overrides:{参数}}
+  ★ 判据：只收有闭式解、参数可填的那一层 —— 需要迭代求解的（如线性规划）不收。
+
+reliability_series         R_total = R^n
                              ★ 0.99 跑 100 环 → 只剩 0.366。简单机械比精巧机械可靠，是环节数问题
                              想提高可靠度，**减少环节比提高单环有效**
   reliability_parallel       R = 1 − (1−R)^n
@@ -1028,7 +1067,27 @@ const D_COLDWAR_BODY = (): string => `【冷战支柱（控制论/信息论/排�
 ★ 共同点：这批的价值不在算式（都只有一两行），而在**它们推翻了哪些直觉**：
   人多一倍不是慢一倍、检测阳性不是有病、多备冗余不是更安全、
   欠阻尼不是更快、加增益不是更准。
-  现代物理与社会科学的同类清单见 helpTopic:"d-modern-society"。`;
+  现代物理与社会科学的同类清单见 helpTopic:"d-modern-society"
+`;
+
+/**
+ * 兼容入口：保留原 key `d-coldwar`，只给**目录**。
+ *
+ * 这是「不让老调用失效」的做法 —— 直接删 key 会让既有引用报「没有这一节」。
+ */
+const D_COLDWAR_BODY = (): string => `【冷战支柱（1940—1970 的信息与调控）★ 已按学科拆开】
+
+  这四块原来是同一节 5198 字符，查「反馈控制」也要连信息论/排队/可靠性一起读。
+  现在拆开，只付你要的那块：
+
+    helpTopic:"d-coldwar-cyber"        控制论（闭环残差/增益上限/建立时间/超调）
+    helpTopic:"d-coldwar-info"         信息论与信号（香农极限/信噪比/采样定理/带宽）
+    helpTopic:"d-coldwar-queue"        排队与库存（利用率临界/利特尔定律/安全库存）
+    helpTopic:"d-coldwar-reliability"  可靠性与决策（串联失效率/冗余收益/决策阈值）
+
+  共同判据：只收有闭式解、参数可填的那一层 —— 需要迭代求解的（如线性规划）不收。
+`;
+
 
 /** 【现代物理与社会科学】1900—2000 两条主线：经典失效 + 社会可测。 */
 /**
@@ -1955,14 +2014,57 @@ export const HELP_TOPICS: HelpTopic[] = [
     key: 'd-coldwar',
     tier: 'core',
     short: '冷战学科',
-    /** 1940—1970 最被低估的一层：不是「物理的延伸」，而是处理「信息与调控」的另一套语言。 */
+    /** 保留为目录页：四个学科已拆成独立子节，不再一次吐 5198 字符。 */
     weight: 12,
-    title: '冷战支柱（控制论/信息论/排队/可靠性/决策）',
-    summary: '反馈把残差压 1/(1+K)、延迟卡死增益上限、信道容量 B·log₂(1+S/N)、' +
-      'ρ/(1−ρ) 排队悬崖、串联可靠度 R^n、贝叶斯假阳性。★ 31 条，全是有闭式解的那一层。',
-    aliases: ['冷战支柱', '冷战学科', '控制论', '信息论', '反馈', '信道', '排队', '运筹', '可靠性', '博弈', '贝叶斯',
-      'cybernetics', 'shannon', 'queue', 'reliability', 'bayes'],
+    title: '冷战支柱（★ 已按学科拆成四节，这里是目录）',
+    summary: '这一节已按学科拆开：控制论 / 信息论 / 排队论 / 可靠性。查哪块付哪块。',
+    aliases: ['冷战支柱', '冷战学科', '控制论', '信息论', '排队', '可靠性',
+      'cybernetics', 'shannon', 'queue', 'reliability'],
     body: D_COLDWAR_BODY,
+  },
+  {
+    key: 'd-coldwar-cyber',
+    tier: 'core',
+    short: '控制论',
+    weight: 12,
+    title: '控制论（闭环、增益上限、建立时间）',
+    summary: '闭环把残差压到 1/(1+K)、增益上限受「延迟×带宽」卡死、建立时间 4/(ζω)、超调与阻尼比。',
+    aliases: ['控制论', '反馈', '闭环', '增益', 'PID', '超调', '阻尼', '稳定性',
+      'cybernetics', 'feedback', 'control'],
+    body: D_COLDWAR_CYBER_BODY,
+  },
+  {
+    key: 'd-coldwar-info',
+    tier: 'core',
+    short: '信息论',
+    weight: 12,
+    title: '信息论与信号（上限、门槛、换算）',
+    summary: '香农容量 B·log₂(1+S/N)、信噪比 dB 换算、采样定理门槛、带宽与传码率、熵与编码极限。',
+    aliases: ['信息论', '信道', '香农', '带宽', '熵', '采样', '信噪比', '传码率',
+      'shannon', 'channel', 'entropy', 'signal'],
+    body: D_COLDWAR_INFO_BODY,
+  },
+  {
+    key: 'd-coldwar-queue',
+    tier: 'core',
+    short: '排队论',
+    weight: 12,
+    title: '排队与库存（为什么忙时突然崩）',
+    summary: 'ρ/(1−ρ) 排队悬崖、利特尔定律 L=λW、M/M/1 等待时间、安全库存与服务水平、库存周转。',
+    aliases: ['排队', '库存', '运筹', '利特尔定律', '等待时间', '服务水平', '周转率',
+      'queue', 'inventory', 'operations research'],
+    body: D_COLDWAR_QUEUE_BODY,
+  },
+  {
+    key: 'd-coldwar-reliability',
+    tier: 'core',
+    short: '可靠性决策',
+    weight: 12,
+    title: '可靠性与决策（冗余、判据、取舍）',
+    summary: '串联可靠度 R^n、并联冗余收益递减、贝叶斯假阳性、决策阈值与期望值、博弈均衡。',
+    aliases: ['可靠性', '冗余', '失效率', '贝叶斯', '假阳性', '决策', '博弈', '期望值',
+      'reliability', 'redundancy', 'bayes', 'decision'],
+    body: D_COLDWAR_RELIABILITY_BODY,
   },
   /**
    * ## d-modern-society 拆成三个子节（2026-11-12）
