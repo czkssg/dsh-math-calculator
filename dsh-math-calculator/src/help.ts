@@ -1915,7 +1915,11 @@ export const HELP_TOPICS: HelpTopic[] = [
     short: '收支/天体',
     title: '收支盘点与天体目录（balance / bodies）',
     summary: '粮水能地财政军费多项一起看给最短板；以及天体目录、类型学、常数变化影响。',
-    aliases: ['收支', '盘点', '养得起', '经济', '天体', '火星'],
+    /**
+     * 「这个城能守多久」这类问法属于收支够不够，不是物理上限。
+     * 补上够/不够的动词短语，让它能命中这一节。
+     */
+    aliases: ['收支', '盘点', '养得起', '经济', '天体', '火星', '够吃', '够用', '够不够', '守多久'],
     body: BALANCE_BODY,
   },
   {
@@ -1933,7 +1937,18 @@ export const HELP_TOPICS: HelpTopic[] = [
     short: '台账闭合',
     title: '台账闭合（ledger）',
     summary: '分项之和 vs 总量：占比合计 99.01% 差在哪、哪一项疑似 10 倍笔误。★ 推演分配比与对账查闭合共用。',
-    aliases: ['台账', '闭合', '占比', '合计', '配比', 'ledger'],
+    /**
+     * 别名要覆盖**用户的实际问法**，不只是名词。
+     *
+     * 实测：「账本对不上」原来只命中 recipe（因为它提到「账本闭合」，
+     * 但那只是通用手法里的一句话）。补上「对不上/合不上/差在哪/笔误」
+     * 这类动词短语后，问法能直达这一节。
+     */
+    aliases: [
+      '台账', '闭合', '占比', '合计', '配比', 'ledger',
+      '对不上', '合不上', '差在哪', '笔误', '漏项', '分项',
+      '100%', '百分之', '账本', '结算',
+    ],
     body: LEDGER_BODY,
   },
   {
@@ -1970,7 +1985,12 @@ export const HELP_TOPICS: HelpTopic[] = [
     short: '物理上限',
     title: '物理可行域（feasibility）',
     summary: 'claims 传**对象**（不是数组）：这个世界能不能容纳这么多人/这么高的楼。不带 claims 列出 11 项上限。',
-    aliases: ['可行', '上限', '能不能', '容纳', 'feasibility', '限制'],
+    /**
+     * 收紧：原来有「能不能」这个过于泛的别名，
+     * 导致「这个城能守多久」也命中它（那其实是粮食够不够，不是物理上限）。
+     * 换成更具体的能力词。
+     */
+    aliases: ['可行', '上限', '容纳', 'feasibility', '限制', '生理上限', '工程上限', '最多能'],
     body: FEASIBILITY_BODY,
   },
   {
@@ -2079,6 +2099,199 @@ function normalizeTopicQuery(topic: string): string {
  * 匹配顺序：key 精确 → 别名精确 → key/别名**包含**查询词。
  * 最后那层包含匹配是给 `"world"` 命中 `"world（星球）"` 这类写法用的，
  * 但只在前两层都没命中时才用 —— 否则短词会乱咬。
+ */
+/**
+ * 把查询切成词元。
+ *
+ * ## 为什么中文要滑窗
+ *
+ * 中文没有空格，`能不能住人` 不能靠 split 切。
+ * 但也不能直接拿整串去比子串 —— `帮我算一下这个城能守多久`
+ * 整串在正文里当然找不到。
+ *
+ * 所以取 2–4 字的滑窗：短到能命中关键词，长到不至于全撞上。
+ *
+ * @param text - 原始查询
+ * @returns 去重后的词元列表
+ */
+function tokenizeQuery(text: string): string[] {
+  const raw = text.toLowerCase()
+  const out = new Set<string>()
+  /** 英文/数字按词切。 */
+  for (const word of raw.match(/[a-z][a-z0-9_-]{1,}/g) ?? []) out.add(word)
+  /** 中文按 2–4 字滑窗。 */
+  const cjk = raw.replace(/[^\u4e00-\u9fa5]/g, '')
+  for (let size = 4; size >= 2; size -= 1) {
+    for (let start = 0; start + size <= cjk.length; start += 1) {
+      out.add(cjk.slice(start, start + size))
+    }
+  }
+  /** 整串也留一个（短查询时最有效）。 */
+  if (cjk.length >= 2) out.add(cjk)
+  return [...out]
+}
+
+/**
+ * 一个节的搜索索引（惰性构建，每节只算一次）。
+ *
+ * 权重分配的依据：
+ * ```
+ *   key 命中      ×10  —— 直接叫对了名字，最强信号
+ *   别名命中      ×6   —— 用户用了同义词
+ *   标题命中      ×4   —— 标题里出现，通常正是这一节的用途
+ *   short 命中    ×3   —— 六字标签
+ *   正文命中      ×1   —— 正文出现太泛，只能算弱信号
+ * ```
+ */
+interface TopicIndex {
+  topic: HelpTopic
+  keyText: string
+  aliasText: string
+  titleText: string
+  shortText: string
+  bodyText: string
+}
+
+const TOPIC_INDEX_CACHE = new Map<string, TopicIndex>()
+
+/**
+ * 取（并缓存）某一节的搜索索引。
+ *
+ * @param topic - 节
+ * @returns 索引
+ */
+function topicIndex(topic: HelpTopic): TopicIndex {
+  const cached = TOPIC_INDEX_CACHE.get(topic.key)
+  if (cached) return cached
+  const built: TopicIndex = {
+    topic,
+    keyText: topic.key.toLowerCase(),
+    aliasText: (topic.aliases ?? []).join(' ').toLowerCase(),
+    titleText: topic.title.toLowerCase(),
+    shortText: (topic.short ?? '').toLowerCase(),
+    bodyText: topic.summary.toLowerCase(),
+  }
+  TOPIC_INDEX_CACHE.set(topic.key, built)
+  return built
+}
+
+/** 一条搜索结果。 */
+export interface HelpSearchHit {
+  /** 节的 key。 */
+  key: string
+  /** 标题。 */
+  title: string
+  /** 一句话简介。 */
+  summary: string
+  /** 相关度分数（越大越相关）。 */
+  score: number
+  /** 命中了什么（给调用方解释为什么推荐这条）。 */
+  matched: string[]
+}
+
+/**
+ * 在全部 help 节里搜索。
+ *
+ * ## 为什么需要它
+ *
+ * 目录能回答「有哪些能力」，但答不了「我想做的那件事对应哪个能力」。
+ * 实测：AI 拿着「这个城能守多久」「改常数会影响什么」这类问题，
+ * 在目录里找不到对应项 —— 目录用的是**能力名**，而它脑子里是**任务描述**。
+ *
+ * 这个搜索就是那座桥：用任务描述的词，去找能力名与简介。
+ *
+ * ## 排序
+ *
+ * 按加权命中分排序。只返回分数 > 0 的，最多 `limit` 条。
+ * 若最高分太低（< 8，即只命中了正文级别的弱信号），
+ * 说明大概率没有对应能力 —— 这时调用方应回目录，而不是盲信第一条。
+ *
+ * @param query - 自然语言描述或关键词
+ * @param limit - 最多返回几条（默认 5）
+ * @returns 按相关度降序的命中列表
+ */
+export function searchHelp(query: string, limit = 5): HelpSearchHit[] {
+  const tokens = tokenizeQuery(query)
+  if (tokens.length === 0) return []
+  const hits: HelpSearchHit[] = []
+
+  for (const topic of HELP_TOPICS) {
+    const idx = topicIndex(topic)
+    let score = 0
+    const matched = new Set<string>()
+
+    for (const token of tokens) {
+      if (idx.keyText === token) { score += 40; matched.add('key') }
+      else if (idx.keyText.includes(token)) { score += 10; matched.add('key') }
+      if (idx.aliasText.includes(token)) { score += 6; matched.add('别名') }
+      if (idx.titleText.includes(token)) { score += 4; matched.add('标题') }
+      if (idx.shortText.includes(token)) { score += 3; matched.add('标签') }
+      if (idx.bodyText.includes(token)) { score += 1; matched.add('简介') }
+    }
+
+    if (score > 0) {
+      hits.push({
+        key: topic.key,
+        title: topic.title,
+        summary: topic.summary,
+        score,
+        matched: [...matched],
+      })
+    }
+  }
+
+  hits.sort((a, b) => b.score - a.score || a.key.localeCompare(b.key))
+  return hits.slice(0, limit)
+}
+
+/**
+ * 把搜索结果渲染成给 AI 读的文本。
+ *
+ * @param query - 原始查询
+ * @param hits - 搜索结果
+ * @returns 文本
+ */
+function renderSearch(query: string, hits: HelpSearchHit[]): string {
+  if (hits.length === 0) {
+    return (
+      '没有找到与 "' + query + '" 相关的 help 节。\n' +
+      '可以试：换用更具体的名词（如「单位」「账本」「区间」），或不带参数看目录。'
+    )
+  }
+
+  const lines: string[] = []
+  lines.push('═══ 搜索 "' + query + '" 命中 ' + hits.length + ' 节 ═══')
+  lines.push('')
+
+  /**
+   * 弱匹配要明确标出来。
+   *
+   * 若最高分 < 8，说明只命中了简介里的字（那些词太泛），
+   * 很可能**根本没有对应能力**。这时说「不确定」比给一条像模像样的
+   * 结果更有用 —— 否则 AI 会拿一个错节当答案。
+   */
+  const weak = hits[0].score < 8
+  if (weak) {
+    lines.push('⚠ 命中的只是简介里的常见词，**大概率没有正好对应的节**。')
+    lines.push('  下面按相关度排列，请自行判断；也可以不带参数看目录。')
+    lines.push('')
+  }
+
+  for (const hit of hits) {
+    lines.push('  ' + hit.key + '  ' + hit.title)
+    lines.push('    ' + hit.summary)
+    lines.push('    （命中：' + hit.matched.join('/') + '　分数 ' + hit.score + '）')
+    lines.push('')
+  }
+  lines.push('取某一节全文：helpTopic:"<key>"。')
+  return lines.join('\n')
+}
+
+/**
+ * 查找一节：先精确，再别名，再包含。
+ *
+ * @param topic - 查询词
+ * @returns 命中的节，或 undefined
  */
 function findTopic(topic: string): HelpTopic | undefined {
   const query = normalizeTopicQuery(topic)
@@ -2251,7 +2464,23 @@ function renderIndex(): string {
  *                 认不出的 topic 不报错 —— 回目录并说明没这一节，
  *                 顺带列出可选 key。报错会打断调用方的探索，目录更能自救。
  */
-export function opHelp(topic?: string): Outcome {
+export function opHelp(topic?: string, query?: string): Outcome {
+  /**
+   * 显式搜索优先于目录。
+   *
+   * `helpQuery` 存在时**一定**走搜索 —— 哪怕它碰巧也是个合法 key。
+   * 因为调用方明确说了「我要搜」，就该得到搜索结果而不是某节全文。
+   */
+  if (typeof query === 'string' && query.trim() !== '') {
+    const searched = searchHelp(query.trim(), 5)
+    return {
+      result: renderSearch(query.trim(), searched),
+      value: {
+        requested: query.trim(),
+        hits: searched.map((hit) => ({ key: hit.key, score: hit.score })),
+      },
+    }
+  }
   if (typeof topic !== 'string' || topic.trim() === '') {
     return { result: renderIndex(), value: { topics: HELP_TOPICS.map((item) => item.key) } }
   }
@@ -2262,9 +2491,26 @@ export function opHelp(topic?: string): Outcome {
       value: { topic: found.key, title: found.title },
     }
   }
+  /**
+   * ## 查不到就搜，而不是直接甩目录
+   *
+   * 原来查不到时回一屏 1650 字符的目录 —— 那对「我描述一件事，想知道用哪个功能」
+   * 毫无帮助：AI 得自己在几十个 key 里挑。
+   *
+   * 现在先按自然语言搜一遍。即使搜索结果不理想，也比让调用方
+   * 从零开始读目录更有用 —— 至少缩小了范围。
+   */
+  const hits = searchHelp(topic, 5)
+  if (hits.length > 0) {
+    return {
+      result: renderSearch(topic, hits),
+      value: { requested: topic, hits: hits.map((hit) => ({ key: hit.key, score: hit.score })) },
+    }
+  }
   const keys = HELP_TOPICS.map((item) => item.key).join(' / ')
   return {
-    result: '没有名为 "' + topic + '" 的节。下面是目录，可用 key 取任一节：\n\n' + renderIndex(),
+    result: '没有名为 "' + topic + '" 的节，也没搜到相关项。\n可用 key：' + keys +
+      '\n\n不带参数调用可看目录。',
     value: { topics: HELP_TOPICS.map((item) => item.key), requested: topic },
   }
 }

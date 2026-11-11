@@ -477,6 +477,18 @@ export interface MathArgs {
    * 算一条 1/3 也要读 3039 字符的 world 字段表。详见 `src/help.ts`。
    */
   helpTopic?: string
+  /**
+   * operation=help：用**任务描述**搜索 help 节（`helpQuery:"这个城能守多久"`）。
+   *
+   * 与 `helpTopic` 的分工：
+   * ```
+   *   helpTopic:"ledger"     查你已知 key 的那一节
+   *   helpQuery:"账本对不上"  你只知道要做什么，不知道对应哪个 key
+   * ```
+   *
+   * 搜不到时会退回目录，并明说「大概率没有正好对应的节」。
+   */
+  helpQuery?: string
   /** operation=formula-table 的动作: list / show / override / remove / add / disable / enable / reset */
   tableAction?: string
   /** 目标公式 id。 */

@@ -3468,6 +3468,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   // 提示档位与帮助分节
   'promptMode',
   'helpTopic',
+  // help 的自然语言搜索
+  'helpQuery',
   // 公式表
   'tableAction', 'formulaId', 'newExpression', 'newParams', 'customFormula',
   // 自定义常数
@@ -3570,7 +3572,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
   ],
-  help: ['helpTopic'],
+  help: ['helpTopic', 'helpQuery'],
   derivation: [
     'derivation', 'anchor', 'anchorValue', 'compareFrom', 'compareTo',
     'fantasyAbility', 'fantasyDemand', 'fantasyPhysical', 'fantasyBodyArea',
@@ -4068,7 +4070,10 @@ export function runMathTool(rawArguments: unknown): MathResult {
     switch (operation) {
       case 'help':
         /** 分节帮助：给了 helpTopic 就回那一节，否则回目录。详见 `src/help.ts`。 */
-        outcome = opHelp(typeof args.helpTopic === 'string' ? args.helpTopic : undefined)
+        outcome = opHelp(
+          typeof args.helpTopic === 'string' ? args.helpTopic : undefined,
+          typeof args.helpQuery === 'string' ? args.helpQuery : undefined,
+        )
         break
       case 'derivative':
         outcome = opDerivative(input, variable, precision)
