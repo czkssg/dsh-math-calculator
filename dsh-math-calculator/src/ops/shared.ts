@@ -252,6 +252,16 @@ export interface MathArgs {
    */
   preview?: boolean
   /**
+   * operation=world：只给关键值（`brief:true`）。
+   *
+   * 完整输出 4,664 字符 ≈ 2,731 tokens；brief 约 400 字符 ≈ 235 tokens。
+   * 80 轮推演从 219k tokens 降到 19k —— 这是桌面版推演的成本门槛。
+   *
+   * **不删信息**：细节仍在 `value` 里，只是文本版只出 6 个数字。
+   * 假设与警告照常输出（压掉它们会让调用方在错误的恒星上推演）。
+   */
+  brief?: boolean
+  /**
    * operation=workspace 的动作：
    * list / show / create / switch / delete / save / set / reset
    */

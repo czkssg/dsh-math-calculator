@@ -297,6 +297,48 @@ console.log('-- 10. N19/A33 feasibility 有 help 节，且数组不再假通过 
   assert('不带 claims 列物理上限', none.ok === true && /物理上限/.test(txt(none)), '')
 }
 
+// ═══════════════════════════════════════════════════════════
+console.log('-- 11. N16 world brief 省 token 但不删信息 --')
+// ═══════════════════════════════════════════════════════════
+{
+  const full = await run({ operation: 'world', planetMass: 2 })
+  const brief = await run({ operation: 'world', planetMass: 2, brief: true })
+  const fullLen = txt(full).length
+  const briefLen = txt(brief).length
+
+  assert('brief 被接受', brief.ok === true, txt(brief).slice(0, 60))
+  assert('brief 显著更短（至少省 80%）', briefLen < fullLen * 0.2, `${briefLen} vs ${fullLen}`)
+  assert('brief 仍能读（>100 字符）', briefLen > 100, String(briefLen))
+
+  /** 关键数字必须在：这是 brief 存在的意义。 */
+  for (const [label, pattern] of [
+    ['重力', /重力/],
+    ['一天', /一天/],
+    ['年均温', /年均温/],
+    ['气压', /气压/],
+    ['逃逸速度', /逃逸速度/],
+    ['一年', /一年/],
+  ]) {
+    assert(`brief 含 ${label}`, pattern.test(txt(brief)), '')
+  }
+
+  /** ★ 不删信息：结构化字段一个不少。 */
+  for (const key of ['planet', 'orbit', 'temperature', 'atmosphere', 'life']) {
+    assert(`brief 的 value 仍含 ${key}`, brief.value?.[key] !== undefined, '')
+  }
+
+  /**
+   * ★ 最该守的一条：假设与警告不能被压掉。
+   * 压掉它们，调用方会拿「基于错误恒星」的数字去写设定。
+   */
+  assert('brief 保留恒星假设警告', /默认成太阳|恒星/.test(txt(brief)), '')
+  const mStar = await run({ operation: 'world', starMass: 0.122, starTemp: 3042, orbitAU: 0.0485, brief: true })
+  assert('brief 对非太阳恒星也提示', /警告|⚠/.test(txt(mStar)), '')
+
+  /** 生命判定要翻成人话，不能只给 open。 */
+  assert('brief 生命行不是裸机器值', !/生命\s+open/.test(txt(brief)), '')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log('')
 console.log(`通过 ${pass}，失败 ${fail}`)

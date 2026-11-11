@@ -3474,6 +3474,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'threshold', 'worstLimit', 'variableName', 'constantName',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
+  // world 的简版输出（N16：省 90% token 的推演成本门槛）
+  'brief',
   'emptyOnly', 'dryRun', 'olderThanDays', 'keep', 'tempPrefixes',
   'sensitivityBase', 'sensitivityExponent',
 ]);
@@ -3534,7 +3536,7 @@ const WORLD_SHORTHAND_KEYS: readonly string[] = WORLD_KEYS
  * 不在表里的 operation 仍走原来的全局白名单（宽松但不会误报）。
  */
 const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
-  world: [...WORLD_KEYS],
+  world: [...WORLD_KEYS, 'brief'],
   units: [
     'unitValue', 'unitFrom', 'unitTo', 'customUnits', 'unitScales', 'unitScale',
     'units',

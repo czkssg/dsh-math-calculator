@@ -19,8 +19,113 @@ import { CalcError, type MathArgs, type Outcome } from './shared.js'
  * 这是「世界观推演」的总入口：不用逐条调公式，改几个常数就能拿到
  * 重力、昼夜、季节、气候带、地形上限、大气稀薄度这些读者实际会感知到的量。
  */
-export function opWorld(args: MathArgs, precision: number): Outcome {
-  const params: WorldParams = (args.world ?? {}) as WorldParams
+/**
+ * `world` 的 brief 渲染：只出关键值，不删信息（细节仍在 `value` 里）。
+ *
+ * @param profile - 已经算好的完整世界画像
+ * @param f - 数字格式化（保留 2 位有效小数）
+ * @returns 与全量输出同构的 Outcome，但 result 只有十几行
+ */
+function renderWorldBrief(
+  profile: WorldProfile,
+  f: (value: number, digits?: number) => string,
+): Outcome {
+  const planet = (profile as unknown as { planet?: Record<string, number> }).planet ?? {}
+  const orbit = (profile as unknown as { orbit?: Record<string, number> }).orbit ?? {}
+  const temp = (profile as unknown as { temperature?: Record<string, number> }).temperature ?? {}
+  const atm = (profile as unknown as { atmosphere?: Record<string, number> }).atmosphere ?? {}
+
+  const g = planet.surfaceGravity
+  /** 重力有地球倍数现成字段，优先用它（比再除 9.80665 更准）。 */
+  const gEarth = planet.surfaceGravityEarth ??
+    (typeof g === 'number' && Number.isFinite(g) ? g / 9.80665 : undefined)
+  /** 自转日长在 planet 里（不是 orbit）：这是本人踩过的字段归属错。 */
+  const dayHours = planet.dayHours
+  const tempC = temp.surfaceMeanC
+  /** 气压原始单位是 Pa，展示用 kPa。 */
+  const pressurePa = atm.pressurePa
+  const pressureKpa = typeof pressurePa === 'number' ? pressurePa / 1000 : undefined
+
+  const lines: string[] = []
+  lines.push('═══ 星球速览（brief）═══')
+  lines.push('')
+
+  /**
+   * 假设与警告放在**第一屏**。
+   *
+   * 这是 brief 模式最容易被做错的地方：为了短而把「默认成了太阳」压掉。
+   * 那会让调用方在一个错误的恒星上推演整段设定，而它以为自己看的是全部。
+   */
+  const starNotes = (profile as unknown as { starNotes?: string[] }).starNotes
+  if (Array.isArray(starNotes) && starNotes.length > 0) {
+    lines.push('⚠ ' + starNotes[0])
+  }
+  const warnings = (profile as unknown as { warnings?: unknown[] }).warnings
+  if (Array.isArray(warnings) && warnings.length > 0) {
+    lines.push('⚠ 还有 ' + warnings.length + ' 条警告，见 value.warnings')
+  }
+
+  const row = (label: string, value: string): void => {
+    lines.push('  ' + label.padEnd(10, ' ') + value)
+  }
+  if (gEarth !== undefined) {
+    row('重力', f(gEarth) + ' 倍地球（' + f(g as number, 2) + ' m/s²）')
+  }
+  if (typeof dayHours === 'number' && Number.isFinite(dayHours)) {
+    row('一天', f(dayHours) + ' 小时')
+  }
+  if (typeof tempC === 'number' && Number.isFinite(tempC)) {
+    row('年均温', f(tempC, 1) + ' °C')
+  }
+  if (typeof pressureKpa === 'number' && Number.isFinite(pressureKpa)) {
+    row('气压', f(pressureKpa, 1) + ' kPa')
+  }
+  const escape = planet.escapeVelocity
+  if (typeof escape === 'number' && Number.isFinite(escape)) {
+    row('逃逸速度', f(escape / 1000, 2) + ' km/s')
+  }
+  const orbitDays = orbit.yearDays
+  if (typeof orbitDays === 'number' && Number.isFinite(orbitDays)) {
+    row('一年', f(orbitDays, 1) + ' 天')
+  }
+
+  /**
+   * 生命判定在 `life.gate` 里（不是 `life.verdict`）。
+   *
+   * 踩过的坑：第一版按 `life.verdict` 取，结果 brief 里这一行整个消失 ——
+   * 而「这个世界能不能住」恰恰是 brief 最该回答的那个问题。
+   */
+  const gate = (profile as unknown as { life?: { gate?: Record<string, unknown> } }).life?.gate
+  if (gate && typeof gate === 'object') {
+    const verdict = gate.verdict ?? gate.level ?? gate.label
+    if (typeof verdict === 'string') {
+      /**
+       * 机器值翻成人话。
+       *
+       * `open` 单独看没有信息量 —— brief 是给人读的一屏，
+       * 「生命 open」不如「有液态水，无硬否决」。
+       * 未登记的取值原样输出（不猜）。
+       */
+      const LIFE_LABEL: Record<string, string> = {
+        open: '无硬否决（液态水可能存在）',
+        blocked: '有硬否决（见 value.life.gate.blockers）',
+        forbidden: '有硬否决（见 value.life.gate.blockers）',
+        marginal: '勉强（临界，见 value.life.gate）',
+      }
+      const blockers = Array.isArray(gate.blockers) ? gate.blockers.length : 0
+      row('生命', (LIFE_LABEL[verdict] ?? verdict) + (blockers > 0 ? '，' + blockers + ' 项否决' : ''))
+    }
+  }
+
+  lines.push('')
+  lines.push('（brief 模式：完整画像在 value 里；要文字版去掉 brief 再调一次）')
+  return {
+    result: lines.join('\n'),
+    value: toJsonValue({ ...(profile as unknown as Record<string, unknown>), brief: true }),
+  }
+}
+
+export function opWorld(args: MathArgs, precision: number): Outcome {  const params: WorldParams = (args.world ?? {}) as WorldParams
 
   /**
    * 允许把世界参数直接写在顶层，减少嵌套。
@@ -96,6 +201,29 @@ export function opWorld(args: MathArgs, precision: number): Outcome {
 
   const lines: string[] = []
   const f = (value: number, digits = 2): string => Number(value.toFixed(digits)).toString()
+
+  /**
+   * ## brief 模式：只给关键值（N16）
+   *
+   * ## 为什么需要它
+   *
+   * `world` 完整输出 4,664 字符 ≈ 2,731 tokens。而推演一段设定常要问十几个世界，
+   * 80 轮下来就是 219k tokens —— 这是桌面版推演最大的成本项。
+   *
+   * 但绝大多数轮次只需要 6 个数字：重力、日长、年均温、气压、逃逸速度、宜居判定。
+   * 其余（气候分区、月相、天空色、生命闸门明细）只有写具体场景时才用得上。
+   *
+   * ## 取舍
+   *
+   * brief **不是删信息**，是把它们留在 `value` 里：
+   * 文本只给 6 行，结构化字段一个不少。需要细节就再调一次（不带 brief）。
+   *
+   * 它也不隐藏警告：`profile.warnings` 与 `starNotes` 必须照常输出 ——
+   * 「默认成了太阳」这类消息压掉，等于让调用方在错误的恒星上推演。
+   */
+  if (args.brief === true) {
+    return renderWorldBrief(profile, f)
+  }
 
   lines.push('══════ 星球体感画像 ══════')
   lines.push('')
