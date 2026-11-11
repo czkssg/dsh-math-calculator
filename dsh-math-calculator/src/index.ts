@@ -231,6 +231,7 @@ import { opUnits } from './ops/units-op.js'
 import { opBalance } from './ops/balance-op.js'
 import { opLedger } from './ops/ledger-op.js'
 import { opInterval } from './ops/interval-op.js'
+import { opCompare } from './ops/compare-op.js'
 import { opBodies } from './ops/bodies-op.js'
 import { KIND_LABEL, empiricalNoteOf } from './empirical-decomposition.js'
 import { cacheKey, clearCache, getCached, setCached } from './result-cache.js'
@@ -367,6 +368,7 @@ const OPERATIONS: readonly MathOperation[] = [
   'balance',
   'ledger',
   'interval',
+  'compare',
   'bodies',
   'help',
 ]
@@ -3482,6 +3484,8 @@ const KNOWN_ARGUMENT_KEYS: ReadonlySet<string> = new Set<string>([
   'ledger',
   // 区间运算
   'interval',
+  // 方案对比
+  'compare',
   // constants 的「只算不存」开关（A1：查看后果不污染后续计算）
   'preview',
   // world 的简版输出（N16：省 90% token 的推演成本门槛）
@@ -3568,6 +3572,7 @@ const OPERATION_ARGUMENTS: Partial<Record<MathOperation, readonly string[]>> = {
   balance: ['balance'],
   ledger: ['ledger'],
   interval: ['interval'],
+  compare: ['compare'],
   feasibility: ['claims', 'listConstraints'],
   bodies: [
     'bodyName', 'bodyKind', 'bodyConstant', 'bodyFactor', 'bodyType', 'bodyEvidence',
@@ -4199,6 +4204,9 @@ export function runMathTool(rawArguments: unknown): MathResult {
         break
       case 'interval':
         outcome = opInterval(args)
+        break
+      case 'compare':
+        outcome = opCompare(args)
         break
       case 'bodies':
         outcome = opBodies(args)

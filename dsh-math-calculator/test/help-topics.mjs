@@ -167,7 +167,15 @@ console.log('-- 1. 目录层：小、且能指向每一节 --')
    * **这一节会在一次推演里被反复用**，不是用完一次的配置项。
    * 相应地 core 权重中位数是 14、extra 是 11，分档没有倒挂。
    */
-  assert('core 档节数（含拆分出的领域与配方，定为 28）', coreTopics.length === 28, String(coreTopics.length))
+  /**
+   * ## 28 → 29（2026-11-11）
+   * 新增 `compare` 方案对比 —— 反馈包 15 号把它列为「AI 实际做的 7 类动作」之一
+   * （第 43 轮列强国力表、第 47 轮海洋式 vs 植物式）。
+   *
+   * 它进 core 的理由：方案对比是推演段的**常规动作**，
+   * 不是「偶尔查一次」的参考节。
+   */
+  assert('core 档节数（含拆分出的领域与配方，定为 29）', coreTopics.length === 29, String(coreTopics.length))
   /**
    * 紧凑组（领域公式与推演配方）在目录里只给 key + short，不给 summary。
    *
