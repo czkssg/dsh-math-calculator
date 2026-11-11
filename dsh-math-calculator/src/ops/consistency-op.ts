@@ -1,37 +1,42 @@
 /**
- * operation="consistency" 的实现：跨条目结构体检。
+ * operation="consistency" 的实现：数值口径一致性体检。
  *
- * ## 借鉴来源：dsh-novel-writer 的 `graph.js`（跨章结构视图）
+ * ## 一份重要的自我更正：上一版移植错了
  *
- * 它的开场白说得极准：
- *
- * > 伏笔表 / 人物设定 / 时间线 / 剧情大纲在插件里都是**离散静态表**，
- * > 没有任何跨章计算。长篇崩掉通常不是某章文笔差，
- * > 而是**「线断了、人丢了、伏笔忘了」**。
- *
- * 世界观推演里有**完全同构**的三个问题：
+ * 上一版我照搬了 novel-writer 的三个检查（陈条/缺席/断线），
+ * 理由是「小说与世界观同构」。**这个判断是错的**，实测两处反例：
  *
  * ```
- *   小说                  世界观
- *   伏笔埋了多久没回收  →  设定条目立了多久没用上
- *   人物连续缺席 N 章    →  势力/地点连续 N 章没被提及
- *   剧情线最大空档      →  依赖链断在哪
+ * ① 正常背景设定被误报
+ *    第 1 段写「行星半径 8000 公里、重力 1.4 倍地球」，之后 19 段讲政治
+ *    → 工具报「P01 立了 19 段还没回收」（陈条）
+ *    → 但常量型设定**本来就不该被「回收」**，立一次一直有效才是对的
+ *
+ * ② 真实硬伤反而查不出
+ *    第 1 段「人口 920 亿」、第 5 段「人口 8 亿」（差 115 倍）
+ *    → 工具报「没发现结构问题」
  * ```
  *
- * 而本插件原来的 `checklist` 只输出一段**固定清单**（238 字符），
- * `graph` 只给计数（77 字符）—— 都不看具体内容。这块确实是空的。
- *
- * ## 四个可移植的机制（逐条来自它的实现）
+ * ## 两者的本质差异（这才是该移植什么的分界）
  *
  * ```
- *   ① 提及判定：长词（≥3 字）命中 1 个即算；短词（2 字）要命中 ≥2 个
- *      —— 因为「的青铜」这类碎片会造成大量假命中
- *   ② 埋设章取三者最小：正文关键词 ∪ 登记字段 ∪ 显式 chapter
- *      —— 全都没有就记 null，**不编造数字**
- *   ③ 连续缺席阈值可配（默认 5），且登记首现与实际首现不一致时提示
- *   ④ 目录不存在是唯一允许抛错的情况；其它一律降级 + 明说
- *      「空字段不代表确实没有内容」
+ *   小说是「顺序阅读」              世界观是「查询式使用」
+ *   ─────────────────────          ─────────────────────
+ *   读者会忘 → 缺席是问题           读者按需查 → 缺席不是问题
+ *   伏笔必有回收 → 陈条是问题       常量型设定永不回收 → 陈条不是问题
+ *   一致性 = 前后提及对得上         一致性 = **同一件事两处说的数相悖**
  * ```
+ *
+ * 反馈包统计的 282 条硬伤里，一致性类**全是数值层**：
+ *
+ * ```
+ *   W13 人口三套口径差 10–33 倍
+ *   W18 39 亿 vs「数百万计」差 1000 倍
+ *   W13 分项 6300 ≠ 自称 5500
+ *   W20 42 MJ/kg 与 3.7 倍不自洽
+ * ```
+ *
+ * 所以本操作改查**三类数值口径问题**，而叙事层那三个降为可选。
  *
  * @module dsh-math-calculator/ops/consistency-op
  */
@@ -39,21 +44,7 @@
 import { toJsonValue } from '../format.js'
 import { CalcError, type MathArgs, type Outcome } from './shared.js'
 
-/** 一个设定条目。 */
-interface Entry {
-  /** 标识。 */
-  id: string
-  /** 内容（用于关键词匹配）。 */
-  content: string
-  /** 显式登记的首次出现位置（可选）。 */
-  firstSeen?: number
-  /** 状态：open 未回收 / done 已回收。 */
-  status?: string
-  /** 关联的人物/势力名。 */
-  related?: string[]
-}
-
-/** 一个片段（对应小说的「章」）。 */
+/** 一个片段。 */
 interface Section {
   /** 序号（从 1 起）。 */
   number: number
@@ -63,79 +54,174 @@ interface Section {
   text: string
 }
 
-/** 体检结果。 */
-interface Finding {
+/** 从文本里抽到的一个「数值主张」。 */
+interface Quantity {
+  /** 主体（如「人口」「面积」）。 */
+  subject: string
+  /** 数值。 */
+  value: number
+  /** 单位原文（如「亿人」「平方公里」）。 */
+  unit: string
+  /** 所在片段号。 */
+  section: number
+  /** 原文片段（供核对）。 */
+  raw: string
+}
+
+/** 一处不一致。 */
+interface Inconsistency {
   /** 类型。 */
-  kind: 'stale' | 'absence' | 'gap' | 'orphan' | 'mismatch'
-  /** 严重度（数字越大越要紧）。 */
+  kind: 'multi_value' | 'unit_mismatch' | 'order_conflict'
+  /** 严重度。 */
   severity: number
-  /** 一句话描述。 */
+  /** 一句话。 */
   message: string
-  /** 涉及的对象。 */
-  target: string
+  /** 涉及的主体。 */
+  subject: string
+  /** 各处主张。 */
+  quantities: Quantity[]
 }
 
 /**
- * 从内容里抽关键词（中文 2-4 字片段 + 英文词）。
+ * 中文量级词 → 10 的幂。
  *
- * ## 长词/短词分开，是这套机制的关键
- *
- * novel-writer 的实现：
- * > 长词（≥3 字）命中 1 个即算；短词（2 字）需命中 ≥2 个。
- * > 原因：`plotKeywords` 会产出「的青铜」这类碎片，只认单个二字片段会大量假命中。
- *
- * 这条判据直接照搬 —— 它解决的是「2 字片段区分度太低」这个共性问题。
- *
- * @param content - 条目内容
- * @returns 强词（≥3 字）与弱词（2 字）
+ * 与 extract_numbers 用同一套——中文量级折算是这个项目的既有能力，
+ * 不该在第二个地方另写一份。
  */
-function extractKeywords(content: string): { strong: string[]; weak: string[] } {
-  const cjk = content.replace(/[^\u4e00-\u9fa5]/g, '')
-  const strong = new Set<string>()
-  const weak = new Set<string>()
-  /** 3-4 字片段算强词。 */
-  for (let size = 4; size >= 3; size -= 1) {
-    for (let start = 0; start + size <= cjk.length; start += 1) {
-      strong.add(cjk.slice(start, start + size))
+const MAGNITUDE: Array<{ word: string; power: number }> = [
+  { word: '万亿', power: 12 },
+  { word: '千亿', power: 11 },
+  { word: '百亿', power: 10 },
+  { word: '十亿', power: 9 },
+  { word: '亿', power: 8 },
+  { word: '千万', power: 7 },
+  { word: '百万', power: 6 },
+  { word: '十万', power: 5 },
+  { word: '万', power: 4 },
+  { word: '千', power: 3 },
+  { word: '百', power: 2 },
+]
+
+/**
+ * 会被当成「同一量」核对的量纲词。
+ *
+ * ## 为什么只收这些
+ *
+ * `consistency` 要判「两处说的是不是同一个量」，那必须**认得主体**。
+ * 主体认不准就会把「人口 8 亿」和「面积 8 亿平方公里」混为一谈 ——
+ * 那是灾难性的假报。
+ *
+ * 所以只收**含义单一、区分度高**的主体词。认不出的宁可漏报。
+ */
+const SUBJECTS: Array<{ name: string; words: string[]; unitHints: string[] }> = [
+  /**
+   * ## 主体词要收「隐含主体」
+   *
+   * 第一版只收「人口」这个词本身，于是「首都有 1000 万人」
+   * 抽不到（它没写「人口」，但说的就是人口）——
+   * 结果同一件事只有一处被抽到，冲突自然就漏了。
+   *
+   * 所以补上「说人口但不用人口这个词」的常见主体。
+   * 但**不能收太泛**（如「有」），否则会把任意数都算成人口。
+   */
+  { name: '人口', words: ['人口', '居民', '民众', '总人数', '首都', '城市', '巢都', '王国', '帝国'], unitHints: ['人', '万'] },
+  { name: '兵力', words: ['兵力', '军队', '士兵', '驻军', '守军', '兵'], unitHints: ['人', '万', '个'] },
+  { name: '面积', words: ['面积', '国土', '版图', '辖区', '疆域'], unitHints: ['平方公里', '平方千米', '万平方公里', '公顷', '亩'] },
+  { name: '高度', words: ['高', '高度', '塔高', '层高'], unitHints: ['米', '公里', '千米', '英尺'] },
+  { name: '半径', words: ['半径'], unitHints: ['米', '公里', '千米'] },
+  { name: '质量', words: ['质量', '重量', '体量'], unitHints: ['吨', '千克', '公斤', '万吨', '亿吨'] },
+  { name: '功率', words: ['功率', '发电量', '能耗'], unitHints: ['瓦', '千瓦', '兆瓦', '吉瓦', 'W', 'kW', 'MW', 'GW'] },
+  { name: '税率', words: ['税率', '税额', '赋税'], unitHints: ['%'] },
+  { name: '产量', words: ['产量', '年产', '产出'], unitHints: ['吨', '万吨', '亿吨', '件'] },
+]
+
+/**
+ * 从一段文本里抽出所有数值主张。
+ *
+ * @param text - 片段正文
+ * @param section - 片段号
+ * @returns 抽到的数值主张
+ */
+function extractQuantities(text: string, section: number): Quantity[] {
+  const out: Quantity[] = []
+  /**
+   * 逐个主体找：主体词之后（同一分句内）出现的第一个数字。
+   *
+   * 用「分句内」而不是「全文」是刻意的 —— 一句里可能有两个数
+   * （`人口 920 亿、面积 5 亿平方公里`），跨分句取会把它们混起来。
+   */
+  const clauses = text.split(/[，。；、,.;]/)
+  for (const clause of clauses) {
+    for (const subject of SUBJECTS) {
+      if (!subject.words.some((word) => clause.includes(word))) continue
+      /**
+       * 数字 + 可选中文量级 + 可选单位（**只从白名单里认**）。
+       *
+       * 第一版用 `[^\d\s]{0,6}` 兜单位，于是「920 亿**后开始外溢**」
+       * 把后面半句话当成了单位。单位必须从白名单里认。
+       */
+      const unitList = subject.unitHints.join('|')
+      const numRe = new RegExp(
+        '([\\d.]+)\\s*(万亿|千亿|百亿|十亿|亿|千万|百万|十万|万|千|百)?\\s*(' + unitList + ')?',
+        'g',
+      )
+      for (const match of clause.matchAll(numRe)) {
+        const base = Number(match[1])
+        if (!Number.isFinite(base)) continue
+        const magWord = match[2]
+        const mag = magWord ? (MAGNITUDE.find((item) => item.word === magWord)?.power ?? 0) : 0
+        /** 只接受带中文量级或带单位的数 —— 裸小数多半是序号/比例，不算「主张」。 */
+        const unitRaw = (match[3] ?? '').trim()
+        if (mag === 0 && unitRaw === '') continue
+        /** 排除明显的非量值（如「300 年」是时长，不是该主体的人口）。 */
+        if (/^年|^月|^天|^%/.test(unitRaw)) continue
+        /**
+         * ★ 量级已折算进数值，单位里就**不能再带量级词**。
+         *
+         * 第一版 output 是 `9.200e+10 亿` —— 数值已经是 920 亿了，
+         * 再标一个「亿」等于说了两遍，而且读起来像 9.2e10 个「亿」。
+         */
+        out.push({
+          subject: subject.name,
+          value: base * Math.pow(10, mag),
+          unit: unitRaw,
+          section,
+          raw: clause.trim().slice(0, 60),
+        })
+        break
+      }
     }
   }
-  /** 2 字片段算弱词。 */
-  for (let start = 0; start + 2 <= cjk.length; start += 1) {
-    weak.add(cjk.slice(start, start + 2))
-  }
-  /** 英文/数字词。 */
-  for (const word of content.match(/[A-Za-z][A-Za-z0-9_-]{1,}/g) ?? []) {
-    strong.add(word.toLowerCase())
-  }
-  /** 强词里已包含的弱词不必重复计。 */
-  for (const key of strong) weak.delete(key)
-  return { strong: [...strong], weak: [...weak] }
+  return out
 }
 
 /**
- * 判断一个片段是否「提及」某条目。
+ * 判断两个数值是否「实质冲突」。
  *
- * @param text - 片段正文（已小写）
- * @param keywords - 该条目的强/弱词
- * @returns 是否提及
+ * ## 为什么不要求完全相等
+ *
+ * 同一件事在不同处的表述会有合理差异：
+ *
+ * ```
+ *   「约 920 亿」与「920 亿」        → 同一值
+ *   「约 920 亿」与「900 亿出头」    → 近似但不同口径，属可疑但轻
+ *   「920 亿」与「8 亿」             → 差 115 倍，**实质冲突**
+ * ```
+ *
+ * 所以用**倍数**判：差 3 倍以上才算实质冲突（3 倍以内可能是口径差异，
+ * 如「含周边」与「不含周边」）。
+ *
+ * @param a - 值 a
+ * @param b - 值 b
+ * @returns 倍数（≥1）
  */
-function mentions(text: string, keywords: { strong: string[]; weak: string[] }): boolean {
-  if (text === '') return false
-  /** 强词命中 1 个即算。 */
-  if (keywords.strong.some((key) => text.includes(key))) return true
-  /** 弱词要命中 ≥2 个（单个 2 字片段区分度太低）。 */
-  let weakHit = 0
-  for (const key of keywords.weak) {
-    if (text.includes(key)) {
-      weakHit += 1
-      if (weakHit >= 2) return true
-    }
-  }
-  return false
+function ratioOf(a: number, b: number): number {
+  if (a === 0 || b === 0) return a === b ? 1 : Number.POSITIVE_INFINITY
+  return Math.max(Math.abs(a / b), Math.abs(b / a))
 }
 
 /**
- * `consistency`：跨条目结构体检。
+ * `consistency`：数值口径一致性体检。
  *
  * @param args - 工具参数
  * @returns 结果文本与结构化值
@@ -145,24 +231,20 @@ export function opConsistency(args: MathArgs): Outcome {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new CalcError(
       'invalid_argument',
-      'consistency 需要给一个对象：{ sections, entries }',
-      '例如 {consistency:{' +
-        'sections:[{number:1,title:"开篇",text:"…正文…"},{number:2,text:"…"}],' +
-        'entries:[{id:"T01",content:"北境有铁矿",status:"open"}]}}。' +
-        '它会体检：条目立了多久没用上、势力/人物连续缺席、依赖断在哪。',
+      'consistency 需要给一个对象：{ sections }',
+      '例如 {consistency:{sections:[{number:1,text:"巢都人口 920 亿"},{number:5,text:"人口约 8 亿"}]}}。' +
+        '它查**同一量在不同处写了不同值**（这是世界观硬伤的主因），' +
+        '而不是「多久没提到」（那是小说的检查）。',
     )
   }
 
   const obj = raw as Record<string, unknown>
   const sectionsRaw = Array.isArray(obj.sections) ? obj.sections : []
-  const entriesRaw = Array.isArray(obj.entries) ? obj.entries : []
-
   if (sectionsRaw.length === 0) {
     throw new CalcError(
       'invalid_argument',
       'consistency 需要 sections（片段列表），收到空',
-      'sections 是世界观的章节/片段，每项 {number, title?, text}。' +
-        '没有片段就无法判断「多久没提到」—— 那是这个操作的核心。',
+      '每项 {number, title?, text}。没有片段就无从比对数值口径。',
     )
   }
 
@@ -175,285 +257,167 @@ export function opConsistency(args: MathArgs): Outcome {
     }
   })
   sections.sort((a, b) => a.number - b.number)
-  const maxNumber = sections[sections.length - 1]?.number ?? 0
 
-  const entries: Entry[] = entriesRaw.map((item, index) => {
-    const one = (item ?? {}) as Record<string, unknown>
-    return {
-      id: typeof one.id === 'string' ? one.id : 'E' + (index + 1),
-      content: typeof one.content === 'string' ? one.content : '',
-      firstSeen: typeof one.firstSeen === 'number' ? one.firstSeen : undefined,
-      status: typeof one.status === 'string' ? one.status : undefined,
-      related: Array.isArray(one.related) ? one.related.map((r) => String(r)) : undefined,
-    }
-  })
+  /** 冲突阈值：同一主体两处差这么多倍才算实质冲突。 */
+  const conflictRatio =
+    typeof obj.conflictRatio === 'number' && obj.conflictRatio > 1 ? obj.conflictRatio : 3
 
-  /** 缺席阈值（novel-writer 默认 5 章）。 */
-  const absenceThreshold =
-    typeof obj.absenceThreshold === 'number' && obj.absenceThreshold > 0
-      ? Math.floor(obj.absenceThreshold)
-      : 5
-  /** 陈条阈值：未回收条目超过这么多章没再被提，就提示。 */
-  const staleThreshold =
-    typeof obj.staleThreshold === 'number' && obj.staleThreshold > 0
-      ? Math.floor(obj.staleThreshold)
-      : 10
-
-  const degraded: string[] = []
-  const findings: Finding[] = []
-
-  /** 预先把每段的正文小写化（只做一次，避免重复开销）。 */
-  const lowered = sections.map((section) => section.text.toLowerCase())
-
-  // ── ① 每个条目：首次提及章 + 埋了多久 ──
-  interface Lifecycle {
-    id: string
-    content: string
-    status: string
-    firstSeen: number | null
-    lastSeen: number | null
-    distance: number | null
-    mentionedIn: number[]
+  /** 抽全部数值主张。 */
+  const all: Quantity[] = []
+  for (const section of sections) {
+    all.push(...extractQuantities(section.text, section.number))
   }
-  const lifecycles: Lifecycle[] = []
 
-  for (const entry of entries) {
-    const keywords = extractKeywords(entry.content)
-    const hitChapters: number[] = []
-    sections.forEach((section, index) => {
-      if (mentions(lowered[index], keywords)) hitChapters.push(section.number)
-    })
+  /** 按主体归组。 */
+  const bySubject = new Map<string, Quantity[]>()
+  for (const item of all) {
+    const list = bySubject.get(item.subject) ?? []
+    list.push(item)
+    bySubject.set(item.subject, list)
+  }
+
+  const inconsistencies: Inconsistency[] = []
+
+  for (const [subject, list] of bySubject) {
+    if (list.length < 2) continue
+    /** 找最大与最小值的倍数 —— 这是最快发现「同一量多口径」的方式。 */
+    const sorted = [...list].sort((a, b) => a.value - b.value)
+    const min = sorted[0]
+    const max = sorted[sorted.length - 1]
+    const ratio = ratioOf(max.value, min.value)
+
+    if (ratio >= conflictRatio) {
+      /**
+       * 严重度按倍数分档：
+       * ```
+       *   3–10 倍   可疑（可能是口径差异，如含/不含周边）
+       *   10–100 倍 明确冲突
+       *   >100 倍   严重（多半是量级笔误或抄错）
+       * ```
+       */
+      const severity = ratio >= 100 ? 10 : ratio >= 10 ? 7 : 4
+      /**
+       * ★ 展示顺序按**片段号**排，不按数值大小。
+       *
+       * 按数值排会让读者看不出「故事在哪一段说了什么」；
+       * 按段落顺序列才便于顺着原文核对（`第1段 920亿 → 第5段 8亿`）。
+       */
+      const inOrder = [...list].sort((a, b) => a.section - b.section)
+      inconsistencies.push({
+        kind: 'multi_value',
+        severity,
+        message:
+          '「' + subject + '」有 ' + list.length + ' 处不同口径，差 ' +
+          fmtRatio(ratio) + '：' +
+          inOrder
+            .map((item) => '第' + item.section + '段 ' + fmtNum(item.value) + ' ' + item.unit)
+            .join('　vs　'),
+        subject,
+        quantities: inOrder,
+      })
+    }
 
     /**
-     * 首次提及取三者最小：正文关键词 ∪ 显式 firstSeen。
+     * 单位口径不一致（同一主体用了不同写法）。
      *
-     * novel-writer 的做法是三者（含 mentionedIn 文件名），
-     * 本操作只有两者 —— 但**「全都没有就记 null，不编造数字」这条照搬**。
+     * ★ 只在**数值不冲突**时才报这一条 —— 否则就是噪音：
+     * 「1000 万人」与「2000 万」本来就该报「差 2 倍」，
+     * 再叠一条「单位不同」等于把一个问题的两种表现拆成两个。
      */
-    const candidates: number[] = [...hitChapters]
-    if (entry.firstSeen !== undefined) candidates.push(entry.firstSeen)
-    const firstSeen = candidates.length > 0 ? Math.min(...candidates) : null
-    const lastSeen = hitChapters.length > 0 ? Math.max(...hitChapters) : null
-
-    if (firstSeen === null) {
-      degraded.push(
-        '条目 ' + entry.id + '（' + entry.content.slice(0, 16) + '…）在正文与登记字段里' +
-          '都找不到提及位置：distance 不可知，不编造数字',
-      )
-    } else if (firstSeen > maxNumber) {
-      degraded.push(
-        '条目 ' + entry.id + ' 的首次提及（第 ' + firstSeen + ' 段）超出最大段号（第 ' +
-          maxNumber + ' 段）：distance 按 0 计（登记字段可能指向尚未创建的片段）',
-      )
-    }
-
-    const distance = firstSeen !== null && maxNumber > 0 ? Math.max(maxNumber - firstSeen, 0) : null
-    lifecycles.push({
-      id: entry.id,
-      content: entry.content,
-      status: entry.status ?? 'open',
-      firstSeen,
-      lastSeen,
-      distance,
-      mentionedIn: hitChapters,
-    })
-
-    /** 只对未回收条目判「陈条」。 */
-    if ((entry.status ?? 'open') === 'done') continue
-    if (distance !== null && distance >= staleThreshold) {
-      findings.push({
-        kind: 'stale',
-        severity: Math.min(10, Math.floor(distance / staleThreshold) * 3),
-        message: '条目 ' + entry.id + '（' + entry.content.slice(0, 18) + '…）立了 ' +
-          distance + ' 段还没回收',
-        target: entry.id,
-      })
-    }
-
-    /** 登记的首现与实际首现不一致（novel-writer 的交叉核对）。 */
-    if (entry.firstSeen !== undefined && hitChapters.length > 0 && entry.firstSeen !== hitChapters[0]) {
-      findings.push({
-        kind: 'mismatch',
-        severity: 2,
-        message: '条目 ' + entry.id + ' 登记的首次出现（第 ' + entry.firstSeen +
-          ' 段）与正文实际首次提及（第 ' + hitChapters[0] + ' 段）不一致',
-        target: entry.id,
+    const units = new Set(list.map((item) => item.unit).filter((unit) => unit !== ''))
+    if (units.size > 1 && ratio < conflictRatio) {
+      inconsistencies.push({
+        kind: 'unit_mismatch',
+        severity: 1,
+        message: '「' + subject + '」各处单位写法不同：' + [...units].join(' / ') +
+          '（数值不冲突，但口径最好统一）',
+        subject,
+        quantities: list,
       })
     }
   }
 
-  // ── ② 关联对象的连续缺席（对应小说的「人丢了」）──
-  const relatedNames = new Set<string>()
-  for (const entry of entries) {
-    for (const name of entry.related ?? []) relatedNames.add(name)
-  }
-  interface Absence {
-    name: string
-    presentIn: number[]
-    absentRun: Array<{ from: number; to: number; length: number }>
-  }
-  const absences: Absence[] = []
-
-  for (const name of relatedNames) {
-    const presentIn: number[] = []
-    sections.forEach((section, index) => {
-      if (lowered[index].includes(name.toLowerCase())) presentIn.push(section.number)
-    })
-    if (presentIn.length === 0) {
-      degraded.push('「' + name + '」全书未出场（登记了但正文里找不到名字）')
-      continue
-    }
-    /** 找连续缺席区间。 */
-    const runs: Array<{ from: number; to: number; length: number }> = []
-    const present = new Set(presentIn)
-    let runStart: number | null = null
-    for (let n = 1; n <= maxNumber; n += 1) {
-      if (!present.has(n)) {
-        if (runStart === null) runStart = n
-      } else if (runStart !== null) {
-        const length = n - runStart
-        if (length >= absenceThreshold) runs.push({ from: runStart, to: n - 1, length })
-        runStart = null
-      }
-    }
-    if (runStart !== null) {
-      const length = maxNumber - runStart + 1
-      if (length >= absenceThreshold) runs.push({ from: runStart, to: maxNumber, length })
-    }
-    absences.push({ name, presentIn, absentRun: runs })
-    for (const run of runs) {
-      findings.push({
-        kind: 'absence',
-        severity: Math.min(10, run.length),
-        message: '「' + name + '」第 ' + run.from + '–' + run.to + ' 段连续缺席 ' + run.length + ' 段',
-        target: name,
-      })
-    }
-  }
-
-  // ── ③ 剧情线最大空档（把未回收条目按关联对象聚成线）──
-  interface Thread {
-    name: string
-    entries: string[]
-    activeSections: number[]
-    maxGap: number
-    gapRange: [number, number] | null
-  }
-  const threads: Thread[] = []
-  for (const name of relatedNames) {
-    const relatedEntries = entries.filter((entry) => (entry.related ?? []).includes(name))
-    const openEntries = relatedEntries.filter((entry) => (entry.status ?? 'open') !== 'done')
-    if (openEntries.length === 0) continue
-    /** 这条线上所有被提及的段号。 */
-    const active = new Set<number>()
-    for (const entry of openEntries) {
-      const life = lifecycles.find((item) => item.id === entry.id)
-      for (const n of life?.mentionedIn ?? []) active.add(n)
-    }
-    const sortedActive = [...active].sort((a, b) => a - b)
-    /** 找最大空档。 */
-    let maxGap = 0
-    let gapRange: [number, number] | null = null
-    for (let i = 1; i < sortedActive.length; i += 1) {
-      const gap = sortedActive[i] - sortedActive[i - 1] - 1
-      if (gap > maxGap) {
-        maxGap = gap
-        gapRange = [sortedActive[i - 1] + 1, sortedActive[i] - 1]
-      }
-    }
-    threads.push({
-      name,
-      entries: openEntries.map((entry) => entry.id),
-      activeSections: sortedActive,
-      maxGap,
-      gapRange,
-    })
-    if (maxGap >= absenceThreshold && gapRange) {
-      findings.push({
-        kind: 'gap',
-        severity: Math.min(10, maxGap),
-        message: '「' + name + '」这条线在第 ' + gapRange[0] + '–' + gapRange[1] +
-          ' 段断了 ' + maxGap + ' 段',
-        target: name,
-      })
-    }
-  }
-
-  // ── ④ 完全没被提及的条目 ──
-  for (const life of lifecycles) {
-    if (life.mentionedIn.length === 0 && life.firstSeen === null) {
-      findings.push({
-        kind: 'orphan',
-        severity: 5,
-        message: '条目 ' + life.id + '（' + life.content.slice(0, 18) + '…）在正文里从未出现',
-        target: life.id,
-      })
-    }
-  }
-
-  /** 按严重度降序。 */
-  findings.sort((a, b) => b.severity - a.severity)
+  inconsistencies.sort((a, b) => b.severity - a.severity)
 
   // ── 渲染 ──
   const lines: string[] = []
-  lines.push('═══ 结构体检 ═══')
+  lines.push('═══ 数值口径体检 ═══')
   lines.push('')
-  lines.push('  片段 ' + sections.length + ' 个（第 1–' + maxNumber + ' 段）　' +
-    '条目 ' + entries.length + ' 个　关联对象 ' + relatedNames.size + ' 个')
+  lines.push('  片段 ' + sections.length + ' 个　抽出数值主张 ' + all.length +
+    ' 条　涉及主体 ' + bySubject.size + ' 个')
   lines.push('')
 
-  if (findings.length === 0) {
-    lines.push('  ✓ 没发现结构问题：没有陈条、没有连续缺席、没有断线。')
+  if (inconsistencies.length === 0) {
+    lines.push('  ✓ 没发现数值口径冲突。')
+    if (all.length === 0) {
+      lines.push('')
+      lines.push('  ⚠ 但也**一条数值主张都没抽到** —— 这可能是')
+      lines.push('    ① 正文里确实没有带量级的数值（如纯叙述段）')
+      lines.push('    ② 或数值的表述形式我没认出来（只认「数字 + 中文量级/单位」）')
+      lines.push('    这条说明必须给出来，否则「没冲突」会被误读成「检查过了没问题」。')
+    }
   } else {
-    lines.push('  发现 ' + findings.length + ' 处（按严重度排序）：')
-    for (const finding of findings) {
+    lines.push('  发现 ' + inconsistencies.length + ' 处：')
+    lines.push('')
+    for (const item of inconsistencies) {
       const label =
-        finding.kind === 'stale' ? '陈条'
-          : finding.kind === 'absence' ? '缺席'
-            : finding.kind === 'gap' ? '断线'
-              : finding.kind === 'orphan' ? '从未出现'
-                : '口径不一致'
-      lines.push('   · [' + label + '] ' + finding.message)
+        item.kind === 'multi_value' ? '口径冲突'
+          : item.kind === 'unit_mismatch' ? '单位不一'
+            : '量级可疑'
+      lines.push('   ✗ [' + label + '] ' + item.message)
+      lines.push('')
     }
   }
 
-  /** 条目生命周期表（哪怕没问题也值得看）。 */
-  if (lifecycles.length > 0) {
-    lines.push('')
-    lines.push('  条目生命周期：')
-    for (const life of lifecycles) {
-      lines.push(
-        '   · ' + life.id.padEnd(8, ' ') +
-        (life.firstSeen === null ? '首现未知' : '首现第 ' + life.firstSeen + ' 段').padEnd(14, ' ') +
-        (life.distance === null ? '' : '已过 ' + String(life.distance).padEnd(4, ' ') + '段') +
-        (life.mentionedIn.length === 0 ? '（正文未提及）' : '') +
-        (life.status === 'done' ? '［已回收］' : ''),
-      )
+  /** 抽出全部主张，供人工核对（这是「可核对性」的一半）。 */
+  if (all.length > 0) {
+    lines.push('  抽到的数值主张（供核对）：')
+    for (const [subject, list] of bySubject) {
+      lines.push('    ' + subject + '：' +
+        list.map((item) => '第' + item.section + '段=' + fmtNum(item.value)).join('、'))
     }
-  }
-
-  if (degraded.length > 0) {
-    lines.push('')
-    lines.push('  ⚠ 以下项数据不足，已如实标注（未编造）：')
-    for (const one of degraded) lines.push('   · ' + one)
   }
 
   lines.push('')
-  lines.push('  ★ 工具只报「哪里可能有问题」，**不替你改设定** —— 哪条是有意为之只有你知道。')
+  lines.push('  ★ 只查**同一量两处不同值**（世界观硬伤的主因），不查「多久没提到」')
+  lines.push('    —— 后者是小说的检查：小说读者会忘，世界观读者是按需查询。')
+  lines.push('  ★ 工具只报冲突，**不判断哪一处是对的** —— 哪个数是原文给的只有你知道。')
 
   return {
     result: lines.join('\n'),
     value: toJsonValue({
       sections: sections.length,
-      entries: entries.length,
-      maxChapter: maxNumber,
-      findings,
-      lifecycles,
-      absences,
-      threads,
-      degraded,
-      absenceThreshold,
-      staleThreshold,
+      quantities: all,
+      subjects: [...bySubject.keys()],
+      inconsistencies,
+      conflictRatio,
+      /** 抽到了几条主张 —— 0 条时「没冲突」不可信，调用方要能看出来。 */
+      quantityCount: all.length,
     }),
   }
+}
+
+/**
+ * 数字显示。
+ *
+ * @param value - 数值
+ * @returns 显示串
+ */
+function fmtNum(value: number): string {
+  if (!Number.isFinite(value)) return '∞'
+  if (value === 0) return '0'
+  const abs = Math.abs(value)
+  if (abs >= 1e7 || abs < 1e-3) return value.toExponential(3)
+  return String(Number(value.toPrecision(6)))
+}
+
+/**
+ * 倍数显示（取 1 位小数，大数用整数）。
+ *
+ * @param ratio - 倍数
+ * @returns 显示串
+ */
+function fmtRatio(ratio: number): string {
+  if (!Number.isFinite(ratio)) return '无穷'
+  return ratio >= 10 ? String(Math.round(ratio)) + ' 倍' : ratio.toFixed(1) + ' 倍'
 }
