@@ -30,6 +30,8 @@ import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
 import { registerImperialUnits } from './units-imperial-registry.js'
 import { fixUnitAmbiguity } from './unit-ambiguity.js'
 import { rebindDefaults } from './units-default-rebind.js'
+import { registerCustomUnit, type CustomUnit } from './units-custom.js'
+import { loadCustomUnits } from './units-custom-store.js'
 
 /** 表达式长度上限（字符）。超过就拒绝，而不是慢慢算。 */
 const MAX_EXPRESSION_LENGTH = 10_000
@@ -229,15 +231,29 @@ export function normalizeUnits(source: string): string {
          * 不 —— `1 里` 的「里」前面是空格，`1里` 前面是数字，两种都该换。
          * 真正要防的是「里」作为普通汉字出现在非单位语境（如 `里面`），
          * 但那需要语义理解，本层不做。判据是：**紧跟数字**才算单位。
+         *
+         * ## 三条放行条件（第二、三条是后补的）
+         *
+         * ```
+         *   ① 前面隔着空格能看到数字      `1 里`
+         *   ② 前面是 `to` / `in`         `3 维尔 to 里`  ← 目标单位位
+         *   ③ 紧邻数字或右括号            `1里` / `(2)里`
+         * ```
+         *
+         * 第二条是实测抓出来的：`to 里` 里的「里」前面是字母 `to`，
+         * 按原判据匹配不上，于是 `3 维尔 to 里` 报语法错。
          */
         const before = out.trimEnd()
         const prevChar = before.length > 0 ? before[before.length - 1] : ''
+        /** 前面是数字或处于表达式开头（`1 里` 的「里」前是空格，开头的空格也算）。 */
         const prevIsDigitOrSpace = /\d/.test(prevChar) || prevChar === ''
-        /** 只看紧邻的那个字符是不是数字（跨越空格也算）。 */
         let j = out.length - 1
         while (j >= 0 && out[j] === ' ') j -= 1
         const nearest = j >= 0 ? out[j] : ''
-        if (prevIsDigitOrSpace || /[\d)\]]/.test(nearest)) {
+        /** 前面是不是 `to` / `in` / `as`（目标单位位）。 */
+        const beforeWord = out.slice(0, j + 1)
+        const isTargetSlot = /(?:^|\s)(?:to|in|as)$/i.test(beforeWord)
+        if (prevIsDigitOrSpace || /[\d)\]]/.test(nearest) || isTargetSlot) {
           out += symbol
           i += cjk.length
           matched = true
@@ -402,10 +418,34 @@ function normalizeEraUnitsInText(source: string): string {
   return out
 }
 
+/**
+ * 数据目录。
+ *
+ * ## 为什么读环境变量而不是写死路径
+ *
+ * 测试需要隔离 —— 每套测试用独立的临时目录，否则会互相污染
+ * （老插件踩过这个坑：共享 `DSH_MATH_CALC_HOME` 让断言随机失败）。
+ *
+ * @returns 数据目录绝对路径
+ */
+function resolveDataHome(): string {
+  const env = process.env['DSH_MATH_CALC_HOME']
+  if (typeof env === 'string' && env.trim() !== '') return env
+  /**
+   * 未设置时退回当前目录下的 `.dsh-math-calculator`。
+   * 不退回 `os.tmpdir()` —— 那会让自设单位在重启后随机消失。
+   */
+  return '.dsh-math-calculator'
+}
+
 /** 引擎包装。 */
 export interface Engine {
   /** 底层 mathjs 实例（供需要直接用的功能域）。 */
   readonly math: MathJsInstance
+  /** 已加载的自设单位（供输出层还原显示名）。 */
+  readonly customUnits: CustomUnit[]
+  /** 自设单位加载失败的原因（空串表示正常）。 */
+  readonly customUnitsError: string
   /**
    * 求值。
    *
@@ -426,6 +466,29 @@ export interface Engine {
 
 /** 引擎单例（mathjs 实例创建代价不低，且无状态）。 */
 let cached: Engine | null = null
+
+/**
+ * 重建引擎（丢弃缓存）。
+ *
+ * ## 为什么需要这个
+ *
+ * 引擎是单例（`buildEngine` 缓存），因为 mathjs 实例创建代价不低。
+ * 但**自设单位是运行时变的**：
+ *
+ * ```
+ *   add 一个单位 → 落盘
+ *   但引擎已缓存 → 内存里的 customUnits 还是旧的
+ *   → 新单位在 mathjs 里注册了，但 normalizeCustomUnits 的闭包读不到
+ * ```
+ *
+ * 所以 `add` / `remove` 之后要调这个函数重建。
+ *
+ * @returns 新引擎
+ */
+export function rebuildEngine(): Engine {
+  cached = null
+  return buildEngine()
+}
 
 /**
  * 建引擎。
@@ -501,6 +564,39 @@ export function buildEngine(): Engine {
    */
   rebindDefaults(math)
   /**
+   * ## 最后加载用户自设单位
+   *
+   * 顺序很重要：必须在内置单位**全部就位之后**。
+   *
+   * ```
+   *   ① 内置（mathjs）
+   *   ② 中文古制（cnli / cnjin）
+   *   ③ 英制/市制（psi / gpm / 市尺）
+   *   ④ 裸名重绑定（gallon → 国际标准）
+   *   ⑤ 用户自设（@维尔）      ← 最后，且**不得覆盖**前面任何一个
+   * ```
+   *
+   * 若自设单位先注册，用户就能用「维尔」这个名字顶掉「m」——
+   * 那会让 `1 m` 不再是 1 m，破坏「同输入同输出」。
+   *
+   * **加载失败不致命**：盘上是坏的也不该让整个插件起不来，
+   * 但要把原因带出去（见 `customUnitsError`）。
+   */
+  let customUnits: CustomUnit[] = []
+  let customUnitsError = ''
+  try {
+    customUnits = loadCustomUnits({ home: resolveDataHome() })
+    for (const unit of customUnits) {
+      try {
+        registerCustomUnit(math, unit)
+      } catch {
+        /** 单个注册失败（如与内置撞名）跳过 —— 其余的仍可用。 */
+      }
+    }
+  } catch (error) {
+    customUnitsError = error instanceof Error ? error.message : String(error)
+  }
+  /**
    * 注册**带时代**的单位（汉尺/唐大尺/清营造尺…）。
    *
    * 为什么需要它：同一个「尺」在商代 15.8 cm、汉代 23.1 cm、清代 32 cm ——
@@ -538,6 +634,16 @@ export function buildEngine(): Engine {
      * 换成 `minute` 后正常。详见 `unit-ambiguity.ts`。
      */
     normalized = fixUnitAmbiguity(normalized)
+    /**
+     * ④ 自设单位的中文名 → 注册名（**必须在歧义修正之后**）。
+     *
+     * 自设单位的注册名是 `uX1ohqcut` 这种哈希，用户不可能手打。
+     * 所以这里把「维尔」换成注册名，让 `5 维尔 to km` 能算。
+     *
+     * 放在最后是因为：自设单位的显示名可能含 `min`（如「分钟格」），
+     * 若先换中文名再修歧义，会把注册名里的 `min` 也改掉。
+     */
+    normalized = normalizeCustomUnits(normalized)
     try {
       return math.evaluate(normalized, scope ?? {})
     } catch (error) {
@@ -558,6 +664,32 @@ export function buildEngine(): Engine {
     return n
   }
 
-  cached = { math, evaluate, evaluateNumber }
+  /**
+   * 自设单位的中文名 → 注册名。
+   *
+   * ## 为什么要闭包而不是顶层函数
+   *
+   * 它要读 `customUnits` —— 而那是**本次构建**加载进来的，
+   * 顶层函数拿不到。闭包是这里最直接的办法。
+   *
+   * ## 替换顺序
+   *
+   * 按显示名长度降序，保证「石炭气」不会被「石炭」抢先匹配掉前半截。
+   *
+   * @param text - 原始表达式
+   * @returns 替换后的表达式
+   */
+  const normalizeCustomUnits = (text: string): string => {
+    if (customUnits.length === 0) return text
+    let out = text
+    const sorted = [...customUnits].sort((a, b) => b.display.length - a.display.length)
+    for (const unit of sorted) {
+      if (!out.includes(unit.display)) continue
+      out = out.split(unit.display).join(unit.name)
+    }
+    return out
+  }
+
+  cached = { math, evaluate, evaluateNumber, customUnits, customUnitsError }
   return cached
 }

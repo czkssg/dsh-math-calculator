@@ -227,6 +227,42 @@ export function restoreCjkUnitNames(text: string): string {
 }
 
 /**
+ * 把自设单位的注册名还原成「@显示名」。
+ *
+ * ## 为什么要加 `@`
+ *
+ * 自设单位与标准单位混在同一个表达式里时，读者必须能分辨两者：
+ *
+ * ```
+ *   1.5 @维尔        自设（本世界发明的）
+ *   1.5 km          标准
+ * ```
+ *
+ * `@` 前缀借自 [UCUM 扩展讨论](https://www.healthintersections.com.au/2025/01/14/extending-ucum.html)
+ * 的建议 —— 它明确说「用现有单位不用的字符做命名空间」，
+ * 这样库能识别「这条表达式含非标准单位」。
+ *
+ * @param text - 含注册名的文本
+ * @param units - 自设单位表
+ * @returns 还原后的文本
+ */
+export function restoreCustomUnitNames(
+  text: string,
+  units: Array<{ name: string; display: string }>,
+): string {
+  if (units.length === 0) return text
+  let out = text
+  /** 按长度降序，避免短名抢先匹配。 */
+  const sorted = [...units].sort((a, b) => b.name.length - a.name.length)
+  for (const unit of sorted) {
+    /** 整词匹配：前后不能紧接字母数字。 */
+    const pattern = new RegExp('(?<![A-Za-z0-9])' + unit.name + '(?![A-Za-z0-9])', 'g')
+    out = out.replace(pattern, '@' + unit.display)
+  }
+  return out
+}
+
+/**
  * 结果 → 可进 JSON 的值（去掉不可序列化的东西）。
  *
  * ## 为什么需要它
