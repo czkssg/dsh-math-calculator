@@ -184,16 +184,16 @@ console.log('-- 10. ★ 契约：未知与未迁移子命令 --')
   assert('★ 未知子命令 → unknown_subcommand', unknown?.type === 'unknown_subcommand', unknown?.type)
   assert('hint 列出可用子命令', String(unknown?.hint ?? '').includes('stack'), String(unknown?.hint ?? '').slice(0, 80))
 
-  const pending = throwsOf(() => der.runDerivation({ derivation: 'anchors' }, deps))
+  const pending = throwsOf(() => der.runDerivation({ derivation: 'compare' }, deps))
   assert('★ 未迁移子命令 → unknown_subcommand（不假装成功）', pending?.type === 'unknown_subcommand', pending?.type)
   assert('★ message 说清"尚未迁移"', String(pending?.message ?? '').includes('尚未迁移'), String(pending?.message ?? '').slice(0, 80))
   assert('hint 分列已实现与未迁移', String(pending?.hint ?? '').includes('已实现') && String(pending?.hint ?? '').includes('尚未迁移'), '')
 
   const implemented = der.IMPLEMENTED_SUBCOMMANDS.length
   const pendingList = der.PENDING_SUBCOMMANDS.length
-  assert('已实现 13 个', implemented === 13, String(implemented))
-  assert('未迁移 16 个', pendingList === 16, String(pendingList))
-  assert('13 + 16 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
+  assert('已实现 21 个', implemented === 21, String(implemented))
+  assert('未迁移 8 个', pendingList === 8, String(pendingList))
+  assert('21 + 8 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
 }
 
 // ───────────────────────────────────────────────────────────
@@ -258,6 +258,64 @@ console.log('-- 13. observer：同一个世界，不同观测者 --')
 
   const badKind = throwsOf(() => der.runDerivation({ derivation: 'observer', observerKind: 'alien' }, deps))
   assert('未知观测者 → invalid_argument', badKind?.type === 'invalid_argument', badKind?.type)
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 14. heatmap：相图扫描 --')
+// ───────────────────────────────────────────────────────────
+{
+  const out = der.runDerivation({ derivation: 'heatmap' }, deps)
+  assert('81 格（9×9）', out.value.heatmap.cells.length === 81, String(out.value.heatmap.cells.length))
+  assert('★ 统计总和 = 81', out.value.heatmap.summary.ok + out.value.heatmap.summary.warn + out.value.heatmap.summary.danger + out.value.heatmap.summary.unknown === 81, JSON.stringify(out.value.heatmap.summary))
+  assert('有可行格也有边缘格（本扫描范围内没有参数不成立点）', out.value.heatmap.summary.ok > 0 && out.value.heatmap.summary.warn > 0, JSON.stringify(out.value.heatmap.summary))
+  assert('给窄窗判定', typeof out.value.heatmap.narrow.narrow === 'boolean', '')
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 15. timeline：快慢变量与临界点 --')
+// ───────────────────────────────────────────────────────────
+{
+  const out = der.runDerivation({ derivation: 'timeline' }, deps)
+  assert('11 个采样点', out.value.timeline.points.length === 11, String(out.value.timeline.points.length))
+  assert('t=0 亮度 = 1', out.value.timeline.points[0].luminosity === 1, String(out.value.timeline.points[0].luminosity))
+  assert('★ t=10 亮度约 2（每 Gyr +10%）', near(out.value.timeline.points[10].luminosity, 2, 0.01), String(out.value.timeline.points[10].luminosity))
+  assert('★ 临界点含温室失控与地质死寂', out.value.timeline.critical.some((c) => c.name.includes('温室')), JSON.stringify(out.value.timeline.critical.map((c) => c.name)))
+  assert('地质热流单调下降', out.value.timeline.points[10].geologicalHeat < out.value.timeline.points[0].geologicalHeat, '')
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 16. graph / trace / impact --')
+// ───────────────────────────────────────────────────────────
+{
+  const graph = der.runDerivation({ derivation: 'graph' }, deps)
+  assert('节点 > 20', graph.value.graph.nodes.length > 20, String(graph.value.graph.nodes.length))
+  assert('★ 有层深（≥3 层）', graph.value.graph.maxDepth >= 3, String(graph.value.graph.maxDepth))
+  assert('坐标字段齐全', graph.value.graph.nodes.every((n) => typeof n.x === 'number' && typeof n.y === 'number' && typeof n.depth === 'number'), '')
+
+  const list = der.runDerivation({ derivation: 'trace' }, deps)
+  assert('缺 traceTarget 时列可溯源量', Array.isArray(list.value.nodes) && list.value.nodes.length > 20, String(list.value.nodes?.length))
+  const traced = der.runDerivation({ derivation: 'trace', traceTarget: '建筑高度上限' }, deps)
+  assert('★ 建筑高度上限能溯源', traced.value.trace.found === true, JSON.stringify(traced.value.trace.direct))
+  assert('★ 最终落到行星质量/行星半径', traced.value.trace.roots.includes('行星质量') && traced.value.trace.roots.includes('行星半径'), JSON.stringify(traced.value.trace.roots))
+
+  const impact = der.runDerivation({ derivation: 'impact', traceTarget: '行星质量' }, deps)
+  assert('★ 改行星质量直接影响表面重力', impact.value.impact.direct.includes('表面重力'), JSON.stringify(impact.value.impact.direct))
+  assert('间接波及非空', impact.value.impact.indirect.length > 0, String(impact.value.impact.indirect.length))
+  const missing = throwsOf(() => der.runDerivation({ derivation: 'impact' }, deps))
+  assert('★ impact 缺参 → missing_params', missing?.type === 'missing_params', missing?.type)
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 17. cost：算力估算 --')
+// ───────────────────────────────────────────────────────────
+{
+  const fast = der.runDerivation({ derivation: 'cost', costKind: 'timeline', timelineSteps: 11 }, deps)
+  assert('11 步时间轴 → fast', fast.value.cost.risk === 'fast', fast.value.cost.risk)
+  const sweep = der.runDerivation({ derivation: 'cost', costKind: 'sweep', costCombos: 1000 }, deps)
+  assert('1000 组扫描 → moderate 或以上', ['moderate', 'slow', 'very-slow'].includes(sweep.value.cost.risk), sweep.value.cost.risk)
+  const phase = der.runDerivation({ derivation: 'cost', costKind: 'phase', costX: 100, costY: 100 }, deps)
+  assert('★ 100×100 相图 → very-slow 并给降级建议', phase.value.cost.risk === 'very-slow' && phase.value.cost.downgrade.length > 0, phase.value.cost.risk)
+  assert('result 说插件不拒绝请求', phase.result.includes('不会拒绝'), '')
 }
 
 console.log('')

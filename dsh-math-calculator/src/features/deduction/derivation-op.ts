@@ -41,6 +41,19 @@ import { generateWorld, type WorldDeps } from './world.js'
 import { judgeDead, renderDead } from './dead-universe.js'
 import { checkFlip, FLIP_CLAIMS } from './flip.js'
 import { OBSERVERS, perceive, renderObserver } from './observer.js'
+import { ANCHORS, solveAnchor, renderBackSolve, type AnchorKind } from './anchor-solve.js'
+import { buildHeatmap, detectNarrowWindow, linspace } from './heatmap.js'
+import { buildTimeline, renderTimeline } from './timeline.js'
+import {
+  buildDependencyGraph,
+  layoutDependencyGraph,
+  allNodeNames,
+  traceTarget,
+  impactOf,
+  renderTrace,
+  renderImpact,
+} from './graph.js'
+import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, renderCost } from './compute-budget.js'
 
 /** 已实现的子命令。 */
 export const IMPLEMENTED_SUBCOMMANDS = [
@@ -57,27 +70,18 @@ export const IMPLEMENTED_SUBCOMMANDS = [
   'dead',
   'flip',
   'observer',
-] as const
-
-/** 尚未迁移的子命令（明确报错，不假装成功）。 */
-export const PENDING_SUBCOMMANDS = [
   'anchors',
   'backSolve',
   'heatmap',
-  'graph',
   'timeline',
-  'compare',
-  'diff',
-  'archive',
-  'history',
-  'whitepaper',
+  'graph',
   'trace',
-  'cost',
-  'fantasy',
-  'civilization',
-  'inherit',
   'impact',
+  'cost',
 ] as const
+
+/** 尚未迁移的子命令（明确报错，不假装成功）。 */
+export const PENDING_SUBCOMMANDS = ['compare', 'diff', 'archive', 'history', 'whitepaper', 'fantasy', 'civilization', 'inherit'] as const
 
 /** 注入的数据。 */
 export interface DerivationDeps extends WorldDeps {}
@@ -434,6 +438,128 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     const scaleHeight = profile.atmosphere.scaleHeightM
     lines.push(renderObserver(observer, gravity, scaleHeight))
     value['observer'] = { kind, metrics: perceive(observer, gravity, scaleHeight) }
+  } else if (sub === 'anchors') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    lines.push('═══ 可反推的叙事锚点 ═══', '')
+    lines.push('  锚点 id              名称                单位        提示')
+    for (const anchor of ANCHORS) {
+      lines.push('  ' + anchor.kind.padEnd(22) + anchor.label.padEnd(20) + anchor.unit.padEnd(12) + anchor.hint)
+    }
+    lines.push('')
+    lines.push('用法：{"derivation":"backSolve","anchor":"creatureHeight","anchorValue":50}')
+    value['anchors'] = ANCHORS
+    void worldParams
+  } else if (sub === 'backSolve') {
+    const anchorId = typeof input['anchor'] === 'string' ? input['anchor'].trim() : ''
+    const anchorValue = typeof input['anchorValue'] === 'number' && Number.isFinite(input['anchorValue']) ? input['anchorValue'] : 0
+    if (anchorId === '' || anchorValue <= 0) {
+      throw new CalcError(
+        'missing_params',
+        'derivation 子命令 backSolve 缺少必需参数',
+        '需要 anchor（锚点 id）与 anchorValue（正数）。锚点清单见 derivation="anchors"。' +
+          '可复制的调用：' + JSON.stringify({ operation: 'derivation', derivation: 'backSolve', anchor: 'creatureHeight', anchorValue: 50 }) +
+          '。可用 anchor：' + ANCHORS.map((anchor) => anchor.kind).join(' / ') + '。',
+      )
+    }
+    if (!ANCHORS.some((anchor) => anchor.kind === anchorId)) {
+      throw new CalcError(
+        'invalid_argument',
+        '不认识的锚点「' + anchorId + '」',
+        '可用锚点：' + ANCHORS.map((anchor) => anchor.kind + '（' + anchor.label + '）').join(' / ') + '。',
+      )
+    }
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const solution = solveAnchor(anchorId as AnchorKind, anchorValue, worldParams, { constants: deps.constants, starClasses: deps.starClasses })
+    lines.push(renderBackSolve(solution))
+    value['solution'] = solution
+  } else if (sub === 'heatmap') {
+    const massValues = linspace(0.2, 5, 9)
+    const orbitValues = linspace(0.5, 2.5, 9)
+    const map = buildHeatmap(
+      massValues,
+      orbitValues,
+      (mass, orbit) => {
+        const profile = generateWorld({ planetMass: mass, orbitAU: orbit }, { constants: deps.constants, starClasses: deps.starClasses })
+        const verdict = judgeDead(profile as unknown as Record<string, unknown>)
+        const level = verdict.level === 'alive' ? 'ok' : verdict.level === 'marginal' ? 'warn' : 'danger'
+        return { level, note: '质量 ' + mass.toFixed(2) + ' / 轨道 ' + orbit.toFixed(2) + ' AU → ' + verdict.summary }
+      },
+      { x: '行星质量（地球=1）', y: '轨道距离（AU）' },
+    )
+    const narrow = detectNarrowWindow(map.cells)
+    lines.push('═══ 相图热力图 ═══', '')
+    lines.push('  X：' + map.xLabel + '（' + massValues.length + ' 档）')
+    lines.push('  Y：' + map.yLabel + '（' + orbitValues.length + ' 档）', '')
+    lines.push('  允许 ' + map.summary.ok + ' / 边缘 ' + map.summary.warn + ' / 禁止 ' + map.summary.danger, '')
+    lines.push('  ' + narrow.note, '')
+    lines.push('（本插件没有界面。完整网格在 value.heatmap，可自行渲染或转成文字。）')
+    value['heatmap'] = { ...map, narrow }
+  } else if (sub === 'timeline') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const config = {
+      fromGyr: typeof input['timelineFrom'] === 'number' ? input['timelineFrom'] : 0,
+      toGyr: typeof input['timelineTo'] === 'number' ? input['timelineTo'] : 10,
+      steps: typeof input['timelineSteps'] === 'number' ? input['timelineSteps'] : 11,
+      starMassSun: typeof worldParams['starMass'] === 'number' ? (worldParams['starMass'] as number) : 1,
+      orbitAU: typeof worldParams['orbitAU'] === 'number' ? (worldParams['orbitAU'] as number) : 1,
+    }
+    const timeline = buildTimeline(config)
+    lines.push(renderTimeline(timeline))
+    value['timeline'] = timeline
+  } else if (sub === 'graph') {
+    const focus = typeof input['traceTarget'] === 'string' ? input['traceTarget'] : undefined
+    const edges = buildDependencyGraph()
+    const layout = layoutDependencyGraph(edges, focus)
+    lines.push('═══ 依赖图 ═══', '')
+    lines.push('  节点 ' + layout.nodes.length + ' 个，连线 ' + layout.edges.length + ' 条，共 ' + (layout.maxDepth + 1) + ' 层')
+    if (focus !== undefined) lines.push('  焦点：' + focus + (layout.focusNode ? '' : '（图中没有这个节点）'))
+    lines.push('', '（本插件没有界面。完整坐标在 value.graph，可自行渲染或转成文字。）')
+    value['graph'] = layout
+  } else if (sub === 'trace') {
+    const target = typeof input['traceTarget'] === 'string' ? input['traceTarget'].trim() : ''
+    const edges = buildDependencyGraph()
+    const names = [...allNodeNames(edges)].sort()
+    if (target === '') {
+      lines.push('═══ 可溯源的量（共 ' + names.length + ' 个）═══', '')
+      for (let index = 0; index < names.length; index += 3) lines.push('  ' + names.slice(index, index + 3).map((name) => name.padEnd(22)).join(''))
+      lines.push('', '用法：{"derivation":"trace","traceTarget":"建筑高度上限"}')
+      value['nodes'] = names
+    } else {
+      const result = traceTarget(target, edges)
+      lines.push(renderTrace(result))
+      value['trace'] = result
+    }
+  } else if (sub === 'impact') {
+    const target = typeof input['traceTarget'] === 'string' ? input['traceTarget'].trim() : ''
+    const edges = buildDependencyGraph()
+    const names = [...allNodeNames(edges)].sort()
+    if (target === '') {
+      throw new CalcError(
+        'missing_params',
+        'derivation 子命令 impact 缺少 traceTarget（要改的量名）',
+        '可查的量共 ' + names.length + ' 个，前 12 个：' + names.slice(0, 12).join(' · ') + '。完整清单用 derivation="trace"。',
+      )
+    }
+    if (!names.includes(target)) {
+      throw new CalcError('unknown_symbol', '依赖图里没有「' + target + '」', '可查的量：' + names.slice(0, 20).join(' · ') + (names.length > 20 ? ' …' : '') + '。')
+    }
+    const result = impactOf(target, edges)
+    lines.push(renderImpact(target, result))
+    value['impact'] = result
+  } else if (sub === 'cost') {
+    const kind = typeof input['costKind'] === 'string' ? input['costKind'] : 'timeline'
+    let estimate
+    if (kind === 'phase') {
+      estimate = estimatePhase(typeof input['costX'] === 'number' ? input['costX'] : 50, typeof input['costY'] === 'number' ? input['costY'] : 50)
+    } else if (kind === 'backsolve') {
+      estimate = estimateBackSolve(typeof input['costIterations'] === 'number' ? input['costIterations'] : 40)
+    } else if (kind === 'sweep') {
+      estimate = estimateSweep(typeof input['costCombos'] === 'number' ? input['costCombos'] : 1000)
+    } else {
+      estimate = estimateTimeline(typeof input['timelineSteps'] === 'number' ? input['timelineSteps'] : 11, input['costWithPipeline'] === true)
+    }
+    lines.push(renderCost(estimate))
+    value['cost'] = estimate
   } else {
     const all = [...IMPLEMENTED_SUBCOMMANDS, ...PENDING_SUBCOMMANDS]
     if ((PENDING_SUBCOMMANDS as readonly string[]).includes(sub)) {
