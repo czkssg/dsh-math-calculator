@@ -1,0 +1,395 @@
+/**
+ * `derivation` 的 op 实现：推演栈框架。
+ *
+ * 这不是又一种计算，而是把计算组织成可管理的方法论：
+ * 展示推演栈、接口卡、无量纲化、单位重定义检测、敏感性、相图、检查表、七张表。
+ *
+ * ## 契约（修掉老实现的 A21/A43）
+ *
+ * - 未知子命令 → `unknown_subcommand`，并附可用列表（不能 ok=true 地回一段文本）；
+ * - 缺参数 → `missing_params`，hint 里给可复制的完整调用。
+ *
+ * ## 子命令分批
+ *
+ * 本文件先实现**纯计算类**：stack / cards / dimensionless / units / sensitivity /
+ * phase / checklist / chaos / tables / pipeline。
+ * 依赖工作区档案的（archive/history/compare/diff/inherit）与依赖档案模板的
+ * （whitepaper/trace/impact/graph/timeline/cost/fantasy/civilization/heatmap/
+ * dead/observer/anchors/backSolve）在后续块接入，未接入时明确报 unknown_subcommand
+ * 并说明"本分支尚未迁移"，不假装成功。
+ *
+ * @module dsh-math-calculator/features/deduction/derivation-op
+ */
+
+import { CalcError } from '../../core/errors.js'
+import {
+  STACK,
+  INTERFACE_CARDS,
+  CONSTRAINT_LABEL,
+  CONFIDENCE_LABEL,
+  VERDICT_LABEL,
+  dimensionlessPack,
+  detectUnitRedefinition,
+  sensitivity,
+  phaseSlice,
+  buildChecklist,
+  judgeRange,
+  type ChecklistItem,
+  type Verdict,
+} from './derivation-stack.js'
+import { generateWorld, type WorldDeps } from './world.js'
+
+/** 已实现的子命令。 */
+export const IMPLEMENTED_SUBCOMMANDS = [
+  'stack',
+  'cards',
+  'dimensionless',
+  'units',
+  'sensitivity',
+  'phase',
+  'checklist',
+  'chaos',
+  'tables',
+  'pipeline',
+] as const
+
+/** 尚未迁移的子命令（明确报错，不假装成功）。 */
+export const PENDING_SUBCOMMANDS = [
+  'dead',
+  'flip',
+  'observer',
+  'anchors',
+  'backSolve',
+  'heatmap',
+  'graph',
+  'timeline',
+  'compare',
+  'diff',
+  'archive',
+  'history',
+  'whitepaper',
+  'trace',
+  'cost',
+  'fantasy',
+  'civilization',
+  'inherit',
+  'impact',
+] as const
+
+/** 注入的数据。 */
+export interface DerivationDeps extends WorldDeps {}
+
+/** 输出。 */
+export interface DerivationOutcome {
+  result: string
+  value: unknown
+  notice?: string
+}
+
+/** 数字格式化。 */
+function f(value: number): string {
+  if (!Number.isFinite(value)) return '—'
+  const abs = Math.abs(value)
+  if (abs === 0) return '0'
+  if (abs >= 1e6 || abs < 1e-3) return value.toExponential(3)
+  return Number(value.toPrecision(5)).toString()
+}
+
+/** 混沌判定（纯函数，与天体/工作区无关）。 */
+export function checkChaos(
+  lyapunov: number,
+  initialError = 1e-6,
+  tolerance = 0.1,
+  steps = 8,
+): {
+  chaotic: boolean
+  lyapunov: number
+  horizon: number
+  spread: Array<{ t: number; low: number; high: number }>
+  reason: string
+  advice: string
+} {
+  const chaotic = lyapunov > 0
+  const horizon = chaotic ? Math.log(tolerance / Math.max(initialError, 1e-15)) / lyapunov : Infinity
+  const spread: Array<{ t: number; low: number; high: number }> = []
+  if (chaotic && Number.isFinite(horizon)) {
+    for (let index = 0; index < steps; index += 1) {
+      const t = (horizon * 3 * index) / (steps - 1)
+      const growth = initialError * Math.exp(lyapunov * t)
+      spread.push(growth >= 1 ? { t, low: Number.NaN, high: Number.NaN } : { t, low: 1 - growth, high: 1 + growth })
+    }
+  }
+  const reason = chaotic
+    ? 'Lyapunov 指数 ' + lyapunov.toFixed(3) + ' > 0：初值误差每 ' + (1 / lyapunov).toFixed(2) +
+      ' 个特征时间放大 e 倍。超过 ' + horizon.toFixed(1) + ' 个特征时间后，任何数值结果都不再可信。'
+    : 'Lyapunov 指数 ' + lyapunov.toFixed(3) + ' 不大于 0：系统可预测，误差不会放大。'
+  const advice = chaotic
+    ? '不要给确定数值。改用区间（概率云）表达，并说明"在此尺度上不可预测"；若剧情需要确定结论，让它发生在 ' +
+      horizon.toFixed(1) + ' 个特征时间之内。'
+    : '可以给确定数值。'
+  return { chaotic, lyapunov, horizon, spread, reason, advice }
+}
+
+/** 常见混沌系统的 Lyapunov 量级。 */
+const CHAOS_LIBRARY = [
+  { name: '大气涡流（天气）', lyapunov: 1.0, note: '约 1/天；两周后天气不可预测' },
+  { name: '三体轨道', lyapunov: 0.5, note: '轨道在数十个周期后发散' },
+  { name: '湍流', lyapunov: 2.0, note: '极快，只在粘性尺度内可算' },
+  { name: '捕食者-猎物生态', lyapunov: 0.1, note: '长期震荡不可精确预测' },
+  { name: '气候长期演化', lyapunov: 0.01, note: '千年尺度可估，万年以上不可' },
+]
+
+/** 检查表渲染。 */
+function renderChecklist(items: ChecklistItem[]): string {
+  const lines = ['═══ 检查表（13 项）═══', '']
+  for (const item of items) lines.push('  ' + (item.pass ? '✓' : '✗') + ' ' + item.name + (item.note ? ' —— ' + item.note : ''))
+  const failed = items.filter((item) => !item.pass).length
+  lines.push('')
+  lines.push(failed === 0 ? '全部通过。' : failed + ' 项待填，补全后再发布。')
+  return lines.join('\n')
+}
+
+/** 一层是否无硬失败（pending 不算失败）。 */
+function noHardFail(items: LayerResult['items']): boolean {
+  return !items.some((item) => item.verdict === 'forbidden' || item.verdict === 'marginal')
+}
+
+/** 一层的判定结果。 */
+interface LayerResult {
+  layer: string
+  name: string
+  items: Array<{ card: string; value: number; unit: string; verdict: Verdict; note: string }>
+  allAllowed: boolean
+}
+
+/**
+ * 正向推演链路：把 world 的结果逐层映射成接口卡判定。
+ *
+ * 只映射世界结果里**确实算出来**的量，不为了凑满卡片去编数。
+ */
+function runPipeline(profile: ReturnType<typeof generateWorld>): { layers: LayerResult[]; verdict: Verdict; advice: string[] } {
+  const cardOf = (layer: string, name: string) => (INTERFACE_CARDS[layer] ?? []).find((card) => card.name === name)
+  const judge = (layer: string, name: string, value: number, unit: string, note: string): LayerResult['items'][number] => {
+    const card = cardOf(layer, name)
+    const verdict = card ? judgeRange(value, card) : 'pending'
+    return { card: name, value, unit, verdict, note }
+  }
+  const layers: LayerResult[] = []
+
+  // P1：化学窗口（键能）+ 原子尺度
+  const bondEnergy = profile.life.chemistry.bondEnergyEv
+  const p1 = [
+    judge('P1', '键能范围', bondEnergy, 'eV', '来自化学窗口计算（键能 ∝ α²）'),
+  ]
+  layers.push({ layer: 'P1', name: '微观有效层', items: p1, allAllowed: noHardFail(p1) })
+
+  // P3：身高大气标高比（有明确公式）；骨骼强度体重比缺输入 → pending，不编
+  const heightScaleRatio = 1.8 / profile.atmosphere.scaleHeightM
+  const p3 = [
+    { card: '骨骼强度体重比', value: Number.NaN, unit: '无量纲', verdict: 'pending' as Verdict, note: 'world 没有骨骼强度与体重输入，本层不判（不替作者编）' },
+    judge('P3', '身高大气标高比', heightScaleRatio, '无量纲', '1.8m 眼高 / 大气标高'),
+  ]
+  layers.push({ layer: 'P3', name: '宏观体感层', items: p3, allAllowed: noHardFail(p3) })
+
+  // P4：大气逃逸率（用热速度比作为量级代理）
+  const thermalSpeed = Math.sqrt((3 * 8.314462618 * profile.temperature.surfaceMeanK) / profile.atmosphere.molarMass)
+  const escapeRatio = profile.planet.escapeVelocity / thermalSpeed
+  const p4 = [judge('P4', '大气逃逸率', escapeRatio > 6 ? 0 : 1e4, 'kg/s', '逃逸速度/热速度 ' + escapeRatio.toFixed(1) + '（>6 视为保住大气）')]
+  layers.push({ layer: 'P4', name: '行星环境层', items: p4, allAllowed: noHardFail(p4) })
+
+  // P5：恒星寿命与峰值波长
+  const lifetimeYears = profile.stellar.lifetimeGyr * 1e9
+  const peakM = profile.stellar.peakWavelengthNm * 1e-9
+  const p5 = [
+    judge('P5', '恒星寿命', lifetimeYears, 'yr', '主序寿命（经验关系）'),
+    judge('P5', '辐射谱峰值波长', peakM, 'm', '维恩位移'),
+  ]
+  layers.push({ layer: 'P5', name: '恒星天文层', items: p5, allAllowed: noHardFail(p5) })
+
+  const worst = layers.find((layer) => !layer.allAllowed)
+  const verdict: Verdict = worst ? 'marginal' : 'allowed'
+  const advice: string[] = []
+  if (worst) {
+    advice.push('第一处不通过的是 ' + worst.layer + '（' + worst.name + '）：' + worst.items.find((item) => item.verdict !== 'allowed')?.card)
+    advice.push('先改造成这一层的输入参数（重力/大气/恒星），再看下游。')
+  } else {
+    advice.push('四层都在允许区；剩余判断（生命、文明）交给作者。')
+  }
+  // 化学窗口是硬否决时单独说
+  if (profile.life.gate.verdict === 'excluded') advice.push('生命闸门给了硬否决：' + profile.life.gate.note)
+  return { layers, verdict, advice }
+}
+
+/**
+ * 执行 derivation。
+ *
+ * @param input - 子命令与参数（沿用老插件的参数名）
+ * @param deps - 注入的数据（常数与光谱型表，pipeline 需要）
+ * @returns 渲染结果
+ */
+export function runDerivation(input: Record<string, unknown>, deps: DerivationDeps = {}): DerivationOutcome {
+  const sub = typeof input['derivation'] === 'string' && input['derivation'].trim() !== '' ? input['derivation'].trim() : 'stack'
+  const lines: string[] = []
+  const value: Record<string, unknown> = { subcommand: sub }
+
+  if (sub === 'stack') {
+    lines.push('═══ 推演栈（8 层）═══', '')
+    for (const layer of STACK) {
+      lines.push('【' + layer.id + '】' + layer.name)
+      lines.push('  核心问题：' + layer.question)
+      lines.push('  输入：' + layer.inputs.join(' / '))
+      lines.push('  下游接口（' + layer.outputs.length + ' 个）：' + layer.outputs.join(' / '))
+      lines.push('  硬约束/失败模式：' + layer.failureModes.join(' / '))
+      lines.push('')
+    }
+    lines.push('贯穿层：单位与观测者 / 不确定性与版本 / 时间与历史路径 / 约束分级')
+    lines.push('提示：多数世界只需 P1—P4 + 少量 P5，不必全宇宙展开。')
+    value['layers'] = STACK.map((layer) => layer.id)
+  } else if (sub === 'cards') {
+    const which = typeof input['layer'] === 'string' ? input['layer'].toUpperCase() : ''
+    const keys = which !== '' && INTERFACE_CARDS[which] !== undefined ? [which] : Object.keys(INTERFACE_CARDS)
+    lines.push('═══ 接口卡 ═══', '')
+    for (const key of keys) {
+      const cards = INTERFACE_CARDS[key]
+      lines.push('【' + key + '】共 ' + cards.length + ' 个接口变量')
+      for (const card of cards) {
+        lines.push('  · ' + card.name + '  [' + card.unit + ']  约束=' + CONSTRAINT_LABEL[card.kind] + '  置信度=' + CONFIDENCE_LABEL[card.confidence])
+        lines.push('    定义：' + card.definition)
+        lines.push('    依赖：' + card.dependsOn.join(', ') + '  敏感于：' + card.sensitiveTo.join(', '))
+        if (card.range.allowed) lines.push('    允许区间：' + f(card.range.allowed[0]) + ' — ' + f(card.range.allowed[1]))
+        if (card.range.marginal) lines.push('    边缘区间：' + f(card.range.marginal[0]) + ' — ' + f(card.range.marginal[1]))
+        lines.push('    叙事影响：' + card.narrativeImpact.join(', '))
+        if (card.notes) lines.push('    备注：' + card.notes)
+      }
+      lines.push('')
+    }
+    value['layers'] = keys
+  } else if (sub === 'dimensionless') {
+    const packs = dimensionlessPack(deps.constants ?? {})
+    lines.push('═══ 无量纲参数包（真正该追踪的量）═══', '')
+    lines.push('  名称          含义                            现实值        当前值        偏差')
+    for (const pack of packs) {
+      lines.push(
+        '  ' + pack.name.padEnd(14) + pack.meaning.padEnd(32) + f(pack.standard).padStart(13) + '  ' +
+          f(pack.current).padStart(13) + '  ' + (pack.deviation === 0 ? '—' : (pack.deviation * 100).toFixed(2) + '%'),
+      )
+    }
+    lines.push('')
+    lines.push('要点：同时缩放所有质量通常只是换了单位；真正变化要看这些比值。')
+    value['packs'] = packs
+  } else if (sub === 'units') {
+    const changes = (input['unitScales'] ?? {}) as Record<string, number>
+    const verdict = detectUnitRedefinition(changes)
+    lines.push('═══ 单位重定义检测 ═══', '')
+    if (Object.keys(changes).length === 0) {
+      lines.push('用法：传 unitScales，例如 {"unitScales":{"mass":2}} 表示"所有质量 ×2"。')
+    } else {
+      lines.push('  缩放：' + JSON.stringify(changes))
+      lines.push('  判定：' + (verdict.isUnitRedefinition ? '是单位重定义（非物理变化）' : '是真实物理变化'))
+      lines.push('  理由：' + verdict.reason)
+    }
+    value['verdict'] = verdict
+  } else if (sub === 'sensitivity') {
+    const base = typeof input['sensitivityBase'] === 'number' ? input['sensitivityBase'] : 9.80665
+    const exponent = typeof input['sensitivityExponent'] === 'number' ? input['sensitivityExponent'] : 3
+    const report = sensitivity((x: number) => x ** exponent, base)
+    lines.push('═══ 敏感性分析 ═══', '')
+    lines.push('  模型：结果 = 输入^' + exponent + '，基线 ' + f(base))
+    for (const item of report.items) {
+      lines.push('  ' + item.parameter.padEnd(10) + ' 结果=' + f(item.perturbed) + '  相对变化=' + (item.relativeChange * 100).toFixed(2) + '%  ' + item.verdict)
+    }
+    lines.push('')
+    lines.push(report.fineTuningWarning ? '⚠ 微调警告：结论对输入高度敏感，允许区间可能极窄。' : '✓ 结论基本稳定。')
+    value['report'] = report
+  } else if (sub === 'phase') {
+    const slice = phaseSlice(
+      (g: number, size: number): Verdict => {
+        const ratio = 500 / (g * Math.max(size, 0.01))
+        if (ratio >= 3 && ratio <= 300) return 'allowed'
+        if (ratio >= 1.5 && ratio <= 1000) return 'marginal'
+        return 'forbidden'
+      },
+      [0.2, 3],
+      [0.1, 100],
+      7,
+    )
+    lines.push('═══ 相图：重力 × 生物尺寸 → 骨骼强度体重比 ═══', '')
+    lines.push('  g\\尺寸 ' + slice.xs.map((x) => f(x).padStart(9)).join(''))
+    for (let yi = 0; yi < slice.ys.length; yi += 1) {
+      const row = slice.grid[yi]
+        .map((v) => (v === 'allowed' ? '允许' : v === 'marginal' ? '边缘' : v === 'forbidden' ? '禁止' : '待定').padStart(9))
+        .join('')
+      lines.push('  ' + f(slice.ys[yi]).padStart(7) + row)
+    }
+    lines.push('')
+    lines.push('  统计：允许 ' + slice.counts.allowed + ' / 边缘 ' + slice.counts.marginal + ' / 禁止 ' + slice.counts.forbidden)
+    lines.push('  要点：不追求单点答案——先看哪些区域存在解。')
+    value['slice'] = slice
+  } else if (sub === 'checklist') {
+    const items = buildChecklist()
+    lines.push(renderChecklist(items))
+    value['checklist'] = items
+  } else if (sub === 'chaos') {
+    const lyapunov = typeof input['lyapunov'] === 'number' ? input['lyapunov'] : 1.0
+    const verdict = checkChaos(lyapunov)
+    lines.push('═══ 混沌系统拦截器 ═══', '')
+    lines.push('  Lyapunov 指数：' + lyapunov.toFixed(3), '')
+    if (verdict.chaotic) {
+      lines.push('  【判定】进入混沌区——不给确定数值')
+      lines.push('  可预测时间：' + verdict.horizon.toFixed(1) + ' 个特征时间', '')
+      lines.push('  【概率云】随时间扩张的不确定度：')
+      for (const point of verdict.spread) {
+        if (Number.isNaN(point.low)) lines.push('    t=' + point.t.toFixed(1) + '  不可预测（误差已超过 100%）')
+        else lines.push('    t=' + point.t.toFixed(1) + '  区间 [' + point.low.toFixed(3) + ', ' + point.high.toFixed(3) + ']')
+      }
+    } else {
+      lines.push('  【判定】可预测，可以给确定数值')
+    }
+    lines.push('', '  ' + verdict.reason, '  ' + verdict.advice, '', '【常见混沌系统的 Lyapunov 量级】')
+    for (const item of CHAOS_LIBRARY) lines.push('  ' + item.name.padEnd(20) + item.lyapunov.toFixed(2).padStart(6) + '  ' + item.note)
+    value['chaos'] = verdict
+  } else if (sub === 'tables') {
+    lines.push('═══ 七张表（固定输出格式）═══', '')
+    lines.push('  1. 项目卡     推演类型 / 范围 / 时间窗口 / 观测者 / 优先级 / 不推演什么')
+    lines.push('  2. 变更清单   常数 / 对称性 / 粒子谱 / 初条件 / 历史路径，各标处理方式')
+    lines.push('  3. 接口卡     P1—P6 每层 5—10 个变量，带区间与约束类型')
+    lines.push('  4. 约束表     硬约束 / 软约束 / 叙事约束')
+    lines.push('  5. 敏感性表   一阶扰动 / 阈值跨越 / 反馈放大 / 时间尺度错配')
+    lines.push('  6. 叙事锚点表 锚点 / 硬需求 / 可妥协项 / 反推接口 / 反推窗口 / 冲突处理')
+    lines.push('  7. 版本记录   版本号 / 变更 / 受影响接口 / 结论变化 / 待定项 / 下轮任务')
+    value['tables'] = 7
+  } else if (sub === 'pipeline') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const profile = generateWorld(worldParams as never, { constants: deps.constants, starClasses: deps.starClasses })
+    const report = runPipeline(profile)
+    lines.push('═══ 正向推演链路（P1 → P5）═══', '')
+    for (const layer of report.layers) {
+      lines.push('【' + layer.layer + '】' + layer.name + (layer.allAllowed ? ' —— 全通' : ' —— 有问题'))
+      for (const item of layer.items) {
+        lines.push('  ' + VERDICT_LABEL[item.verdict].padEnd(6) + item.card.padEnd(16) + f(item.value).padStart(12) + ' ' + item.unit + '  ' + item.note)
+      }
+      lines.push('')
+    }
+    lines.push('总结论：' + VERDICT_LABEL[report.verdict])
+    for (const line of report.advice) lines.push('  · ' + line)
+    value['pipeline'] = report
+  } else {
+    const all = [...IMPLEMENTED_SUBCOMMANDS, ...PENDING_SUBCOMMANDS]
+    if ((PENDING_SUBCOMMANDS as readonly string[]).includes(sub)) {
+      throw new CalcError(
+        'unknown_subcommand',
+        '子命令 "' + sub + '" 在本分支尚未迁移（老插件里有，新实现未接）',
+        '本分支已实现：' + IMPLEMENTED_SUBCOMMANDS.join(' / ') + '。' +
+          '尚未迁移：' + PENDING_SUBCOMMANDS.join(' / ') + '。' +
+          '这一步会在第 6 步后续块里补上；现在报错是为了不让自动化流水线把它当成功。',
+      )
+    }
+    throw new CalcError(
+      'unknown_subcommand',
+      '不认识 derivation 子命令 "' + sub + '"',
+      '可用（共 ' + all.length + ' 个）：' + all.join(' / ') + '。',
+    )
+  }
+
+  return { result: lines.join('\n'), value }
+}
