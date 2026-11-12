@@ -32,6 +32,9 @@ const ERA_CODE: Record<string, string> = {
   拜占庭: 'byzantine', 中世纪欧洲: 'medieval', 英制: 'imperial', 美制: 'us',
   公制: 'metric', 日本: 'japan', 伊斯兰: 'islam', 古印度: 'india',
   沙俄: 'russia', 德意志: 'germany', 法国旧制: 'france',
+  奥斯曼: 'ottoman', 波斯: 'persia', 玛雅: 'maya', 阿兹特克: 'aztec',
+  北欧: 'nordic', 荷兰: 'dutch', 西班牙: 'spain', 葡萄牙: 'portugal',
+  意大利: 'italy', 波兰: 'poland', 匈牙利: 'hungary',
 }
 
 /**
@@ -50,37 +53,96 @@ const VARIANT_CODE: Record<string, string> = {
   长担: 'Long', 短担: 'Short', 曲尺: 'Kanejaku', 鲸尺: 'Kujira',
   古升: 'Ancient', Monetalis: 'Monetalis',
   'al-dhira al-sawda': 'Sawda', 'al-dhira al-qimma': 'Qimma',
+  /** 第四批。 */
+  '陆地': 'Tudi', '卡斯蒂利亚': 'Castilla', '瓦伦西亚': 'Valencia',
+  '佛罗伦萨': 'Firenze', '威尼斯': 'Venezia', '米兰': 'Milano',
+  '罗马': 'Roma', 'viktualie': 'Viktualie', 'legal': 'Legal',
 }
 
 /**
- * 变体的优先级（数字小的优先），用于决定「无变体写法」落到哪把尺。
+ * 变体的优先级（数字小的优先），用于决定「无变体写法」落到哪个变体。
  *
  * ## 判据：日常用途优先
  *
- * 一个朝代可能有多把尺，**不能简单取第一个注册的**：
+ * 一个体系可能有多种变体，**不能简单取第一个注册的**：
  *
  * ```
- *   唐   大尺（日常）   小尺（调律）
- *   宋   营造尺（建筑） 布帛尺（量布）
- *   明   营造尺 / 裁衣尺 / 量地尺
+ *   唐       大尺（日常）  小尺（调律）
+ *   宋       营造尺（建筑） 布帛尺（量布）
+ *   明       营造尺 / 裁衣尺 / 量地尺
+ *   奥斯曼   市集尺（商业） 建筑尺（工程）    ← 商业更常用
+ *   荷兰     阿姆斯特丹尺   莱茵兰尺（水利）  ← 贸易更常用
+ *   意大利   佛罗伦萨/威尼斯/米兰           ← 佛罗伦萨最常用
  * ```
- *
- * 「唐朝的尺」该给大尺，「宋朝的尺」该给营造尺。
- * 「小尺（黍尺）」是调律专用，绝不该当默认。
  */
-const VARIANT_PRIORITY = ['营造尺', '通用尺', '大尺', '量地尺', '裁衣尺', '布帛尺']
+const VARIANT_PRIORITY = [
+  /** 中国（日常建筑优先）。 */
+  '营造尺', '通用尺', '大尺', '量地尺', '裁衣尺', '布帛尺',
+  /**
+   * ## 世界体系（按「作者最可能指哪个」排序）
+   *
+   * ```
+   *   奥斯曼  çarşı（市集/商业）  优先于 mimari（建筑）
+   *   意大利  佛罗伦萨（但丁时代最著名）优先于威尼斯/米兰
+   *   西班牙  卡斯蒂利亚（帝国标准）优先于瓦伦西亚
+   *   荷兰    Rijnlandse（水利标准）排在无变体名之后
+   * ```
+   */
+  'çarşı arşını', 'mimari arşın',
+  '佛罗伦萨', '威尼斯', '米兰',
+  '卡斯蒂利亚', '陆地', '瓦伦西亚', 'legal',
+  'Rijnlandse voet',
+]
 
 /**
  * 变体优先级打分。
  *
+ * ## ★ 无变体名（`undefined`）给最高优先级
+ *
+ * 这一条是实测抓出来的：
+ *
+ * ```
+ *   荷兰 voet：  无变体名 = 0.2831（阿姆斯特丹，日常）
+ *                Rijnlandse voet = 0.3139（莱茵兰，水利工程专用）
+ * ```
+ *
+ * 第一版给 `undefined` 打 0 分、`Rijnlandse voet` 在优先级表里排第 5，
+ * 结果是**专用变体反而赢了**，`1 荷兰尺` 得 31.39 而不是 28.31。
+ *
+ * 判据：**没有变体名的那条就是「本体系的基准值」** ——
+ * 作者写变体名是为了区分特例，没写就是通用那个。
+ *
  * @param variant - 变体名
- * @returns 排名（越小越优先；无变体给 0）
+ * @returns 排名（越小越优先）
  */
 function variantRank(variant?: string): number {
-  if (variant === undefined) return 0
+  /** 无变体名 = 体系基准 = 最高优先。 */
+  if (variant === undefined) return -1
   const clean = variant.replace(/（[^）]*）/g, '').trim()
-  const index = VARIANT_PRIORITY.indexOf(clean)
-  return index < 0 ? 99 : index
+  /**
+   * ## 精确匹配优先，再退到子串匹配
+   *
+   * 土耳其语变体名带特殊字符（`çarşı arşını` / `mimari arşın`），
+   * 有时会与表里的写法差一个字母。子串匹配能兜住这种差异：
+   *
+   * ```
+   *   'çarşı arşını'.includes('çarşı')  → true   → 排名靠前
+   *   'mimari arşın'.includes('mimari') → true   → 排名靠后
+   * ```
+   */
+  const exact = VARIANT_PRIORITY.indexOf(clean)
+  if (exact >= 0) return exact
+  /** 子串：取最长的匹配键，避免 `arsın` 之类的短键误命中。 */
+  let best = -1
+  let bestLen = 0
+  for (let i = 0; i < VARIANT_PRIORITY.length; i += 1) {
+    const key = VARIANT_PRIORITY[i]
+    if (key.length > bestLen && (clean.includes(key) || key.includes(clean))) {
+      best = i
+      bestLen = key.length
+    }
+  }
+  return best >= 0 ? best : 100
 }
 
 /** 量纲 → mathjs 基准单位。 */
@@ -210,6 +272,23 @@ export function registerEraUnits(math: MathJsInstance): number {
         莱茵尺: 'rheinfuss', 鲁特: 'rute', 德里: 'meile', 德磅: 'pfund', 洛特: 'loth',
         国王尺: 'piedroi', 法丈: 'toise', 法线: 'ligne', 法里: 'lieue',
         法磅: 'livre', 法盎司: 'once',
+        奥斯曼尺: 'arsin', 奥斯曼指: 'parmak', 奥斯曼磅: 'okka',
+        奥斯曼德拉克马: 'dirhem', 奥斯曼坎塔尔: 'kantar', 奥斯曼基莱: 'kile',
+        奥斯曼顿亩: 'donum', 奥斯曼法尔萨赫: 'farsakh',
+        波斯腕尺: 'gaz', 波斯桑: 'sang', 波斯曼: 'mann',
+        玛雅步: 'kin', 玛雅尺: 'xoc', 玛雅步量: 'poch', 玛雅驮: 'load',
+        阿兹特克尺: 'quahuitl', 阿兹特克拃: 'cemmatl', 阿兹特克丈: 'tlapantli',
+        阿兹特克玉米单位: 'centli',
+        瑞典尺: 'fot', 瑞典寸: 'tum', 瑞典厄尔: 'aln', 瑞典里: 'mil',
+        瑞典磅: 'skalpund', 瑞典里斯磅: 'lispund', 瑞典船磅: 'skeppund',
+        荷兰尺: 'voet', 荷兰寸: 'duim', 荷兰厄尔: 'el',
+        荷兰莫德: 'mud', 荷兰拉斯特: 'last', 荷兰磅: 'pond',
+        西班牙尺: 'vara', 西班牙里格: 'legua', 西班牙阿罗巴: 'arroba',
+        葡萄牙阿罗巴: 'arrobapt', 西班牙法内加: 'fanega', 西班牙公担: 'quintal',
+        意大利臂尺: 'braccio', 意大利尺: 'piede', 意大利磅: 'libbra',
+        意大利斯泰奥: 'staio',
+        波兰肘尺: 'lokiec', 波兰尺: 'stopa', 波兰磅: 'funt',
+        波兰加涅茨: 'garniec', 匈牙利波佐尼: 'pozsony',
       }
       const code = UNIT_CODE[unit.name] ?? (unit.name.replace(/[^A-Za-z0-9]/g, '') || 'u' + unit.name.charCodeAt(0).toString(36))
       const name = 'erau' + cap(code) + cap(eraCode) + variantTag
@@ -258,12 +337,72 @@ export function registerEraUnits(math: MathJsInstance): number {
          */
         const variantIsCjk = cleanVariant !== undefined && /^[\u4e00-\u9fa5（）()]+$/.test(cleanVariant)
         const variantHasUnit = variantIsCjk && cleanVariant?.endsWith(cjkName) === true
-        const nameHasEra = /^(罗马|希腊|日本|埃及|伊斯兰|英国|美)/.test(cjkName) ||
+        /**
+         * ## 单位名是否自带国别/体系前缀
+         *
+         * 若自带（`西班牙尺`、`罗马尺`），别名就是**单位名本身**；
+         * 否则拼成「时代 + 单位」（`汉尺`）。
+         *
+         * ⚠ 这个列表必须覆盖**所有**体系前缀，否则会拼出
+         * 「西班牙西班牙里格」这种叠字，导致该变体退化成
+         * 「时代+单位」通道，绕过裸名的优先级比较。
+         */
+        const nameHasEra = /^(罗马|希腊|埃及|日本|英国|伊斯兰|古|奥斯曼|波斯|玛雅|阿兹特克|瑞典|荷兰|西班牙|葡萄牙|意大利|波兰|匈牙利)/.test(cjkName) ||
           cjkName.includes(variant.era)
-        const cjkAlias = variantIsCjk
+        /**
+         * ## 变体名是「体系内限定词」时，别名仍应是裸单位名
+         *
+         * 两种变体名性质不同：
+         *
+         * ```
+         *   类型词（营造尺/裁衣尺/大尺）  → 别名 = 时代 + 变体
+         *     「唐大尺」「明营造尺」
+         *
+         *   限定词（陆地/legal/卡斯蒂利亚/佛罗伦萨）→ 别名 = 单位名本身
+         *     「西班牙里格」「意大利磅」（变体只用于区分值）
+         * ```
+         *
+         * 第一版把「陆地」当类型词拼成「西班牙陆地西班牙里格」，
+         * 于是裸名「西班牙里格」的优先级比较被绕过，后注册的 legal 赢了。
+         *
+         * 判据：变体名**不以单位名结尾**且**不含「尺/寸/斤/磅」等量词**时为限定词。
+         */
+        const QUALIFIER_ONLY = new Set([
+          '陆地', 'legal', '卡斯蒂利亚', '瓦伦西亚', '佛罗伦萨', '威尼斯',
+          '米兰', '罗马', 'viktualie', '阿姆斯特丹', 'Rijnlandse voet',
+        ])
+        const isQualifier = variantIsCjk
+          ? (QUALIFIER_ONLY.has(cleanVariant ?? '') || cleanVariant?.startsWith('Rijnlandse') === true)
+          : false
+        /** 变体名是拉丁字母的（`legal`/`viktualie`）也当限定词。 */
+        const isLatinQualifier = cleanVariant !== undefined && /^[A-Za-z][A-Za-z ]*$/.test(cleanVariant)
+        const cjkAlias = (variantIsCjk && !isQualifier)
           ? variant.era + cleanVariant + (variantHasUnit ? '' : cjkName)
-          : (nameHasEra ? cjkName : variant.era + cjkName)
-        ERA_ALIAS.set(cjkAlias, name)
+          : ((nameHasEra || isQualifier || isLatinQualifier) ? cjkName : variant.era + cjkName)
+        /**
+         * ## ⚠ 裸名（`cjkAlias === cjkName`）也必须走优先级比较
+         *
+         * 第一版直接 set，于是**后注册的变体覆盖前面的**：
+         *
+         * ```
+         *   奥斯曼尺：çarşı(68) 先注册 → 别名指 68
+         *             mimari(75.8) 后注册 → 覆盖成 75.8   ← 错
+         * ```
+         *
+         * 这类别名（`nameHasEra` 为真时 `cjkAlias` 就是 `cjkName`）
+         * 与 COUNTRY_PREFIX 段写的是**同一个键**，两处都要比排名。
+         */
+        const isBareKey = cjkAlias === cjkName
+        if (isBareKey) {
+          const bareRankKey = '@bare2@' + cjkAlias
+          const thisRank = variantRank(variant.variant)
+          if ((ERA_DEFAULT_RANK.get(bareRankKey) ?? 999) > thisRank) {
+            ERA_ALIAS.set(cjkAlias, name)
+            ERA_DEFAULT_RANK.set(bareRankKey, thisRank)
+          }
+        } else {
+          ERA_ALIAS.set(cjkAlias, name)
+        }
         /**
          * ## 变体名里含单位名时，额外登记「时代 + 单位」这个短写法
          *
@@ -297,16 +436,58 @@ export function registerEraUnits(math: MathJsInstance): number {
          *   日尺      →  erauJakuMedieval     （净名，但要防与中国的「尺」冲突）
          * ```
          */
-        const COUNTRY_PREFIX = ['罗马', '希腊', '埃及', '日本', '英国', '伊斯兰', '古']
+        const COUNTRY_PREFIX = [
+          '罗马', '希腊', '埃及', '日本', '英国', '伊斯兰', '古',
+          /** 第四批。 */
+          '奥斯曼', '波斯', '玛雅', '阿兹特克', '瑞典', '荷兰',
+          '西班牙', '葡萄牙', '意大利', '波兰', '匈牙利',
+        ]
         for (const prefix of COUNTRY_PREFIX) {
           if (!cjkName.startsWith(prefix)) continue
-          ERA_ALIAS.set(cjkName, name)
+          /**
+           * ## ⚠ 这里也必须走优先级比较
+           *
+           * 第一版直接 `ERA_ALIAS.set(cjkName, name)`，于是**后注册的覆盖前面的**：
+           *
+           * ```
+           *   奥斯曼尺：çarşı(68) 先注册 → 别名指 68
+           *             mimari(75.8) 后注册 → 覆盖成 75.8   ← 错
+           * ```
+           *
+           * 现在与 `@default@` 用同一套排名，保证日常变体赢。
+           */
+          const bareKey = '@bare@' + cjkName
+          const bareRank = variantRank(variant.variant)
+          if ((ERA_DEFAULT_RANK.get(bareKey) ?? 999) > bareRank) {
+            ERA_ALIAS.set(cjkName, name)
+            ERA_DEFAULT_RANK.set(bareKey, bareRank)
+          }
           const bare = cjkName.slice(prefix.length)
           /**
-           * 净名只在**不与已有别名冲突**时登记 ——
-           * 例如「罗马尺」的净名「尺」会撞上中国的「尺」。
+           * ## 净名登记必须严格，否则会污染通用词
+           *
+           * 实测踩过的坑：波兰的 `łokieć` 译作「波兰肘尺」，
+           * 净名是「肘尺」—— 而「肘尺」是**跨文明的通用词**
+           * （古埃及、巴比伦、英制都用）。
+           *
+           * 一旦把「肘尺」绑到波兰，`1 巴比伦肘尺` 会被归一成
+           * `1 巴比伦erauLokiecPoland`，直接语法错。
+           *
+           * 三条判据：
+           * ```
+           *   ① 净名 ≥3 字（2 字太容易撞）
+           *   ② 净名不在通用词黑名单里
+           *   ③ 不与已有别名冲突
+           * ```
            */
-          if (bare.length >= 2 && !ERA_ALIAS.has(bare)) ERA_ALIAS.set(bare, name)
+          const GENERIC_WORDS = new Set([
+            '肘尺', '腕尺', '尺', '寸', '里', '斤', '两', '升', '斗', '石',
+            '磅', '盎司', '加仑', '品脱', '夸脱', '英亩', '蒲式耳',
+            '厄尔', '杆', '掌', '指', '步', '段',
+          ])
+          if (bare.length >= 3 && !GENERIC_WORDS.has(bare) && !ERA_ALIAS.has(bare)) {
+            ERA_ALIAS.set(bare, name)
+          }
           break
         }
         /**

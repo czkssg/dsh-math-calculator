@@ -49,6 +49,7 @@
 
 import { WORLD_ERA_UNITS } from './units-era-world.js'
 import { ANCIENT_MORE_UNITS } from './units-ancient-more.js'
+import { ANCIENT_FOURTH_UNITS } from './units-ancient-4.js'
 
 /** 时代标识。 */
 export type Era =
@@ -57,6 +58,8 @@ export type Era =
   | '古埃及' | '古巴比伦' | '古希腊' | '古罗马' | '拜占庭' | '中世纪欧洲'
   | '英制' | '美制' | '公制' | '日本' | '伊斯兰'
   | '拜占庭' | '古印度' | '沙俄' | '德意志' | '法国旧制'
+  | '奥斯曼' | '波斯' | '玛雅' | '阿兹特克' | '北欧' | '荷兰'
+  | '西班牙' | '葡萄牙' | '意大利' | '波兰' | '匈牙利'
 
 /** 可信度。 */
 export type UnitConfidence = 'exact' | 'typical' | 'range'
@@ -272,7 +275,12 @@ export const CHINESE_ERA_UNITS: EraUnit[] = [
  * 世界部分在 `units-era-world.ts`，包含古埃及/希腊/罗马/英国历史/
  * 日本尺贯法/伊斯兰世界六套体系。
  */
-export const ALL_ERA_UNITS: EraUnit[] = [...CHINESE_ERA_UNITS, ...WORLD_ERA_UNITS, ...ANCIENT_MORE_UNITS]
+export const ALL_ERA_UNITS: EraUnit[] = [
+  ...CHINESE_ERA_UNITS,
+  ...WORLD_ERA_UNITS,
+  ...ANCIENT_MORE_UNITS,
+  ...ANCIENT_FOURTH_UNITS,
+]
 
 /**
  * 按时代查单位的换算因子。
