@@ -34,7 +34,7 @@ const ERA_CODE: Record<string, string> = {
   沙俄: 'russia', 德意志: 'germany', 法国旧制: 'france',
   奥斯曼: 'ottoman', 波斯: 'persia', 玛雅: 'maya', 阿兹特克: 'aztec',
   北欧: 'nordic', 荷兰: 'dutch', 西班牙: 'spain', 葡萄牙: 'portugal',
-  意大利: 'italy', 波兰: 'poland', 匈牙利: 'hungary',
+  意大利: 'italy', 波兰: 'poland', 匈牙利: 'hungary', 阿拉伯: 'arab',
 }
 
 /**
@@ -57,6 +57,9 @@ const VARIANT_CODE: Record<string, string> = {
   '陆地': 'Tudi', '卡斯蒂利亚': 'Castilla', '瓦伦西亚': 'Valencia',
   '佛罗伦萨': 'Firenze', '威尼斯': 'Venezia', '米兰': 'Milano',
   '罗马': 'Roma', 'viktualie': 'Viktualie', 'legal': 'Legal',
+  /** 第五批。 */
+  '巴格达': 'Baghdad', '埃及': 'Misr', '叙利亚': 'Sham',
+  '早期': 'Early', '中期': 'Middle', '晚期': 'Late',
 }
 
 /**
@@ -92,6 +95,8 @@ const VARIANT_PRIORITY = [
   '佛罗伦萨', '威尼斯', '米兰',
   '卡斯蒂利亚', '陆地', '瓦伦西亚', 'legal',
   'Rijnlandse voet',
+  /** 第五批：阿拉伯 ratl 以巴格达为阿拔斯朝标准。 */
+  '巴格达', '埃及', '叙利亚',
 ]
 
 /**
@@ -289,6 +294,13 @@ export function registerEraUnits(math: MathJsInstance): number {
         意大利斯泰奥: 'staio',
         波兰肘尺: 'lokiec', 波兰尺: 'stopa', 波兰磅: 'funt',
         波兰加涅茨: 'garniec', 匈牙利波佐尼: 'pozsony',
+        拜占庭盎司: 'oungia', 拜占庭格令: 'gramma', 拜占庭角豆: 'keration',
+        拜占庭剑尺: 'spathion', 拜占庭尺: 'pous', 拜占庭里: 'milion',
+        拜占庭液量: 'xestes',
+        阿拉伯磅: 'ratl', 阿拉伯莫德: 'mudd', 阿拉伯萨阿: 'saa',
+        阿拉伯卡菲兹: 'qafiz', 阿拉伯法尔萨赫: 'farsakh',
+        阿拉伯英里: 'mijl', 阿拉伯量地竿: 'qasaba',
+        阿拉伯坎塔尔: 'qintarab', 阿拉伯米斯卡尔: 'miskal',
       }
       const code = UNIT_CODE[unit.name] ?? (unit.name.replace(/[^A-Za-z0-9]/g, '') || 'u' + unit.name.charCodeAt(0).toString(36))
       const name = 'erau' + cap(code) + cap(eraCode) + variantTag
@@ -347,7 +359,7 @@ export function registerEraUnits(math: MathJsInstance): number {
          * 「西班牙西班牙里格」这种叠字，导致该变体退化成
          * 「时代+单位」通道，绕过裸名的优先级比较。
          */
-        const nameHasEra = /^(罗马|希腊|埃及|日本|英国|伊斯兰|古|奥斯曼|波斯|玛雅|阿兹特克|瑞典|荷兰|西班牙|葡萄牙|意大利|波兰|匈牙利)/.test(cjkName) ||
+        const nameHasEra = /^(罗马|希腊|埃及|日本|英国|伊斯兰|古|奥斯曼|波斯|玛雅|阿兹特克|瑞典|荷兰|西班牙|葡萄牙|意大利|波兰|匈牙利|阿拉伯|拜占庭)/.test(cjkName) ||
           cjkName.includes(variant.era)
         /**
          * ## 变体名是「体系内限定词」时，别名仍应是裸单位名
@@ -441,6 +453,8 @@ export function registerEraUnits(math: MathJsInstance): number {
           /** 第四批。 */
           '奥斯曼', '波斯', '玛雅', '阿兹特克', '瑞典', '荷兰',
           '西班牙', '葡萄牙', '意大利', '波兰', '匈牙利',
+          /** 第五批。 */
+          '阿拉伯', '拜占庭',
         ]
         for (const prefix of COUNTRY_PREFIX) {
           if (!cjkName.startsWith(prefix)) continue

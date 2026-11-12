@@ -50,6 +50,7 @@
 import { WORLD_ERA_UNITS } from './units-era-world.js'
 import { ANCIENT_MORE_UNITS } from './units-ancient-more.js'
 import { ANCIENT_FOURTH_UNITS } from './units-ancient-4.js'
+import { BYZANTINE_ARAB_UNITS } from './units-byzantine-arab.js'
 
 /** 时代标识。 */
 export type Era =
@@ -59,7 +60,7 @@ export type Era =
   | '英制' | '美制' | '公制' | '日本' | '伊斯兰'
   | '拜占庭' | '古印度' | '沙俄' | '德意志' | '法国旧制'
   | '奥斯曼' | '波斯' | '玛雅' | '阿兹特克' | '北欧' | '荷兰'
-  | '西班牙' | '葡萄牙' | '意大利' | '波兰' | '匈牙利'
+  | '西班牙' | '葡萄牙' | '意大利' | '波兰' | '匈牙利' | '阿拉伯'
 
 /** 可信度。 */
 export type UnitConfidence = 'exact' | 'typical' | 'range'
@@ -280,6 +281,7 @@ export const ALL_ERA_UNITS: EraUnit[] = [
   ...WORLD_ERA_UNITS,
   ...ANCIENT_MORE_UNITS,
   ...ANCIENT_FOURTH_UNITS,
+  ...BYZANTINE_ARAB_UNITS,
 ]
 
 /**

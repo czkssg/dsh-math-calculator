@@ -173,14 +173,15 @@ export const INDIAN_UNITS: EraUnit[] = [
  * 拜占庭承罗马制但**独立演化**：litra 比罗马 libra 轻。
  */
 export const BYZANTINE_UNITS: EraUnit[] = [
-  {
-    name: 'litra',
-    cjk: ['拜占庭磅'],
-    dimension: 'mass',
-    variants: [
-      { era: '拜占庭', yearFrom: 476, yearTo: 1453, factor: 0.32745, confidence: 'typical', source: '1 litra ≈ 327.45 g（**比罗马 libra 328.9 g 略轻**）' },
-    ],
-  },
+  /**
+   * ⚠ `litra` 与 `orgyia` **移到 `units-byzantine-arab.ts`**。
+   *
+   * 原因：那两处在第五批里带了完整的多时期变体
+   * （litra 早/中/晚期 327.45 / 320 / 318 g），
+   * 若这里也留一份单变体的，会导致 `name` 重复 ——
+   * 而重复的后果不只是测试红：`findEraVariant` 只取第一个匹配，
+   * 于是「晚期 litra」永远查不到。
+   */
   {
     name: 'keration',
     cjk: ['凯拉顿'],
@@ -195,14 +196,6 @@ export const BYZANTINE_UNITS: EraUnit[] = [
     dimension: 'volume',
     variants: [
       { era: '拜占庭', yearFrom: 476, yearTo: 1453, factor: 0.01026, confidence: 'typical', source: '1 modios ≈ 10.26 L（谷物；与罗马 modius 8.73 L 不同）' },
-    ],
-  },
-  {
-    name: 'orgyia',
-    cjk: ['拜占庭寻'],
-    dimension: 'length',
-    variants: [
-      { era: '拜占庭', yearFrom: 476, yearTo: 1453, factor: 1.869, confidence: 'typical', source: '1 orgyia（双臂展）≈ 1.869 m（6 拜占庭尺）' },
     ],
   },
 ]
