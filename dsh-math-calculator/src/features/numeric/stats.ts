@@ -45,12 +45,37 @@ export function describe(data: unknown): StatsOutcome {
     throw new CalcError('invalid_argument', 'data 要非空数值数组', '例如 [1,2,3,4,5]。')
   }
   const values = (data as unknown[]).map((v) => Number(v))
-  const bad = values.findIndex((v) => !Number.isFinite(v))
+  /**
+   * ## ★ `null` / `undefined` / `''` 必须显式拒绝
+   *
+   * JS 的隐式转换会静默吃掉它们：
+   *
+   * ```
+   *   Number(null)       → 0
+   *   Number(undefined)  → NaN   （这个会被下面的 isFinite 拦住）
+   *   Number('')         → 0
+   *   Number('   ')      → 0
+   * ```
+   *
+   * 实测（2026-11-13）：`describe([1, null, 3])` 曾算出
+   * `n=3, mean=1.333` —— 而 `null` 根本不是数值，
+   * 把它当 0 会让均值和方差都错。
+   *
+   * **静默给错值比报错危险得多**，所以先用原值类型判一遍。
+   */
+  const bad = values.findIndex((v, i) => {
+    const raw = (data as unknown[])[i]
+    /** 原值必须能转成有限数，且不是 null/undefined/空串/布尔。 */
+    if (raw === null || raw === undefined) return true
+    if (typeof raw === 'boolean') return true
+    if (typeof raw === 'string' && raw.trim() === '') return true
+    return !Number.isFinite(v)
+  })
   if (bad >= 0) {
     throw new CalcError(
       'invalid_argument',
-      '第 ' + (bad + 1) + ' 个数不是有限数（收到 ' + String((data as unknown[])[bad]) + '）',
-      'data 里每个元素都应是数字。',
+      '第 ' + (bad + 1) + ' 个数不是有效数值（收到 ' + JSON.stringify((data as unknown[])[bad]) + '）',
+      'data 里每个元素都应是数字。注意 `null` 会被 JS 静默转成 0，所以显式拒绝。',
     )
   }
 

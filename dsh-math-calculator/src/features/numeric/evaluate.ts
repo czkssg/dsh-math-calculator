@@ -76,6 +76,55 @@ export interface EvaluateOptions {
 }
 
 /**
+ * 把科学计数法的整数**展开**成完整数字串。
+ *
+ * ## 为什么必须展开
+ *
+ * BigNumber 对 30 位以上的整数用科学计数法 `toString()`：
+ *
+ * ```
+ *   10^30+7  →  '1.000000000000000000000000000007e+30'
+ * ```
+ *
+ * 数值没错，但**人看不出那是 10³⁰+7**。而本项目的原则是
+ * 「整数永不截断」—— 科学计数法等价于丢掉了可读性。
+ *
+ * ## 展开规则
+ *
+ * ```
+ *   '1.000...007e+30'  →  '1000...0007'    （30 个 0 后跟 7）
+ *   '-1.5e+3'          →  非整数，不展开（返回 null）
+ * ```
+ *
+ * @param text - 科学计数法串
+ * @returns 完整整数串；不是整数返回 null
+ */
+function expandSciInteger(text: string): string | null {
+  const m = /^(-?)(\d+)(?:\.(\d+))?e\+(\d+)$/i.exec(text)
+  if (m === null) return null
+  const sign = m[1]
+  const intPart = m[2]
+  const fracPart = m[3] ?? ''
+  const exponent = Number(m[4])
+
+  /** 所有有效数字拼起来。 */
+  const digits = intPart + fracPart
+  /**
+   * 小数点原本在 `intPart.length` 之后；科学计数法把它右移 `exponent` 位。
+   * 展开后整数位数 = intPart.length + exponent。
+   */
+  const integerLen = intPart.length + exponent
+  if (integerLen <= 0) return null
+  /** 有效数字不够就补零。 */
+  const padded = digits.padEnd(integerLen, '0')
+  /**
+   * 若有效数字超出整数位，说明有小数部分 —— 那不是整数，不展开。
+   */
+  if (digits.length > integerLen && /[1-9]/.test(digits.slice(integerLen))) return null
+  return sign + padded.slice(0, integerLen)
+}
+
+/**
  * 把引擎返回的值归一成「数值 + 可选的原始文本」。
  *
  * ## ★ 为什么必须先归一
@@ -110,9 +159,33 @@ function unwrapNumeric(value: unknown): { n: number; bigText: string | null } {
      * ## 大整数必须保留原文
      *
      * `Number('100000000000000000005')` 会变成 `1e20` —— 丢位。
-     * 所以当文本是**纯整数且超过 15 位**时，保留文本而不用 Number。
+     *
+     * ## ⚠ 但 BigNumber 的 toString 不一定是纯数字串
+     *
+     * 实测（2026-11-13）：
+     *
+     * ```
+     *   10^20+5  →  '100000000000000000005'                纯数字
+     *   10^30+7  →  '1.000000000000000000000000000007e+30'  科学计数法！
+     *   10^40+7  →  '1.0000...0007e+40'
+     * ```
+     *
+     * 第一版只判 `/^-?\d{16,}$/`，于是 30 位以上的整数**全部落到
+     * Number 路径**，输出变成 `1.000e+30`（丢掉了 `+7`）。
+     *
+     * 所以两种形态都要保留原文：纯数字串，或「整数系数 + e+指数」的
+     * 科学计数形态。
      */
-    return { n: Number(text), bigText: /^-?\d{16,}$/.test(text) ? text : null }
+    const isPlainInteger = /^-?\d{16,}$/.test(text)
+    if (isPlainInteger) return { n: Number(text), bigText: text }
+    /**
+     * 科学计数形态：**展开成完整整数**。
+     *
+     * `1.000...007e+30` → `1000...0007`（30 位）。
+     * 展开失败（说明不是整数）就退回 Number 路径。
+     */
+    const expanded = /e\+\d+$/i.test(text) ? expandSciInteger(text) : null
+    return { n: Number(text), bigText: expanded }
   }
   return { n: Number(value as number), bigText: null }
 }

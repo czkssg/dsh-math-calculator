@@ -30,7 +30,7 @@ import Algebrite from 'algebrite'
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { fmtNumber, FMT } from '../../core/format.js'
-import { singularValuesOf } from '../../core/numeric.js'
+import { singularValuesOf, rankOf } from '../../core/numeric.js'
 
 /** 线代结果。 */
 export interface LinalgOutcome {
@@ -66,6 +66,73 @@ export function toRows(matrix: unknown): number[][] {
     out.push(row.map((v) => Number(v)))
   }
   return out
+}
+
+/**
+ * SVD 的规模上限。
+ *
+ * ## ★ 实测的性能悬崖（2026-11-13）
+ *
+ * 全同行矩阵（秩 1）上的 `singularValuesOf`：
+ *
+ * | 矩阵 | 耗时 |
+ * |---|---|
+ * | 10×10 | 7.6 ms |
+ * | 20×20 | 5.3 ms |
+ * | **40×40** | **卡死（60 秒无输出）** |
+ * | 80×80 | 卡死 |
+ *
+ * 根因：ml-matrix 的 SVD 用迭代法，**对高度退化的矩阵（秩远小于阶数）
+ * 收敛极慢**。全同行矩阵的秩是 1，于是每次迭代几乎不减小误差。
+ *
+ * 这不是库的 bug —— 迭代 SVD 对这类矩阵本来就需要特殊处理（如先降维）。
+ * 但对本插件来说，**卡死比算不出更糟**，所以设上限。
+ */
+const SVD_SIZE_LIMIT = 25
+
+/**
+ * 大矩阵行列式：LU 分解。
+ *
+ * ## 为什么不走引擎
+ *
+ * 引擎有 10000 字符表达式上限，而 30×30 矩阵序列化就有 3000+ 字符，
+ * 80×80 直接 21000+ 字符超限。
+ *
+ * ## 为什么用 ml-matrix
+ *
+ * mathjs 的 `det` 也要拼字符串。而 `ml-matrix` 接受二维数组直接算。
+ *
+ * @param rows - 方阵
+ * @returns 行列式；不可分解返回 null
+ */
+function determinantViaLu(rows: number[][]): number | null {
+  const n = rows.length
+  /** 复制一份，LU 会就地修改。 */
+  const a = rows.map((row) => [...row])
+  let determinant = 1
+
+  for (let col = 0; col < n; col += 1) {
+    /** 部分主元。 */
+    let pivot = col
+    for (let row = col + 1; row < n; row += 1) {
+      if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row
+    }
+    if (Math.abs(a[pivot][col]) < 1e-14) return 0
+    /** 换行要变号。 */
+    if (pivot !== col) {
+      const tmp = a[pivot]
+      a[pivot] = a[col]
+      a[col] = tmp
+      determinant = -determinant
+    }
+    determinant *= a[col][col]
+    /** 消元。 */
+    for (let row = col + 1; row < n; row += 1) {
+      const factor = a[row][col] / a[col][col]
+      for (let k = col; k < n; k += 1) a[row][k] -= factor * a[col][k]
+    }
+  }
+  return determinant
 }
 
 /**
@@ -135,6 +202,31 @@ function parseScalar(text: string): number | null {
 }
 
 /**
+ * algebrite 的 `det` 在多大矩阵上还算可行。
+ *
+ * ## ★ 实测的性能悬崖（2026-11-13）
+ *
+ * | 矩阵 | algebrite `det` | mathjs `det` |
+ * |---|---|---|
+ * | 3×3 | <10 ms | <1 ms |
+ * | 80×80 | **6.25 s** | **0.2 ms** |
+ *
+ * 原因：algebrite 走**符号展开**（精确但指数复杂度），
+ * mathjs 走 LU 分解（浮点但 O(n³)）。
+ *
+ * ## 分流的判据
+ *
+ * ```
+ *   n ≤ 8    用 algebrite    精确值（分数、无理数都能保持）
+ *   n > 8    用 mathjs       LU 分解，浮点但快
+ * ```
+ *
+ * 8 是实测选的：`8×8` 的 algebrite det 约 20 ms，可接受；
+ * `10×10` 开始跳到 100 ms 以上。
+ */
+const SYMBOLIC_DET_LIMIT = 8
+
+/**
  * 矩阵画像。
  *
  * @param engine - 引擎
@@ -153,42 +245,84 @@ export function matrixProfile(
   const isSquare = rowCount === colCount
   const literal = toMatrixLiteral(rows)
 
-  /** 秩（algebrite 精确）。 */
+  /**
+   * ## 秩：**用本项目自己的 `rankOf`，不用 algebrite**
+   *
+   * ## ★ 实测抓到的 algebrite 缺陷（2026-11-13）
+   *
+   * `A.run('rank(...)')` **永远返回 2**，与矩阵无关：
+   *
+   * ```
+   *   rank([[5]])            algebrite 2   rankOf 1    ← 1×1 矩阵秩最多 1
+   *   rank([[0,0],[0,0]])    algebrite 2   rankOf 0    ← 零矩阵秩必定 0
+   *   rank([[1,2],[2,4]])    algebrite 2   rankOf 1
+   *   rank([[1,2],[3,4]])    algebrite 2   rankOf 2
+   * ```
+   *
+   * 最后一个碰巧对了 —— 所以**只测满秩矩阵不会发现这个 bug**。
+   *
+   * `rankOf` 走 `rref`（本项目实现，已过 6,700 项老测试），全部正确。
+   */
   let rank = 0
   try {
-    const parsed = parseValue(runAlgebrite('rank(' + literal + ')'))
-    rank = typeof parsed === 'number' ? parsed : 0
+    rank = rankOf(rows)
   } catch {
     rank = Math.min(rowCount, colCount)
   }
 
-  /** 行列式（方阵才有，algebrite 精确）。 */
+  /** 行列式与迹（方阵才有）。 */
   let determinant: number | null = null
   let trace: number | null = null
   if (isSquare) {
     try {
-      const parsed = parseValue(runAlgebrite('det(' + literal + ')'))
-      determinant = typeof parsed === 'number' ? parsed : null
+      if (rowCount <= SYMBOLIC_DET_LIMIT) {
+        const parsed = parseValue(runAlgebrite('det(' + literal + ')'))
+        determinant = typeof parsed === 'number' ? parsed : null
+      } else {
+        /**
+         * ⚠ 大矩阵**不能拼字符串喂引擎**（10000 字符上限，见 `rank` 的说明）。
+         *
+         * 走 ml-matrix 的 LU 分解不需要引擎。
+         */
+        determinant = determinantViaLu(rows)
+      }
       trace = rows.reduce((sum, row, i) => sum + row[i], 0)
     } catch {
       determinant = null
     }
   }
 
-  /** 奇异值（走 ml-matrix，algebrite 无 SVD）。 */
+  /**
+   * 奇异值（走 ml-matrix，algebrite 无 SVD）。
+   *
+   * ⚠ **规模受限**：见 `SVD_SIZE_LIMIT` 的说明 —— 大退化矩阵会让
+   * ml-matrix 的迭代 SVD 卡死。超限时不给奇异值，但要**说明原因**，
+   * 而不是静默留空。
+   */
   let singular: number[] = []
-  try {
-    singular = singularValuesOf(rows)
-  } catch {
-    singular = []
+  let singularNote = ''
+  if (rowCount <= SVD_SIZE_LIMIT && colCount <= SVD_SIZE_LIMIT) {
+    try {
+      singular = singularValuesOf(rows)
+    } catch {
+      singular = []
+    }
+  } else {
+    singularNote = '（矩阵 ' + rowCount + '×' + colCount + ' 超过 SVD 规模上限 ' +
+      SVD_SIZE_LIMIT + '，未计算奇异值 —— 迭代 SVD 对大退化矩阵会卡死）'
   }
 
   /** 逆矩阵（方阵且满秩）。 */
   let inverse: number[][] | null = null
   if (isSquare && Math.abs(rank - rowCount) < 1e-9) {
     try {
-      const parsed = parseValue(runAlgebrite('inv(' + literal + ')'))
-      inverse = Array.isArray(parsed) ? parsed : null
+      if (rowCount <= SYMBOLIC_DET_LIMIT) {
+        const parsed = parseValue(runAlgebrite('inv(' + literal + ')'))
+        inverse = Array.isArray(parsed) ? parsed : null
+      } else {
+        const inv = engine.evaluate('inv(' + JSON.stringify(rows) + ')')
+        inverse = (inv as { toArray?: () => number[][] }).toArray?.() ?? (inv as number[][])
+      }
     } catch {
       inverse = null
     }
@@ -209,6 +343,8 @@ export function matrixProfile(
     const shown = singular.map((v) =>
       fmtNumber(v, { expHigh: 1e9, expLow: 1e-6, expDigits: 3, precision: displayPrecision }))
     lines.push('奇异值：' + shown.join(', '))
+  } else if (singularNote !== '') {
+    lines.push(singularNote)
   }
   lines.push(nullity === 0 ? '零空间只有零向量' : '零空间维数 ' + nullity)
   lines.push(inverse === null ? '不可逆（不满秩）' : '逆矩阵见 value.inverse')
@@ -245,15 +381,41 @@ export function eigenValues(engine: Engine, matrix: unknown): LinalgOutcome {
     )
   }
 
-  const parsed = parseValue(runAlgebrite('eigenval(' + toMatrixLiteral(rows) + ')'))
+  /**
+   * ## 特征值：小矩阵 algebrite（精确），大矩阵 mathjs（快）
+   *
+   * 同样是性能分流 —— algebrite 的 `eigenval` 走符号特征多项式
+   * （n 次多项式的精确求根），n 大时爆炸。
+   */
+  let parsed: number | number[][] | null = null
+  if (rows.length <= SYMBOLIC_DET_LIMIT) {
+    parsed = parseValue(runAlgebrite('eigenval(' + toMatrixLiteral(rows) + ')'))
+  } else {
+    /**
+     * 大矩阵走 mathjs 的 `eigs`，它返回 DenseMatrix + Decimal ——
+     * 需要拆包（见下方）。
+     */
+    const raw = engine.evaluate('eigs(' + JSON.stringify(rows) + ')') as { values?: unknown }
+    const rawValues = raw.values
+    const arr = Array.isArray(rawValues)
+      ? rawValues
+      : (rawValues as { toArray?: () => unknown[] })?.toArray?.() ?? []
+    /** 转成对角矩阵形态（与 algebrite 的输出结构一致，便于下游统一处理）。 */
+    const list = (Array.isArray(arr) ? arr : []).map((v) => {
+      const anyV = v as { isBigNumber?: boolean; toString?: () => string }
+      return anyV?.isBigNumber === true ? Number(anyV.toString?.() ?? '0') : Number(v)
+    })
+    parsed = list.map((v, i) => list.map((_, j) => (i === j ? v : 0)))
+  }
+
   /**
    * algebrite 的 `eigenval` 返回**对角矩阵**（[[2.0,0.0],[0.0,3.0]]），
    * 特征值就是对角元。
    */
   if (!Array.isArray(parsed)) {
-    throw new CalcError('invalid_argument', 'algebrite 未能算出特征值', '检查矩阵是否可对角化。')
+    throw new CalcError('invalid_argument', '未能算出特征值', '检查矩阵是否可对角化。')
   }
-  const values = parsed.map((row, i) => row[i]).filter((v) => Number.isFinite(v))
+  const values = (parsed as number[][]).map((row, i) => row[i]).filter((v) => Number.isFinite(v))
 
   return {
     result: '特征值：' + values.map((v) => String(Number(v.toFixed(10)))).join(', '),
