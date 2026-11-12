@@ -24,6 +24,7 @@
 import type { MathJsInstance } from 'mathjs'
 import { IMPERIAL_AND_MISC_UNITS, type UnitEntry } from './units-imperial.js'
 import { CN_MARKET_UNITS } from './units-cn-market.js'
+import { IMPERIAL_EXT_UNITS } from './units-imperial-ext.js'
 
 /**
  * 维度 → mathjs 基准单位。
@@ -46,6 +47,11 @@ const BASE_UNIT: Record<string, string> = {
   temperature: 'K',
   frequency: 'Hz',
   flow: 'm3/s',
+  linear_density: 'kg/m',
+  dynamic_viscosity: 'Pa*s',
+  kinematic_viscosity: 'm2/s',
+  ratio: '1',
+  inverse_length: '1/m',
 }
 
 /**
@@ -87,7 +93,7 @@ export interface RegisterResult {
 export function registerImperialUnits(math: MathJsInstance): RegisterResult {
   const result: RegisterResult = { registered: 0, failed: 0, counted: 0, failedNames: [] }
 
-  const all: UnitEntry[] = [...IMPERIAL_AND_MISC_UNITS, ...CN_MARKET_UNITS]
+  const all: UnitEntry[] = [...IMPERIAL_AND_MISC_UNITS, ...CN_MARKET_UNITS, ...IMPERIAL_EXT_UNITS]
 
   for (const entry of all) {
     /** 计数单位走独立通道。 */

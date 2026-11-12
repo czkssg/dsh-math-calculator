@@ -30,7 +30,8 @@ const ERA_CODE: Record<string, string> = {
   /** 世界体系。 */
   古埃及: 'egypt', 古巴比伦: 'babylon', 古希腊: 'greece', 古罗马: 'rome',
   拜占庭: 'byzantine', 中世纪欧洲: 'medieval', 英制: 'imperial', 美制: 'us',
-  公制: 'metric', 日本: 'japan', 伊斯兰: 'islam',
+  公制: 'metric', 日本: 'japan', 伊斯兰: 'islam', 古印度: 'india',
+  沙俄: 'russia', 德意志: 'germany', 法国旧制: 'france',
 }
 
 /**
@@ -199,6 +200,16 @@ export function registerEraUnits(math: MathJsInstance): number {
         海得: 'hide', 英担: 'cwt', 日尺: 'jaku', 日间: 'ken', 日坪: 'tsubo',
         日贯: 'kan', 日匁: 'monme', 日升: 'sho', 伊斯兰腕尺: 'dhira',
         迪拉姆: 'dirham', 第纳尔: 'dinar', 坎塔尔: 'qintar',
+        尼达: 'ninda', 巴比伦肘尺: 'kus', 巴比伦指: 'uban', 西拉: 'sila',
+        米纳: 'mina', 舍客勒: 'shekel', 巴比伦塔兰特: 'talent',
+        由旬: 'yojana', 克罗沙: 'krosha', 丹达: 'danda', 哈斯塔: 'hasta',
+        安古拉: 'angula', 托拉: 'tola', 芒德: 'maund', 西尔: 'seer',
+        拜占庭磅: 'litra', 凯拉顿: 'keration', 拜占庭斗: 'modios', 拜占庭寻: 'orgyia',
+        沙绳: 'sazhen', 俄尺: 'arshin', 维尔肖克: 'vershok', 俄里: 'verst',
+        普特: 'pood', 俄磅: 'funt', 佐洛特尼克: 'zolotnik', 维德罗: 'vedro',
+        莱茵尺: 'rheinfuss', 鲁特: 'rute', 德里: 'meile', 德磅: 'pfund', 洛特: 'loth',
+        国王尺: 'piedroi', 法丈: 'toise', 法线: 'ligne', 法里: 'lieue',
+        法磅: 'livre', 法盎司: 'once',
       }
       const code = UNIT_CODE[unit.name] ?? (unit.name.replace(/[^A-Za-z0-9]/g, '') || 'u' + unit.name.charCodeAt(0).toString(36))
       const name = 'erau' + cap(code) + cap(eraCode) + variantTag
