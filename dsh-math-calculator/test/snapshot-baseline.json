@@ -1,0 +1,1649 @@
+{
+ "evaluate": {
+  "ok": true,
+  "result": "14",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "14"
+ },
+ "evaluate-bigint": {
+  "ok": true,
+  "result": "100000000000000000005",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "100000000000000000005"
+ },
+ "evaluate-frac": {
+  "ok": true,
+  "result": "0.33333333",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "0.3333333333333333333333333333333333333333333333333333333333333333"
+ },
+ "evaluate-unit": {
+  "ok": true,
+  "result": "15.69894466 kW",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "15.69894466397052631578947368421052631578947368421052631578947368 kW"
+ },
+ "evaluate-batch": {
+  "ok": true,
+  "result": "═══ 批量求值（2 条）═══\n\n  a（1+1） = 2\n  b（2*3） = 6\n\n算式全部求值成功（2 条，只表示算式无语法/符号错，不含结论正确性判断）",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "count": 2,
+   "success": 2,
+   "failed": 0,
+   "magnitudeWarnings": 0,
+   "items": [
+    {
+     "expression": "1+1",
+     "label": "a",
+     "ok": true,
+     "result": "2"
+    },
+    {
+     "expression": "2*3",
+     "label": "b",
+     "ok": true,
+     "result": "6"
+    }
+   ]
+  }
+ },
+ "evaluate-sanity": {
+  "ok": true,
+  "result": "═══ 批量求值（1 条）═══\n\n  t（1e12） = 1000000000000（1,000,000,000,000） (~10¹²)\n\n算式全部求值成功（1 条，只表示算式无语法/符号错，不含结论正确性判断）\n\n⚠ 量级待核（1 条）：\nt → ⚠ 超出锚点上限 1e10（测试） 达 100 倍\n  若这个数要写进设定，请先确认口径。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "count": 1,
+   "success": 1,
+   "failed": 0,
+   "magnitudeWarnings": 1,
+   "items": [
+    {
+     "expression": "1e12",
+     "label": "t",
+     "ok": true,
+     "result": "1000000000000",
+     "sanityStatus": "violated",
+     "sanityNote": "[path]"
+    }
+   ]
+  }
+ },
+ "solve-linear": {
+  "ok": true,
+  "result": "多项式精确解：x = 2",
+  "errorType": null,
+  "errorMessage": null,
+  "value": [
+   2
+  ]
+ },
+ "solve-system": {
+  "ok": true,
+  "result": "x = 2，y = 1",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "x": 2,
+   "y": 1
+  }
+ },
+ "solve-singular": {
+  "ok": false,
+  "result": "错误[singular]: solveLinearSystem: 矩阵奇异或接近奇异，无唯一解",
+  "errorType": "singular",
+  "errorMessage": "solveLinearSystem: 矩阵奇异或接近奇异，无唯一解",
+  "value": null
+ },
+ "derivative": {
+  "ok": true,
+  "result": "3*x^2 + 2",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "3*x^2 + 2"
+ },
+ "integral": {
+  "ok": true,
+  "result": "原函数：1/3*x^3 + C\n定积分 ∫[0→3] x^2 dx = 9",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "9"
+ },
+ "simplify": {
+  "ok": true,
+  "result": "2*x",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "2*x"
+ },
+ "expand": {
+  "ok": true,
+  "result": "x^2 + 2*x + 1",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "x^2 + 2*x + 1"
+ },
+ "roots": {
+  "ok": true,
+  "result": "x = 2，x = 3",
+  "errorType": null,
+  "errorMessage": null,
+  "value": [
+   2,
+   3
+  ]
+ },
+ "matrix-plain": {
+  "ok": true,
+  "result": "矩阵 2×2，秩 2（满秩为 2）\n行列式 -2；迹 5\n奇异值：5.4649857, 0.36596619\n零空间只有零向量\n逆矩阵见 value.inverse",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "rows": 2,
+   "cols": 2,
+   "rank": 2,
+   "determinant": -2,
+   "trace": 5,
+   "inverse": [
+    [
+     -2,
+     1
+    ],
+    [
+     1.5,
+     -0.5
+    ]
+   ],
+   "nullspace": [],
+   "singularValues": [
+    5.464985704219043,
+    0.3659661906262574
+   ]
+  }
+ },
+ "matrix-singular": {
+  "ok": true,
+  "result": "矩阵 3×3，秩 2（满秩为 3）\n行列式 0；迹 15\n矩阵奇异：逆不存在\n奇异值：16.84810335, 1.06836951, 0\n零空间维数 1",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "rows": 3,
+   "cols": 3,
+   "rank": 2,
+   "determinant": 0,
+   "trace": 15,
+   "inverse": null,
+   "nullspace": [
+    [
+     1,
+     -2,
+     1
+    ]
+   ],
+   "singularValues": [
+    16.84810335261421,
+    1.068369514554708,
+    0
+   ]
+  }
+ },
+ "eigen": {
+  "ok": true,
+  "result": "特征值：2, 3",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "eigenvalues": [
+    2,
+    3
+   ],
+   "eigenvectors": null
+  }
+ },
+ "system": {
+  "ok": true,
+  "result": "x1 = 1，x2 = 3",
+  "errorType": null,
+  "errorMessage": null,
+  "value": [
+   1,
+   3
+  ]
+ },
+ "stats": {
+  "ok": true,
+  "result": "样本量 n = 5\n均值 = 3\n中位数 = 3\n众数 = 1, 2, 3, 4, 5\n标准差(样本) = 1.58113883\n方差(样本) = 2.5\n标准差(总体) = 1.41421356\n极差 = 4\nQ1 = 2，Q3 = 4，IQR = 2\n偏度 = 0，峰度(超额) = -1.3",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "count": 5,
+   "sum": 15,
+   "mean": 3,
+   "median": 3,
+   "mode": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "variance": 2.5,
+   "std": 1.5811388300841898,
+   "variancePopulation": 2,
+   "stdPopulation": 1.4142135623730951,
+   "min": 1,
+   "max": 5,
+   "range": 4,
+   "q1": 2,
+   "q3": 4,
+   "iqr": 2,
+   "skewness": 0,
+   "kurtosis": -1.3
+  }
+ },
+ "dist-normal": {
+  "ok": true,
+  "result": "z = 1.96\nPDF = 0.05844094\nCDF = P(X ≤ 1.96) = 0.97500217\nP(X > 1.96) = 0.02499783",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "z": 1.96,
+   "pdf": 0.058440944333451476,
+   "cdf": 0.9750021738917761,
+   "upper": 0.024997826108223875
+  }
+ },
+ "dist-t": {
+  "ok": true,
+  "result": "CDF = 0.999982",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "cdf": 0.9999819986579475
+  }
+ },
+ "dist-chi": {
+  "ok": true,
+  "result": "CDF = 0.94995648",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "cdf": 0.949956478751295
+  }
+ },
+ "dist-pois": {
+  "ok": true,
+  "result": "PMF = P(X = 2) = 0.22404181\nCDF = P(X ≤ 2) = 0.42319008",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "pmf": 0.22404180765538748,
+   "cdf": 0.42319008112684325
+  }
+ },
+ "dist-bin": {
+  "ok": true,
+  "result": "PMF = P(X = 3) = 0.1171875\nCDF = P(X ≤ 3) = 0.171875",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "pmf": 0.1171875,
+   "cdf": 0.171875
+  }
+ },
+ "regression": {
+  "ok": true,
+  "result": "线性回归：y = 2·x + (0)\nR = 1，R² = 1，n = 4",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "slope": 2,
+   "intercept": 0,
+   "r": 1,
+   "rSquared": 1,
+   "n": 4
+  }
+ },
+ "units-simple": {
+  "ok": true,
+  "result": "══════ 单位换算 ══════\n\n  30 里 = 15 km\n\n【代入过程】\n  · 1 里 = 500 m\n  · 30 里 = 15000 m\n  · 1 km = 1000 m\n  · 故结果 = 15 km\n\n【注意】\n  · 里：市里 = 500 m。古代差异极大：周制约 415 m、秦汉约 415 m、清制 576 m",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "mode": "convert",
+   "dimension": "length",
+   "value": 30,
+   "from": "里",
+   "to": "km",
+   "result": 15,
+   "steps": [
+    "1 里 = 500 m",
+    "30 里 = 15000 m",
+    "1 km = 1000 m",
+    "故结果 = 15 km"
+   ],
+   "warnings": [
+    "里：市里 = 500 m。古代差异极大：周制约 415 m、秦汉约 415 m、清制 576 m"
+   ],
+   "implicitOne": false
+  }
+ },
+ "units-compound": {
+  "ok": true,
+  "result": "══════ 单位换算 ══════\n\n  1000 kg/m^3 = 1 g/cm^3\n\n【代入过程】\n  · 复合单位由 mathjs 换算：1000 kg/m^3 = 1 g/cm^3",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "mode": "convert",
+   "dimension": "mass",
+   "value": 1000,
+   "from": "[path]",
+   "to": "[path]",
+   "result": 1.0000000000000002,
+   "steps": [
+    "[path]"
+   ],
+   "warnings": [],
+   "implicitOne": false
+  }
+ },
+ "units-temp": {
+  "ok": true,
+  "result": "══════ 单位换算 ══════\n\n  100 °C = 373.15 K\n\n【代入过程】\n  · 先转成开尔文：100 °C → 373.15 K\n  · 再转成目标：373.15 K → 373.15 K\n\n【注意】\n  · °C：K = °C + 273.15\n  · K：基准单位，无偏移",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "mode": "convert",
+   "dimension": "temperature",
+   "value": 100,
+   "from": "°C",
+   "to": "K",
+   "result": 373.15,
+   "steps": [
+    "先转成开尔文：100 °C → 373.15 K",
+    "再转成目标：373.15 K → 373.15 K"
+   ],
+   "warnings": [
+    "°C：K = °C + 273.15",
+    "K：基准单位，无偏移"
+   ],
+   "implicitOne": false
+  }
+ },
+ "formula": {
+  "ok": true,
+  "result": "逃逸速度  [physics/gravity]\n表达式: sqrt(2 * G * M / r)\nG = 6.6743e-11  (引力常数)\nM = 5.97e+24 *  (天体质量 kg)\nr = 6370000 *  (半径 m)\n* 表示本次调用覆盖了默认值: M, r\n单位: m/s\n单位提示：公式参数用 SI（kg / m / s）。按地球倍数给时先乘：\n  1 地球质量 = 5.972e24 kg    1 地球半径 = 6.371e6 m\n结果: 11184.98250311 m/s",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "formula": "escape_velocity",
+   "category": "[path]",
+   "expression": "[path]",
+   "params": {
+    "G": 6.6743e-11,
+    "M": 5.97e+24,
+    "r": 6370000
+   },
+   "overridden": [
+    "M",
+    "r"
+   ],
+   "answer": "11184.9825031144528884872839707973721489234014610924529028391884",
+   "unit": "[path]"
+  }
+ },
+ "formulas-batch": {
+  "ok": true,
+  "result": "公式库共 665 条，按分类：\n  agriculture/storage  (2)\n  biology/ecology  (13)\n  biology/genetics  (1)\n  biology/growth  (1)\n  biology/kinetics  (2)\n  biology/physiology  (20)\n  biology/scaling  (1)\n  biology/transport  (3)\n  chemistry/acid  (1)\n  chemistry/drying  (1)\n  chemistry/electro  (1)\n  chemistry/kinetics  (4)\n  chemistry/mole  (6)\n  chemistry/nuclear  (1)\n  chemistry/reactor  (5)\n  chemistry/separation  (5)\n  chemistry/solution  (9)\n  chemistry/thermo  (1)\n  craft/construction  (2)\n  craft/paper  (2)\n  craft/preservation  (2)\n  craft/textile  (2)\n  cybernetics/control  (4)\n  econ/finance  (18)\n  econ/growth  (4)\n  econ/io  (1)\n  econ/macro  (10)\n  econ/micro  (2)\n  econ/production  (1)\n  econ/utility  (1)\n  engineering/energy  (2)\n  engineering/fluid  (4)\n  engineering/mechanics  (3)\n  engineering/precision  (1)\n  engineering/process  (23)\n  engineering/structures  (7)\n  engineering/thermal  (16)\n  geology/coast  (1)\n  geology/erosion  (2)\n  geology/river  (3)\n  geology/soil  (1)\n  geology/water  (1)\n  information/channel  (4)\n  information/signal  (6)\n  materials/constitutive  (3)\n  materials/fundamental  (4)\n  materials/microstructure  (1)\n  materials/property  (1)\n  materials/selection  (1)\n  materials/structures  (12)\n  math/geometry  (15)\n  math/growth  (3)\n  math/scales  (2)\n  math/series  (2)\n  military/combat  (14)\n  operations/inventory  (2)\n  operations/queue  (4)\n  perception/agriculture  (16)\n  perception/architecture  (15)\n  perception/celestial  (15)\n  perception/climate  (5)\n  perception/horizon  (5)\n  perception/senses  (14)\n  perception/technology  (4)\n  perception/travel  (13)\n  perception/weather  (7)\n  physics/astronomy  (16)\n  physics/em  (47)\n  physics/fluid  (19)\n  physics/gravity  (8)\n  physics/mechanics  (45)\n  physics/nuclear  (17)\n  physics/optics  (13)\n  physics/quantum  (6)\n  physics/relativity  (5)\n  physics/scaling  (5)\n  physics/solid  (5)\n  physics/thermo  (17)\n  physics/waves  (8)\n  power/diffusion  (2)\n  power/energy  (3)\n  power/fiscal  (9)\n  power/food  (3)\n  power/information  (2)\n  social/collective  (1)\n  social/decision  (6)\n  social/demography  (8)\n  social/development  (1)\n  social/ecology  (2)\n  social/economics  (1)\n  social/epidemiology  (7)\n  social/famine  (5)\n  social/inequality  (5)\n  social/information  (2)\n  social/instability  (7)\n  social/medicine  (2)\n  social/negotiation  (1)\n  social/network  (3)\n  social/nutrition  (2)\n  social/organization  (2)\n  social/politics  (5)\n  social/urban  (2)\n  statistics/distribution  (8)\n  statistics/reliability  (3)\n  systems/reliability  (4)\n\n按规则层级（离最底层规则的远近）：\n  基本规则（fundamental）  (49)\n  数学基础（mathematical）  (14)\n  导出规律（derived）  (320)\n  经验规律（phenomenological）  (97)\n  工程换算（engineering）  (139)\n  社会约定（conventional）  (46)\n\n按学科领域（多标签）：\n  物理（physics）  (280)\n  化学（chemistry）  (40)\n  生物（biology）  (74)\n  材料（materials）  (50)\n  地球（earth）  (12)\n  天文（astronomy）  (31)\n  工程（engineering）  (153)\n  军事（military）  (16)\n  农业（agriculture）  (32)\n  医学（medicine）  (30)\n  经济（economics）  (56)\n  社会（social）  (66)\n  数学（math）  (22)\n\n检索：query=\"关键词\" / \"layer:derived\" / \"domain:物理\" / \"freq:high\" / \"symbol:m\"；\n调用：operation=\"formula\" + formula=\"escape_velocity\"。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "total": 665,
+   "categories": [
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 13
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 20
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 6
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 9
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 18
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 10
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 23
+    },
+    {
+     "category": "[path]",
+     "count": 7
+    },
+    {
+     "category": "[path]",
+     "count": 16
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 6
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 12
+    },
+    {
+     "category": "[path]",
+     "count": 15
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 14
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 16
+    },
+    {
+     "category": "[path]",
+     "count": 15
+    },
+    {
+     "category": "[path]",
+     "count": 15
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 14
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    },
+    {
+     "category": "[path]",
+     "count": 13
+    },
+    {
+     "category": "[path]",
+     "count": 7
+    },
+    {
+     "category": "[path]",
+     "count": 16
+    },
+    {
+     "category": "[path]",
+     "count": 47
+    },
+    {
+     "category": "[path]",
+     "count": 19
+    },
+    {
+     "category": "[path]",
+     "count": 8
+    },
+    {
+     "category": "[path]",
+     "count": 45
+    },
+    {
+     "category": "[path]",
+     "count": 17
+    },
+    {
+     "category": "[path]",
+     "count": 13
+    },
+    {
+     "category": "[path]",
+     "count": 6
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 17
+    },
+    {
+     "category": "[path]",
+     "count": 8
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 9
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 6
+    },
+    {
+     "category": "[path]",
+     "count": 8
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 7
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 7
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 1
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 5
+    },
+    {
+     "category": "[path]",
+     "count": 2
+    },
+    {
+     "category": "[path]",
+     "count": 8
+    },
+    {
+     "category": "[path]",
+     "count": 3
+    },
+    {
+     "category": "[path]",
+     "count": 4
+    }
+   ],
+   "layers": [
+    {
+     "layer": "fundamental",
+     "name": "基本规则",
+     "count": 49
+    },
+    {
+     "layer": "mathematical",
+     "name": "数学基础",
+     "count": 14
+    },
+    {
+     "layer": "derived",
+     "name": "导出规律",
+     "count": 320
+    },
+    {
+     "layer": "phenomenological",
+     "name": "经验规律",
+     "count": 97
+    },
+    {
+     "layer": "engineering",
+     "name": "工程换算",
+     "count": 139
+    },
+    {
+     "layer": "conventional",
+     "name": "社会约定",
+     "count": 46
+    }
+   ],
+   "domains": [
+    {
+     "domain": "physics",
+     "name": "物理",
+     "count": 280
+    },
+    {
+     "domain": "chemistry",
+     "name": "化学",
+     "count": 40
+    },
+    {
+     "domain": "biology",
+     "name": "生物",
+     "count": 74
+    },
+    {
+     "domain": "materials",
+     "name": "材料",
+     "count": 50
+    },
+    {
+     "domain": "earth",
+     "name": "地球",
+     "count": 12
+    },
+    {
+     "domain": "astronomy",
+     "name": "天文",
+     "count": 31
+    },
+    {
+     "domain": "engineering",
+     "name": "工程",
+     "count": 153
+    },
+    {
+     "domain": "military",
+     "name": "军事",
+     "count": 16
+    },
+    {
+     "domain": "agriculture",
+     "name": "农业",
+     "count": 32
+    },
+    {
+     "domain": "medicine",
+     "name": "医学",
+     "count": 30
+    },
+    {
+     "domain": "economics",
+     "name": "经济",
+     "count": 56
+    },
+    {
+     "domain": "social",
+     "name": "社会",
+     "count": 66
+    },
+    {
+     "domain": "math",
+     "name": "数学",
+     "count": 22
+    }
+   ]
+  }
+ },
+ "world": {
+  "ok": true,
+  "result": "══════ 星球体感画像 ══════\n\n【⚠ 先说清楚这些假设】\n  · 没有给任何恒星参数，已默认成太阳（G2V，1 L☉，5778 K）。若这颗行星绕的不是太阳型恒星（例如 K 型橙星或 F 型巨星），温度与宜居带会差很多。\n  以下结论都建立在这些假设之上；换掉假设，结论会变。\n\n【最直观的几件事】\n  · 表面重力是地球的 1.00 倍——与地球相近，人类体感几乎无差异。\n  · 一年 365 天（地球日），恒星天顶每天移动约 0.99°。\n  · 全球平均气温 14°C（地球 15°C）。\n  · 地平线距离 4.7km（地球 4.7km）——决定\"世界看起来多大\"。\n  · 只有一颗卫星：月相清晰可数，历法自然按月，这是最容易写出\"熟悉感\"的配置。\n  · 抬头看见的太阳：淡黄（#fff2e7），在天上 0.53°。\n  · 恒星接近太阳型：白天的颜色与地球相仿，读者不会有陌生感。\n  · 白天：天顶是 #98b5ff 的蓝，地平线泛白（米氏散射 + 长光路）。\n  · 无月夜：夜空亮度 21.5 mag/arcsec²，肉眼极限 6.3 等，全天约 6,442 颗星，银河可见；满月夜：极限 4.0 等，只剩约 271 颗亮星，月光把夜空压成灰蓝；两种夜的亮度差约 4.6 mag。\n  · 白天看不见别的星星——大气散射把天空点亮到压过人眼阈值。\n\n【恒星与轨道】\n  恒星: 1.004 倍太阳光度，表面温度 5778K\n  轨道: 1 AU，偏心率 0.017\n  一年: 365 个地球日\n\n【行星本体】\n  半径 6371 km，质量 1 地球\n  平均密度 5513 kg/m³\n  表面重力 9.82 m/s²（地球的 1 倍）\n  逃逸速度 11.19 km/s\n  一天 23.9 小时\n\n【温度】\n  辐射平衡温度 254.3K\n  含温室后表面平均 287.3K = 14.2°C\n  水的沸点 100°C，冰点 0°C\n\n【大气】\n  海平面气压 1 atm\n  大气标高 8.4 km（地球 8.5km）\n  气压减半高度 5.82 km\n  气压降到 1/10 高度 19.34 km\n\n【纬度气候带】（粗略估算，真实气候还取决洋流与地形）\n  纬度  夏至正午高度  冬至正午高度  夏至昼长  冬至昼长   年均温      气候带\n  0°     66.6°          66.6°          12h        12h         27.4°C      热带雨林\n  15°    81.6°          81.6°          12.9h      11.1h       25.6°C      热带雨林\n  30°    83.4°          83.4°          13.9h      10.1h       20.8°C      亚热带\n  45°    68.4°          68.4°          15.4h      8.6h        14.2°C      温带\n  60°    53.4°          53.4°          18.5h      5.5h        4.9°C       温带寒\n  75°    38.4°          38.4°          24h        0h          -11.5°C     亚寒带针叶林\n  88°    25.4°          25.4°          24h        0h          -27.3°C     极地冰原\n\n【地形与视野】\n  材料能支撑的最大山高 4.9 km\n  雪线高度 2.18 km\n  地平线距离（1.7m 眼高）4.65 km\n  季节: 四季分明\n\n【推导链】（上面那些数用的是什么式子、什么输入）\n  表面重力  = G·M/R²  ← G=6.6743e-11, M=5.9722e+24, R=6.3710e+6\n  逃逸速度  = √(2GM/R)  ← 同上输入，得 11.186 km/s\n  平均密度  = M/(4/3·πR³)  ← 5513 kg/m³\n  地平线    = √(2Rh + h²)  ← h=1.7m，得 4.65 km\n  最大山高  = strength/(ρ·g)  ← strength=1.3e8 Pa（由 α 推出）、ρ=2700、g=9.82\n  ⚠ strength 不是通用常数：地球花岗岩约 1.3e8 Pa，而公式库默认值 2e8 会算出 7.54 km。\n  这些式子与公式库共用同一份实现（src/core-physics.ts），改一处两边同时变。\n\n【接着往下推】（把上面的值喂给公式库的下一步）\n  ★ 以下 overrides 可以直接复制进 formula 调用：\n\n  生物体型  formula=\"kleiber\" overrides={m: <体重kg>}\n             → 代谢率；再乘 q10_temperature 得到不同气温下的速率\n  飞行可行  formula=\"lift_force\" overrides={density: <空气密度>, velocity: <m/s>, wing_area: <m²>}\n             → 这个重力下要多大的翅膀（g=9.82 已决定所需升力）\n  结构极限  formula=\"buckling_euler\" overrides={E: <Pa>, I: <m⁴>, L: <m>}\n             → 山高上限 4.9 km 之外，木石建筑能到多高\n  能量上限  formula=\"wind_power_available\" overrides={density: <kg/m³>, area: <m²>, velocity: <m/s>}\n  河流搬运  formula=\"sediment_trap_efficiency\" 等 —— 用地形与降水推侵蚀\n\n  ★ 想查全部可用链条：formulas query=\"sys\"\n  ★ 想查跨链路线：  formulas query=\"sys:compound\"\n\n【恒星结构与寿命】\n  1.00 M☉：L=1.000 L☉，R=1.000 R☉，有效温度 5778 K\n  主序寿命 10.0 Gyr；宜居带 0.95–1.67 AU；紫外占 11.9%\n  · [量级] 点火温度升高（库仑势垒变高）：×1.000（T_ign ∝ α²）\n  · [精确] 电子散射不透明度升高：×1.000（σ_T ∝ α²）\n  · [量级] 同质量恒星寿命变长（不透明度升高、燃烧更慢）：×1.000（低质量 τ∝α²，大质量 τ∝α⁰）\n  · [量级] 可烧氢的最小质量升高：×1.000（0.08 M☉ → 0.080 M☉）\n  · [仅方向] 宜居带位置取决于光度，本模型不预测移动量：不建模\n\n【抬头看见什么】（地表观测者视角）\n  恒星: 淡黄（#fff2e7），G 型，辐射峰值 502 nm\n  天上大小 0.53°（太阳 0.53°），视星等 -26.7\n  谱线特征: Ca II 强、Fe I 线密集——暖白（太阳型）\n  白天：天顶是 #98b5ff 的蓝，地平线泛白（米氏散射 + 长光路）。\n  无月夜：夜空亮度 21.5 mag/arcsec²，肉眼极限 6.3 等，全天约 6,442 颗星，银河可见；满月夜：极限 4.0 等，只剩约 271 颗亮星，月光把夜空压成灰蓝；两种夜的亮度差约 4.6 mag。\n  夜空基色 #1c2529（无月夜空亮度 21.5 mag/arcsec²）\n\n【卫星系统】（希尔球 / 洛希极限 / 稳定性）\n  希尔球 1496433 km；洛希极限 18365 km；稳定轨道 19283–673395 km\n  容量估算 6 颗；系统判定 稳定\n  · 卫星1: 天上看 0.52°（月球的 1.00 倍）；满相亮度 -12.7 等；已被潮汐锁定（永远同一面朝行星）。\n\n【生命出现的硬否决】（只判绝对不行，其余交给叙事）\n  化学窗口：α 为现实的 1.00 倍：共价键 4.00 eV（约 162 kT）——处于化学窗口内。\n  未发现硬否决项。\n  判定：开放 —— 没有发现硬否决：剩余问题交给作者与叙事判断。\n  交给作者/AI 判断：\n    · 是否有板块运动、磁场与大气演化（本模型不推导）\n    · 是否出现细胞、多细胞与有性繁殖（演化不是物理）\n    · 是否可能使用非水溶剂（氨、甲烷等；本闸门只按水判定）\n    · 智慧与文明是否出现（纯叙事决定）\n\n【跨模块一致性】（后端整合检查）\n  ✓ 轨道在宜居带内：1.00 AU 落在 0.95–1.67 AU 之间。\n  ✓ 恒星参数自洽：显式温度与质量-半径关系相差 0.0%（阈值 15%）。\n  ✓ 宜居带与生命闸门不冲突：轨道在宜居带内，生命闸门未给出硬否决。\n  ✓ 卫星数量在容量内：1 颗 ≤ 估算容量 6 颗。\n  ✓ 宜居带与表面温度一致：表面均温 14.2°C，与恒星辐照量级相符。\n  统计：一致 5，警告 0，矛盾 0\n\n【模型可信度】（哪些是物理、哪些只是地球标定）\n  第一性原理 1 条（严格物理关系）；地球标定 9 条（有效范围有限）；设定自由 3 条（不可推导）。\n    地球标定项（这些会随常数偏离而失真）：\n      · granite-strength: 130000000Pa  适用域 α 偏离现实 < 50%\n      · lapse-moist-factor: 0.665  适用域 地球型大气（N₂/O₂/CO₂ 量级）\n      · ocean-inertia: 0.5  适用域 α 偏离现实 < 20%\n      · atmosphere-inertia: 0.15  适用域 气压 0–5 atm\n      · rayleigh-tau550: 0.1  适用域 α 偏离现实 < 20%\n      · tidal-lock-timescale: 0.5 Gyr  适用域 岩石质卫星、近圆顺行轨道\n      · mutual-hill-spacing: 3.5  适用域 顺行、近圆轨道、质量比 < 1e-2\n      · night-star-count: 9100  适用域 地球夜空、极限星等 6.5\n      · full-moon-lux: 0.25lux  适用域 地球月球的反照率与距离\n    设定自由项（这些不是物理，是作者选择）：\n      · moon-albedo: 0.12\n      · moon-density: 3344kg/m³\n      · biological-size-limit: 25 m\n\n以上「纬度气候带」为辐射平衡估算，实际气候还需考虑自转方向、洋流、大陆分布与山脉走向。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "[unserializable]"
+ },
+ "world-heavy": {
+  "ok": true,
+  "result": "══════ 星球体感画像 ══════\n\n【⚠ 先说清楚这些假设】\n  · 没有给任何恒星参数，已默认成太阳（G2V，1 L☉，5778 K）。若这颗行星绕的不是太阳型恒星（例如 K 型橙星或 F 型巨星），温度与宜居带会差很多。\n  以下结论都建立在这些假设之上；换掉假设，结论会变。\n\n【最直观的几件事】\n  · 表面重力是地球的 1.50 倍——动作沉重、攀爬困难，生物得长成矮壮型才撑得住，飞行几乎不可能。\n  · 一年 365 天（地球日），恒星天顶每天移动约 0.99°。\n  · 全球平均气温 14°C（地球 15°C）。\n  · 地平线距离 4.7km（地球 4.7km）——决定\"世界看起来多大\"。\n  · 只有一颗卫星：月相清晰可数，历法自然按月，这是最容易写出\"熟悉感\"的配置。\n  · 抬头看见的太阳：淡黄（#fff2e7），在天上 0.53°。\n  · 恒星接近太阳型：白天的颜色与地球相仿，读者不会有陌生感。\n  · 白天：天顶是 #98b5ff 的蓝，地平线泛白（米氏散射 + 长光路）。\n  · 无月夜：夜空亮度 21.5 mag/arcsec²，肉眼极限 6.3 等，全天约 6,442 颗星，银河可见；满月夜：极限 4.0 等，只剩约 271 颗亮星，月光把夜空压成灰蓝；两种夜的亮度差约 4.6 mag。\n  · 白天看不见别的星星——大气散射把天空点亮到压过人眼阈值。\n\n【恒星与轨道】\n  恒星: 1.004 倍太阳光度，表面温度 5778K\n  轨道: 1 AU，偏心率 0.017\n  一年: 365 个地球日\n\n【行星本体】\n  半径 6371 km，质量 1.5 地球\n  平均密度 8270 kg/m³\n  表面重力 14.73 m/s²（地球的 1.5 倍）\n  逃逸速度 13.7 km/s\n  一天 23.9 小时\n\n【温度】\n  辐射平衡温度 254.3K\n  含温室后表面平均 287.3K = 14.2°C\n  水的沸点 100°C，冰点 0°C\n\n【大气】\n  海平面气压 1 atm\n  大气标高 5.6 km（地球 8.5km）\n  气压减半高度 3.88 km\n  气压降到 1/10 高度 12.89 km\n\n【纬度气候带】（粗略估算，真实气候还取决洋流与地形）\n  纬度  夏至正午高度  冬至正午高度  夏至昼长  冬至昼长   年均温      气候带\n  0°     66.6°          66.6°          12h        12h         27.4°C      热带雨林\n  15°    81.6°          81.6°          12.9h      11.1h       25.6°C      热带雨林\n  30°    83.4°          83.4°          13.9h      10.1h       20.8°C      亚热带\n  45°    68.4°          68.4°          15.4h      8.6h        14.2°C      温带\n  60°    53.4°          53.4°          18.5h      5.5h        4.9°C       温带寒\n  75°    38.4°          38.4°          24h        0h          -11.5°C     亚寒带针叶林\n  88°    25.4°          25.4°          24h        0h          -27.3°C     极地冰原\n\n【地形与视野】\n  材料能支撑的最大山高 3.27 km\n  雪线高度 1.45 km\n  地平线距离（1.7m 眼高）4.65 km\n  季节: 四季分明\n\n【推导链】（上面那些数用的是什么式子、什么输入）\n  表面重力  = G·M/R²  ← G=6.6743e-11, M=8.9583e+24, R=6.3710e+6\n  逃逸速度  = √(2GM/R)  ← 同上输入，得 13.7 km/s\n  平均密度  = M/(4/3·πR³)  ← 8270 kg/m³\n  地平线    = √(2Rh + h²)  ← h=1.7m，得 4.65 km\n  最大山高  = strength/(ρ·g)  ← strength=1.3e8 Pa（由 α 推出）、ρ=2700、g=14.73\n  ⚠ strength 不是通用常数：地球花岗岩约 1.3e8 Pa，而公式库默认值 2e8 会算出 7.54 km。\n  这些式子与公式库共用同一份实现（src/core-physics.ts），改一处两边同时变。\n\n【接着往下推】（把上面的值喂给公式库的下一步）\n  ★ 以下 overrides 可以直接复制进 formula 调用：\n\n  生物体型  formula=\"kleiber\" overrides={m: <体重kg>}\n             → 代谢率；再乘 q10_temperature 得到不同气温下的速率\n  飞行可行  formula=\"lift_force\" overrides={density: <空气密度>, velocity: <m/s>, wing_area: <m²>}\n             → 这个重力下要多大的翅膀（g=14.73 已决定所需升力）\n  结构极限  formula=\"buckling_euler\" overrides={E: <Pa>, I: <m⁴>, L: <m>}\n             → 山高上限 3.27 km 之外，木石建筑能到多高\n  能量上限  formula=\"wind_power_available\" overrides={density: <kg/m³>, area: <m²>, velocity: <m/s>}\n  河流搬运  formula=\"sediment_trap_efficiency\" 等 —— 用地形与降水推侵蚀\n\n  ★ 想查全部可用链条：formulas query=\"sys\"\n  ★ 想查跨链路线：  formulas query=\"sys:compound\"\n\n【恒星结构与寿命】\n  1.00 M☉：L=1.000 L☉，R=1.000 R☉，有效温度 5778 K\n  主序寿命 10.0 Gyr；宜居带 0.95–1.67 AU；紫外占 11.9%\n  · [量级] 点火温度升高（库仑势垒变高）：×1.000（T_ign ∝ α²）\n  · [精确] 电子散射不透明度升高：×1.000（σ_T ∝ α²）\n  · [量级] 同质量恒星寿命变长（不透明度升高、燃烧更慢）：×1.000（低质量 τ∝α²，大质量 τ∝α⁰）\n  · [量级] 可烧氢的最小质量升高：×1.000（0.08 M☉ → 0.080 M☉）\n  · [仅方向] 宜居带位置取决于光度，本模型不预测移动量：不建模\n\n【抬头看见什么】（地表观测者视角）\n  恒星: 淡黄（#fff2e7），G 型，辐射峰值 502 nm\n  天上大小 0.53°（太阳 0.53°），视星等 -26.7\n  谱线特征: Ca II 强、Fe I 线密集——暖白（太阳型）\n  白天：天顶是 #98b5ff 的蓝，地平线泛白（米氏散射 + 长光路）。\n  无月夜：夜空亮度 21.5 mag/arcsec²，肉眼极限 6.3 等，全天约 6,442 颗星，银河可见；满月夜：极限 4.0 等，只剩约 271 颗亮星，月光把夜空压成灰蓝；两种夜的亮度差约 4.6 mag。\n  夜空基色 #1c2529（无月夜空亮度 21.5 mag/arcsec²）\n\n【卫星系统】（希尔球 / 洛希极限 / 稳定性）\n  希尔球 1712988 km；洛希极限 21022 km；稳定轨道 22073–770845 km\n  容量估算 7 颗；系统判定 稳定\n  · 卫星1: 天上看 0.52°（月球的 1.00 倍）；满相亮度 -12.7 等；已被潮汐锁定（永远同一面朝行星）。\n\n【生命出现的硬否决】（只判绝对不行，其余交给叙事）\n  化学窗口：α 为现实的 1.00 倍：共价键 4.00 eV（约 162 kT）——处于化学窗口内。\n  未发现硬否决项。\n  判定：开放 —— 没有发现硬否决：剩余问题交给作者与叙事判断。\n  交给作者/AI 判断：\n    · 是否有板块运动、磁场与大气演化（本模型不推导）\n    · 是否出现细胞、多细胞与有性繁殖（演化不是物理）\n    · 是否可能使用非水溶剂（氨、甲烷等；本闸门只按水判定）\n    · 智慧与文明是否出现（纯叙事决定）\n\n【跨模块一致性】（后端整合检查）\n  ✓ 轨道在宜居带内：1.00 AU 落在 0.95–1.67 AU 之间。\n  ✓ 恒星参数自洽：显式温度与质量-半径关系相差 0.0%（阈值 15%）。\n  ✓ 宜居带与生命闸门不冲突：轨道在宜居带内，生命闸门未给出硬否决。\n  ✓ 卫星数量在容量内：1 颗 ≤ 估算容量 7 颗。\n  ✓ 宜居带与表面温度一致：表面均温 14.2°C，与恒星辐照量级相符。\n  统计：一致 5，警告 0，矛盾 0\n\n【模型可信度】（哪些是物理、哪些只是地球标定）\n  第一性原理 1 条（严格物理关系）；地球标定 9 条（有效范围有限）；设定自由 3 条（不可推导）。\n    地球标定项（这些会随常数偏离而失真）：\n      · granite-strength: 130000000Pa  适用域 α 偏离现实 < 50%\n      · lapse-moist-factor: 0.665  适用域 地球型大气（N₂/O₂/CO₂ 量级）\n      · ocean-inertia: 0.5  适用域 α 偏离现实 < 20%\n      · atmosphere-inertia: 0.15  适用域 气压 0–5 atm\n      · rayleigh-tau550: 0.1  适用域 α 偏离现实 < 20%\n      · tidal-lock-timescale: 0.5 Gyr  适用域 岩石质卫星、近圆顺行轨道\n      · mutual-hill-spacing: 3.5  适用域 顺行、近圆轨道、质量比 < 1e-2\n      · night-star-count: 9100  适用域 地球夜空、极限星等 6.5\n      · full-moon-lux: 0.25lux  适用域 地球月球的反照率与距离\n    设定自由项（这些不是物理，是作者选择）：\n      · moon-albedo: 0.12\n      · moon-density: 3344kg/m³\n      · biological-size-limit: 25 m\n\n以上「纬度气候带」为辐射平衡估算，实际气候还需考虑自转方向、洋流、大陆分布与山脉走向。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "[unserializable]"
+ },
+ "world-brief": {
+  "ok": true,
+  "result": "═══ 星球速览（brief）═══\n\n⚠ 没有给任何恒星参数，已默认成太阳（G2V，1 L☉，5778 K）。若这颗行星绕的不是太阳型恒星（例如 K 型橙星或 F 型巨星），温度与宜居带会差很多。\n  重力        1 倍地球（9.82 m/s²）\n  一天        23.93 小时\n  年均温       14.2 °C\n  气压        101.3 kPa\n  逃逸速度      11.19 km/s\n  一年        365.2 天\n  生命        无硬否决（液态水可能存在）\n\n（brief 模式：完整画像在 value 里；要文字版去掉 brief 再调一次）",
+  "errorType": null,
+  "errorMessage": null,
+  "value": "[unserializable]"
+ },
+ "derivation-civ": {
+  "ok": true,
+  "result": "═══ 宏观文明推演 ═══\n\n【4.1 能量与热力学】\n  行星接收总功率                   1.74e+17 W\n    依据：恒星光度 × 行星截面积 / 轨道球面积；这是文明的能量天花板（除非用核能）\n    突破方向：核裂变/聚变可绕过日照限制；戴森结构可提升到恒星光度量级\n  卡诺效率上限                      0.2278 无量纲\n    依据：η = 1 − T_cold/T_hot；取沸水 373 K 与环境 288 K\n    突破方向：提高热源温度（更耐热的材料）或降低冷源温度\n  辐射散热上限                       459.3 W/m²\n    依据：斯特藩-玻尔兹曼定律 σT⁴，取表面温度 300 K\n    突破方向：提高工作温度可指数级提升散热（但受材料耐热限制）\n  卡尔达肖夫指数                     0.7204 无量纲\n    依据：K = (log10(P_消耗) − 6) / 10；按人口 8.0 亿 × 2.0 kW/人 = 1.60e+13 W。地球当前约 0.73（对应约 2e13 W）\n    突破方向：从 0.73 到 I 型需提升约 3 个数量级的能源规模（行星级采集）\n  行星日照总量                    1.74e+17 W\n    依据：恒星光度 × 行星截面积 / 轨道球面积；这是「若全部收集」的理论上限\n    突破方向：达到 I 型文明需要能收集到这个量级的相当一部分\n\n【4.2 材料与结构】\n  建筑高度上限                        4903 m\n    依据：抗压强度 / (材料密度 × 重力)；来自 feasibility 的 buildingHeight 约束\n    突破方向：更高强度材料、更低重力、或改用拱形/悬索结构降低压应力\n  塔楼高宽比上限                         15 无量纲\n    依据：结构稳定性限制；来自 feasibility 的 towerAspectRatio 约束\n    突破方向：分段收窄、外部支撑、主动阻尼\n  太空电梯材料缺口倍数                   10200 倍\n    依据：比的「比强度等效高度」= 强度/(密度×g)，本世界约 4903 m；太空电梯需约 5e7 m。倍数 = 5e7 / 本世界值\n    突破方向：需要强度再高 10198.0 倍的材料\n\n【4.3 空间与交通】\n  第一宇宙速度                        7910 m/s\n    依据：v = √(gR)；低于此速度无法进入轨道\n    突破方向：低重力小行星最容易进入太空\n  逃逸速度                         11190 m/s\n    依据：v = √(2gR)；离开行星的最小速度\n  化学火箭 Δv 上限                   13480 m/s\n    依据：齐奥尔科夫斯基公式 Δv = v_e·ln(m0/m1)；取排气速度 4500 m/s、质量比 20\n    突破方向：化学火箭足以离开本行星\n  星际航行耗时（0.1c）                    42 年\n    依据：最近恒星系 4.2 光年 / 巡航速度 0.1c\n    突破方向：更高巡航速度可按比例缩短；但加速与减速的 Δv 是真正的瓶颈\n  声速（大气飞行参考）                   340.2 m/s\n    依据：√(γRT/M)；决定亚音速/超音速的分界与飞行器设计\n\n【4.4 技术树】被物理锁死或放开的分支\n  开放    化学火箭航天            化学火箭 Δv 13.5 km/s，足以达到逃逸速度 11.2 km/s\n  锁死    太空电梯              材料比强度还差 10198.0 倍\n         需要：需要更强的材料或更低的重力\n  开放    摩天建筑              建筑高度上限 4903 米\n  开放    大气飞行              大气密度 1.225 kg/m³（足够产生升力）\n  开放    燃烧/冶金             燃烧需要足够氧气/氧化剂；当前大气密度 1.225\n\n统计：开放 4 / 有条件 0 / 锁死 1",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "subcommand": "civilization",
+   "civilization": {
+    "limits": [
+     {
+      "category": "energy",
+      "name": "行星接收总功率",
+      "value": 173565722662393860,
+      "unit": "W",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "恒星光度",
+       "轨道距离",
+       "行星半径"
+      ],
+      "breakthrough": "[path]"
+     },
+     {
+      "category": "energy",
+      "name": "卡诺效率上限",
+      "value": 0.22779043280182232,
+      "unit": "无量纲",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "工质温度",
+       "环境温度"
+      ],
+      "breakthrough": "提高热源温度（更耐热的材料）或降低冷源温度"
+     },
+     {
+      "category": "energy",
+      "name": "辐射散热上限",
+      "value": 459.300327939,
+      "unit": "[path]",
+      "basis": "斯特藩-玻尔兹曼定律 σT⁴，取表面温度 300 K",
+      "sensitiveTo": [
+       "表面温度"
+      ],
+      "breakthrough": "提高工作温度可指数级提升散热（但受材料耐热限制）"
+     },
+     {
+      "category": "energy",
+      "name": "卡尔达肖夫指数",
+      "value": 0.7204119982655925,
+      "unit": "无量纲",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "人口",
+       "人均能耗"
+      ],
+      "breakthrough": "从 0.73 到 I 型需提升约 3 个数量级的能源规模（行星级采集）"
+     },
+     {
+      "category": "energy",
+      "name": "行星日照总量",
+      "value": 173565722662393860,
+      "unit": "W",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "恒星光度",
+       "轨道距离",
+       "行星半径"
+      ],
+      "breakthrough": "达到 I 型文明需要能收集到这个量级的相当一部分"
+     },
+     {
+      "category": "material",
+      "name": "建筑高度上限",
+      "value": 4902.919147466347,
+      "unit": "m",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "材料强度",
+       "重力"
+      ],
+      "breakthrough": "[path]"
+     },
+     {
+      "category": "material",
+      "name": "塔楼高宽比上限",
+      "value": 15,
+      "unit": "无量纲",
+      "basis": "结构稳定性限制；来自 feasibility 的 towerAspectRatio 约束",
+      "sensitiveTo": [
+       "材料强度",
+       "风力"
+      ],
+      "breakthrough": "分段收窄、外部支撑、主动阻尼"
+     },
+     {
+      "category": "material",
+      "name": "太空电梯材料缺口倍数",
+      "value": 10198.00622774663,
+      "unit": "倍",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "材料强度",
+       "材料密度",
+       "重力"
+      ],
+      "breakthrough": "需要强度再高 10198.0 倍的材料"
+     },
+     {
+      "category": "transport",
+      "name": "第一宇宙速度",
+      "value": 7909.813266516469,
+      "unit": "[path]",
+      "basis": "v = √(gR)；低于此速度无法进入轨道",
+      "sensitiveTo": [
+       "重力",
+       "行星半径"
+      ],
+      "breakthrough": "低重力小行星最容易进入太空"
+     },
+     {
+      "category": "transport",
+      "name": "逃逸速度",
+      "value": 11186.165197346223,
+      "unit": "[path]",
+      "basis": "v = √(2gR)；离开行星的最小速度",
+      "sensitiveTo": [
+       "重力",
+       "行星半径"
+      ]
+     },
+     {
+      "category": "transport",
+      "name": "化学火箭 Δv 上限",
+      "value": 13480.795230992959,
+      "unit": "[path]",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "推进剂类型",
+       "结构质量比"
+      ],
+      "breakthrough": "化学火箭足以离开本行星"
+     },
+     {
+      "category": "transport",
+      "name": "星际航行耗时（0.1c）",
+      "value": 42,
+      "unit": "年",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "推进技术上限"
+      ],
+      "breakthrough": "更高巡航速度可按比例缩短；但加速与减速的 Δv 是真正的瓶颈"
+     },
+     {
+      "category": "transport",
+      "name": "声速（大气飞行参考）",
+      "value": 340.17407308611865,
+      "unit": "[path]",
+      "basis": "[path]",
+      "sensitiveTo": [
+       "大气成分",
+       "温度"
+      ]
+     },
+     {
+      "category": "society",
+      "name": "生态承载力",
+      "value": 6542148563.811847,
+      "unit": "人",
+      "basis": "初级生产量 × 人类可占用 10% × 收获效率 10%，肉食部分再打 10% 折扣",
+      "sensitiveTo": [
+       "恒星光度",
+       "轨道距离",
+       "肉食比例",
+       "农业效率"
+      ],
+      "breakthrough": "承载力充足，人口瓶颈不在食物"
+     }
+    ],
+    "tech": [
+     {
+      "branch": "化学火箭航天",
+      "status": "open",
+      "reason": "[path]",
+      "requirement": null
+     },
+     {
+      "branch": "太空电梯",
+      "status": "locked",
+      "reason": "材料比强度还差 10198.0 倍",
+      "requirement": "需要更强的材料或更低的重力"
+     },
+     {
+      "branch": "摩天建筑",
+      "status": "open",
+      "reason": "建筑高度上限 4903 米",
+      "requirement": null
+     },
+     {
+      "branch": "大气飞行",
+      "status": "open",
+      "reason": "[path]",
+      "requirement": null
+     },
+     {
+      "branch": "[path]",
+      "status": "open",
+      "reason": "[path]",
+      "requirement": null
+     }
+    ],
+    "summary": {
+     "locked": 1,
+     "open": 4,
+     "conditional": 0
+    }
+   }
+  }
+ },
+ "feasibility": {
+  "ok": true,
+  "result": "══════ 设定一致性校验 ══════\n\n【世界环境】\n  表面重力 9.82 m/s²（地球的 1.00 倍）\n  大气密度 1.225 kg/m³（地球 1.225）\n  材料抗压强度 1.300e+8 Pa，密度 2700 kg/m³\n  自转 23.9 小时\n\n【本世界的物理上限】（未给 claims，只列上限）\n\n  约束 id                     名称                    上限\n  creatureHeight              陆生生物最大高度                  24.965 m\n  flyingCreatureMass          飞行生物最大质量                  249.74 kg\n  swimmingCreatureMass        水生生物最大质量                  150000 kg\n  buildingHeight              建筑高度上限                    4902.9 m\n  mountainHeight              山峰高度上限                    8987.5 m\n  towerAspectRatio            塔楼高宽比上限                       15 比例\n  cityPopulation              前工业时代城市人口上限               986030 人\n  empireRadius                帝国有效控制半径                    5000 km\n  agriculturalSurplus         农业剩余率（供养非农人口）                 25 %\n  flyingVehicleAltitude       无动力飞行高度上限（大气稀薄化）           17509 m\n  dayLength                   昼夜长度合理性                       72 小时\n\n用法：传 claims 校验你的设定，例如\n  {\"operation\":\"feasibility\",\"world\":{\"planetMass\":2},\"claims\":{\"creatureHeight\":50,\"buildingHeight\":3000}}\n\n约束 id 与依据：\n\n  · creatureHeight（经验值）\n    L_max = 25 m × (g_地球 / g)\n    平方-立方定律：体重 ∝ L³，骨骼承重 ∝ L²，所以承压应力 ∝ L·g。地球最大陆生动物（蜥脚类）约 25m。\n\n  · flyingCreatureMass（经验值）\n    m_max = 250 kg × (ρ_air / 1.225) × (9.8 / g)\n    翼载荷限制：升力 ∝ ρ_air·v²·S，而所需升力 ∝ m·g。所以可飞质量 ∝ ρ_air/g。地球最大飞行动物（风神翼龙）约 250kg。\n\n  · swimmingCreatureMass（惯例）\n    m_max = 150000 kg (浮力抵消重力，受食物链与代谢限制)\n    水中浮力抵消大部分重力，所以体型上限由代谢与食物供给决定，而非承重。地球蓝鲸约 150 吨。\n\n  · buildingHeight（硬约束）\n    H_max = σ_material / (ρ_material × g)\n    等截面柱体的自重压应力 ∝ ρ·g·H。当它达到材料抗压强度 σ 时结构坍塌。\n\n  · mountainHeight（经验值）\n    h_max = 9000 m × (9.8 / g)\n    地壳均衡（isostasy）：山体底部岩石承受上方重量，超过抗压强度会流动（塑性变形），山不再长高。地球珠峰 8848m。\n\n  · towerAspectRatio（经验值）\n    H/W ≤ 15（受风载与屈曲限制）\n    细长结构受风载弯矩 ∝ H²，抗弯能力 ∝ W³，所以高宽比有硬上限。地球现代摩天楼极限约 10-15。\n\n  · cityPopulation（经验值）\n    P_max = (π·R_transport² × 耕地比例) / 人均耕地\n    粮食必须每天运进城，运输半径受畜力速度限制（约 30km/天往返）。人均耕地需求约 1150 m²/人（2200 kcal/天、亩产 700 kcal/m²·年）。\n\n  · empireRadius（惯例）\n    R_max = v_info × t_max（v_info 为信息传递速度，t_max 约 20 天）\n    帝国必须能在命令失效前收到消息并回传。超过这个半径，边远地区会事实独立。快马驿站约 250 km/天，20 天 = 5000 km。\n\n  · agriculturalSurplus（惯例）\n    surplus = (总产 − 农民自耗) / 总产\n    剩余率决定能养多少工匠、士兵、祭司。前工业社会约 10-20%，意味着 80-90% 的人必须务农。\n\n  · flyingVehicleAltitude（经验值）\n    h_max ≈ H_scale × ln(ρ_0 / ρ_min)\n    升力 ∝ 空气密度，而密度随高度指数衰减。当密度低到无法支撑飞行器重量时即为上限。\n\n  · dayLength（经验值）\n    合理区间 8~72 小时（离心解体与生态节律的限制）\n    自转太快（<8h）会让赤道离心力接近重力，星球趋扁甚至解体；自转过慢（>72h）会让昼夜温差极端化，生物难以调节。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "environment": {
+    "gravity": 9.820302293385645,
+    "gravityRatio": 1.0013921464909674,
+    "airDensity": 1.2254299688122872,
+    "materialStrength": 130000000,
+    "materialDensity": 2700,
+    "rotationHours": 23.934,
+    "obliquityDeg": 23.44,
+    "dayLengthEarthDays": 0.9972500000000001,
+    "yearLengthEarthDays": 365.25,
+    "escapeVelocity": 11186.165197346223
+   },
+   "limits": [
+    {
+     "id": "creatureHeight",
+     "name": "陆生生物最大高度",
+     "category": "biology",
+     "unit": "m",
+     "limit": 24.965244722163895,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "flyingCreatureMass",
+     "name": "飞行生物最大质量",
+     "category": "biology",
+     "unit": "kg",
+     "limit": 249.7400739695708,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "swimmingCreatureMass",
+     "name": "水生生物最大质量",
+     "category": "biology",
+     "unit": "kg",
+     "limit": 150000,
+     "confidence": "convention",
+     "formula": "m_max = 150000 kg (浮力抵消重力，受食物链与代谢限制)"
+    },
+    {
+     "id": "buildingHeight",
+     "name": "建筑高度上限",
+     "category": "engineering",
+     "unit": "m",
+     "limit": 4902.919147466347,
+     "confidence": "exact",
+     "formula": "[path]"
+    },
+    {
+     "id": "mountainHeight",
+     "name": "山峰高度上限",
+     "category": "geology",
+     "unit": "m",
+     "limit": 8987.488099979002,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "towerAspectRatio",
+     "name": "塔楼高宽比上限",
+     "category": "engineering",
+     "unit": "比例",
+     "limit": 15,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "cityPopulation",
+     "name": "前工业时代城市人口上限",
+     "category": "society",
+     "unit": "人",
+     "limit": 986027.3367849396,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "empireRadius",
+     "name": "帝国有效控制半径",
+     "category": "society",
+     "unit": "km",
+     "limit": 5000,
+     "confidence": "convention",
+     "formula": "R_max = v_info × t_max（v_info 为信息传递速度，t_max 约 20 天）"
+    },
+    {
+     "id": "agriculturalSurplus",
+     "name": "农业剩余率（供养非农人口）",
+     "category": "society",
+     "unit": "%",
+     "limit": 25,
+     "confidence": "convention",
+     "formula": "[path]"
+    },
+    {
+     "id": "flyingVehicleAltitude",
+     "name": "无动力飞行高度上限（大气稀薄化）",
+     "category": "astronomy",
+     "unit": "m",
+     "limit": 17508.541681001632,
+     "confidence": "empirical",
+     "formula": "[path]"
+    },
+    {
+     "id": "dayLength",
+     "name": "昼夜长度合理性",
+     "category": "astronomy",
+     "unit": "小时",
+     "limit": 72,
+     "confidence": "empirical",
+     "formula": "合理区间 8~72 小时（离心解体与生态节律的限制）"
+    }
+   ]
+  }
+ },
+ "bodies": {
+  "ok": true,
+  "result": "● 火星（mars）  [类地行星]\n  宿主：太阳\n  轨道半长轴         1.524 AU   [物理必然（改常数不该动）]\n  质量            0.107 M⊕   [物理必然（改常数不该动）]\n  半径            0.532 R⊕   [物理必然（改常数不该动）]\n  表面重力          0.379 g   [物理必然（改常数不该动）]\n  平衡温度          210 K   [地球标定（超域失真）]\n  表面温度          210 ± 10 K   [地球标定（超域失真）]\n  反照率           0.25    [历史偶然（不可推导）]\n  自转周期          24.62 h   [物理必然（改常数不该动）]\n  轴倾角           25.19 °   [历史偶然（不可推导）]\n  气压            0.006 atm   [历史偶然（不可推导）]\n  大气            CO₂ 95%、N₂ 3%、Ar 1.6%\n  说明：稀薄 CO₂ 大气的寒冷荒漠。有液态卤水但无地表稳定液态水。\n  要点：均温 210 K 低于水冰点，但仍有液态卤水 —— 所以「温度极端」不等于「不可能有化学」。这正是死寂判定里「冻结算 marginal、不算 dead」的由来。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "body": {
+    "id": "mars",
+    "name": "火星",
+    "kind": "planet-terrestrial",
+    "host": "sun",
+    "summary": "稀薄 CO₂ 大气的寒冷荒漠。有液态卤水但无地表稳定液态水。",
+    "semiMajorAxisAU": {
+     "value": 1.524,
+     "unit": "AU",
+     "dependence": "first-principles",
+     "source": "JPL"
+    },
+    "massEarth": {
+     "value": 0.107,
+     "unit": "M⊕",
+     "dependence": "first-principles",
+     "source": "JPL"
+    },
+    "radiusEarth": {
+     "value": 0.532,
+     "unit": "R⊕",
+     "dependence": "first-principles",
+     "source": "JPL"
+    },
+    "surfaceGravityG": {
+     "value": 0.379,
+     "unit": "g",
+     "dependence": "first-principles",
+     "source": "[path]"
+    },
+    "equilibriumTempK": {
+     "value": 210,
+     "unit": "K",
+     "dependence": "calibrated",
+     "domain": "黑体近似、反照率 0.25",
+     "source": "辐射平衡"
+    },
+    "surfaceTempK": {
+     "value": 210,
+     "unit": "K",
+     "dependence": "calibrated",
+     "domain": "稀薄 CO₂ 大气、实测全球均值",
+     "uncertainty": 10,
+     "source": "实测均值"
+    },
+    "albedo": {
+     "value": 0.25,
+     "unit": "",
+     "dependence": "contingent",
+     "source": "观测"
+    },
+    "rotationHours": {
+     "value": 24.62,
+     "unit": "h",
+     "dependence": "first-principles",
+     "source": "观测"
+    },
+    "obliquityDeg": {
+     "value": 25.19,
+     "unit": "°",
+     "dependence": "contingent",
+     "source": "观测"
+    },
+    "pressureAtm": {
+     "value": 0.006,
+     "unit": "atm",
+     "dependence": "contingent",
+     "source": "探测器实测"
+    },
+    "atmosphere": "CO₂ 95%、N₂ 3%、Ar 1.6%",
+    "notes": "均温 210 K 低于水冰点，但仍有液态卤水 —— 所以「温度极端」不等于「不可能有化学」。这正是死寂判定里「冻结算 marginal、不算 dead」的由来。"
+   }
+  }
+ },
+ "ledger": {
+  "ok": true,
+  "result": "═══ 台账闭合检查 ═══\n\n  分项               数值       占比\n  士                        1     1.00%\n  农                       85    85.00%\n  工                       10    10.00%\n  商                        4     4.00%\n  ──────────────────────────────────────\n  合计                     100   100.00%\n  声称总量                 100       100.00%\n\n✓ 闭合：分项之和与总量差 0（0.000%），在容差 0.10% 内。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "sum": 100,
+   "total": 100,
+   "diff": 0,
+   "relative": 0,
+   "closed": true,
+   "tolerance": 0.001,
+   "suspicious": [],
+   "unit": null,
+   "parts": [
+    {
+     "name": "士",
+     "value": 1
+    },
+    {
+     "name": "农",
+     "value": 85
+    },
+    {
+     "name": "工",
+     "value": 10
+    },
+    {
+     "name": "商",
+     "value": 4
+    }
+   ]
+  }
+ },
+ "interval": {
+  "ok": false,
+  "result": "错误[invalid_argument]: 认不出区间表达式：20-50",
+  "errorType": "invalid_argument",
+  "errorMessage": "认不出区间表达式：20-50",
+  "value": null
+ },
+ "compare": {
+  "ok": true,
+  "result": "═══ 方案对比 ═══\n\n  方案              成本\n  ──────────────────\n  甲                3\n  乙                5\n\n  各指标最强：\n   · 成本：乙（5）\n\n  没有给 weights，所以**不给综合分** —— 工具不猜「哪个指标更重要」。\n  要综合排序请传 weights（每个指标一个非负数）：{weights:[1]}",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "rows": [
+    "甲",
+    "乙"
+   ],
+   "cols": [
+    "成本"
+   ],
+   "data": [
+    [
+     3
+    ],
+    [
+     5
+    ]
+   ],
+   "weights": null,
+   "normalized": [
+    [
+     0.6
+    ],
+    [
+     1
+    ]
+   ],
+   "columnBest": [
+    {
+     "col": "成本",
+     "winner": "乙",
+     "value": 5,
+     "tie": false
+    }
+   ],
+   "scores": [
+    {
+     "name": "甲",
+     "score": null,
+     "rank": null
+    },
+    {
+     "name": "乙",
+     "score": null,
+     "rank": null
+    }
+   ],
+   "winner": null
+  }
+ },
+ "hierarchy": {
+  "ok": true,
+  "result": "═══ 编制树 ═══\n\n  层级          下辖       本级单位数       每单位含人\n  ────────────────────────────────────────\n  师            3           1          90\n  团            3           3          30\n  营            —           9          10\n  ────────────────────────────────────────\n  一个满编「师」= 90 人（10 × 9）",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "levels": [
+    "师",
+    "团",
+    "营"
+   ],
+   "tree": [
+    3,
+    3
+   ],
+   "base": 10,
+   "total": null,
+   "factor": [
+    9,
+    3,
+    1
+   ],
+   "fullStrength": 90,
+   "closed": null
+  }
+ },
+ "quick_feasible": {
+  "ok": true,
+  "result": "═══ 可行性速判 ═══\n\n  声称：这座塔能有 8000 米高\n  判定：不可行\n\n  依据：\n   ✗ [尺寸] 建筑高度上限 4902.92 m，声称 8000 m\n\n  不行：尺寸这一维明确超限（建筑高度上限 4902.92 m，声称 8000 m）",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "claim": "这座塔能有 8000 米高",
+   "verdict": "infeasible",
+   "verdictLabel": "不可行",
+   "oneLine": "不行：尺寸这一维明确超限（建筑高度上限 4902.92 m，声称 8000 m）",
+   "dimensions": [
+    "尺寸"
+   ],
+   "checks": [
+    {
+     "dimension": "尺寸",
+     "finding": "建筑高度上限 4902.92 m，声称 8000 m",
+     "passed": false,
+     "headroom": 0.6128648934332933
+    }
+   ],
+   "blockers": [
+    "建筑高度上限 4902.92 m，声称 8000 m"
+   ]
+  }
+ },
+ "consistency": {
+  "ok": true,
+  "result": "═══ 数值口径体检 ═══\n\n  片段 2 个　抽出数值主张 2 条　涉及主体 1 个\n\n  发现 1 处：\n\n   ✗ [口径冲突] 「人口」有 2 处不同口径，差 115 倍：第1段 9.200e+10 　vs　第5段 8.000e+8 \n\n  抽到的数值主张（供核对）：\n    人口：第1段=9.200e+10、第5段=8.000e+8\n\n  ★ 只查**同一量两处不同值**（世界观硬伤的主因），不查「多久没提到」\n    —— 后者是小说的检查：小说读者会忘，世界观读者是按需查询。\n  ★ 工具只报冲突，**不判断哪一处是对的** —— 哪个数是原文给的只有你知道。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "sections": 2,
+   "quantities": [
+    {
+     "subject": "人口",
+     "value": 92000000000,
+     "unit": "",
+     "section": 1,
+     "raw": "人口 920 亿"
+    },
+    {
+     "subject": "人口",
+     "value": 800000000,
+     "unit": "",
+     "section": 5,
+     "raw": "人口 8 亿"
+    }
+   ],
+   "subjects": [
+    "人口"
+   ],
+   "inconsistencies": [
+    {
+     "kind": "multi_value",
+     "severity": 10,
+     "message": "「人口」有 2 处不同口径，差 115 倍：第1段 9.200e+10 　vs　第5段 8.000e+8 ",
+     "subject": "人口",
+     "quantities": [
+      {
+       "subject": "人口",
+       "value": 92000000000,
+       "unit": "",
+       "section": 1,
+       "raw": "人口 920 亿"
+      },
+      {
+       "subject": "人口",
+       "value": 800000000,
+       "unit": "",
+       "section": 5,
+       "raw": "人口 8 亿"
+      }
+     ]
+    }
+   ],
+   "conflictRatio": 3,
+   "quantityCount": 2
+  }
+ },
+ "extract_numbers": {
+  "ok": true,
+  "result": "═══ 数字台账 ═══\n\n  抽出 2 个数字（已滤掉噪音）\n  主要单位：亿×1　亿平方公里×1\n\n  L1    1.49　         = 1.490e+8      [亿] 全层人口 1.49 亿\n  L1    247.5　        = 2.475e+10     [亿平方公里] 面积 247.5 亿平方公里\n\n  ★ 这只是台账，不是验算。要对账请把成组的数送进 ledger / evaluate。\n  ★ 中文量级已折算（亿=1e8、万=1e4）；区间给上下界。",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "items": [
+    {
+     "raw": "1.49",
+     "value": 149000000,
+     "high": 149000000,
+     "unit": "亿",
+     "context": "全层人口 1.49 亿",
+     "line": 1,
+     "noise": false,
+     "noiseReason": null
+    },
+    {
+     "raw": "247.5",
+     "value": 24750000000,
+     "high": 24750000000,
+     "unit": "亿平方公里",
+     "context": "面积 247.5 亿平方公里",
+     "line": 1,
+     "noise": false,
+     "noiseReason": null
+    }
+   ],
+   "count": 2,
+   "noiseCount": 0,
+   "units": [
+    {
+     "unit": "亿",
+     "count": 1
+    },
+    {
+     "unit": "亿平方公里",
+     "count": 1
+    }
+   ]
+  }
+ },
+ "dependency": {
+  "ok": true,
+  "result": "═══ 依赖传导 ═══\n\n  节点 3 个　边 2 条　边权含义：branching\n\n  ✓ 无环（这是一张有向无环图，可以按拓扑序推演）\n\n  根节点（无上游）：师\n  叶节点（无下游）：营\n\n  最大层深：2 跳（从顶到底要传 2 级）\n\n  ✓ 结构体检没发现问题。\n",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "nodes": 3,
+   "edges": 2,
+   "weightKind": "branching",
+   "cycles": [],
+   "sources": [
+    "师"
+   ],
+   "sinks": [
+    "营"
+   ],
+   "maxDepth": 2,
+   "depth": {
+    "师": 0,
+    "团": 1,
+    "营": 2
+   },
+   "findings": [],
+   "focus": null,
+   "downstream": [],
+   "upstream": []
+  }
+ },
+ "balance": {
+  "ok": false,
+  "result": "错误[invalid_argument]: balance 需要给一个对象：{ 键名: { demand, supply, unit? } }",
+  "errorType": "invalid_argument",
+  "errorMessage": "balance 需要给一个对象：{ 键名: { demand, supply, unit? } }",
+  "value": null
+ }
+}

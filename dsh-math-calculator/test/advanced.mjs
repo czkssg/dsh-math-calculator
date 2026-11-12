@@ -35,7 +35,23 @@ console.log('-- 1. 三次方程必须给复数根 --')
 console.log('-- 2. 扩展函数在表达式里可用 --')
 {
   assert('rank', String(run({ operation: 'evaluate', expression: 'rank([[1,2],[2,4]])' }).result).trim() === '1')
-  assert('nullspace', String(run({ operation: 'evaluate', expression: 'nullspace([[1,2],[2,4]])' }).result).includes('-2'))
+  /**
+   * 零空间断言改成**验数学正确性**，不再验某个特定符号。
+   *
+   * 2026-11-12 重构：SVD 给的基向量符号是任意的（v 与 -v 都是基），
+   * 而且旧实现给 [1,-2]、新实现给 [2,-1] —— 两者是同一方向。
+   * 断言「输出里有 -2」会随实现细节漂移，那不是它该守的东西。
+   *
+   * 真正该守的是：**这个向量确实在零空间里**（A·v = 0）。
+   */
+  {
+    const out = String(run({ operation: 'evaluate', expression: 'nullspace([[1,2],[2,4]])' }).result)
+    const nums = (out.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+    const vec = nums.slice(0, 2)
+    // A·v = [1*v0 + 2*v1, 2*v0 + 4*v1] 应全为 0
+    const ok = vec.length === 2 && Math.abs(vec[0] + 2 * vec[1]) < 1e-9 && Math.abs(2 * vec[0] + 4 * vec[1]) < 1e-9
+    assert('nullspace 基向量确实在零空间里', ok, out.trim())
+  }
   assert('svd', String(run({ operation: 'evaluate', expression: 'svd([[1,2],[3,4]])' }).result).includes('5.46'))
   assert('factorize', String(run({ operation: 'evaluate', expression: 'factorize(360)' }).result).includes('5'))
   /**

@@ -7,6 +7,9 @@ lib/
 # 临时文件
 *.tmp
 *.cjs
+# 但 scripts/ 下的正式工具要提交（快照脚本是重构安全网）
+!scripts/
+!scripts/*.cjs
 *.part.ts
 .cache/
 

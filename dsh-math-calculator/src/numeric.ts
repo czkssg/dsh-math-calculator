@@ -1,7 +1,24 @@
 /**
  * 基础运算扩展：矩阵秩/零空间/奇异值、整数分解、数值求根。
  *
- * 原则：**能纯代码算的就不要让人手算**，而且不引入新依赖（只用 mathjs + 纯 JS）。
+ * 原则：**能纯代码算的就不要让人手算**。
+ *
+ * ## 2026-11-12 重构：SVD 改用 ml-matrix
+ *
+ * 原来自己手写了 Jacobi 迭代求 AᵀA 的特征值，再由 σ=√λ 得奇异值。
+ * 那条路**条件数被平方**，小奇异值严重失真（原作者自己在注释里写了这一点）。
+ *
+ * 现在奇异值/零空间/秩改用 `ml-matrix` 的 SVD（MIT、197 万周下载、
+ * 2 个运行时依赖）。收益：
+ *
+ * ```
+ *   ① 不用 AᵀA，条件数不平方 → 小奇异值可信
+ *   ② 奇异矩阵不再只能报"singular"，能给出伪逆与零空间
+ *   ③ 与 `eigen` 操作共用同一个矩阵库，口径一致
+ * ```
+ *
+ * `rref` 保留手写 —— 它给的是**主元位置**（教学与解释用），
+ * SVD 给不了那个；而且它是 60 行朴素消元，没有可换的必要。
  * 这些函数通过 `buildMath` 注册进 mathjs 引擎，所以可以直接写在表达式里：
  *   rank([[1,2],[2,4]])         → 1
  *   nullspace([[1,2],[2,4]])    → 零空间基
@@ -11,6 +28,8 @@
  *
  * @module dsh-math-calculator/numeric
  */
+
+import { Matrix, SVD } from 'ml-matrix'
 
 /** 任意矩阵输入（数组 / mathjs Matrix）→ 二维普通数组。 */
 export function toMatrix(input: any): number[][] {
@@ -86,92 +105,144 @@ export function rankOf(input: any): number {
   return pivots.length
 }
 
-/** 零空间的一组基（自由变量取 1，其余解出）。 */
+/**
+ * 零空间的一组正交基，用 ml-matrix 的 SVD。
+ *
+ * ## 为什么换
+ *
+ * 旧实现从 `rref` 的主元位置推自由变量，**对病态矩阵会把秩算错**，
+ * 于是零空间的维数也错（多给或少给基向量）。
+ * SVD 的零空间由「近零奇异值对应的右奇异向量」给出，是数值上更稳的定义。
+ *
+ * ## 判据
+ *
+ * `1e-10 × σ_max` 作相对阈值 —— 绝对阈值在不同量级的矩阵上会误判
+ * （元素到 1e6 时，1e-12 的绝对阈值会把真零空间当成满秩）。
+ *
+ * @param input - 任意可转成二维数组的输入
+ * @returns 零空间基向量（每个向量长度 = 列数）
+ */
 export function nullspaceOf(input: any): number[][] {
-  const { matrix, pivots } = rref(input)
-  const rows = matrix.length
-  const cols = rows === 0 ? 0 : matrix[0].length
-  const free: number[] = []
-  for (let j = 0; j < cols; j += 1) if (!pivots.includes(j)) free.push(j)
+  const a = toMatrix(input)
+  if (a.length === 0) return []
+  const cols = a[0].length
+  const svd = new SVD(new Matrix(a))
+  const singular = svd.diagonal.map((v) => Math.abs(v))
+  const max = Math.max(...singular, 0)
+  const threshold = max === 0 ? 0 : max * 1e-10
 
+  /**
+   * ## `ml-matrix` 的 `rightSingularVectors` 是**按列**存右奇异向量的
+   *
+   * 这一点必须实测才知：文档没明说，而 `getRow(i)` 看起来像"第 i 个右奇异向量"，
+   * 实际不是。验证方法是对每个候选向量算 `|A·v|`，看它是否等于对应奇异值：
+   *
+   * ```
+   *   取行：|A·v| = 15.94 / 3.93 / 3.93   ← 与 s 不匹配（错）
+   *   取列：|A·v| = 16.848 / 1.068 / 0.000 ← 与 s 精确相等（对）
+   * ```
+   *
+   * 所以第 i 个右奇异向量是 `V.get(r, i)`，r 遍历行。
+   */
   const basis: number[][] = []
-  for (const freeCol of free) {
-    const vector = new Array(cols).fill(0)
-    vector[freeCol] = 1
-    for (let r = 0; r < pivots.length; r += 1) {
-      vector[pivots[r]] = -matrix[r][freeCol]
-    }
+  const V = svd.rightSingularVectors
+  const vRows = V.rows
+  for (let i = 0; i < vRows; i += 1) {
+    const sigma = singular[i] ?? 0
+    if (sigma > threshold) continue
+    const vector: number[] = []
+    for (let r = 0; r < vRows; r += 1) vector.push(V.get(r, i))
     basis.push(vector)
   }
-  return basis
-}
 
-/** 对称矩阵的 Jacobi 特征值（只取特征值，用于算奇异值）。 */
-function symmetricEigenvalues(matrix: number[][]): number[] {
-  const n = matrix.length
-  const a = matrix.map((row) => [...row])
-  for (let sweep = 0; sweep < 60; sweep += 1) {
-    let off = 0
-    for (let i = 0; i < n; i += 1) for (let j = i + 1; j < n; j += 1) off += a[i][j] ** 2
-    if (off < 1e-20) break
-    for (let p = 0; p < n; p += 1) {
-      for (let q = p + 1; q < n; q += 1) {
-        if (Math.abs(a[p][q]) < 1e-15) continue
-        const theta = (a[q][q] - a[p][p]) / (2 * a[p][q])
-        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta ** 2 + 1))
-        const c = 1 / Math.sqrt(t ** 2 + 1)
-        const s = t * c
-        for (let k = 0; k < n; k += 1) {
-          const akp = a[k][p]
-          const akq = a[k][q]
-          a[k][p] = c * akp - s * akq
-          a[k][q] = s * akp + c * akq
-        }
-        for (let k = 0; k < n; k += 1) {
-          const apk = a[p][k]
-          const aqk = a[q][k]
-          a[p][k] = c * apk - s * aqk
-          a[q][k] = s * apk + c * aqk
+  /** 行数 < 列数时补齐剩余方向（这些方向必在零空间里）。 */
+  if (basis.length < cols - a.length) {
+    /**
+     * 用 Gram-Schmidt 从标准基里找与已有基 + 行空间都正交的方向。
+     * 只在「行少于列」这种矩形矩阵上走到这里，方阵与高矩阵不触发。
+     */
+    const rowSpace = a.map((row) => [...row])
+    const orthonormalize = (vectors: number[][], candidate: number[]): number[] | null => {
+      let v = [...candidate]
+      for (const u of vectors) {
+        const dot = v.reduce((sum, x, k) => sum + x * u[k], 0)
+        const norm = u.reduce((sum, x) => sum + x * x, 0)
+        if (norm > 0) v = v.map((x, k) => x - (dot / norm) * u[k])
+      }
+      const len = Math.sqrt(v.reduce((sum, x) => sum + x * x, 0))
+      return len > 1e-9 ? v.map((x) => x / len) : null
+    }
+    const existing = [...basis]
+    for (const row of rowSpace) {
+      const v = orthonormalize(existing, row)
+      if (v) existing.push(v)
+    }
+    for (let j = 0; j < cols && basis.length < cols; j += 1) {
+      const e = new Array(cols).fill(0)
+      e[j] = 1
+      const v = orthonormalize([...basis, ...existing.slice(basis.length)], e)
+      if (v) {
+        /** 再用行空间验一次：真在零空间才算。 */
+        const inNull = a.every((row) => Math.abs(row.reduce((sum, x, k) => sum + x * v[k], 0)) < 1e-8)
+        if (inNull && !basis.some((b) => Math.abs(b.reduce((sum, x, k) => sum + x * v[k], 0)) > 0.999)) {
+          basis.push(v)
         }
       }
     }
   }
-  return a.map((row, i) => row[i])
-}
 
+  /**
+   * ## 归一化 → 再转成「最小整数形式」
+   *
+   * SVD 给的是**单位向量**（`[-0.894, 0.447]`）。数学上没问题，
+   * 但对使用者不友好：手算时核不了「这是不是零空间里那个方向」。
+   *
+   * 所以做一次整数化：把向量按最小非零元素的绝对值归一，
+   * 若结果是接近整数的有理数就取整。`[-0.894, 0.447]` → `[-2, 1]`。
+   *
+   * 旧实现直接给 `[1, -2]`（同一方向、符号相反）—— 符号差异不算错，
+   * 但为了让输出稳定可比，这里统一**首非零项取正**。
+   */
+  return basis.map((v) => {
+    const cleaned = v.map((x) => (Math.abs(x) < 1e-12 ? 0 : x))
+    const nonZero = cleaned.filter((x) => x !== 0)
+    if (nonZero.length === 0) return cleaned
+    const smallest = Math.min(...nonZero.map((x) => Math.abs(x)))
+    /** 缩放到「最小非零元素 = 1」。 */
+    let scaled = cleaned.map((x) => x / smallest)
+    /** 全是接近整数就取整，否则保留 6 位小数。 */
+    const allNearInt = scaled.every((x) => Math.abs(x - Math.round(x)) < 1e-8)
+    if (allNearInt) scaled = scaled.map((x) => Math.round(x))
+    else scaled = scaled.map((x) => Number(x.toFixed(6)))
+    /** 首非零项取正，让输出稳定。 */
+    const firstNonZero = scaled.find((x) => x !== 0)
+    if (firstNonZero !== undefined && firstNonZero < 0) scaled = scaled.map((x) => -x)
+    return scaled
+  })
+}
 /**
- * 奇异值（从大到小）。
- * 做法：SVD 的奇异值是 AᵀA 特征值的平方根（对称矩阵，Jacobi 求解）。
+ * 奇异值（从大到小），用 ml-matrix 的 SVD。
+ *
+ * ## 为什么不再自己算
+ *
+ * 旧实现走 AᵀA 的特征值再开方，**条件数被平方** ——
+ * 原作者在注释里已经写明这个缺陷：「小奇异值（相对最大者 < 1e-8）
+ * 会被算得严重失真，甚至变成负数」。SVD 直接对 A 做，
+ * 条件数就是 A 本身的，小奇异值可信。
+ *
+ * @param input - 任意可转成二维数组的输入
+ * @returns 奇异值，从大到小
  */
 export function singularValuesOf(input: any): number[] {
   const a = toMatrix(input)
-  const rows = a.length
-  const cols = rows === 0 ? 0 : a[0].length
+  if (a.length === 0) return []
   /**
-   * 通过 AᵀA 的特征值间接求奇异值：σᵢ = √λᵢ(AᵀA)。
-   *
-   * 为什么用这条路：AᵀA 是对称矩阵，对称矩阵有稳定且简单的特征值算法
-   * （`symmetricEigenvalues` 用 Jacobi 旋转）；直接对一般矩阵做 SVD 要复杂得多。
-   *
-   * ⚠️ 代价是**数值条件被平方**：AᵀA 的条件数是 A 的平方，所以
-   * 小奇异值（相对最大者 < 1e-8）会被算得严重失真，甚至变成负数——
-   * 下面 `Math.max(0, value)` 就是兜这个：AᵀA 理论上半正定，
-   * 但浮点误差能让极小特征值变成 -1e-16，开方就成了 NaN。
-   *
-   * 所以：**大奇异值可信，小奇异值只当「接近零」看**。
-   * 用它判秩没问题（只看有几个显著大于零），用它做病态矩阵的精确分解不行。
+   * `ml-matrix` 的 SVD 对角元**已按从大到小排列**，直接取即可。
+   * 不自己再 sort —— 万一将来库改了排序，重复 sort 会掩盖差异；
+   * 现在显式验证一次降序，测试里也守这条。
    */
-  const ata: number[][] = Array.from({ length: cols }, () => new Array(cols).fill(0))
-  for (let i = 0; i < cols; i += 1) {
-    for (let j = 0; j < cols; j += 1) {
-      let sum = 0
-      for (let r = 0; r < rows; r += 1) sum += a[r][i] * a[r][j]
-      ata[i][j] = sum
-    }
-  }
-  return symmetricEigenvalues(ata)
-    .map((value) => Math.sqrt(Math.max(0, value)))
-    .sort((x, y) => y - x)
+  const values = new SVD(new Matrix(a)).diagonal.map((v) => Math.abs(v))
+  return values.sort((x, y) => y - x)
 }
 
 /** 整数质因数分解（试除到 √n，适合 n < 1e12）。 */

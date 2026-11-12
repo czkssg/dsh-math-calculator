@@ -53,7 +53,8 @@
   ],
   "dependencies": {
     "algebrite": "^1.4.0",
-    "mathjs": "^15.2.0"
+    "mathjs": "^15.2.0",
+    "ml-matrix": "^6.15.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
