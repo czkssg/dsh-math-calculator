@@ -60,7 +60,18 @@ export const CJK_UNITS: CjkUnit[] = [
   // ── 长度（基准：米）──
   { unit: 'cnli', cjk: '里', factor: 500, dimension: 'length', note: '市里，1 里 = 500 m' },
   { unit: 'cnzhang', cjk: '丈', factor: 3.2, dimension: 'length', note: '1 丈 = 10 尺 = 3.2 m' },
-  { unit: 'cnchi', cjk: '尺', factor: 0.32, dimension: 'length', note: '1 尺 = 0.32 m' },
+  /**
+   * ⚠ **「尺」有歧义，必须按语境分开**
+   *
+   * ```
+   *   营造尺（明清建筑）  32 cm     ← 古籍与建筑的「尺」
+   *   市尺（1929 市制）   33.33 cm  ← 现代语境说「三尺布」的尺
+   * ```
+   *
+   * 两者差 4%。本条的 `cjk:'尺'` 保留给古籍语境（营造尺），
+   * 市制的「市尺」用独立条目 `cnshichi`（见 `units-cn-market.ts`）。
+   */
+  { unit: 'cnchi', cjk: '尺', factor: 0.32, dimension: 'length', note: '1 尺（营造尺）= 32 cm；市制「市尺」是 33.33 cm，见 cnshichi' },
   { unit: 'cncun', cjk: '寸', factor: 0.032, dimension: 'length', note: '1 寸 = 0.032 m' },
 
   // ── 质量（基准：千克）──

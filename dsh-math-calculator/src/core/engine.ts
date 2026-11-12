@@ -27,6 +27,8 @@ import { create, all, type MathJsInstance } from 'mathjs'
 import { CalcError, normalizeError } from './errors.js'
 import { registerCjkUnits } from './cjk-units.js'
 import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
+import { registerImperialUnits } from './units-imperial-registry.js'
+import { fixUnitAmbiguity } from './unit-ambiguity.js'
 
 /** 表达式长度上限（字符）。超过就拒绝，而不是慢慢算。 */
 const MAX_EXPRESSION_LENGTH = 10_000
@@ -49,6 +51,28 @@ const MAX_EXPRESSION_LENGTH = 10_000
  * 否则会被拆错。老代码在这里出过 `公里` 被拆成 `公` + `里` 的 bug。
  */
 const CJK_UNIT_ALIASES: Array<[string, string]> = [
+  /**
+   * ## ⚠ 市制必须放在最前面
+   *
+   * 老数据里有个 `市尺_古`（32 cm，明清营造尺），
+   * 而 1929 市制的「市尺」是 33.33 cm。**两者差 4%**。
+   *
+   * 若把老数据放前面，`1 市尺 to cm` 会得到 32 —— 那是错的，
+   * 因为「市尺」这个词在现代语境里指 1929 市制。
+   *
+   * 所以市制放在最前，老的营造尺改叫「营造尺」。
+   */
+  ['市顷', 'cnqingmarket'], ['市担', 'cndanmarket'],
+  ['市分地', 'cnfenarea'], ['市厘地', 'cnliarea'], ['市毫地', 'cnhaoarea'],
+  ['市分重', 'cnfenmass'], ['市厘重', 'cnlimass'],
+  ['市毫重', 'cnhaomass'], ['市丝重', 'cnsimass'],
+  ['市尺', 'cnshichi'], ['市寸', 'cncunmarket'], ['市分', 'cnfenlength'],
+  ['市厘', 'cnlilength'], ['市毫', 'cnhaolength'], ['市丝', 'cnsilength'],
+  ['市斤', 'cnjinmarket'], ['市两', 'cnliangmarket'], ['市钱', 'cnqian'],
+  ['市升', 'cnshengmarket'], ['市合', 'cnhe'], ['市勺', 'cnshao'], ['市撮', 'cncuo'],
+  ['市斗', 'cndoumarket'], ['市石', 'cndanvolume'],
+  ['市亩', 'cnmumarket'],
+
   // 长度（长的放前面）
   ['平方公里', 'km2'], ['平方千米', 'km2'], ['平方米', 'm2'], ['平方厘米', 'cm2'],
   ['立方公里', 'km3'], ['立方米', 'm3'], ['立方厘米', 'cm3'],
@@ -89,6 +113,7 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
   ['帕斯卡', 'Pa'], ['千帕', 'kPa'], ['兆帕', 'MPa'], ['巴', 'bar'],
   // 其他
   ['摄氏度', 'degC'], ['度', 'deg'],
+
 ]
 
 /**
@@ -346,6 +371,13 @@ export function buildEngine(): Engine {
   /** 注册中文古制单位（里/丈/斤/时辰/亩…）—— UCUM 不管这些，必须自己来。 */
   registerCjkUnits(math)
   /**
+   * 注册**英制工业与市制细分**单位。
+   *
+   * 蒸汽朋克最核心的一批：`psi`/`gpm`/`cfm`/`BTU`/`hp_boiler`/`firkin`/`thou`。
+   * 这些在公制里没有直接对应，而写作时又绕不开。
+   */
+  registerImperialUnits(math)
+  /**
    * 注册**带时代**的单位（汉尺/唐大尺/清营造尺…）。
    *
    * 为什么需要它：同一个「尺」在商代 15.8 cm、汉代 23.1 cm、清代 32 cm ——
@@ -376,6 +408,13 @@ export function buildEngine(): Engine {
      */
     let normalized = normalizeEraUnitsInText(source)
     normalized = normalizeUnits(normalized)
+    /**
+     * ③ 修正 mathjs 的单位名歧义（**必须在最后**）。
+     *
+     * `min` 会被 mathjs 拆成 `m × in`（米×英寸），于是 `1 L/min` 报错。
+     * 换成 `minute` 后正常。详见 `unit-ambiguity.ts`。
+     */
+    normalized = fixUnitAmbiguity(normalized)
     try {
       return math.evaluate(normalized, scope ?? {})
     } catch (error) {
