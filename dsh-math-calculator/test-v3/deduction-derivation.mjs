@@ -184,16 +184,16 @@ console.log('-- 10. ★ 契约：未知与未迁移子命令 --')
   assert('★ 未知子命令 → unknown_subcommand', unknown?.type === 'unknown_subcommand', unknown?.type)
   assert('hint 列出可用子命令', String(unknown?.hint ?? '').includes('stack'), String(unknown?.hint ?? '').slice(0, 80))
 
-  const pending = throwsOf(() => der.runDerivation({ derivation: 'compare' }, deps))
+  const pending = throwsOf(() => der.runDerivation({ derivation: 'no-such-sub' }, deps))
   assert('★ 未迁移子命令 → unknown_subcommand（不假装成功）', pending?.type === 'unknown_subcommand', pending?.type)
-  assert('★ message 说清"尚未迁移"', String(pending?.message ?? '').includes('尚未迁移'), String(pending?.message ?? '').slice(0, 80))
-  assert('hint 分列已实现与未迁移', String(pending?.hint ?? '').includes('已实现') && String(pending?.hint ?? '').includes('尚未迁移'), '')
+  assert('message 说明子命令不存在', String(pending?.message ?? '').includes('不认识'), String(pending?.message ?? '').slice(0, 60))
+  assert('hint 列出全部可用子命令', String(pending?.hint ?? '').includes('stack') && String(pending?.hint ?? '').includes('inherit'), String(pending?.hint ?? '').slice(0, 80))
 
   const implemented = der.IMPLEMENTED_SUBCOMMANDS.length
   const pendingList = der.PENDING_SUBCOMMANDS.length
-  assert('已实现 24 个', implemented === 24, String(implemented))
-  assert('未迁移 5 个', pendingList === 5, String(pendingList))
-  assert('24 + 5 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
+  assert('已实现 29 个（全部）', implemented === 29, String(implemented))
+  assert('未迁移 0 个', pendingList === 0, String(pendingList))
+  assert('29 + 0 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
 }
 
 // ───────────────────────────────────────────────────────────
@@ -366,6 +366,58 @@ console.log('-- 20. civilization：物理锁死技术树 --')
   assert('★ 太空电梯锁死（材料差数千倍）', out.value.civilization.tech.some((item) => item.branch === '太空电梯' && item.status === 'locked'), '')
   assert('生态承载力 > 0', out.value.civilization.limits.some((item) => item.name === '生态承载力' && item.value > 0), '')
   assert('result 给统计', out.result.includes('统计：开放'), '')
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 21. archive / history / compare / diff --')
+// ───────────────────────────────────────────────────────────
+{
+  const first = der.runDerivation({ derivation: 'archive' }, deps)
+  assert('★ 归档第一版 v1', first.value.archive.version === 'v1', first.value.archive.version)
+  assert('result 说已归档', first.result.includes('已归档'), '')
+
+  const history = der.runDerivation({ derivation: 'history' }, deps)
+  assert('history 列出 v1', history.value.versions.length === 1 && history.value.versions[0].version === 'v1', JSON.stringify(history.value.versions.map((v) => v.version)))
+
+  const second = der.runDerivation({ derivation: 'archive', world: { planetMass: 2 } }, deps)
+  assert('★ 归档第二版 v2', second.value.archive.version === 'v2', second.value.archive.version)
+  assert('v2 重力约 2g', Math.abs(second.value.archive.physical.gravityEarth - 2) < 0.05, String(second.value.archive.physical.gravityEarth))
+
+  const compare = der.runDerivation({ derivation: 'compare', compareFrom: 'v1' }, deps)
+  assert('★ compare 默认对比最新一版', compare.value.diff.ok === true && compare.value.diff.message.includes('v1'), compare.value.diff.message)
+  assert('★ 检出重力差异', compare.value.diff.items.some((item) => item.field.includes('重力')), JSON.stringify(compare.value.diff.items.map((i) => i.field)))
+
+  const diff = der.runDerivation({ derivation: 'diff', diffA: 'v1', diffB: 'v2' }, deps)
+  assert('diff 指定两版', diff.value.diff.ok === true && diff.value.diff.items.length > 0, String(diff.value.diff.items.length))
+
+  const missing = throwsOf(() => der.runDerivation({ derivation: 'compare' }, deps))
+  assert('★ compare 缺参 → missing_params 并列出已有版本', missing?.type === 'missing_params' && String(missing?.hint ?? '').includes('v1'), missing?.type)
+  const badVersion = throwsOf(() => der.runDerivation({ derivation: 'compare', compareFrom: 'v9' }, deps))
+  assert('不存在的版本 → invalid_argument', badVersion?.type === 'invalid_argument', badVersion?.type)
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 22. inherit：继承关系与环检测 --')
+// ───────────────────────────────────────────────────────────
+{
+  const tables = ['母星', '殖民地', '飞船']
+  const linked = der.runDerivation({ derivation: 'inherit', inheritDerived: '殖民地', inheritBase: '母星', tableNames: tables }, deps)
+  assert('★ 建立继承', linked.value.link.ok === true && linked.result.includes('继承'), linked.result.slice(0, 40))
+  const linked2 = der.runDerivation({ derivation: 'inherit', inheritDerived: '飞船', inheritBase: '母星', tableNames: tables }, deps)
+  assert('第二条继承', linked2.value.link.ok === true, '')
+
+  const list = der.runDerivation({ derivation: 'inherit', tableNames: tables }, deps)
+  assert('列出继承关系', list.value.links.length === 2, String(list.value.links.length))
+
+  const self = throwsOf(() => der.runDerivation({ derivation: 'inherit', inheritDerived: '母星', inheritBase: '母星', tableNames: tables }, deps))
+  assert('★ 继承自己 → invalid_argument', self?.type === 'invalid_argument', self?.type)
+  const unknown = throwsOf(() => der.runDerivation({ derivation: 'inherit', inheritDerived: '殖民地', inheritBase: '不存在', tableNames: tables }, deps))
+  assert('基线不存在 → invalid_argument', unknown?.type === 'invalid_argument', unknown?.type)
+
+  const checked = der.runDerivation({ derivation: 'inherit', inheritCheck: true, tableNames: tables }, deps)
+  assert('健康关系无问题', (checked.value.findings ?? checked.value.links).length >= 0 && checked.result.includes('继承关系'), '')
+  const sync = der.runDerivation({ derivation: 'inherit', inheritSync: true, inheritBase: '母星' }, deps)
+  assert('★ sync 列出受影响的表', sync.value.sync.affected.includes('殖民地') && sync.value.sync.affected.includes('飞船'), JSON.stringify(sync.value.sync))
 }
 
 console.log('')

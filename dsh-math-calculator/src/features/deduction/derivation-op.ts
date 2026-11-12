@@ -57,6 +57,9 @@ import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, rend
 import { buildWhitepaper, buildPromptCard, renderWhitepaper, renderPromptCard } from './whitepaper.js'
 import { checkFields, computeCost, overlay, renderFantasy, type FantasyAbility } from './fantasy-layer.js'
 import { runCivilization } from './civilization.js'
+import { archiveVersion, compareVersions, readArchiveInput, renderCompare, renderHistory, type ArchiveVersion } from './derivation-archive.js'
+import { affectedBy, checkInheritance, linkInherit, renderInherit, type InheritLink } from './inherit.js'
+import { loadArchiveFile, saveArchiveFile, loadInheritFile, saveInheritFile } from '../../io/archive-store.js'
 
 /** 已实现的子命令。 */
 export const IMPLEMENTED_SUBCOMMANDS = [
@@ -84,10 +87,15 @@ export const IMPLEMENTED_SUBCOMMANDS = [
   'whitepaper',
   'fantasy',
   'civilization',
+  'archive',
+  'history',
+  'compare',
+  'diff',
+  'inherit',
 ] as const
 
 /** 尚未迁移的子命令（明确报错，不假装成功）。 */
-export const PENDING_SUBCOMMANDS = ['compare', 'diff', 'archive', 'history', 'inherit'] as const
+export const PENDING_SUBCOMMANDS = [] as const
 
 /** 注入的数据。 */
 export interface DerivationDeps extends WorldDeps {}
@@ -631,6 +639,85 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     }
     lines.push('', '统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
     value['civilization'] = civ
+  } else if (sub === 'archive') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const { world, note } = readArchiveInput(input)
+    const book = loadArchiveFile<ArchiveVersion>(workspace)
+    const { version, versions } = archiveVersion(book.versions, world, { constants: deps.constants, starClasses: deps.starClasses }, note)
+    saveArchiveFile(workspace, versions)
+    lines.push('═══ 已归档（' + version.version + '）═══', '')
+    lines.push('  工作区：' + workspace)
+    lines.push('  版本：' + version.version + '（共 ' + versions.length + ' 版）')
+    lines.push('  世界参数：' + (Object.keys(world).length > 0 ? JSON.stringify(world) : '（地球默认）'))
+    lines.push('  重力 ' + version.physical.gravityEarth.toFixed(2) + ' g，均温 ' + version.physical.meanTempC.toFixed(0) + '°C，判定 ' + version.verdict.deadLevel)
+    lines.push('')
+    lines.push('换工作区会看到各自的历史；用 derivation="history" 查看，用 "compare" 对比两版。')
+    value['archive'] = version
+    value['total'] = versions.length
+  } else if (sub === 'history') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const book = loadArchiveFile<ArchiveVersion>(workspace)
+    lines.push(renderHistory(book.versions))
+    value['versions'] = book.versions
+  } else if (sub === 'compare') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const book = loadArchiveFile<ArchiveVersion>(workspace)
+    const from = typeof input['compareFrom'] === 'string' ? input['compareFrom'] : ''
+    if (from === '') {
+      const known = book.versions.map((item) => item.version)
+      throw new CalcError(
+        'missing_params',
+        'derivation 子命令 compare 缺少 compareFrom（起始版本）',
+        known.length === 0
+          ? '这个工作区还没有归档版本。先存一版：' + JSON.stringify({ operation: 'derivation', derivation: 'archive' }) + '，改点东西后再存一版，然后对比。'
+          : '已有版本：' + known.join(' · ') + '。示例：' + JSON.stringify({ operation: 'derivation', derivation: 'compare', compareFrom: known[0] }),
+      )
+    }
+    const result = compareVersions(book.versions, from, typeof input['compareTo'] === 'string' ? input['compareTo'] : undefined)
+    if (!result.ok) throw new CalcError('invalid_argument', result.message, '用 derivation="history" 查看已有版本。')
+    lines.push(renderCompare(result))
+    value['diff'] = result
+  } else if (sub === 'diff') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const book = loadArchiveFile<ArchiveVersion>(workspace)
+    const aName = typeof input['diffA'] === 'string' ? input['diffA'].trim() : ''
+    const bName = typeof input['diffB'] === 'string' ? input['diffB'].trim() : ''
+    if (aName === '' || bName === '') {
+      throw new CalcError(
+        'missing_params',
+        'derivation 子命令 diff 缺少 diffA 与 diffB（要对比的两个版本号，如 v1 与 v2）',
+        '已有版本：' + (book.versions.map((item) => item.version).join(' · ') || '（还没有归档）') + '。' +
+          '示例：' + JSON.stringify({ operation: 'derivation', derivation: 'diff', diffA: 'v1', diffB: 'v2' }),
+      )
+    }
+    const result = compareVersions(book.versions, aName, bName)
+    if (!result.ok) throw new CalcError('invalid_argument', result.message, '用 derivation="history" 查看已有版本。')
+    lines.push(renderCompare(result))
+    value['diff'] = result
+  } else if (sub === 'inherit') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const store = loadInheritFile<InheritLink>(workspace)
+    const derived = typeof input['inheritDerived'] === 'string' ? input['inheritDerived'].trim() : ''
+    const base = typeof input['inheritBase'] === 'string' ? input['inheritBase'].trim() : ''
+    if (derived !== '' && base !== '') {
+      const tables = Array.isArray(input['tableNames']) ? (input['tableNames'] as unknown[]).map((item) => String(item)) : [derived, base]
+      const result = linkInherit(store.links, derived, base, tables)
+      if (!result.ok) throw new CalcError('invalid_argument', result.message, '表名要与已存在的表一致；不能继承自己。')
+      saveInheritFile(workspace, result.links)
+      lines.push(result.message)
+      value['link'] = result
+    } else {
+      const tables = Array.isArray(input['tableNames']) ? (input['tableNames'] as unknown[]).map((item) => String(item)) : Array.from(new Set(store.links.flatMap((link) => [link.derived, link.base])))
+      const findings = input['inheritCheck'] === true ? checkInheritance(store.links, tables) : []
+      lines.push(renderInherit(store.links, findings))
+      if (input['inheritSync'] === true) {
+        const base = typeof input['inheritBase'] === 'string' ? input['inheritBase'] : ''
+        const affected = affectedBy(store.links, base)
+        lines.push('', '【同步】改 ' + (base || '任意基线') + ' 会影响：' + (affected.join('、') || '（无）'))
+        value['sync'] = { affected }
+      }
+      value['links'] = store.links
+    }
   } else {
     const all = [...IMPLEMENTED_SUBCOMMANDS, ...PENDING_SUBCOMMANDS]
     if ((PENDING_SUBCOMMANDS as readonly string[]).includes(sub)) {
