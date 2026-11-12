@@ -54,6 +54,9 @@ import {
   renderImpact,
 } from './graph.js'
 import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, renderCost } from './compute-budget.js'
+import { buildWhitepaper, buildPromptCard, renderWhitepaper, renderPromptCard } from './whitepaper.js'
+import { checkFields, computeCost, overlay, renderFantasy, type FantasyAbility } from './fantasy-layer.js'
+import { runCivilization } from './civilization.js'
 
 /** 已实现的子命令。 */
 export const IMPLEMENTED_SUBCOMMANDS = [
@@ -78,10 +81,13 @@ export const IMPLEMENTED_SUBCOMMANDS = [
   'trace',
   'impact',
   'cost',
+  'whitepaper',
+  'fantasy',
+  'civilization',
 ] as const
 
 /** 尚未迁移的子命令（明确报错，不假装成功）。 */
-export const PENDING_SUBCOMMANDS = ['compare', 'diff', 'archive', 'history', 'whitepaper', 'fantasy', 'civilization', 'inherit'] as const
+export const PENDING_SUBCOMMANDS = ['compare', 'diff', 'archive', 'history', 'inherit'] as const
 
 /** 注入的数据。 */
 export interface DerivationDeps extends WorldDeps {}
@@ -560,6 +566,71 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     }
     lines.push(renderCost(estimate))
     value['cost'] = estimate
+  } else if (sub === 'whitepaper') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const paper = buildWhitepaper(worldParams, { constants: deps.constants, starClasses: deps.starClasses })
+    if (input['whitepaperMode'] === 'prompt') {
+      const card = buildPromptCard(paper)
+      lines.push(renderPromptCard(card))
+      value['promptCard'] = card
+    } else {
+      lines.push(renderWhitepaper(paper))
+    }
+    value['whitepaper'] = paper
+  } else if (sub === 'fantasy') {
+    const raw = input['fantasyAbility']
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new CalcError(
+        'missing_params',
+        'derivation 子命令 fantasy 缺少 fantasyAbility（幻想能力定义）',
+        '需要 { name, label, source, efficiency, costPerUnit, powerLimit, boosts, meaning }。' +
+          '三种常见来源：metabolism（自身代谢）/ ambient-field（环境场）/ artifact（器物）/ external（外部注入）。',
+      )
+    }
+    const ability = raw as unknown as FantasyAbility
+    const problems = checkFields(ability)
+    if (problems.length > 0) {
+      throw new CalcError(
+        'invalid_argument',
+        'fantasyAbility 字段不完整，算不了：' + problems.join('；'),
+        '补齐 name / label / efficiency（>0）/ powerLimit（>0）后即可计算。',
+      )
+    }
+    const demand = typeof input['fantasyDemand'] === 'number' ? input['fantasyDemand'] : 1000
+    const physical = typeof input['fantasyPhysical'] === 'number' ? input['fantasyPhysical'] : 100
+    const bodyArea = typeof input['fantasyBodyArea'] === 'number' ? input['fantasyBodyArea'] : 1.8
+    lines.push(renderFantasy(ability, demand, physical, bodyArea))
+    value['fantasy'] = overlay(physical, ability, demand)
+    value['cost'] = computeCost(overlay(physical, ability, demand).fantasy * ability.costPerUnit, bodyArea)
+  } else if (sub === 'civilization') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const civ = runCivilization(worldParams)
+    lines.push('═══ 宏观文明推演 ═══', '')
+    const groups: Array<[string, string]> = [['energy', '4.1 能量与热力学'], ['material', '4.2 材料与结构'], ['transport', '4.3 空间与交通']]
+    for (const [category, label] of groups) {
+      const items = civ.limits.filter((item) => item.category === category)
+      if (items.length === 0) continue
+      lines.push('【' + label + '】')
+      for (const item of items) {
+        lines.push('  ' + item.name.padEnd(22) + f(item.value).padStart(12) + ' ' + item.unit)
+        lines.push('    依据：' + item.basis)
+        if (item.breakthrough) lines.push('    突破方向：' + item.breakthrough)
+      }
+      lines.push('')
+    }
+    lines.push('【4.4 技术树】被物理锁死或放开的分支')
+    for (const item of civ.tech) {
+      const mark = item.status === 'open' ? '开放' : item.status === 'conditional' ? '有条件' : '锁死'
+      lines.push('  ' + mark.padEnd(6) + item.branch.padEnd(18) + item.reason)
+      if (item.requirement) lines.push('         需要：' + item.requirement)
+    }
+    const eco = civ.limits.find((item) => item.name === '生态承载力')
+    if (eco) {
+      lines.push('', '  生态承载力：' + f(eco.value) + ' 人（【量级】）')
+      if (eco.breakthrough) lines.push('    突破方向：' + eco.breakthrough)
+    }
+    lines.push('', '统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
+    value['civilization'] = civ
   } else {
     const all = [...IMPLEMENTED_SUBCOMMANDS, ...PENDING_SUBCOMMANDS]
     if ((PENDING_SUBCOMMANDS as readonly string[]).includes(sub)) {

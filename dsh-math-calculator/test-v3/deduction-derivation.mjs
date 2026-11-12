@@ -191,9 +191,9 @@ console.log('-- 10. ★ 契约：未知与未迁移子命令 --')
 
   const implemented = der.IMPLEMENTED_SUBCOMMANDS.length
   const pendingList = der.PENDING_SUBCOMMANDS.length
-  assert('已实现 21 个', implemented === 21, String(implemented))
-  assert('未迁移 8 个', pendingList === 8, String(pendingList))
-  assert('21 + 8 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
+  assert('已实现 24 个', implemented === 24, String(implemented))
+  assert('未迁移 5 个', pendingList === 5, String(pendingList))
+  assert('24 + 5 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
 }
 
 // ───────────────────────────────────────────────────────────
@@ -316,6 +316,56 @@ console.log('-- 17. cost：算力估算 --')
   const phase = der.runDerivation({ derivation: 'cost', costKind: 'phase', costX: 100, costY: 100 }, deps)
   assert('★ 100×100 相图 → very-slow 并给降级建议', phase.value.cost.risk === 'very-slow' && phase.value.cost.downgrade.length > 0, phase.value.cost.risk)
   assert('result 说插件不拒绝请求', phase.result.includes('不会拒绝'), '')
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 18. whitepaper：白皮书与 Prompt 卡片 --')
+// ───────────────────────────────────────────────────────────
+{
+  const paper = der.runDerivation({ derivation: 'whitepaper' }, deps)
+  assert('含白皮书标题', paper.result.includes('# 世界物理与文明白皮书'), '')
+  assert('物理底色表有重力行', paper.result.includes('表面重力') && paper.result.includes('m/s²'), '')
+  assert('文明极限分三组', paper.result.includes('### 能量') && paper.result.includes('### 材料') && paper.result.includes('### 交通'), '')
+  assert('★ 时间尺度给可居住年限', paper.result.includes('可居住年限'), '')
+  assert('value 含文明极限数组', Array.isArray(paper.value.whitepaper.civilization.energy) && paper.value.whitepaper.civilization.energy.length > 0, '')
+
+  const prompt = der.runDerivation({ derivation: 'whitepaper', whitepaperMode: 'prompt' }, deps)
+  assert('★ prompt 模式更短', prompt.result.length < paper.result.length, prompt.result.length + ' vs ' + paper.result.length)
+  assert('prompt 含世界设定卡', prompt.result.includes('【世界设定卡】'), '')
+  assert('prompt 声明不是禁令', prompt.result.includes('不要把它们当禁令'), '')
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 19. fantasy：叠加与代价 --')
+// ───────────────────────────────────────────────────────────
+{
+  const ability = { name: 'telekinesis', label: '念力', source: 'external', efficiency: 1, costPerUnit: 2, powerLimit: 1e4, boosts: '力量', meaning: '隔空取物' }
+  const out = der.runDerivation({ derivation: 'fantasy', fantasyAbility: ability, fantasyDemand: 1000, fantasyPhysical: 100 }, deps)
+  assert('物理 100 + 幻想补足 900', out.value.fantasy.physical === 100 && out.value.fantasy.fantasy === 900, JSON.stringify(out.value.fantasy))
+  assert('★ 成本 = 900×2 = 1800', out.value.fantasy.cost === 1800, String(out.value.fantasy.cost))
+  assert('预算 1e4 内 → 未超', out.value.fantasy.overBudget === false, '')
+  assert('★ 等价人力 18 人', Math.abs(out.value.cost.humanEquivalent - 18) < 1e-9, String(out.value.cost.humanEquivalent))
+  assert('★ 散热需求 18 m² > 体表 1.8 → 不足', out.value.cost.coolingShort === true, '')
+  assert('result 不含「禁止」', !out.result.includes('禁止'), '')
+
+  const bad = throwsOf(() => der.runDerivation({ derivation: 'fantasy' }, deps))
+  assert('缺 fantasyAbility → missing_params', bad?.type === 'missing_params', bad?.type)
+  const badField = throwsOf(() => der.runDerivation({ derivation: 'fantasy', fantasyAbility: { name: 'x', label: 'y', source: 'external', efficiency: 0, costPerUnit: 1, powerLimit: 1 } }, deps))
+  assert('字段缺失 → invalid_argument', badField?.type === 'invalid_argument', badField?.type)
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 20. civilization：物理锁死技术树 --')
+// ───────────────────────────────────────────────────────────
+{
+  const out = der.runDerivation({ derivation: 'civilization' }, deps)
+  assert('极限 ≥ 10 条', out.value.civilization.limits.length >= 10, String(out.value.civilization.limits.length))
+  const kardashev = out.value.civilization.limits.find((item) => item.name === '卡尔达肖夫指数')
+  assert('★ 地球卡尔达肖夫 ≈ 0.73', Math.abs(kardashev.value - 0.73) < 0.03, String(kardashev.value))
+  assert('★ 化学火箭航天开放（Δv 13.5 > 逃逸 11.2）', out.value.civilization.tech.some((item) => item.branch === '化学火箭航天' && item.status === 'open'), JSON.stringify(out.value.civilization.tech))
+  assert('★ 太空电梯锁死（材料差数千倍）', out.value.civilization.tech.some((item) => item.branch === '太空电梯' && item.status === 'locked'), '')
+  assert('生态承载力 > 0', out.value.civilization.limits.some((item) => item.name === '生态承载力' && item.value > 0), '')
+  assert('result 给统计', out.result.includes('统计：开放'), '')
 }
 
 console.log('')
