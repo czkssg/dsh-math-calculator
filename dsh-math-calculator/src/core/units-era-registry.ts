@@ -20,13 +20,17 @@
  */
 
 import type { MathJsInstance } from 'mathjs'
-import { CHINESE_ERA_UNITS, type Era, type EraVariant } from './units-era.js'
+import { ALL_ERA_UNITS, type Era, type EraVariant } from './units-era.js'
 
 /** 时代的短代码（用于单位名后缀）。 */
 const ERA_CODE: Record<string, string> = {
   商: 'shang', 周: 'zhou', 秦汉: 'qinhan', 汉: 'han', 三国: 'sanguo',
   晋: 'jin', 南北朝: 'nanbei', 隋: 'sui', 唐: 'tang', 宋: 'song',
   元: 'yuan', 明: 'ming', 清: 'qing', 民国: 'minguo', 现代: 'modern',
+  /** 世界体系。 */
+  古埃及: 'egypt', 古巴比伦: 'babylon', 古希腊: 'greece', 古罗马: 'rome',
+  拜占庭: 'byzantine', 中世纪欧洲: 'medieval', 英制: 'imperial', 美制: 'us',
+  公制: 'metric', 日本: 'japan', 伊斯兰: 'islam',
 }
 
 /**
@@ -38,6 +42,13 @@ const VARIANT_CODE: Record<string, string> = {
   通用尺: 'Tongyong', 量地尺: 'Liangdi', 营造尺: 'Yingzao',
   裁衣尺: 'Caiyi', 布帛尺: 'Bubo', 大尺: 'Da', 小尺: 'Xiao',
   '小尺（黍尺）': 'Xiaoshu', 市尺: 'Shi', 市里: 'Shili', 市斤: 'Shijin',
+  /** 世界体系。 */
+  王室肘尺: 'Royal', 短肘尺: 'Short', 奥林匹亚斯塔德: 'Olympia',
+  阿提卡斯塔德: 'Attic', 阿提卡尺: 'AtticPous', 埃伊纳尺: 'Aeginetan',
+  阿提卡: 'Attic', 阿提卡塔兰特: 'AtticTalent', 苏格兰厄尔: 'Scottish',
+  长担: 'Long', 短担: 'Short', 曲尺: 'Kanejaku', 鲸尺: 'Kujira',
+  古升: 'Ancient', Monetalis: 'Monetalis',
+  'al-dhira al-sawda': 'Sawda', 'al-dhira al-qimma': 'Qimma',
 }
 
 /**
@@ -147,7 +158,7 @@ export const ERA_DEFAULT_RANK = getRegistry().defaultRank as Map<string, number>
  */
 export function registerEraUnits(math: MathJsInstance): number {
   let ok = 0
-  for (const unit of CHINESE_ERA_UNITS) {
+  for (const unit of ALL_ERA_UNITS) {
     for (const variant of unit.variants) {
       const eraCode = ERA_CODE[variant.era]
       if (eraCode === undefined) continue
@@ -171,32 +182,122 @@ export function registerEraUnits(math: MathJsInstance): number {
        * 变体标识用「变体名的字符码转 36 进制」，保证唯一且纯字母数字。
        */
       const cap = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1)
-      const name = 'cnera' + cap(unit.name === '尺' ? 'chi' : unit.name === '里' ? 'li' : unit.name === '丈' ? 'zhang'
-        : unit.name === '步' ? 'bu' : unit.name === '升' ? 'sheng' : unit.name === '斗' ? 'dou'
-        : unit.name === '石' ? 'dan' : unit.name === '斤' ? 'jin' : unit.name === '两' ? 'liang'
-        : 'x' + unit.name.charCodeAt(0).toString(36)) + cap(eraCode) + variantTag
+      /**
+       * 单位名 → 拼音代码。
+       *
+       * 中文名走固定映射（尺→chi），英文名直接去掉非字母字符。
+       * **不能带下划线或连字符**（`createUnit` 只允许字母数字）。
+       */
+      const UNIT_CODE: Record<string, string> = {
+        尺: 'chi', 里: 'li', 丈: 'zhang', 步: 'bu', 升: 'sheng', 斗: 'dou',
+        石: 'dan', 斤: 'jin', 两: 'liang', 肘尺: 'cubit', 掌: 'palm', 指: 'finger',
+        德本: 'deben', 阿塔巴: 'artaba', 斯塔德: 'stadion', 希腊尺: 'pous',
+        奥林匹亚尺: 'olympia', 德拉克马: 'drachma', 塔兰特: 'talent',
+        罗马尺: 'pes', 罗马寸: 'uncia', 罗马指: 'digitus', 罗马步: 'passus',
+        罗马里: 'mille', 罗马磅: 'libra', 双耳瓶: 'amphora', 莫迪乌斯: 'modius',
+        罗马亩: 'iugerum', 厄尔: 'ell', 杆: 'rod', 弗隆: 'furlong', 英亩: 'acre',
+        海得: 'hide', 英担: 'cwt', 日尺: 'jaku', 日间: 'ken', 日坪: 'tsubo',
+        日贯: 'kan', 日匁: 'monme', 日升: 'sho', 伊斯兰腕尺: 'dhira',
+        迪拉姆: 'dirham', 第纳尔: 'dinar', 坎塔尔: 'qintar',
+      }
+      const code = UNIT_CODE[unit.name] ?? (unit.name.replace(/[^A-Za-z0-9]/g, '') || 'u' + unit.name.charCodeAt(0).toString(36))
+      const name = 'erau' + cap(code) + cap(eraCode) + variantTag
       const base = BASE[unit.dimension]
       const definition = variant.factor + ' ' + base
       try {
         math.createUnit(name, definition)
         ERA_UNIT_INDEX.set(name, { unit: unit.name, variant })
         /**
+         * ## ⚠ 别名必须用「中文名」而不是 `name` 字段
+         *
+         * `EraUnit.name` 对世界单位是**英文标识**（`pes`/`libra`/`cubit`），
+         * 中文写法在 `cjk` 数组里（`罗马尺`/`罗马磅`/`肘尺`）。
+         *
+         * 第一版用 `unit.name` 拼别名，于是生成了
+         * 「古罗马Monetalispes」这种既不是中文也不是英文的东西，
+         * 用户查「罗马尺」永远匹配不到。
+         *
+         * 所以别名要用 `cjk[0]`（没有则退回 `name`）。
+         */
+        const cjkName = unit.cjk.length > 0 ? unit.cjk[0] : unit.name
+        /**
          * 中文别名要按「有没有变体」分两种，否则会生成「秦汉通用尺尺」这种叠字。
          *
          * ```
          *   有变体：  时代 + 变体 + 单位    →  唐大尺 / 明营造尺
-         *                       ↳ 变体名已含单位时不再拼（营造尺 → 唐营造尺 而不是 唐营造尺尺）
          *   无变体：  时代 + 单位           →  汉尺 / 商尺
          * ```
          *
-         * 另外**去掉小括号内容**（`小尺（黍尺）` → `小尺`），否则别名不可能被匹配到。
+         * ## 但世界单位例外：单位名本身已含时代词
+         *
+         * ```
+         *   罗马尺   中文名 = 「罗马尺」，时代 = 古罗马
+         *            若拼成「古罗马罗马尺」→ 永远匹配不到
+         * ```
          */
         const cleanVariant = variant.variant?.replace(/（[^）]*）/g, '').trim()
-        const variantHasUnit = cleanVariant?.endsWith(unit.name) === true
-        const cjkAlias = cleanVariant !== undefined
-          ? variant.era + cleanVariant + (variantHasUnit ? '' : unit.name)
-          : variant.era + unit.name
+        /**
+         * ## 变体名是英文/拉丁文时，不拼进中文别名
+         *
+         * ```
+         *   变体 Monetalis  →  拼成「古罗马Monetalis罗马尺」← 永远匹配不到
+         *   → 改为：变体名含非中文字符时，只登记「罗马尺」本身，
+         *     变体的区分交给完整别名（`cneraPesRomeMonetalis` 用英文查）
+         * ```
+         */
+        const variantIsCjk = cleanVariant !== undefined && /^[\u4e00-\u9fa5（）()]+$/.test(cleanVariant)
+        const variantHasUnit = variantIsCjk && cleanVariant?.endsWith(cjkName) === true
+        const nameHasEra = /^(罗马|希腊|日本|埃及|伊斯兰|英国|美)/.test(cjkName) ||
+          cjkName.includes(variant.era)
+        const cjkAlias = variantIsCjk
+          ? variant.era + cleanVariant + (variantHasUnit ? '' : cjkName)
+          : (nameHasEra ? cjkName : variant.era + cjkName)
         ERA_ALIAS.set(cjkAlias, name)
+        /**
+         * ## 变体名里含单位名时，额外登记「时代 + 单位」这个短写法
+         *
+         * ```
+         *   变体「阿提卡塔兰特」含单位名「塔兰特」
+         *   → 别名是「古希腊阿提卡塔兰特」
+         *   → 但用户会写「古希腊塔兰特」，所以要额外登记一条
+         * ```
+         *
+         * 只在**没有更具体的同名别名**时才登记，避免覆盖已有条目。
+         */
+        if (variantIsCjk && variantHasUnit) {
+          const shortKey = variant.era + cjkName
+          if (!ERA_ALIAS.has(shortKey)) ERA_ALIAS.set(shortKey, name)
+        }
+        /**
+         * ## 世界单位：登记「净单位名」（去掉国别前缀的那个）
+         *
+         * 有些单位的时代标识与国别不一致：
+         *
+         * ```
+         *   日本日尺   时代标识是「中世纪欧洲」（因为它用 src 的统一枚举）
+         *   英国英亩   同上
+         * ```
+         *
+         * 于是「时代 + 单位」拼出来的别名里没有「日本」「英国」。
+         * 这里补两条：**带国别前缀的名字** 与 **去掉前缀的净名**。
+         *
+         * ```
+         *   日本日尺  →  erauJakuMedieval
+         *   日尺      →  erauJakuMedieval     （净名，但要防与中国的「尺」冲突）
+         * ```
+         */
+        const COUNTRY_PREFIX = ['罗马', '希腊', '埃及', '日本', '英国', '伊斯兰', '古']
+        for (const prefix of COUNTRY_PREFIX) {
+          if (!cjkName.startsWith(prefix)) continue
+          ERA_ALIAS.set(cjkName, name)
+          const bare = cjkName.slice(prefix.length)
+          /**
+           * 净名只在**不与已有别名冲突**时登记 ——
+           * 例如「罗马尺」的净名「尺」会撞上中国的「尺」。
+           */
+          if (bare.length >= 2 && !ERA_ALIAS.has(bare)) ERA_ALIAS.set(bare, name)
+          break
+        }
         /**
          * 「汉朝的尺」比「汉朝尺」多一个「的」字 —— 中文里这种写法很自然，
          * 而别名匹配是整词比较，所以必须**两种都登记**。
@@ -206,12 +307,12 @@ export function registerEraUnits(math: MathJsInstance): number {
          * 于是「宋朝的尺」算出 27.2 而不是营造尺的 31.2）。
          * 所以走与 `@default@` 相同的优先级比较。
          */
-        const cjkPriorityKey = '@rank@' + variant.era + '朝' + unit.name
-        const cjkName = variant.era + '朝' + unit.name
-        const cjkNoDe = variant.era + '朝的' + unit.name
+        const cjkPriorityKey = '@rank@' + variant.era + '朝' + cjkName
+        const eraCjkKey = variant.era + '朝' + cjkName
+        const cjkNoDe = variant.era + '朝的' + cjkName
         const cjkRank = variantRank(variant.variant)
         if ((ERA_DEFAULT_RANK.get(cjkPriorityKey) ?? 99) > cjkRank) {
-          ERA_ALIAS.set(cjkName, name)
+          ERA_ALIAS.set(eraCjkKey, name)
           ERA_ALIAS.set(cjkNoDe, name)
           ERA_DEFAULT_RANK.set(cjkPriorityKey, cjkRank)
         }
@@ -259,7 +360,7 @@ export function lookupEraFactor(
   era: Era,
   variant?: string,
 ): { name: string; factor: number; source: string; confidence: string } | null {
-  const unit = CHINESE_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
+  const unit = ALL_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
   if (!unit) return null
   const hit = unit.variants.find((v) => v.era === era && (variant === undefined || v.variant === variant))
   if (!hit) return null

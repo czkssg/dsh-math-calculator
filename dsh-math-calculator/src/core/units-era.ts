@@ -47,12 +47,14 @@
  * @module dsh-math-calculator/core/units-era
  */
 
+import { WORLD_ERA_UNITS } from './units-era-world.js'
+
 /** 时代标识。 */
 export type Era =
   | '商' | '周' | '秦汉' | '汉' | '三国' | '晋' | '南北朝'
   | '隋' | '唐' | '宋' | '元' | '明' | '清' | '民国' | '现代'
-  | '古埃及' | '古巴比伦' | '古希腊' | '古罗马' | '中世纪欧洲'
-  | '英制' | '美制' | '公制'
+  | '古埃及' | '古巴比伦' | '古希腊' | '古罗马' | '拜占庭' | '中世纪欧洲'
+  | '英制' | '美制' | '公制' | '日本' | '伊斯兰'
 
 /** 可信度。 */
 export type UnitConfidence = 'exact' | 'typical' | 'range'
@@ -263,6 +265,14 @@ export const CHINESE_ERA_UNITS: EraUnit[] = [
 ]
 
 /**
+ * ## 全部历史单位（中国 + 世界）
+ *
+ * 世界部分在 `units-era-world.ts`，包含古埃及/希腊/罗马/英国历史/
+ * 日本尺贯法/伊斯兰世界六套体系。
+ */
+export const ALL_ERA_UNITS: EraUnit[] = [...CHINESE_ERA_UNITS, ...WORLD_ERA_UNITS]
+
+/**
  * 按时代查单位的换算因子。
  *
  * @param unitName - 单位通名（如「尺」）
@@ -271,7 +281,7 @@ export const CHINESE_ERA_UNITS: EraUnit[] = [
  * @returns 匹配到的变体列表（可能多个，如唐代有大尺与小尺）
  */
 export function findEraVariant(unitName: string, era?: Era, variant?: string): EraVariant[] {
-  const unit = CHINESE_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
+  const unit = ALL_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
   if (!unit) return []
   return unit.variants.filter((v) => {
     if (era !== undefined && v.era !== era) return false
@@ -287,7 +297,7 @@ export function findEraVariant(unitName: string, era?: Era, variant?: string): E
  * @returns 按年代排序的变体
  */
 export function eraTimeline(unitName: string): EraVariant[] {
-  const unit = CHINESE_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
+  const unit = ALL_ERA_UNITS.find((u) => u.name === unitName || u.cjk.includes(unitName))
   if (!unit) return []
   return [...unit.variants].sort((a, b) => (a.yearFrom ?? 0) - (b.yearFrom ?? 0))
 }
