@@ -26,6 +26,7 @@
 import { create, all, type MathJsInstance } from 'mathjs'
 import { CalcError, normalizeError } from './errors.js'
 import { registerCjkUnits } from './cjk-units.js'
+import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
 
 /** 表达式长度上限（字符）。超过就拒绝，而不是慢慢算。 */
 const MAX_EXPRESSION_LENGTH = 10_000
@@ -148,6 +149,97 @@ export function normalizeUnits(source: string): string {
   return out
 }
 
+/**
+ * 取出全部别名键，**按长度降序**。
+ *
+ * 降序是必需的：`清营造尺` 必须比 `清尺` 先匹配，
+ * 否则长别名永远匹配不到（会被短别名抢先替换掉半截）。
+ *
+ * @returns 别名列表
+ */
+function ERA_ALIAS_KEYS(): string[] {
+  const keys: string[] = []
+  for (const key of buildAliasList()) keys.push(key)
+  return keys.sort((a, b) => b.length - a.length)
+}
+
+/**
+ * 从注册表取全部别名（不含 `@default@` 内部键）。
+ *
+ * @returns 别名列表
+ */
+function buildAliasList(): string[] {
+  /**
+   * 直接读 `globalThis` 上的注册表，而不用 import 进来的 `ERA_ALIAS`。
+   *
+   * 原因：`require` 与 `import` 会各自加载一份模块，顶层的 `new Map()`
+   * 会有两个实例（实测踩过：注册了 72 条，但这边读到 0 条）。
+   * 注册表挂在 `globalThis` 上就是为了跨加载方式共享。
+   */
+  const holder = globalThis as unknown as Record<string, { alias?: Map<string, string> } | undefined>
+  const registry = holder['__dshMathEraUnitRegistry__']
+  const alias = registry?.alias
+  if (alias === undefined) return []
+  const out: string[] = []
+  for (const key of alias.keys()) {
+    if (key.startsWith('@')) continue
+    out.push(key)
+  }
+  return out
+}
+
+/**
+ * 把表达式里的「时代 + 单位」写法替换成注册名。
+ *
+ * ## 为什么单独一步，且必须在普通单位归一之前
+ *
+ * ```
+ *   输入：  1 汉尺 to cm
+ *   若先跑普通归一：「尺」被换成 cnchi → 变成 `1 汉cnchi to cm` → 认不出
+ *   先跑这一步：    「汉尺」整词换成 cneraChiHanLiangdi → 再归一时已无中文
+ * ```
+ *
+ * ## 只处理已知的时代词与单位
+ *
+ * 不做通用分词 —— 认不出就不动，让它落到普通单位归一或报错，
+ * 而不是瞎猜（「猜错一个切分位置，后面的数会全错」）。
+ *
+ * @param source - 原始表达式
+ * @returns 替换后的表达式
+ */
+function normalizeEraUnitsInText(source: string): string {
+  const ERAS = ['商', '周', '秦汉', '汉', '三国', '晋', '南北朝', '隋', '唐', '宋', '元', '明', '清', '民国', '现代']
+  const UNITS = ['尺', '里', '丈', '步', '升', '斗', '石', '斤', '两']
+  let out = source
+  /**
+   * **别名整词替换优先**：`清营造尺`、`唐大尺` 这类带变体的写法
+   * 不在「时代 + 单位」的组合里，只能靠整词匹配。
+   *
+   * 按长度降序替换，保证 `清营造尺` 不会被更短的 `清尺` 抢先匹配掉。
+   */
+  for (const alias of ERA_ALIAS_KEYS()) {
+    if (!out.includes(alias)) continue
+    const name = normalizeEraUnit(alias)
+    if (name !== null) out = out.split(alias).join(name)
+  }
+  /**
+   * **长的朝代名优先**：`秦汉` 必须在 `汉` 之前处理，
+   * 否则「秦汉尺」会先被「汉尺」匹配掉，剩下一个孤零零的「秦」。
+   */
+  const sortedEras = [...ERAS].sort((a, b) => b.length - a.length)
+  for (const era of sortedEras) {
+    for (const unit of UNITS) {
+      /** 三种写法，长的在前。 */
+      for (const pattern of [era + '朝的' + unit, era + '朝' + unit, era + unit]) {
+        if (!out.includes(pattern)) continue
+        const name = normalizeEraUnit(pattern)
+        if (name !== null) out = out.split(pattern).join(name)
+      }
+    }
+  }
+  return out
+}
+
 /** 引擎包装。 */
 export interface Engine {
   /** 底层 mathjs 实例（供需要直接用的功能域）。 */
@@ -226,6 +318,13 @@ export function buildEngine(): Engine {
 
   /** 注册中文古制单位（里/丈/斤/时辰/亩…）—— UCUM 不管这些，必须自己来。 */
   registerCjkUnits(math)
+  /**
+   * 注册**带时代**的单位（汉尺/唐大尺/清营造尺…）。
+   *
+   * 为什么需要它：同一个「尺」在商代 15.8 cm、汉代 23.1 cm、清代 32 cm ——
+   * **差一倍**。只注册一个「尺 = 0.32 m」，写「汉代一尺」时会算出错的长度。
+   */
+  registerEraUnits(math)
 
   const evaluate = (source: string, scope?: Record<string, unknown>): unknown => {
     if (typeof source !== 'string') {
@@ -238,7 +337,18 @@ export function buildEngine(): Engine {
         '拆成多条用 expressions 批量给，或先化简。',
       )
     }
-    const normalized = normalizeUnits(source)
+    /**
+     * 两级归一，顺序不能反：
+     *
+     * ```
+     *   ① 时代单位（汉尺 → cneraChiHanLiangdi）
+     *   ② 普通中文单位（里/斤/时辰 → cnli/cnjin/cnshichen）
+     * ```
+     *
+     * 反了的话「汉尺」里的「尺」会先被拆出来，剩下的「汉」变成未知符号。
+     */
+    let normalized = normalizeEraUnitsInText(source)
+    normalized = normalizeUnits(normalized)
     try {
       return math.evaluate(normalized, scope ?? {})
     } catch (error) {
