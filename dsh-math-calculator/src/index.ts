@@ -21,6 +21,7 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { mathExecuteTool as toolEntry, bindLegacy, setToolContext } from './tool.js'
 import type { Context } from '@deepseek-ai/cordis'
 
 import { nullspaceOf, rankOf, singularValuesOf } from './numeric.js'
@@ -5328,7 +5329,7 @@ function opFormulaBatch(args: MathArgs, engine: any, precision: number): Outcome
  * 25 个 operation 的对外入口。执行前会把「当前会话的工作区」切成
  * 数据表作用域，所以同一个工具在不同工作区里用的是不同的数据。
  */
-export const mathExecuteTool = defineTool({
+const legacyMathExecuteTool = defineTool({
   name: TOOL_NAME,
   description: DESCRIPTION,
   parameters: PARAMETER_SPEC,
@@ -5525,6 +5526,19 @@ function syncHostWorkspaces(ctx: any): { total: number; created: number } | null
  *
  * @param ctx - cordis 插件上下文
  */
+/** 把老入口注入工具层（模块级执行一次）。 */
+bindLegacy(runMathTool, translateError)
+
+/** 工具入口（新架构）：新实现优先，未迁移的交给老入口。 */
+export const mathExecuteTool = toolEntry
+void legacyMathExecuteTool
+
+/**
+ * 插件入口。
+ *
+ * 第 8 步起只做三件事：保存上下文、注册工具、可选服务（钩子/HTTP）。
+ * 具体 schema 与分发在 `tool.ts` 与 `dispatch.ts`。
+ */
 export function apply(ctx: any): void {
   if (!ctx || typeof ctx.tools?.register !== 'function') {
     throw new Error(`${PLUGIN_NAME}: 宿主未提供 tools 服务，无法注册 ${TOOL_NAME}`)
@@ -5534,6 +5548,7 @@ export function apply(ctx: any): void {
   // 工具定义是模块级的（宿主按名注册），拿不到 apply 的局部变量，
   // 所以用模块级引用把 ctx 传进去。
   ctxRef = ctx
+  setToolContext(ctx)
 
   // ── 自动建表（node 侧执行，不依赖浏览器打开面板）──
   //
