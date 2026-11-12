@@ -82,6 +82,19 @@ export const IMPERIAL_AREA_EXT: UnitEntry[] = [
  * ```
  */
 export const IMPERIAL_VOLUME_EXT: UnitEntry[] = [
+  /**
+   * ## 美制液量夸脱（湿量）
+   *
+   * ⚠ **美制有两种夸脱**，这是英制最反直觉的一处：
+   *
+   * ```
+   *   液量夸脱（湿）  0.9464 L   ← 量液体
+   *   干量夸脱（干）  1.1012 L   ← 量谷物（差 16%）
+   * ```
+   *
+   * 第一版漏了湿量那种，于是 `quart_us` 查不到。
+   */
+  { name: 'quart_us', aliases: ['美制夸脱'], dimension: 'volume', factor: 0.000946352946, note: '1 美制液量夸脱 = 1/4 美制加仑 = 946.35 mL（**注意与干量夸脱 1.101 L 差 16%**）', system: 'us' },
   { name: 'minim_us', aliases: ['美制量滴'], dimension: 'volume', factor: 6.1611519921875e-8, note: '1 minim = 1/60 液量打兰 ≈ 0.0616 mL（药剂最小单位）', system: 'us' },
   { name: 'minim_br', aliases: ['英制量滴'], dimension: 'volume', factor: 5.9193880208333e-8, note: '1 英制 minim ≈ 0.0592 mL', system: 'imperial' },
   { name: 'fluiddram_us', aliases: ['美制液量打兰'], dimension: 'volume', factor: 3.6966911953125e-6, note: '1 液量打兰 = 1/8 fl oz ≈ 3.697 mL', system: 'us' },

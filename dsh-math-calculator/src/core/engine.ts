@@ -29,6 +29,7 @@ import { registerCjkUnits } from './cjk-units.js'
 import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
 import { registerImperialUnits } from './units-imperial-registry.js'
 import { fixUnitAmbiguity } from './unit-ambiguity.js'
+import { rebindDefaults } from './units-default-rebind.js'
 
 /** 表达式长度上限（字符）。超过就拒绝，而不是慢慢算。 */
 const MAX_EXPRESSION_LENGTH = 10_000
@@ -140,6 +141,54 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
   ['国际英尺', 'fti'], ['美制英尺', 'ftus'], ['英制英尺', 'ftbr'],
   ['冈特链', 'chus'], ['冈特链节', 'lkus'], ['拉姆登链', 'rchus'],
   ['美制英亩', 'acreus'], ['英制英亩', 'acrebr'], ['镇区', 'township'],
+  /**
+   * ★ 吨的三义必须在中文层分开。
+   *
+   * 「吨」默认是公制（mathjs 的 `t`），而「长吨」「短吨」是英制的两种。
+   * 三者差 12%，混用会让「年产 300 万吨」变成 272 万吨。
+   */
+  ['长吨', 'tonlong'], ['短吨', 'tonshort'], ['公吨', 't'],
+  ['长英担', 'cwtlong'], ['短英担', 'cwtshort'],
+
+  /**
+   * ## 英制/美制的具名变体（用户需要显式指名时用）
+   *
+   * 裸名默认走国际标准（见 `units-default-policy.ts`），
+   * 要另一套就写这些具名形式。
+   *
+   * ⚠ 长词优先：「美制液盎司」必须在「美制液」之前，「美制加仑」在「加仑」之前。
+   */
+  ['美制液盎司', 'fluidounceus'], ['英制液盎司', 'fluidouncebr'],
+  ['美制液量打兰', 'fluiddramus'],
+  ['美制加仑', 'gallonus'], ['英制加仑', 'gallonimp'],
+  ['美制品脱', 'pintus'], ['英制品脱', 'pintbr'],
+  ['美制夸脱', 'quartus'], ['英制夸脱', 'quartimp'],
+  ['美制及耳', 'gillus'], ['英制及耳', 'gillbr'],
+  ['美制茶匙', 'teaspoonus'], ['美制汤匙', 'tablespoonus'],
+  ['美制杯', 'cupus'],
+  ['美制蒲式耳', 'bushelus'], ['英制蒲式耳', 'bushel'],
+  ['美制配克', 'peckus'], ['英制配克', 'peck'],
+  ['配克', 'peck'],
+  ['美制干夸脱', 'dryquartus'], ['美制干品脱', 'drypintus'],
+  ['美制量滴', 'minimus'], ['英制量滴', 'minimbr'],
+  ['美制英亩', 'acreus'], ['英制英亩', 'acreimp'],
+  ['美制英尺', 'ftus'], ['英制英尺', 'ftimp'], ['国际英尺', 'fti'],
+  ['美制英寸', 'inus'], ['英制英寸', 'inbr'],
+  ['美制磅', 'lbav'],
+  ['石油桶', 'barreloil'],
+  /** 印刷与纺织。 */
+  ['印刷点', 'pointpr'], ['印刷派卡', 'picapr'],
+  ['迪多点', 'didot'], ['西塞罗', 'cicero'],
+  ['斯克鲁普', 'scruple'], ['药衡打兰', 'dramap'],
+  ['药衡盎司', 'ounceap'], ['药衡磅', 'poundap'],
+  ['特克斯', 'tex'], ['但尼尔', 'denier'],
+  /** 工程。 */
+  ['工程大气压', 'technicalatmosphere'], ['米水柱', 'meterwater'],
+  ['米汞柱', 'metermercury'], ['电马力', 'hpelectric'],
+  ['锅炉马力', 'hpboiler'], ['公制马力', 'hpmetric'],
+  ['奈培', 'neper'],
+  /** 木材。 */
+  ['板英尺', 'boardfoot'], ['考得', 'cord'], ['圆密尔', 'circularmil'],
   ['常衡盎司', 'ozav'], ['常衡打兰', 'drav'], ['常衡磅', 'lbav'],
   ['长英担', 'lcwtav'], ['短英担', 'scwtav'],
   ['英制品脱', 'pintbr'], ['英制夸脱', 'quartbr'], ['英制及耳', 'gillbr'],
@@ -416,6 +465,19 @@ export function buildEngine(): Engine {
    * 这些在公制里没有直接对应，而写作时又绕不开。
    */
   registerImperialUnits(math)
+  /**
+   * ## 重绑定裸名到国际标准（用户规则）
+   *
+   * > 保留变体，但默认情况下用国际标准。
+   *
+   * mathjs 内置的英制单位全是**美制**值（`1 gallon` = 3.785 L），
+   * 而本项目要的是国际/英制值（4.546 L）。这一步把裸名改绑过去，
+   * 美制变体保留具名形式（`gallonus`）。
+   *
+   * **必须在 `registerImperialUnits` 之后** —— 否则我们注册的
+   * `gallonimp` 等具名变体还没建立，重绑定会缺少参照。
+   */
+  rebindDefaults(math)
   /**
    * 注册**带时代**的单位（汉尺/唐大尺/清营造尺…）。
    *
