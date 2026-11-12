@@ -184,16 +184,80 @@ console.log('-- 10. ★ 契约：未知与未迁移子命令 --')
   assert('★ 未知子命令 → unknown_subcommand', unknown?.type === 'unknown_subcommand', unknown?.type)
   assert('hint 列出可用子命令', String(unknown?.hint ?? '').includes('stack'), String(unknown?.hint ?? '').slice(0, 80))
 
-  const pending = throwsOf(() => der.runDerivation({ derivation: 'dead' }, deps))
+  const pending = throwsOf(() => der.runDerivation({ derivation: 'anchors' }, deps))
   assert('★ 未迁移子命令 → unknown_subcommand（不假装成功）', pending?.type === 'unknown_subcommand', pending?.type)
   assert('★ message 说清"尚未迁移"', String(pending?.message ?? '').includes('尚未迁移'), String(pending?.message ?? '').slice(0, 80))
   assert('hint 分列已实现与未迁移', String(pending?.hint ?? '').includes('已实现') && String(pending?.hint ?? '').includes('尚未迁移'), '')
 
   const implemented = der.IMPLEMENTED_SUBCOMMANDS.length
   const pendingList = der.PENDING_SUBCOMMANDS.length
-  assert('已实现 10 个', implemented === 10, String(implemented))
-  assert('未迁移 19 个', pendingList === 19, String(pendingList))
-  assert('10 + 19 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
+  assert('已实现 13 个', implemented === 13, String(implemented))
+  assert('未迁移 16 个', pendingList === 16, String(pendingList))
+  assert('13 + 16 = 29（与老插件一致）', implemented + pendingList === 29, String(implemented + pendingList))
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 11. dead：死寂四级判定 --')
+// ───────────────────────────────────────────────────────────
+{
+  const alive = der.runDerivation({ derivation: 'dead' }, deps)
+  assert('地球默认 → alive', alive.value.dead.level === 'alive', alive.value.dead.level)
+  assert('result 标「正常」', alive.result.includes('宇宙状态判定：正常'), '')
+
+  const frozen = der.runDerivation({ derivation: 'dead', world: { orbitAU: 3, greenhouse: 0 } }, deps)
+  assert('远轨道无温室 → marginal（全球冻结）', frozen.value.dead.level === 'marginal', frozen.value.dead.level)
+  assert('原因里有 frozen', frozen.value.dead.causes.some((c) => c.id === 'frozen'), JSON.stringify(frozen.value.dead.causes.map((c) => c.id)))
+  assert('★ 给「若想要物质世界」的调整方向', frozen.result.includes('若想要物质世界'), '')
+
+  const invalid = der.runDerivation({ derivation: 'dead', world: { planetRadius: 0 } }, deps)
+  assert('★ 半径 0 → invalid（参数不成立，不是设定太极端）', invalid.value.dead.level === 'invalid', invalid.value.dead.level)
+  assert('invalid 的说明区分输入问题', invalid.result.includes('不是设定太极端'), '')
+
+  const weak = der.runDerivation({ derivation: 'dead' }, { constants: { ...constants, e_charge: constants.e_charge * 0.5 }, starClasses: stars })
+  assert('★ α 减到 1/4 → 化学键过弱 → dead', weak.value.dead.level === 'dead', weak.value.dead.level + ' ' + JSON.stringify(weak.value.dead.causes.map((c) => c.id)))
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 12. flip：结论翻转（不是数值变化） --')
+// ───────────────────────────────────────────────────────────
+{
+  const rocket = der.runDerivation({ derivation: 'flip', flipClaim: 'rocket', flipBase: 1 }, deps)
+  assert('火箭基线不成立', rocket.value.flip.baseHolds === false, '')
+  assert('★ 下调 20% 后结论翻转', rocket.value.flip.flipped === true && rocket.value.flip.severity === 'critical', rocket.value.flip.severity)
+  assert('result 说「踩线」', rocket.result.includes('踩线'), '')
+
+  const stable = der.runDerivation({ derivation: 'flip', flipClaim: 'rocket', flipBase: 0.5 }, deps)
+  assert('半重力基线成立', stable.value.flip.baseHolds === true, '')
+  assert('★ 半重力下 ±20% 不翻（稳定）', stable.value.flip.flipped === false, JSON.stringify(stable.value.flip.probes.map((p) => p.flipped)))
+  assert('给余量', typeof stable.value.flip.margin === 'number' && stable.value.flip.margin > 0.2, String(stable.value.flip.margin))
+
+  const human = der.runDerivation({ derivation: 'flip', flipClaim: 'human', flipBase: 3.4 }, deps)
+  assert('3.4g 基线成立', human.value.flip.baseHolds === true, '')
+  assert('★ 3.4g ±20% 翻（3.5g 上限）', human.value.flip.flipped === true, JSON.stringify(human.value.flip.probes))
+
+  const bad = throwsOf(() => der.runDerivation({ derivation: 'flip', flipClaim: 'no-such' }, deps))
+  assert('未知判据 → invalid_argument', bad?.type === 'invalid_argument', bad?.type)
+}
+
+// ───────────────────────────────────────────────────────────
+console.log('-- 13. observer：同一个世界，不同观测者 --')
+// ───────────────────────────────────────────────────────────
+{
+  const human = der.runDerivation({ derivation: 'observer', observerKind: 'human' }, deps)
+  assert('人类骨骼强度体重比 ≈ 5', Math.abs(human.value.observer.metrics.boneRatio - 5) < 0.01, String(human.value.observer.metrics.boneRatio))
+  assert('人类与自身比 = 1', human.value.observer.metrics.versusHuman.bone === 1, '')
+
+  const tiny = der.runDerivation({ derivation: 'observer', observerKind: 'tiny' }, deps)
+  assert('★ 20cm 生物的骨骼比是人类 8.5 倍', tiny.value.observer.metrics.versusHuman.bone > 8, String(tiny.value.observer.metrics.versusHuman.bone))
+  assert('小型生物散热更快（余量更低）', tiny.value.observer.metrics.heatBalance < human.value.observer.metrics.heatBalance, '')
+
+  const twoD = der.runDerivation({ derivation: 'observer', observerKind: '2d' }, deps)
+  assert('★ 二维生物：三维建筑受限', twoD.result.includes('受限') && twoD.result.includes('三维建筑'), '')
+  const aquatic = der.runDerivation({ derivation: 'observer', observerKind: 'aquatic' }, deps)
+  assert('★ 水生智慧：用火受限', aquatic.result.includes('用火') && aquatic.result.includes('受限'), '')
+
+  const badKind = throwsOf(() => der.runDerivation({ derivation: 'observer', observerKind: 'alien' }, deps))
+  assert('未知观测者 → invalid_argument', badKind?.type === 'invalid_argument', badKind?.type)
 }
 
 console.log('')

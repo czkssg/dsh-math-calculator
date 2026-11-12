@@ -38,6 +38,9 @@ import {
   type Verdict,
 } from './derivation-stack.js'
 import { generateWorld, type WorldDeps } from './world.js'
+import { judgeDead, renderDead } from './dead-universe.js'
+import { checkFlip, FLIP_CLAIMS } from './flip.js'
+import { OBSERVERS, perceive, renderObserver } from './observer.js'
 
 /** 已实现的子命令。 */
 export const IMPLEMENTED_SUBCOMMANDS = [
@@ -51,13 +54,13 @@ export const IMPLEMENTED_SUBCOMMANDS = [
   'chaos',
   'tables',
   'pipeline',
+  'dead',
+  'flip',
+  'observer',
 ] as const
 
 /** 尚未迁移的子命令（明确报错，不假装成功）。 */
 export const PENDING_SUBCOMMANDS = [
-  'dead',
-  'flip',
-  'observer',
   'anchors',
   'backSolve',
   'heatmap',
@@ -373,6 +376,64 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     lines.push('总结论：' + VERDICT_LABEL[report.verdict])
     for (const line of report.advice) lines.push('  · ' + line)
     value['pipeline'] = report
+  } else if (sub === 'dead') {
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const profile = generateWorld(worldParams as never, { constants: deps.constants, starClasses: deps.starClasses })
+    const verdict = judgeDead(profile as unknown as Record<string, unknown>)
+    lines.push(renderDead(verdict))
+    lines.push('')
+    lines.push('─── 给作者的话 ───')
+    lines.push('死寂是被判定的设定结果，不是错误。上面每条都给了「若想要物质世界」的调整方向；')
+    lines.push('若你就是要写一个没有常规物质的宇宙，把它当设定本身即可。')
+    value['dead'] = verdict
+  } else if (sub === 'flip') {
+    const claimId = typeof input['flipClaim'] === 'string' ? input['flipClaim'] : 'rocket'
+    const epsilon = typeof input['flipEpsilon'] === 'number' ? input['flipEpsilon'] : 0.2
+    const base = typeof input['flipBase'] === 'number' ? input['flipBase'] : 1
+    const chosen = FLIP_CLAIMS.find((claim) => claim.id === claimId)
+    if (!chosen) {
+      throw new CalcError(
+        'invalid_argument',
+        '不认识的判据「' + claimId + '」',
+        '可用判据：' + FLIP_CLAIMS.map((claim) => claim.id + '（' + claim.label + '）').join(' / ') + '。',
+      )
+    }
+    if (!(base > 0)) {
+      throw new CalcError('invalid_argument', 'flipBase 必须是正数（收到 ' + String(base) + '）', '倍率基线通常取 1（地球）。')
+    }
+    const report = checkFlip(chosen.evaluate, chosen.judge, base, { epsilon, claim: chosen.label })
+    lines.push('═══ 结论翻转判定：' + chosen.label + ' ═══', '')
+    lines.push('  判据：' + chosen.formula)
+    lines.push('  基线输入 ' + f(base) + ' → 判据值 ' + f(report.baseValue) + ' → ' + (report.baseHolds ? '成立' : '不成立'), '')
+    lines.push('【扰动 ±' + (epsilon * 100).toFixed(0) + '%】')
+    for (const probe of report.probes) {
+      lines.push(
+        '  ' + (probe.direction < 0 ? '下调' : '上调').padEnd(4) + ' 输入=' + f(probe.input).padEnd(12) +
+        ' 判据值=' + f(probe.value).padEnd(12) + ' 数值变化=' + (probe.relativeChange * 100).toFixed(2) + '%' +
+        ' ' + (probe.flipped ? '✗ 结论翻转' : '○ 结论不变'),
+      )
+    }
+    lines.push('', '【判定】' + (report.severity === 'critical' ? '踩线' : report.severity === 'fragile' ? '余量薄' : '稳'))
+    lines.push('  ' + report.verdict)
+    lines.push('', '  说明：数值变化率不能用来判翻转——变 1.8% 也可能让「能/不能」颠倒。')
+    value['flip'] = report
+    value['claim'] = { id: chosen.id, label: chosen.label, formula: chosen.formula }
+  } else if (sub === 'observer') {
+    const kind = typeof input['observerKind'] === 'string' ? input['observerKind'] : 'human'
+    const observer = OBSERVERS.find((item) => item.kind === kind)
+    if (!observer) {
+      throw new CalcError(
+        'invalid_argument',
+        '不认识的观测者「' + kind + '」',
+        '可选：' + OBSERVERS.map((item) => item.kind + '（' + item.label + '）').join(' / ') + '。',
+      )
+    }
+    const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+    const profile = generateWorld(worldParams as never, { constants: deps.constants, starClasses: deps.starClasses })
+    const gravity = profile.planet.surfaceGravity
+    const scaleHeight = profile.atmosphere.scaleHeightM
+    lines.push(renderObserver(observer, gravity, scaleHeight))
+    value['observer'] = { kind, metrics: perceive(observer, gravity, scaleHeight) }
   } else {
     const all = [...IMPLEMENTED_SUBCOMMANDS, ...PENDING_SUBCOMMANDS]
     if ((PENDING_SUBCOMMANDS as readonly string[]).includes(sub)) {
