@@ -249,23 +249,23 @@
  },
  "dist-normal": {
   "ok": true,
-  "result": "z = 1.96\nPDF = 0.05844094\nCDF = P(X ≤ 1.96) = 0.97500217\nP(X > 1.96) = 0.02499783",
+  "result": "z = 1.96\nPDF = 0.05844094\nCDF = P(X ≤ 1.96) = 0.9750021\nP(X > 1.96) = 0.0249979",
   "errorType": null,
   "errorMessage": null,
   "value": {
    "z": 1.96,
    "pdf": 0.058440944333451476,
-   "cdf": 0.9750021738917761,
-   "upper": 0.024997826108223875
+   "cdf": 0.9750021048517796,
+   "upper": 0.024997895148220373
   }
  },
  "dist-t": {
   "ok": true,
-  "result": "CDF = 0.999982",
+  "result": "CDF = 0.96330598",
   "errorType": null,
   "errorMessage": null,
   "value": {
-   "cdf": 0.9999819986579475
+   "cdf": 0.9633059826524056
   }
  },
  "dist-chi": {
@@ -274,7 +274,7 @@
   "errorType": null,
   "errorMessage": null,
   "value": {
-   "cdf": 0.949956478751295
+   "cdf": 0.9499564787527659
   }
  },
  "dist-pois": {
@@ -284,7 +284,7 @@
   "errorMessage": null,
   "value": {
    "pmf": 0.22404180765538748,
-   "cdf": 0.42319008112684325
+   "cdf": 0.42319008112684353
   }
  },
  "dist-bin": {

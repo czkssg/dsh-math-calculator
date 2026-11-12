@@ -53,6 +53,7 @@
   ],
   "dependencies": {
     "algebrite": "^1.4.0",
+    "jstat": "^1.9.6",
     "mathjs": "^15.2.0",
     "ml-matrix": "^6.15.1"
   },
