@@ -1,0 +1,421 @@
+[
+ {
+  "name": "c",
+  "standard": 299792458,
+  "unit": "m/s",
+  "meaning": "真空光速。同时决定相对论效应强度与电磁学换算。",
+  "fundamental": true,
+  "siDefines": "metre"
+ },
+ {
+  "name": "G",
+  "standard": 6.6743e-11,
+  "unit": "m³/(kg·s²)",
+  "meaning": "万有引力常数。决定引力强弱、恒星寿命、行星形成。",
+  "fundamental": true
+ },
+ {
+  "name": "h",
+  "standard": 6.62607015e-34,
+  "unit": "J·s",
+  "meaning": "普朗克常数。决定量子效应的尺度。",
+  "fundamental": true,
+  "siDefines": "kilogram"
+ },
+ {
+  "name": "kB",
+  "standard": 1.380649e-23,
+  "unit": "J/K",
+  "meaning": "玻尔兹曼常数。连接温度与能量。",
+  "fundamental": true,
+  "siDefines": "kelvin"
+ },
+ {
+  "name": "e_charge",
+  "standard": 1.602176634e-19,
+  "unit": "C",
+  "meaning": "元电荷。决定电磁力强度与化学键能量。",
+  "fundamental": true,
+  "siDefines": "ampere"
+ },
+ {
+  "name": "me",
+  "standard": 9.1093837015e-31,
+  "unit": "kg",
+  "meaning": "电子质量。",
+  "fundamental": true
+ },
+ {
+  "name": "mp",
+  "standard": 1.67262192369e-27,
+  "unit": "kg",
+  "meaning": "质子质量。决定原子核与普通物质的质量尺度。",
+  "fundamental": true
+ },
+ {
+  "name": "NA",
+  "standard": 6.02214076e+23,
+  "unit": "1/mol",
+  "meaning": "阿伏伽德罗常数。连接微观与摩尔尺度。",
+  "fundamental": true,
+  "siDefines": "mole"
+ },
+ {
+  "name": "epsilon0",
+  "standard": 8.8541878128e-12,
+  "unit": "F/m",
+  "meaning": "真空介电常数。与 c 共同决定电磁力强度。",
+  "fundamental": true
+ },
+ {
+  "name": "hbar",
+  "standard": 1.054571817e-34,
+  "unit": "J·s",
+  "meaning": "约化普朗克常数 = h/2π。",
+  "fundamental": false,
+  "dependsOn": [
+   "h"
+  ],
+  "deriveExpr": "h / (2 * PI)"
+ },
+ {
+  "name": "R",
+  "standard": 8.314462618,
+  "unit": "J/(mol·K)",
+  "meaning": "通用气体常数 = kB·NA。",
+  "fundamental": false,
+  "dependsOn": [
+   "kB",
+   "NA"
+  ],
+  "deriveExpr": "kB * NA"
+ },
+ {
+  "name": "mu0",
+  "standard": 0.00000125663706212,
+  "unit": "H/m",
+  "meaning": "真空磁导率 = 1/(epsilon0·c²)。现代 SI 中由电磁关系导出。",
+  "fundamental": false,
+  "dependsOn": [
+   "epsilon0",
+   "c"
+  ],
+  "deriveExpr": "1 / (epsilon0 * c * c)"
+ },
+ {
+  "name": "kCoulomb",
+  "standard": 8987551792.3,
+  "unit": "N·m²/C²",
+  "meaning": "库仑常数 = 1/(4π·epsilon0)。",
+  "fundamental": false,
+  "dependsOn": [
+   "epsilon0"
+  ],
+  "deriveExpr": "1 / (4 * PI * epsilon0)"
+ },
+ {
+  "name": "sigma",
+  "standard": 5.670374419e-8,
+  "unit": "W/(m²·K⁴)",
+  "meaning": "斯特藩-玻尔兹曼常数 = 2π⁵kB⁴/(15h³c²)。决定热辐射强度。",
+  "fundamental": false,
+  "dependsOn": [
+   "kB",
+   "h",
+   "c"
+  ],
+  "deriveExpr": "(2 * PI ^ 5 * kB ^ 4) / (15 * h ^ 3 * c ^ 2)"
+ },
+ {
+  "name": "bWien",
+  "standard": 0.002897771955,
+  "unit": "m·K",
+  "meaning": "维恩位移常数 = hc/(kB·x)，x≈4.9651。决定黑体峰值波长。",
+  "fundamental": false,
+  "dependsOn": [
+   "h",
+   "c",
+   "kB"
+  ],
+  "deriveExpr": "(h * c) / (kB * 4.965114231744276)"
+ },
+ {
+  "name": "alpha_fs",
+  "standard": 0.0072973525693,
+  "unit": "无量纲",
+  "meaning": "精细结构常数 = e²/(4π·epsilon0·ħ·c)。决定电磁力相对强弱。",
+  "fundamental": false,
+  "dependsOn": [
+   "e_charge",
+   "epsilon0",
+   "hbar",
+   "c"
+  ],
+  "deriveExpr": "(e_charge * e_charge) /\n            (4 * PI * epsilon0 * hbar * c)"
+ },
+ {
+  "name": "Ry",
+  "standard": 13.605693122994,
+  "unit": "eV",
+  "meaning": "里德堡能量（单位 eV）。决定原子光谱与化学能标尺。",
+  "fundamental": false,
+  "dependsOn": [
+   "me",
+   "e_charge",
+   "epsilon0",
+   "h"
+  ],
+  "deriveExpr": "(me * e_charge ^ 4) /\n            (8 * epsilon0 ^ 2 * h ^ 2 * e_charge)"
+ },
+ {
+  "name": "muB",
+  "standard": 9.2740100783e-24,
+  "unit": "J/T",
+  "meaning": "玻尔磁子 = e·ħ/(2·me)。",
+  "fundamental": false,
+  "dependsOn": [
+   "e_charge",
+   "hbar",
+   "me"
+  ],
+  "deriveExpr": "(e_charge * hbar) / (2 * me)"
+ },
+ {
+  "name": "year",
+  "standard": 31557600,
+  "unit": "s",
+  "meaning": "儒略年 = 365.25 天。",
+  "fundamental": false,
+  "dependsOn": [
+   "day"
+  ],
+  "deriveExpr": "day * 365.25"
+ },
+ {
+  "name": "day",
+  "standard": 86400,
+  "unit": "s",
+  "meaning": "标准日（24 小时）。架空世界可改。",
+  "fundamental": true
+ },
+ {
+  "name": "AU",
+  "standard": 149597870700,
+  "unit": "m",
+  "meaning": "天文单位（地球-太阳平均距离）。",
+  "fundamental": true
+ },
+ {
+  "name": "ly",
+  "standard": 9460730472580800,
+  "unit": "m",
+  "meaning": "光年 = c × 儒略年。随 c 与 year 变化。",
+  "fundamental": false,
+  "dependsOn": [
+   "c",
+   "year"
+  ],
+  "deriveExpr": "c * year"
+ },
+ {
+  "name": "pc",
+  "standard": 30856775814913670,
+  "unit": "m",
+  "meaning": "秒差距 = AU × 648000/π。随 AU 变化。",
+  "fundamental": false,
+  "dependsOn": [
+   "AU"
+  ],
+  "deriveExpr": "(AU * 648000) / PI"
+ },
+ {
+  "name": "Rearth",
+  "standard": 6371000,
+  "unit": "m",
+  "meaning": "地球平均半径。架空星球可改。",
+  "fundamental": true
+ },
+ {
+  "name": "Mearth",
+  "standard": 5.9722e+24,
+  "unit": "kg",
+  "meaning": "地球质量。",
+  "fundamental": true
+ },
+ {
+  "name": "g",
+  "standard": 9.80665,
+  "unit": "m/s²",
+  "meaning": "地表标准重力。注：标准值 9.80665 是纬度 45° 海平面的实测值，而 G·M/R²（用平均半径）给 9.820 — 差 0.14%，因地球是扁球。这里以「实测标准值」为准，改 G/M/R 时按 GM/R² 重算（会略微偏离原来的 9.80665）。",
+  "fundamental": false,
+  "dependsOn": [
+   "G",
+   "Mearth",
+   "Rearth"
+  ],
+  "deriveExpr": "(G * Mearth * 0.99858) / Rearth ^ 2"
+ },
+ {
+  "name": "Rsun",
+  "standard": 695700000,
+  "unit": "m",
+  "meaning": "太阳半径。",
+  "fundamental": true
+ },
+ {
+  "name": "Msun",
+  "standard": 1.98892e+30,
+  "unit": "kg",
+  "meaning": "太阳质量。",
+  "fundamental": true
+ },
+ {
+  "name": "Lsun",
+  "standard": 3.828e+26,
+  "unit": "W",
+  "meaning": "太阳光度 = 4πRsun²σT⁴，T 取太阳有效温度 5772K（不是 5778K，后者是彩球温度）。",
+  "fundamental": false,
+  "dependsOn": [
+   "Rsun",
+   "sigma"
+  ],
+  "deriveExpr": "4 * PI * Rsun ^ 2 * sigma * 5772 ^ 4"
+ },
+ {
+  "name": "atm",
+  "standard": 101325,
+  "unit": "Pa",
+  "meaning": "标准大气压（地球海平面）。架空世界可改。",
+  "fundamental": true
+ },
+ {
+  "name": "dnu_Cs",
+  "standard": 9192631770,
+  "unit": "Hz",
+  "meaning": "铯-133 基态超精细跃迁频率。**秒的定义常数**：1 秒 = 该频率的 9192631770 个周期。架空世界改它等于改「时间最小刻度」——计时、频率、波长全部跟着变。",
+  "fundamental": true,
+  "siDefines": "second"
+ },
+ {
+  "name": "Kcd",
+  "standard": 683,
+  "unit": "lm/W",
+  "meaning": "光视效能。**坎德拉的定义常数**：把「人眼亮度感受」与「物理辐射功率」钉在一起。它是唯一依赖人眼生理的 SI 基准，所以「这个世界的光看起来多亮」不只是物理问题。",
+  "fundamental": true,
+  "siDefines": "candela"
+ },
+ {
+  "name": "u",
+  "standard": 1.6605390666e-27,
+  "unit": "kg",
+  "meaning": "原子质量单位（u / Da）= 碳-12 原子质量的 1/12。化学与天体物理的通用质量尺。",
+  "fundamental": true
+ },
+ {
+  "name": "mPlanck",
+  "standard": 2.176434e-8,
+  "unit": "kg",
+  "meaning": "普朗克质量 = √(ħc/G)。超过它，时空必然量子化——经典物理失效的边界。",
+  "fundamental": false,
+  "dependsOn": [
+   "hbar",
+   "c",
+   "G"
+  ],
+  "deriveExpr": "sqrt((hbar * c) / G)"
+ },
+ {
+  "name": "lPlanck",
+  "standard": 1.616255e-35,
+  "unit": "m",
+  "meaning": "普朗克长度 = √(ħG/c³)。现存物理学能描述的最小长度。",
+  "fundamental": false,
+  "dependsOn": [
+   "hbar",
+   "G",
+   "c"
+  ],
+  "deriveExpr": "sqrt((hbar * G) / c ^ 3)"
+ },
+ {
+  "name": "tPlanck",
+  "standard": 5.391247e-44,
+  "unit": "s",
+  "meaning": "普朗克时间 = lPlanck/c。公认的最短可测时间。",
+  "fundamental": false,
+  "dependsOn": [
+   "hbar",
+   "G",
+   "c"
+  ],
+  "deriveExpr": "sqrt((hbar * G) / c ^ 5)"
+ },
+ {
+  "name": "re",
+  "standard": 2.8179403262e-15,
+  "unit": "m",
+  "meaning": "经典电子半径 = e²/(4π·epsilon0·me·c²)。电磁相互作用的特征长度。",
+  "fundamental": false,
+  "dependsOn": [
+   "e_charge",
+   "epsilon0",
+   "me",
+   "c"
+  ],
+  "deriveExpr": "(e_charge ^ 2) / (4 * PI * epsilon0 * me * c ^ 2)"
+ },
+ {
+  "name": "F",
+  "standard": 96485.33212331001,
+  "unit": "C/mol",
+  "meaning": "法拉第常数 = e·NA。电解、电池、生物电的能量换算桥。",
+  "fundamental": false,
+  "dependsOn": [
+   "e_charge",
+   "NA"
+  ],
+  "deriveExpr": "e_charge * NA"
+ },
+ {
+  "name": "alphaG",
+  "standard": 5.906149417e-39,
+  "unit": "无量纲",
+  "meaning": "引力耦合常数 α_G = Gmₚ²/(ħc)。比精细结构常数小约 10⁴² 倍，这就是「引力为何处处可忽略」的量化答案。",
+  "fundamental": false,
+  "dependsOn": [
+   "G",
+   "mp",
+   "hbar",
+   "c"
+  ],
+  "deriveExpr": "(G * mp ^ 2) / (hbar * c)"
+ },
+ {
+  "name": "phi",
+  "standard": 1.618033988749895,
+  "unit": "无量纲",
+  "meaning": "黄金比例 = (1+√5)/2。数学常数，不随物理改变。",
+  "fundamental": true
+ },
+ {
+  "name": "ln2",
+  "standard": 0.6931471805599453,
+  "unit": "无量纲",
+  "meaning": "自然对数 2。数学常数。",
+  "fundamental": true
+ },
+ {
+  "name": "ln10",
+  "standard": 2.302585092994046,
+  "unit": "无量纲",
+  "meaning": "自然对数 10。数学常数。",
+  "fundamental": true
+ },
+ {
+  "name": "eulerGamma",
+  "standard": 0.5772156649015329,
+  "unit": "无量纲",
+  "meaning": "欧拉-马歇罗尼常数。数学常数。",
+  "fundamental": true
+ }
+]

@@ -1,0 +1,150 @@
+[
+ {
+  "id": "mine-to-empire",
+  "name": "从矿石到帝国（材料 → 产能 → 财政 → 军事）",
+  "purpose": "「有铁矿」能不能变成「有帝国」。四个环节各是一道门槛，断哪一环都不成立。",
+  "via": [
+   "sys-material",
+   "sys-capacity",
+   "sys-fiscal",
+   "sys-military"
+  ],
+  "hops": [
+   "metallurgy_yield",
+   "gdp_from_labor",
+   "fiscal_burden_ratio"
+  ],
+  "keys": [
+   "矿石",
+   "帝国",
+   "军事",
+   "财政",
+   "工业化",
+   "铁"
+  ]
+ },
+ {
+  "id": "water-to-army",
+  "name": "水渠容量能养多少兵（水利 → 食物 → 财政 → 军事）",
+  "purpose": "灌溉能力最终能转化成多少军事力量。适合回答「这个国家打得起多大的仗」。",
+  "via": [
+   "sys-water",
+   "sys-food",
+   "sys-fiscal",
+   "sys-military"
+  ],
+  "hops": [
+   "irrigation_volume",
+   "population_fed_by_grain",
+   "fiscal_burden_ratio"
+  ],
+  "keys": [
+   "水渠",
+   "灌溉",
+   "军队",
+   "兵员",
+   "粮草"
+  ]
+ },
+ {
+  "id": "info-to-capacity",
+  "name": "治理半径决定产能上限（信息 → 财政 → 产能）",
+  "purpose": "通信速度决定能管多宽，管辖半径决定征管成本，最终决定能组织多大的生产。",
+  "via": [
+   "sys-info",
+   "sys-fiscal",
+   "sys-capacity"
+  ],
+  "hops": [
+   "admin_radius_from_info",
+   "gdp_from_labor"
+  ],
+  "keys": [
+   "治理",
+   "行政半径",
+   "信息",
+   "产能",
+   "帝国规模"
+  ]
+ },
+ {
+  "id": "material-to-fly",
+  "name": "材料到飞行（材料 → 结构 → 交通）",
+  "purpose": "「这个世界的材料能造出飞行器吗」—— 强度决定结构，结构决定能不能做轻。",
+  "via": [
+   "sys-material",
+   "sys-structure",
+   "sys-travel"
+  ],
+  "hops": [
+   "hooke_law",
+   "impact_speed_freefall"
+  ],
+  "keys": [
+   "材料",
+   "飞行",
+   "航空",
+   "结构",
+   "轻量化"
+  ]
+ },
+ {
+  "id": "energy-to-output",
+  "name": "燃料到年产量（能源 → 产能）",
+  "purpose": "这座窑/这个工坊一年能出多少货，瓶颈卡在燃料还是工艺。",
+  "via": [
+   "sys-energy",
+   "sys-capacity"
+  ],
+  "hops": [
+   "thermal_efficiency_carnot"
+  ],
+  "keys": [
+   "燃料",
+   "年产量",
+   "窑",
+   "工坊",
+   "瓶颈"
+  ]
+ },
+ {
+  "id": "quantum-to-industry",
+  "name": "从半导体到工业（量子 → 信息控制 → 产能）",
+  "purpose": "能不能做出电子工业。带隙定器件，器件定通信与控制，控制定产能组织方式。",
+  "via": [
+   "sys-quantum",
+   "sys-info-control",
+   "sys-capacity"
+  ],
+  "hops": [
+   "band_gap_wavelength",
+   "channel_capacity"
+  ],
+  "keys": [
+   "半导体",
+   "电子",
+   "工业",
+   "通信",
+   "器件"
+  ]
+ },
+ {
+  "id": "queue-to-output",
+  "name": "作坊够不够用（排队 → 产能）",
+  "purpose": "服务能力与到达率决定积压，积压决定实际产出 —— 回答「再加一个人有没有用」。",
+  "via": [
+   "sys-queue",
+   "sys-capacity"
+  ],
+  "hops": [
+   "mtbf_availability"
+  ],
+  "keys": [
+   "作坊",
+   "排队",
+   "积压",
+   "产能",
+   "够不够用"
+  ]
+ }
+]
