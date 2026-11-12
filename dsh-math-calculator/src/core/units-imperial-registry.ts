@@ -52,6 +52,33 @@ const BASE_UNIT: Record<string, string> = {
   kinematic_viscosity: 'm2/s',
   ratio: '1',
   inverse_length: '1/m',
+  /**
+   * ## SI 与现代单位补全所需（用户的提醒）
+   *
+   * 之前只塞古代单位，漏了现代 —— 七个 SI 导出单位、
+   * 天文三件套、辐射旧单位都没注册。
+   */
+  solid_angle: 'sr',
+  luminous_flux: 'lm',
+  luminous_intensity: 'cd',
+  illuminance: 'lx',
+  activity: 'Bq',
+  absorbed_dose: 'Gy',
+  dose_equivalent: 'Sv',
+  catalytic_activity: 'kat',
+  exposure: 'C/kg',
+  angular_velocity: 'rad/s',
+  data_rate: 'bit/s',
+  amount_of_substance: 'mol',
+  electric_current: 'A',
+  charge: 'C',
+  voltage: 'V',
+  capacitance: 'F',
+  resistance: 'ohm',
+  conductance: 'S',
+  magnetic_flux: 'Wb',
+  magnetic_flux_density: 'T',
+  inductance: 'H',
 }
 
 /**

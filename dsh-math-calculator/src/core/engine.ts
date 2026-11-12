@@ -30,6 +30,7 @@ import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
 import { registerImperialUnits } from './units-imperial-registry.js'
 import { fixUnitAmbiguity } from './unit-ambiguity.js'
 import { rebindDefaults } from './units-default-rebind.js'
+import { registerSiUnits } from './units-si-registry.js'
 import { registerCustomUnit, type CustomUnit } from './units-custom.js'
 import { loadCustomUnits } from './units-custom-store.js'
 
@@ -540,6 +541,23 @@ export function buildEngine(): Engine {
       /* 只读属性删不掉时忽略 —— 不是安全问题，是宿主差异 */
     }
   }
+
+  /**
+   * ## 先补 SI 与现代单位（用户的提醒：别只顾古代忘了现代）
+   *
+   * 实测发现的缺失：
+   *
+   * ```
+   *   SI 导出单位  sr / lm / lx / Bq / Gy / Sv / kat     ← 全缺
+   *   天文三件套    au / ly / pc                          ← 全缺
+   *   核与辐射      Ci / rad / rem / R                    ← 全缺
+   *   其他          d / dB / Np / rpm / kn / nmi / bps    ← 全缺
+   * ```
+   *
+   * 这些是最基础的现代度量衡，**比古代单位更该先有**。
+   * 放在中文古制之前注册：它们是基准，后面的单位可能引用。
+   */
+  registerSiUnits(math)
 
   /** 注册中文古制单位（里/丈/斤/时辰/亩…）—— UCUM 不管这些，必须自己来。 */
   registerCjkUnits(math)
