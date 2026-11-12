@@ -55,7 +55,9 @@
     "algebrite": "^1.4.0",
     "jstat": "^1.9.6",
     "mathjs": "^15.2.0",
-    "ml-matrix": "^6.15.1"
+    "ml-matrix": "^6.15.1",
+    "ode-rk4": "^1.1.3",
+    "ode45-cash-karp": "^1.1.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

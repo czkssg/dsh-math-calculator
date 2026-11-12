@@ -43,6 +43,20 @@ export type ErrorType =
   | 'unknown_formula'
   | 'unknown_subcommand'
   | 'singular'
+  /**
+   * ## `no_solution` 与 `singular` 必须分开
+   *
+   * 这是反馈包 A5 的核心：
+   *
+   * ```
+   *   x = x + 1        无解                → no_solution
+   *   x + y = 5        无穷多解（欠定）      → singular
+   *   [[1,1],[2,2]]·x  可能无解也可能无穷多  → 看增广矩阵秩
+   * ```
+   *
+   * 混为一谈会让调用方无法区分「方程本身矛盾」与「需要更多约束」。
+   */
+  | 'no_solution'
   | 'non_finite'
   | 'syntax'
   | 'internal'
@@ -108,6 +122,30 @@ export function normalizeError(error: unknown, source?: string): CalcError {
       `表达式里的「${name}」没有定义${where}`,
       '先给它赋值，或用 variables 参数传入：{"' + name + '": 值}。' +
         '若这是工作区变量，要确认 useWorkspaceVariables 开关已打开。',
+    )
+  }
+
+  /**
+   * ## 未定义**函数**与未定义**符号**要分开
+   *
+   * mathjs 对两者报不同的措辞：
+   *
+   * ```
+   *   xy*2       → Undefined symbol xy
+   *   solve(...) → Undefined function solve
+   * ```
+   *
+   * 若把后者归到 `internal`，用户会以为是工具 bug 而不是「没这个函数」。
+   *
+   * @see 2026-11-13 实测：新实现调 `solve()` 时撞上这条
+   */
+  const undefinedFunction = /Undefined function\s+(\S+)/i.exec(raw)
+  if (undefinedFunction) {
+    const name = undefinedFunction[1]
+    return new CalcError(
+      'unknown_symbol',
+      `没有名为「${name}」的函数${where}`,
+      '检查函数名拼写。本插件不提供求解器函数 —— 解方程请用 operation:"solve"。',
     )
   }
 

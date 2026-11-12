@@ -31,6 +31,7 @@ import { registerImperialUnits } from './units-imperial-registry.js'
 import { fixUnitAmbiguity } from './unit-ambiguity.js'
 import { rebindDefaults } from './units-default-rebind.js'
 import { registerSiUnits } from './units-si-registry.js'
+import { rankOf, nullspaceOf, singularValuesOf, factorizeInt, makeNsolve } from './numeric.js'
 import { registerCustomUnit, type CustomUnit } from './units-custom.js'
 import { loadCustomUnits } from './units-custom-store.js'
 
@@ -439,6 +440,60 @@ function resolveDataHome(): string {
   return '.dsh-math-calculator'
 }
 
+/**
+ * 注册矩阵扩展函数（mathjs 没有的那几个）。
+ *
+ * ## 为什么需要
+ *
+ * 功能层要用表达式算矩阵属性，而 mathjs 只内置了：
+ *
+ * ```
+ *   ✓ det / inv / lusolve / eigs / polynomialRoot
+ *   ✗ rank / nullspace / svd / factorize / nsolve      ← 本项目自己实现
+ * ```
+ *
+ * 不注册的话 `engine.evaluate('rank([[1,2],[2,4]])')` 报
+ * `Undefined function rank`。
+ *
+ * @param math - mathjs 实例
+ */
+function registerMatrixHelpers(math: MathJsInstance): void {
+  const helpers: Array<[string, (...args: never[]) => unknown]> = [
+    ['rank', (m: never) => rankOf(m)],
+    ['nullspace', (m: never) => nullspaceOf(m)],
+    ['svd', (m: never) => singularValuesOf(m)],
+    ['factorize', (n: never) => factorizeInt(n as unknown as number)],
+  ]
+  for (const [name, fn] of helpers) {
+    try {
+      math.import({ [name]: fn }, { override: true })
+    } catch (error) {
+      /**
+       * 导入失败不致命（功能层会回退到直接调 `core/numeric`），
+       * 但**必须留痕** —— 静默吞掉会让「函数没注册」变成难查的问题。
+       *
+       * 实测（2026-11-13）：第一次就是静默失败，表现为
+       * `math.rank === undefined` 而没有任何错误信息。
+       */
+      if (process.env['DSH_MATH_DEBUG'] !== undefined) {
+        console.error('[engine] 注册矩阵函数 ' + name + ' 失败：' +
+          (error instanceof Error ? error.message : String(error)))
+      }
+    }
+  }
+  /**
+   * `nsolve` 需要解析器，单独注册。
+   *
+   * 它接受「表达式 + 变量 + 区间」，用二分/牛顿法找根 ——
+   * 超越方程（含 sin/log）只能靠它，多项式求根覆盖不到。
+   */
+  try {
+    math.import({ nsolve: makeNsolve((text: string) => math.parse(text)) }, { override: true })
+  } catch {
+    /* 同上 */
+  }
+}
+
 /** 引擎包装。 */
 export interface Engine {
   /** 底层 mathjs 实例（供需要直接用的功能域）。 */
@@ -514,14 +569,6 @@ export function buildEngine(): Engine {
   const math = create(all, { number: 'BigNumber', precision: 64 }) as MathJsInstance
 
   /**
-   * ## 安全边界：删掉动态代码执行入口
-   *
-   * `import` 能加载任意模块，`createUnit` 的注册体是函数 ——
-   * 两者都等于把代码执行权交出去。本项目不提供这类能力。
-   *
-   * 删掉后调用它们会报 `Undefined function`，而不是静默可用。
-   */
-  /**
    * ⚠ **只删 `import`，不删 `createUnit`**。
    *
    * 初版把两个都删了，理由是「都等于代码执行入口」。实测后修正：
@@ -533,14 +580,20 @@ export function buildEngine(): Engine {
    *
    * 删掉 `createUnit` 的代价是**中文古制单位无法注册**，
    * 于是 `30 里` 根本算不了。这是过度防御。
+   *
+   * ## ★ 但 `import` 的删除必须放在所有注册**之后**
+   *
+   * 2026-11-13 实测抓到的冲突：
+   *
+   * ```
+   *   注册矩阵函数（rank/svd/…）需要 math.import
+   *   而 import 已被删 → 报 "math.import is not a function"
+   *   → 静默失败，于是 `rank(...)` 报「没有名为 rank 的函数」
+   * ```
+   *
+   * 所以：**先注册完所有东西，最后再切掉 import**。
+   * 这样既保住了安全边界，又能注册自有函数。
    */
-  for (const name of ['import'] as const) {
-    try {
-      delete (math as unknown as Record<string, unknown>)[name]
-    } catch {
-      /* 只读属性删不掉时忽略 —— 不是安全问题，是宿主差异 */
-    }
-  }
 
   /**
    * ## 先补 SI 与现代单位（用户的提醒：别只顾古代忘了现代）
@@ -562,6 +615,17 @@ export function buildEngine(): Engine {
   /** 注册中文古制单位（里/丈/斤/时辰/亩…）—— UCUM 不管这些，必须自己来。 */
   registerCjkUnits(math)
   /**
+   * ## 注册矩阵扩展函数
+   *
+   * `rank` / `nullspace` / `svd` / `factorize` 是**本项目自己实现的**
+   * （mathjs 没有），而功能层要用它们在表达式里算。
+   *
+   * 实测（2026-11-13）：不注册的话 `engine.evaluate('rank(...)')` 报
+   * `Undefined function rank` —— 而 `det` / `inv` / `lusolve` / `eigs`
+   * 是 mathjs 内置的，所以只有这几个要自己补。
+   */
+  registerMatrixHelpers(math)
+  /**
    * 注册**英制工业与市制细分**单位。
    *
    * 蒸汽朋克最核心的一批：`psi`/`gpm`/`cfm`/`BTU`/`hp_boiler`/`firkin`/`thou`。
@@ -581,6 +645,24 @@ export function buildEngine(): Engine {
    * `gallonimp` 等具名变体还没建立，重绑定会缺少参照。
    */
   rebindDefaults(math)
+  /**
+   * ## ★ 所有注册完成后，切掉 `import`（安全边界）
+   *
+   * 位置很关键：前面 `registerMatrixHelpers` 需要 `math.import` 才能
+   * 注册 `rank`/`svd`/`nsolve` 等自有函数。在这里删掉之后，
+   * 用户表达式里的 `import("fs")` 就不可用了。
+   *
+   * 实测顺序错误的表现（2026-11-13）：
+   * ```
+   *   先删 import → 注册矩阵函数失败（无报错）
+   *              → `rank(...)` 报「没有名为 rank 的函数」
+   * ```
+   */
+  try {
+    delete (math as unknown as Record<string, unknown>)['import']
+  } catch {
+    /* 只读属性删不掉时忽略 —— 不是安全问题，是宿主差异 */
+  }
   /**
    * ## 最后加载用户自设单位
    *

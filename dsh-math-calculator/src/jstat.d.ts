@@ -19,8 +19,13 @@ declare module 'jstat' {
   interface Distribution {
     /** 累积分布函数。 */
     cdf(x: number, ...params: number[]): number
-    /** 概率密度/质量函数（本项目未用，留作扩展）。 */
-    pdf?(x: number, ...params: number[]): number
+    /**
+     * 概率密度/质量函数。
+     *
+     * ⚠ **不能标为可选** —— 标了之后每次调用都要 `?.()`，
+     * 而实测 jstat 的六个分布**都提供 pdf**。
+     */
+    pdf(x: number, ...params: number[]): number
     /** 分位数。 */
     inv?(p: number, ...params: number[]): number
   }
