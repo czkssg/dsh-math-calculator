@@ -361,9 +361,9 @@ export function opInterval(args: MathArgs): Outcome {
   const raw = args as unknown as Record<string, unknown>
   const payload = raw.interval
 
-  let left: Bracket
-  let right: Bracket
-  let op: string
+  let left: Bracket | null = null
+  let right: Bracket | null = null
+  let op = '*'
   let target: number | undefined
   let unit: string | undefined
 
@@ -391,19 +391,44 @@ export function opInterval(args: MathArgs): Outcome {
        *
        * 这是「宁可报错，不可猜错」：猜错一个切分位置，后面的数会全错。
        */
-      const split = splitExpr(text)
-      if (!split) {
-        throw new CalcError(
-          'invalid_argument',
-          '认不出区间表达式：' + text,
-          '写法：「[20,50] * [2000,2500]」（推荐，无歧义）；' +
-            '或「20-50 * 2000-2500」（运算符两侧留空格）。' +
-            '也可以用结构化形态 {interval:{a:[20,50], op:"*", b:[2000,2500]}}。',
-        )
+      /**
+       * ## 先试「整串就是一个区间」
+       *
+       * 这一步是 2026-11-12 补的。原来只走 `splitExpr` 求 `a op b`，
+       * 于是 `{expr:"20-50"}` 这种**单区间**输入直接报「认不出」——
+       * 而那正是最自然的用法（只想看一个区间的中值/半宽/松紧）。
+       *
+       * 判据：整串能解析成一个区间，且里面没有「两侧带空格的运算符」
+       * （带空格说明用户想写运算，如 `20 - 50` 是减法）。
+       */
+      const looksLikeOperation = /\s[+\-*/×÷~]\s/.test(text) || /\]\s*[+\-*/×÷~]\s*\[/.test(text)
+      if (!looksLikeOperation) {
+        try {
+          const single = toBracket(text, '区间')
+          left = single
+          op = '*'
+          right = { low: 1, high: 1 }
+        } catch {
+          /** 单区间不成立就继续走运算解析。 */
+        }
       }
-      left = toBracket(split.a, '左操作数')
-      op = split.op === '~' ? '-' : split.op
-      right = toBracket(split.b, '右操作数')
+
+      if (left === null) {
+        const split = splitExpr(text)
+        if (!split) {
+          throw new CalcError(
+            'invalid_argument',
+            '认不出区间表达式：' + text,
+            '写法：「[20,50] * [2000,2500]」（推荐，无歧义）；' +
+              '或「20-50 * 2000-2500」（运算符两侧留空格）；' +
+              '单个区间直接给：「20-50」或「[20,50]」。' +
+              '也可以用结构化形态 {interval:{a:[20,50], op:"*", b:[2000,2500]}}。',
+          )
+        }
+        left = toBracket(split.a, '左操作数')
+        op = split.op === '~' ? '-' : split.op
+        right = toBracket(split.b, '右操作数')
+      }
     } else {
       left = toBracket(obj.a ?? obj.left, 'a')
       op = typeof obj.op === 'string' ? obj.op.trim() : '*'
@@ -417,6 +442,21 @@ export function opInterval(args: MathArgs): Outcome {
     right = toBracket(raw.b ?? raw.right, 'b')
     if (typeof raw.against === 'number') target = raw.against
     if (typeof raw.unit === 'string') unit = raw.unit
+  }
+
+  /**
+   * 兜底：所有分支走完后 left/right 仍为空，说明输入形态没被任何分支接住。
+   *
+   * 不加这一步的话，TS 会要求每处使用都做空检查；而**真的为空是不该发生**的
+   * （上面的分支覆盖了 expr / a+op+b / raw 三种形态），所以这里显式报错比
+   * 到处加 `!` 更好 —— 它把「不该发生的路径」变成可诊断的错误。
+   */
+  if (left === null || right === null) {
+    throw new CalcError(
+      'invalid_argument',
+      '没能从输入里认出两个区间',
+      '给 {interval:{expr:"[20,50] * [2000,2500]"}} 或 {interval:{a:[20,50], op:"*", b:[2000,2500]}}。',
+    )
   }
 
   const result = applyOp(left, right, op)

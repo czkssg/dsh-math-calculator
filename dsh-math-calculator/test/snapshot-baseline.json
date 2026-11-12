@@ -1404,11 +1404,32 @@
   }
  },
  "interval": {
-  "ok": false,
-  "result": "错误[invalid_argument]: 认不出区间表达式：20-50",
-  "errorType": "invalid_argument",
-  "errorMessage": "认不出区间表达式：20-50",
-  "value": null
+  "ok": true,
+  "result": "═══ 区间运算 ═══\n\n  [20, 50] * [1, 1]\n  = [20, 50]\n\n  中点 35　半宽 15　相对宽度 ±42.86%\n\n  把握：较松（±43%）——只适合当量级，别当精确数",
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+   "input": {
+    "a": {
+     "low": 20,
+     "high": 50
+    },
+    "b": {
+     "low": 1,
+     "high": 1
+    },
+    "op": "*"
+   },
+   "low": 20,
+   "high": 50,
+   "mid": 35,
+   "halfWidth": 15,
+   "relativeHalfWidth": 0.42857142857142855,
+   "crossesZero": false,
+   "unit": null,
+   "against": null,
+   "verdict": null
+  }
  },
  "compare": {
   "ok": true,
