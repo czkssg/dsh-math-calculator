@@ -40,6 +40,8 @@ export interface FormulaParamSpec {
   /** 默认值；必填时为 null。 */
   default: number | null
   desc: string
+  /** 量纲向量（7 基量：L M T Theta I N J）；没有标注就是 undefined（不校验）。 */
+  dimension?: Record<string, number>
 }
 
 /** 调用结果。 */
@@ -90,6 +92,7 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
     required: spec.value === null,
     default: spec.value,
     desc: spec.desc,
+    ...(spec.dimension !== undefined ? { dimension: spec.dimension } : {}),
   }))
 
   return {
@@ -122,13 +125,87 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
           '这条公式的参数是：' + [...known].join(', ') + '。检查是否拼错（大小写敏感）。',
         )
       }
+      /**
+       * 带单位参数（阶段 3.2）。
+       *
+       * 允许 `{m: '5 kg'}` 这种写法：解析成 SI 数值，并核对量纲是否与参数标注一致。
+       * mathjs 的 Unit.dimensions 是 9 位数组，顺序 [M,L,T,I,Theta,N,J,…]。
+       */
+      /** mathjs 的 dimensions 顺序：M, L, T, I, Theta, J（发光强度）, N（物质的量）… */
+      const UNIT_ORDER = ['M', 'L', 'T', 'I', 'Theta', 'J', 'N']
+      /** 七个基量的 SI 基准单位，用于把「1 atm」这类换算成 SI 数值。 */
+      const BASE_UNITS: Record<string, string> = { M: 'kg', L: 'm', T: 's', I: 'A', Theta: 'K', J: 'cd', N: 'mol' }
+      const numericOf = (spec: FormulaParamSpec, raw: unknown): number => {
+        if (typeof raw === 'number' && Number.isFinite(raw)) return raw
+        if (typeof raw !== 'string') {
+          throw new CalcError('invalid_argument', '参数 ' + spec.name + ' 需要数字或带单位的字符串（收到 ' + JSON.stringify(raw) + '）', '例如 {m:"5 kg"} 或 {m:5}。')
+        }
+        let parsed: unknown
+        try {
+          parsed = engine.evaluate(raw.trim())
+        } catch (error) {
+          throw new CalcError('invalid_argument', '参数 ' + spec.name + ' 的单位串解析失败：' + raw + '（' + (error instanceof Error ? error.message : String(error)) + '）', '写法：数值在前、单位在后，如 "5 kg"、"300 K"。')
+        }
+        const unit = parsed as { isUnit?: boolean; toNumber?: () => number; to?: (target: string) => { toNumber: () => number }; dimensions?: number[] }
+        if (unit?.isUnit !== true || typeof unit.toNumber !== 'function') {
+          throw new CalcError('invalid_argument', '参数 ' + spec.name + ' 的 "' + raw + '" 没解析成「数值 + 单位」', '要纯数值请直接给数字；要带单位请写 "5 kg"。')
+        }
+        if (spec.dimension !== undefined) {
+          const actual: Record<string, number> = {}
+          const dims = unit.dimensions ?? []
+          for (let index = 0; index < Math.min(UNIT_ORDER.length, dims.length); index += 1) {
+            if (dims[index] !== 0) actual[UNIT_ORDER[index]] = dims[index]
+          }
+          const expected = spec.dimension
+          const mismatch =
+            Object.keys(actual).some((key) => (expected[key] ?? 0) !== actual[key]) ||
+            Object.keys(expected).some((key) => (actual[key] ?? 0) !== expected[key])
+          if (mismatch) {
+            const show = (dim: Record<string, number>): string => {
+              const parts = Object.entries(dim).filter(([, power]) => power !== 0).map(([key, power]) => key + (power === 1 ? '' : '^' + power))
+              return parts.length > 0 ? parts.join('·') : '无量纲'
+            }
+            throw new CalcError(
+              'unit_mismatch',
+              '参数 ' + spec.name + ' 的量纲不符：期望 ' + show(expected) + '，收到 ' + show(actual) + '（"' + raw + '"）',
+              '这条参数的含义是「' + spec.desc + '」。换一个同量纲的单位，或直接给数字（按 SI 基准单位）。',
+            )
+          }
+        }
+        /**
+         * Unit.toNumber() 返回的是**以自身单位表示**的值（"1 atm" → 1），
+         * 不是 SI 基准值。要按量纲构造目标单位再换算，否则公式会拿 1 当 101325 用。
+         */
+        let value: number
+        try {
+          const dims = unit.dimensions ?? []
+          const parts: string[] = []
+          for (let index = 0; index < Math.min(UNIT_ORDER.length, dims.length); index += 1) {
+            const power = dims[index]
+            if (power === 0) continue
+            const base = BASE_UNITS[UNIT_ORDER[index]]
+            if (base === undefined) continue
+            parts.push(base + (power === 1 ? '' : '^' + power))
+          }
+          value = parts.length > 0 && typeof unit.to === 'function' ? Number(unit.to(parts.join('*')).toNumber()) : Number(unit.toNumber())
+        } catch {
+          throw new CalcError(
+            'invalid_argument',
+            '参数 ' + spec.name + ' 的单位无法换算成 SI 基准（"' + raw + '"）',
+            '尽量用 SI 或常见单位（kg、m、s、K、mol、Pa、J、W…）；复合单位请检查写法。',
+          )
+        }
+        if (!Number.isFinite(value)) throw new CalcError('invalid_argument', '参数 ' + spec.name + ' 的数值不是有限数：' + raw, '')
+        return value
+      }
+
       /** 参数契约：显式值 > 默认值；必填缺了直接报，不猜。 */
       const substituted: Record<string, number> = {}
       const missing: string[] = []
       for (const spec of params) {
         const provided = values[spec.name]
-        if (typeof provided === 'number' && Number.isFinite(provided)) {
-          substituted[spec.name] = provided
+        if (provided !== undefined && provided !== null) {
+          substituted[spec.name] = numericOf(spec, provided)
         } else if (spec.default !== null) {
           substituted[spec.name] = spec.default
         } else {

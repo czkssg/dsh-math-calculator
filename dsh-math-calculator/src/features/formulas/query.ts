@@ -38,7 +38,7 @@ export interface FormulaEntry {
   cat: string
   name: string
   expr: string
-  params: Record<string, { value: number | null; desc: string }>
+  params: Record<string, { value: number | null; desc: string; /** 量名（语义标签）。 */ quantity?: string; /** 7 基量向量（L M T Theta I N J）。 */ dimension?: Record<string, number> }>
   unit: string
   desc: string
   keys?: string[]
