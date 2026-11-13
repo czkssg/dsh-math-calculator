@@ -102,10 +102,10 @@ console.log('-- 5. 对账图谱五件套 --')
 
 console.log('-- 6. 迁移清单 --')
 {
-  assert('★ 已迁移 37 个 operation', dispatch.MIGRATED_OPERATIONS.length === 37, String(dispatch.MIGRATED_OPERATIONS.length))
-  const legacyOnly = ['constants', 'workspace', 'quantities', 'formula-table', 'custom', 'balance', 'help']
-  for (const op of legacyOnly) {
-    assert('未迁移 ' + op + ' 仍交老入口', dispatch.dispatchNew(op, {}) === null, '')
+  assert('★ 全部 45 个 operation 已迁移', dispatch.MIGRATED_OPERATIONS.length === 45, String(dispatch.MIGRATED_OPERATIONS.length))
+  const rest = ['constants', 'workspace', 'quantities', 'formula-table', 'custom', 'balance', 'help']
+  for (const op of rest) {
+    assert('收尾批 ' + op + ' 已在迁移清单', dispatch.MIGRATED_OPERATIONS.includes(op), '')
   }
 }
 

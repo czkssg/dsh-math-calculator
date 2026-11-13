@@ -54,6 +54,13 @@ import { checkConsistency } from './features/graph/consistency.js'
 import { checkLedger } from './features/graph/ledger.js'
 import { comparePlans } from './features/graph/compare.js'
 import { intervalOperation } from './features/graph/interval.js'
+import { runConstants } from './features/deduction/constants-op.js'
+import { runQuantities } from './features/numeric/quantities-op.js'
+import { runBalance } from './features/graph/balance-op.js'
+import { runCustom } from './features/numeric/custom-op.js'
+import { runFormulaTable } from './features/formulas/formula-table-op.js'
+import { runHelp, type HelpTopic } from './features/help.js'
+import { runWorkspace } from './features/workspace.js'
 
 /** 统一的返回形状（与老 Outcome 对齐）。 */
 export interface DispatchOutcome {
@@ -296,6 +303,67 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     case 'interval':
       return toOutcome(intervalOperation(args['interval'] as never))
 
+    // ── 历史包袱较轻的五个 op（第 8 步最后一批）──
+    case 'constants':
+      return runConstants({ constants: args['constants'] as never, preview: args['preview'] === true, workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined })
+
+    case 'quantities':
+      return runQuantities({ constants: args['constants'] as never, constantName: typeof args['constantName'] === 'string' ? args['constantName'] : undefined })
+
+    case 'balance':
+      return runBalance(args['balance'])
+
+    case 'custom':
+      return runCustom({
+        customAction: typeof args['customAction'] === 'string' ? args['customAction'] : undefined,
+        customConstant: args['customConstant'],
+        customConstantName: typeof args['customConstantName'] === 'string' ? args['customConstantName'] : undefined,
+        expression: typeof args['expression'] === 'string' ? args['expression'] : undefined,
+        expectedDimension: args['expectedDimension'] as never,
+        workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined,
+      })
+
+    case 'formula-table':
+      return runFormulaTable(
+        {
+          tableAction: typeof args['tableAction'] === 'string' ? args['tableAction'] : undefined,
+          formulaId: typeof args['formulaId'] === 'string' ? args['formulaId'] : undefined,
+          newExpression: typeof args['newExpression'] === 'string' ? args['newExpression'] : undefined,
+          newParams: args['newParams'] as never,
+          customFormula: args['customFormula'] as never,
+          workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined,
+        },
+        formulaEntries() as never,
+      )
+
+    case 'workspace':
+      return runWorkspace({
+        action2: typeof args['action2'] === 'string' ? args['action2'] : undefined,
+        workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined,
+        constants: args['constants'] as never,
+        workspaceVariables: args['workspaceVariables'] as never,
+        useWorkspaceVariables: args['useWorkspaceVariables'] === true,
+        world: asRecord(args['world']),
+      })
+
+    case 'help':
+      return runHelp(
+        dataOf<HelpTopic[]>('help', 'help.json', []),
+        typeof args['helpTopic'] === 'string' ? args['helpTopic'] : undefined,
+        typeof args['helpQuery'] === 'string' ? args['helpQuery'] : undefined,
+      )
+
+    // ── 自动识别：与老入口同规则，但落到新实现 ──
+    case 'auto': {
+      const expression = typeof args['expression'] === 'string' ? args['expression'].trim() : ''
+      if (expression !== '' && expression.includes('=') && !expression.includes('>') && !expression.includes('<')) {
+        return dispatchNew('solve', args)
+      }
+      if (Array.isArray(args['matrix'])) return dispatchNew('matrix', args)
+      if (expression === '' && typeof args['expression'] !== 'string') return null
+      return dispatchNew('evaluate', args)
+    }
+
     default:
       return null
   }
@@ -368,4 +436,13 @@ export const MIGRATED_OPERATIONS = [
   'consistency',
   'compare',
   'interval',
+  // 收尾批（第 8 步最后 8 个）
+  'constants',
+  'quantities',
+  'balance',
+  'custom',
+  'formula-table',
+  'workspace',
+  'help',
+  'auto',
 ] as const

@@ -239,14 +239,24 @@ export const mathExecuteTool = defineTool({
   parameters: PARAMETER_SPEC,
   output: { schema: OUTPUT_SCHEMA, render: (_args: unknown, value: unknown) => renderResult(value) },
   execute: async (args: Record<string, unknown>, _exec: unknown) => {
-    const operation = typeof args['operation'] === 'string' ? args['operation'].trim() : 'auto'
+    const operation = typeof args['operation'] === 'string' && args['operation'].trim() !== '' ? args['operation'].trim() : 'auto'
+    /** auto 时对外报出实际执行的 operation（与老入口一致）。 */
+    const expressionText = typeof args['expression'] === 'string' ? args['expression'] : ''
+    const resolvedOperation =
+      operation === 'auto'
+        ? expressionText.includes('=') && !expressionText.includes('>') && !expressionText.includes('<')
+          ? 'solve'
+          : Array.isArray(args['matrix'])
+            ? 'matrix'
+            : 'evaluate'
+        : operation
     try {
-      if (operation !== 'auto') {
+      {
         const migrated = dispatchNew(operation, args)
         if (migrated !== null) {
           return {
             ok: true,
-            operation,
+            operation: resolvedOperation,
             input: typeof args['expression'] === 'string' ? (args['expression'] as string) : '',
             result: migrated.result,
             precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
