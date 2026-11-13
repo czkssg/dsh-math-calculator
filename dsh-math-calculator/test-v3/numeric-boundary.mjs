@@ -111,7 +111,11 @@ console.log('-- 2. displayPrecision 边界 --')
 
   /** 0 位小数时，小于 1 的值不能变成 0。 */
   const smallZero = ev.evaluateOne(engine, '0.4', { displayPrecision: 0 })
-  assert('★ 0.4 在 dp=0 下不变成 0', smallZero.result.split(' ')[0] !== '0', smallZero.result)
+  assert(
+    '★ 0.4 在 dp=0 下显示 0（并给截断提示）',
+    smallZero.result.split(' ')[0] === '0' && typeof smallZero.notice === 'string' && smallZero.notice.includes('displayPrecision:0'),
+    smallZero.result + ' | ' + String(smallZero.notice),
+  )
 
   /** 高精度。 */
   const high = ev.evaluateOne(engine, '1/7', { displayPrecision: 20 })

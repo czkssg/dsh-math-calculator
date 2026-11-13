@@ -253,6 +253,21 @@ export const mathExecuteTool = defineTool({
   parameters: PARAMETER_SPEC,
   output: { schema: OUTPUT_SCHEMA, render: (_args: unknown, value: unknown) => renderResult(value) },
   execute: async (args: Record<string, unknown>, _exec: unknown) => {
+    /**
+     * displayPrecision 越界钳制并说明（T8-D04a）。
+     *
+     * 旧行为是「传 -1 静默按 8 位」——调用方以为生效了。
+     * 现在钳到 0–64，并把「你要的 -1 已被钳成 0」写进 notice。
+     */
+    let clampNotice: string | undefined
+    if (typeof args['displayPrecision'] === 'number') {
+      const requested = Math.round(args['displayPrecision'])
+      if (requested < 0 || requested > 64) {
+        const clamped = Math.min(64, Math.max(0, requested))
+        clampNotice = 'displayPrecision 只接受 0–64（收到 ' + requested + '），已按 ' + clamped + ' 位显示。'
+        args = { ...args, displayPrecision: clamped }
+      }
+    }
     const operation = typeof args['operation'] === 'string' && args['operation'].trim() !== '' ? args['operation'].trim() : 'auto'
     /** auto 时对外报出实际执行的 operation（与老入口一致）。 */
     const expressionText = typeof args['expression'] === 'string' ? args['expression'] : ''
@@ -275,14 +290,20 @@ export const mathExecuteTool = defineTool({
             result: migrated.result,
             precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
             value: toJsonValue(migrated.value) as JsonValue,
-            ...(migrated.notice !== undefined ? { notice: migrated.notice } : {}),
+            ...(() => {
+              const merged = [clampNotice, migrated.notice].filter((item): item is string => typeof item === 'string' && item !== '')
+              return merged.length > 0 ? { notice: merged.join('\n') } : {}
+            })(),
           } satisfies MathResult
         }
       }
       if (legacyRunner === null) {
         throw new Error(PLUGIN_NAME + ': 老入口未绑定（bindLegacy 未调用）')
       }
-      return legacyRunner(args)
+      const legacy = legacyRunner(args)
+      return clampNotice === undefined
+        ? legacy
+        : { ...legacy, notice: legacy.notice !== undefined && legacy.notice !== '' ? legacy.notice + '\n' + clampNotice : clampNotice }
     } catch (error) {
       /**
        * ## 先认新入口的 CalcError

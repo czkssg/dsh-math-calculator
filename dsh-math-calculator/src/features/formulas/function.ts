@@ -99,6 +99,21 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
     unit: entry.unit,
     params,
     call: (values = {}, options = {}): FormulaCallResult => {
+      /**
+       * 未知参数名必须点名（T4-15）。
+       *
+       * 旧实现只把 params 名收进 substituted，拼错的 key 在**校验之前**就被
+       * 过滤掉了——单条会报，批量却静默。这里先校验。
+       */
+      const known = new Set(params.map((spec) => spec.name))
+      const unknown = Object.keys(values).filter((key) => !known.has(key))
+      if (unknown.length > 0) {
+        throw new CalcError(
+          'unknown_argument',
+          '这些参数名认不出来，已被忽略：' + unknown.join(', '),
+          '这条公式的参数是：' + [...known].join(', ') + '。检查是否拼错（大小写敏感）。',
+        )
+      }
       /** 参数契约：显式值 > 默认值；必填缺了直接报，不猜。 */
       const substituted: Record<string, number> = {}
       const missing: string[] = []

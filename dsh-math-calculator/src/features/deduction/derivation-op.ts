@@ -335,6 +335,11 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
       7,
     )
     lines.push('═══ 相图：重力 × 生物尺寸 → 骨骼强度体重比 ═══', '')
+    /**
+     * 缺参时用默认扫描范围是设计（相图就是扫描），但必须**说出来**，
+     * 不能静默用默认值（反馈 W13-phase 的教训）。
+     */
+    lines.push('  范围：g 0.2–3 × 尺寸 0.1–100（未指定时用默认；要换范围请传 derivationArgs）', '')
     lines.push('  g\\尺寸 ' + slice.xs.map((x) => f(x).padStart(9)).join(''))
     for (let yi = 0; yi < slice.ys.length; yi += 1) {
       const row = slice.grid[yi]

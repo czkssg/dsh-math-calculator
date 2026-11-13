@@ -124,8 +124,28 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
   }
 
   switch (operation) {
-    case 'world':
+    case 'world': {
+      /**
+       * terrain.kind 拼错必须报错（T3-13）。
+       *
+       * 旧行为：world 不读 terrain.kind，拼错的 'coastel' 被静默丢弃，
+       * 输出一份「正常」的气候——作者以为地形生效了。
+       * 局地气候本身由 topology/terrain 计算，world 只做行星级。
+       */
+      const terrainInput = asRecord(args['terrain'])
+      const kind = terrainInput?.['kind']
+      if (kind !== undefined) {
+        const KINDS = ['coastal', 'plain', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake']
+        if (typeof kind !== 'string' || !KINDS.includes(kind)) {
+          throw new CalcError(
+            'invalid_argument',
+            '不认识的 terrain.kind「' + String(kind) + '」',
+            '可用：' + KINDS.join(' / ') + '。注意 world 本身只做行星级气候；局地地形气候由 topology/terrain 计算。',
+          )
+        }
+      }
       return runWorld(args as WorldOpInput, worldDeps)
+    }
 
     case 'derivation':
       return runDerivation(args, worldDeps)
@@ -224,6 +244,10 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       return toOutcome(solveLinearSystem(buildEngine(), args['matrix'], args['vector']))
 
     case 'stats':
+      /** dataY 是 regression 的参数；stats 收了会静默忽略（T7-N3）。 */
+      if (args['dataY'] !== undefined) {
+        throw new CalcError('unknown_argument', 'stats 不收 dataY——它是 regression 的参数（data 与 dataY 配对）', '要算两条序列的关系请用 {operation:"regression", data, dataY, degree}。')
+      }
       return toOutcome(describe(args['data']))
 
     case 'dist': {}
@@ -267,8 +291,41 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     // ── 公式库（features/formulas）──
     case 'formulas': {
       const entries = formulaEntries()
-      /** 批量公式先交老入口：它按条报错、吞掉未知 key 的语义与通知都已调好。 */
-      if (Array.isArray(args['formulas'])) return null
+      /**
+       * 批量公式：逐条调用（一条失败不影响其它条）。
+       *
+       * 旧实现在批量里**吞掉未知 key 的警告**（T4-15）：单条会点名拼错，
+       * 批量却静默。这里改为逐条走 callFormula，未知 key 由 evaluateFormula
+       * 的校验抛出，只让那一条失败。
+       */
+      if (Array.isArray(args['formulas'])) {
+        const items = args['formulas'] as unknown[]
+        const lines: string[] = ['═══ 批量公式（' + items.length + ' 条）═══', '']
+        let succeeded = 0
+        let failed = 0
+        for (const raw of items) {
+          const item = typeof raw === 'string' ? { formula: raw } : (asRecord(raw) ?? {})
+          const idText = typeof item['formula'] === 'string' ? item['formula'] : ''
+          const label = typeof item['label'] === 'string' && item['label'] !== '' ? item['label'] : idText
+          const overrides = asRecord(item['overrides']) ?? asRecord(item['params']) ?? {}
+          try {
+            const call = callFormula(entries, idText, buildEngine(), overrides, relations(), { displayPrecision: displayPrecisionOf(args), terse: true })
+            succeeded += 1
+            lines.push('  ✓ ' + label + ' = ' + call.result)
+          } catch (error) {
+            failed += 1
+            const type = error !== null && typeof error === 'object' && typeof (error as { type?: unknown }).type === 'string' ? (error as { type: string }).type : 'error'
+            const message = error instanceof Error ? error.message : String(error)
+            lines.push('  ✗ ' + label + '（' + type + '）：' + message)
+          }
+        }
+        lines.push('', '成功 ' + succeeded + '，失败 ' + failed)
+        return {
+          result: lines.join('\n'),
+          value: { total: items.length, succeeded, failed },
+          ...(failed > 0 ? { notice: '有 ' + failed + ' 条失败——逐条看上面的 ✗' } : {}),
+        }
+      }
       const query = typeof args['query'] === 'string' ? args['query'].trim() : ''
       /** 公式-链结构图：query="graph" 或 formulaGraph:true；焦点用 formulaFocus。 */
       /** 相邻公式：query="neighbors" + formulaFocus / formula。 */

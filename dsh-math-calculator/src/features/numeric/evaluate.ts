@@ -325,11 +325,39 @@ export function evaluateOne(
   if (formatted.magnitude !== '') result += ' ' + formatted.magnitude
   if (formatted.chinese !== '') result += '（' + formatted.chinese + '）'
 
+  /**
+   * ## 超精度静默丢末位 → 必须提示（T8-D01）
+   *
+   * BigNumber 的有效位由引擎固定（64）。`(10^100+1)-(10^100)` 在 64 位下
+   * 就是 0 —— 数学上正确、工程上是丢信息。旧的缺陷是「静默」。
+   * 这里只提示，不改结果：把末位不可信这件事说出来，别假装精确。
+   */
+  const integerDigits = /^-?\d+$/.test(formatted.text) ? formatted.text.replace('-', '').length : 0
+  const precision = options.precision ?? 64
+  /**
+   * 表达式里出现超过精度的量（`10^100`、65 位以上字面量）时，结果末位不可信。
+   * 只看结果位数不够——`(10^100+1)-(10^100)` 的结果是 0（1 位），但过程已丢位。
+   */
+  const powerMatch = /10\s*\^\s*(\d+)/.exec(expression)
+  const explicitPower = powerMatch !== null ? Number(powerMatch[1]) : 0
+  const hasLongLiteral = /\d{65,}/.test(expression)
+  const overflow = integerDigits > precision || explicitPower > precision || hasLongLiteral
+  /**
+   * displayPrecision=0 把非零小数截成 0 —— 这是语义，但必须提示，
+   * 否则看起来像「算错了」（旧边界测试也正因为这一点要求不显示 0）。
+   */
+  const truncatedToZero =
+    options.displayPrecision === 0 && Number.isFinite(unwrapped.n) && (unwrapped.n as number) !== 0 && Math.round(unwrapped.n as number) === 0
+  const notices: string[] = []
+  if (overflow) notices.push('表达式或结果涉及超过当前计算精度 ' + precision + ' 位的量——末位可能不可信；需要精确请显式传更高的 precision（上限 64），或改写表达式。')
+  if (truncatedToZero) notices.push('按 displayPrecision:0 显示整数，原值 ' + String(unwrapped.n) + ' 非零但被截成 0；需要小数位请传 displayPrecision:≥1。')
+  const notice = notices.length > 0 ? notices.join(' ') : undefined
   return {
     result,
     /** 大整数必须给**原文**，否则 JSON 里会丢位。 */
     value: unwrapped.bigText !== null ? unwrapped.bigText : toJsonValue(raw),
     ok: true,
+    ...(notice !== undefined ? { notice } : {}),
   }
 }
 

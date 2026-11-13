@@ -47,7 +47,7 @@ console.log('-- 2. quantities --')
 
 console.log('-- 3. balance --')
 {
-  const out = await run({ operation: 'balance', balance: { grain: { demand: 2.7e6, supply: 3.1e6, unit: 'kg/年' }, army: { demand: 3e7, supply: 3e8, unit: '钱' } } })
+  const out = await run({ operation: 'balance', balance: { grain: { demand: 2.7e6, supply: 3.1e6, unit: '吨' }, fodder: { demand: 1e6, supply: 1.2e6, unit: '吨' } } })
   assert('★ 两项都撑得住', out.ok === true && out.value.checks.length === 2 && out.value.sustainable === true, JSON.stringify(out.value.verdict))
   const short = await run({ operation: 'balance', balance: { grain: { demand: 100, supply: 80 } } })
   assert('★ 缺口 → 最短板', short.ok === true && short.result.includes('最短板'), short.result.slice(0, 100))

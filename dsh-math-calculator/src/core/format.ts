@@ -113,10 +113,13 @@ export function trimDecimal(value: number, digits: number): string {
    *
    * 这不是「不够精确」，是**把非零值显示成零**，属于数据丢失。
    */
-  if (digits === 0) {
-    if (abs < 1) return value.toExponential(6).replace(/\.?0+e/, 'e')
-    return String(Math.round(value))
-  }
+  /**
+   * displayPrecision=0 → 只留整数（四舍五入）。
+   *
+   * 注意：<1 的非零值会显示成 0，这是「精度 0」的语义，不是算错。
+   * 调用方传 displayPrecision:0 就是要这个效果；需要非零显示请给 ≥1。
+   */
+  if (digits === 0) return String(Math.round(value))
   if (abs < Math.pow(10, -digits)) return value.toExponential(6).replace(/\.?0+e/, 'e')
 
   /** ② 定点截断。 */

@@ -11,6 +11,39 @@
 import { CalcError } from '../../core/errors.js'
 import { BALANCE_ITEMS, checkBalance } from './balance.js'
 
+/**
+ * 单位族：收支盘点必须同族才能比（T7-N1/N2）。
+ *
+ * 旧实现把 `m³` 与 `kW` 一起算覆盖率、把「光年」当水量接受——
+ * 数字看着正常，结论完全错。这里按单位族拦截，不猜换算。
+ */
+const UNIT_FAMILY: Record<string, 'mass' | 'volume' | 'energy' | 'area' | 'power' | 'currency' | 'info'> = {
+  kg: 'mass', 克: 'mass', g: 'mass', 吨: 'mass', t: 'mass', 斤: 'mass', 石: 'mass', 万斤: 'mass', 磅: 'mass',
+  m3: 'volume', 'm³': 'volume', L: 'volume', 升: 'volume', 加仑: 'volume', 斗: 'volume',
+  J: 'energy', kJ: 'energy', MJ: 'energy', GJ: 'energy', kWh: 'energy', 卡: 'energy', 大卡: 'energy',
+  m2: 'area', 'm²': 'area', 亩: 'area', 公顷: 'area', km2: 'area', 'km²': 'area',
+  W: 'power', kW: 'power', MW: 'power', GW: 'power', 马力: 'power',
+  元: 'currency', 两: 'currency', 贯: 'currency', 银元: 'currency', 金币: 'currency', 铜钱: 'currency', 钱: 'currency',
+  bit: 'info', B: 'info', KB: 'info', MB: 'info', GB: 'info', TB: 'info',
+}
+
+/** 各收支项的推荐单位族（BALANCE_ITEMS 的已知项）。 */
+const ITEM_FAMILY: Record<string, 'mass' | 'volume' | 'energy' | 'area' | 'power' | 'currency' | 'info'> = {
+  grain: 'mass', water: 'volume', energy: 'energy', land: 'area', fiscal: 'currency', military: 'currency', info: 'info',
+}
+
+/** 单位 → 族。 */
+function familyOf(unit: string): string | null {
+  /** 速率单位（kg/年、m³/日）按分子判族。 */
+  const normalized = unit.trim().replace(/^\//, '').split('/')[0]
+  if (UNIT_FAMILY[normalized] !== undefined) return UNIT_FAMILY[normalized]
+  /** 带前缀：万斤、千吨之类取尾部。 */
+  for (const [name, family] of Object.entries(UNIT_FAMILY)) {
+    if (normalized.endsWith(name)) return family
+  }
+  return null
+}
+
 /** 结果。 */
 export interface BalanceOutcome {
   result: string
@@ -56,6 +89,42 @@ export function runBalance(raw: unknown): BalanceOutcome {
       throw new CalcError('invalid_argument', '收支项「' + key + '」的 demand / supply 不能为负', '缺口用「demand > supply」表达，不要写负数。')
     }
     inputs[key] = { demand, supply, ...(typeof row['unit'] === 'string' ? { unit: row['unit'] } : {}) }
+  }
+
+  /**
+   * 量纲/单位族校验（T7-N1/N2）。
+   *
+   * 1. 每项单位必须能归到族；2. 所有项必须同族；
+   * 3. 已知项（grain/water/…）的单位族必须与推荐一致（光年不是水量）。
+   */
+  const families = new Map<string, string>()
+  for (const [key, item] of Object.entries(inputs)) {
+    if (item.unit === undefined) continue
+    const family = familyOf(item.unit)
+    if (family === null) {
+      throw new CalcError(
+        'invalid_argument',
+        '收支项「' + key + '」的单位「' + item.unit + '」认不出量纲族',
+        '可用：质量（kg/吨/斤）、体积（m³/L/加仑）、能量（J/kWh）、面积（m²/亩）、功率（W/kW）、货币（元/两）、信息（bit/GB）。',
+      )
+    }
+    families.set(key, family)
+    const expected = ITEM_FAMILY[key]
+    if (expected !== undefined && expected !== family) {
+      throw new CalcError(
+        'invalid_argument',
+        '收支项「' + key + '」是' + (expected === 'mass' ? '质量' : expected === 'volume' ? '体积' : expected === 'energy' ? '能量' : expected === 'area' ? '面积' : expected === 'power' ? '功率' : expected === 'currency' ? '货币' : '信息') + '类，单位却是「' + item.unit + '」',
+        '例如 ' + key + ' 用 kg 或 吨（不是光年/米这类长度单位）。',
+      )
+    }
+  }
+  const distinct = new Set(families.values())
+  if (distinct.size > 1) {
+    throw new CalcError(
+      'invalid_argument',
+      '收支盘点不能跨量纲比较：' + [...families.entries()].map(([key, family]) => key + '=' + family).join('、'),
+      '所有项必须同族（全用质量、或全用货币…）。不同量纲的项请分开盘点。',
+    )
   }
 
   const report = checkBalance(inputs)

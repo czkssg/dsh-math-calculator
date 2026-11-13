@@ -196,6 +196,17 @@ export function distribution(
       'normal:[μ,σ]、binomial:[n,p]、poisson:[λ]、exponential:[λ]、chisquare:[df]、t:[df]',
     )
   }
+  /**
+   * 多余参数必须拒绝（T7-N4）：旧实现静默吞掉第 2 个参数，
+   * 调用方以为它生效了。
+   */
+  if (p.length > NEEDED[distribution]) {
+    throw new CalcError(
+      'invalid_argument',
+      distribution + ' 只收 ' + NEEDED[distribution] + ' 个参数，收到 ' + p.length + ' 个（多出的会被忽略）',
+      '把 params 裁到该分布需要的个数：normal:[μ,σ]、binomial:[n,p]、poisson:[λ]、exponential:[λ]、chisquare:[df]、t:[df]。',
+    )
+  }
 
   let pdf: number
   let cdf: number
