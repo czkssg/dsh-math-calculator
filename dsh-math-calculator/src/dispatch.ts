@@ -52,6 +52,7 @@ import { solveFor } from './features/formulas/solve-for.js'
 import { buildRelationIndex, relationReason, type RelationIndex } from './features/formulas/relations.js'
 import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
+import { runChainNumeric } from './features/formulas/chain-run.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -343,6 +344,18 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       }
       const query = typeof args['query'] === 'string' ? args['query'].trim() : ''
       /** 公式-链结构图：query="graph" 或 formulaGraph:true；焦点用 formulaFocus。 */
+      /**
+       * 链数值传导：query="chain" + formulaFocus=链 id。
+       *
+       * 只走 systems.json 里显式声明的 inputs 映射；缺初始参数会列出来。
+       */
+      if (query === 'chain') {
+        const chainId = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : '')
+        if (chainId === '') throw new CalcError('missing_params', 'chain 需要 formulaFocus（链 id，如 sys-material）', '可查：' + formulaSystems().map((item) => item.id).join('、'))
+        const initialRaw = asRecord(args['initial']) ?? asRecord(args['params']) ?? {}
+        return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations()))
+      }
+
       /** 相邻公式：query="neighbors" + formulaFocus / formula。 */
       if (query === 'neighbors' || args['neighbors'] === true) {
         const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['formula'] === 'string' ? args['formula'] : '')

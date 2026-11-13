@@ -46,7 +46,13 @@
    },
    {
     "formula": "safety_factor_check",
-    "note": "屈服强度 → 许用应力（判安全的基准）"
+    "note": "屈服强度 → 许用应力（判安全的基准）",
+    "inputs": {
+     "yield_strength": {
+      "fromStep": 5,
+      "note": "Hall-Petch 的屈服强度 → 安全系数校核的基准"
+     }
+    }
    },
    {
     "formula": "beam_bending_stress",
@@ -78,7 +84,8 @@
     "toSystem": "sys-structure",
     "note": "本构参数是结构计算的输入"
    }
-  ]
+  ],
+  "notes": " 数据流：5→9（屈服强度→许用）、；其余步骤是并列主题。 实测：自重弯矩（第 12 步）排在弯曲应力（第 10 步）之后，方向相反，故不映射；链的步骤顺序≠数据流顺序。"
  },
  {
   "id": "sys-structure",
