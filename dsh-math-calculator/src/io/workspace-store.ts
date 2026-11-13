@@ -36,6 +36,8 @@ export interface WorkspaceData {
   world: Record<string, unknown>
   /** 自创实体类型（topology 的自定义接口）。 */
   customEntities: Array<Record<string, unknown>>
+  /** 已保存的拓扑模型（名字 → {nodes,edges,action?,savedAt}）。 */
+  topologyModels: Record<string, unknown>
   updatedAt: string
   createdAt: string
 }
@@ -60,6 +62,11 @@ export function normalizeWorkspaceName(raw: string): string {
   return name
 }
 
+/** 工作区产物目录（导出/模型的本地路径，与工作区同名同层）。 */
+export function workspaceArtifactDir(name: string, dir: string = workspaceDirectory()): string {
+  return join(dir, normalizeWorkspaceName(name) + '.artifacts')
+}
+
 /** 工作区文件路径。 */
 export function workspaceFilePath(name: string, dir: string = workspaceDirectory()): string {
   return join(dir, normalizeWorkspaceName(name) + '.json')
@@ -77,6 +84,7 @@ export function emptyWorkspace(name: string, now = new Date().toISOString()): Wo
     useWorkspaceVariables: false,
     world: {},
     customEntities: [],
+    topologyModels: {},
     createdAt: now,
     updatedAt: now,
   }
@@ -107,6 +115,7 @@ export function loadWorkspaceFile(name: string, dir: string = workspaceDirectory
       variables: typeof parsed.variables === 'object' && parsed.variables !== null ? parsed.variables : {},
       world: typeof parsed.world === 'object' && parsed.world !== null ? parsed.world : {},
       customEntities: Array.isArray(parsed.customEntities) ? parsed.customEntities : [],
+      topologyModels: typeof parsed.topologyModels === 'object' && parsed.topologyModels !== null ? parsed.topologyModels : {},
     }
   } catch (error) {
     throw new CalcError(

@@ -52,7 +52,9 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **实体类型清单** | `topology` | `action:"entities"`——20 种内置实体（军队/行政/聚落/地形/建筑/舰船/舱室/资源/战线/派系/官职/法令/技术/信仰/事件/头衔/人物/器物/商路）+ 14 种关系 |
 | **自创实体类型** | `topology` | `action:"define", entityType:{name,label,category,required,relations?}`——存工作区，之后可用 |
 | **实体图校验** | `topology` | `action:"validate", entities:[{id,type,...}], relations:[{from,to,kind}]`——查未知类型/缺字段/非法关系/基数 |
-| **数据导出到本地** | `workspace` | `action2:"export", what:"formulas|systems|help|units|constants|bodies|entities|world_state|all"`——写 JSON 快照，路径给 AI 之后按需读 |
+| **拓扑模型保存** | `topology` | `action:"save", modelKey:"北境军", nodes, edges`；`list`/`load`/`export`/`import` 都在工作区 |
+| **导出结果（推荐）** | `workspace` | `action2:"export"`——把自创常数/公式/变量/实体类型/拓扑模型写进 `<工作区>.artifacts/workspace-state.json`；`action2:"import"` 读回 |
+| 内置数据快照 | `workspace` | `action2:"export-builtin", what:"formulas|...|all"`——静态数据，随插件版本走 |
 | 微分方程 / 离散递推 | `ode` / `recurrence` | `initial` + `periods`；年表用 `at:[5,10,20]` |
 | 改物理常数看后果 | `constants` | 传新值；`preview:true` 只算不存 |
 | 工作区（存变量/切世界） | `workspace` | `action2:"set"`、`workspaceVariables` |
@@ -94,7 +96,13 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 **建实体图谱时**（军队/行政/派系/技术树/商路）：先 `topology action:"entities"` 看类型与关系，再 `define` 自创缺的类型，最后 `validate` 校验——
 这一步能抓出「师有两个上级」「技术依赖了不存在的前置」这类结构错。
 
-**数据不自动建表**，但可以随时 `workspace action2:"export"` 把公式/单位/常数/天体/实体类型/设定库导成本地 JSON 快照，之后把路径给 AI 按需读取。
+**数据不自动建表**，但可以：
+
+- `workspace action2:"export"` 把**结果**（自创常数/公式/变量/实体类型/拓扑模型）写进工作区的 `.artifacts/workspace-state.json`，之后 `import` 读回；
+- `workspace action2:"export-builtin"` 把**内置数据**（公式/单位/常数/天体）导成只读快照；
+- `topology action:"save"` 把建好的拓扑存进工作区，`export`/`import` 在工作区产物目录里交换文件。
+
+推演里反复用到的字段/数字，导出一次、之后 import，不必每次重抄。
 
 ## 四条主干工作流
 

@@ -40,6 +40,7 @@ import {
   loadWorkspaceFile,
   normalizeWorkspaceName,
   saveWorkspaceFile,
+  workspaceArtifactDir,
   workspaceDirectory,
   type WorkspaceData,
 } from '../io/workspace-store.js'
@@ -73,8 +74,10 @@ export interface WorkspaceInput {
   world?: Record<string, unknown>
   /** 备注。 */
   description?: string
-  /** export：要导出的数据（formulas/systems/help/units/constants/bodies/entities/world_state/all）。 */
+  /** export-builtin：要导出的内置数据（formulas/systems/help/units/constants/bodies/entities/world_state/all）。 */
   what?: string
+  /** import/export：工作区产物目录里的文件名。 */
+  file?: string
 }
 
 /** 结果。 */
@@ -213,7 +216,76 @@ export function runWorkspace(input: WorkspaceInput | undefined, dir: string = wo
     }
   }
 
+  if (action === 'import') {
+    /**
+     * 从工作区产物目录导入（状态或拓扑模型）。
+     *
+     * 推演时常用的字段/数字不必每次重抄：导出一次，之后 import 读回。
+     */
+    const artifactDir = workspaceArtifactDir(target, dir)
+    const name = typeof input.file === 'string' && input.file.trim() !== '' ? input.file.trim() : 'workspace-state.json'
+    const path = join(artifactDir, name)
+    if (!existsSync(path)) {
+      throw new CalcError('unknown_symbol', '工作区产物目录里没有「' + name + '」', '目录：' + artifactDir + '。先用 action2:"export" 导出。')
+    }
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<WorkspaceData>
+    const current = loadWorkspaceFile(target, dir)
+    const next: WorkspaceData = {
+      ...current,
+      ...(parsed.constants !== undefined ? { constants: parsed.constants } : {}),
+      ...(parsed.customConstants !== undefined ? { customConstants: parsed.customConstants } : {}),
+      ...(parsed.formulaTable !== undefined ? { formulaTable: parsed.formulaTable } : {}),
+      ...(parsed.variables !== undefined ? { variables: parsed.variables } : {}),
+      ...(parsed.customEntities !== undefined ? { customEntities: parsed.customEntities } : {}),
+      ...(parsed.topologyModels !== undefined ? { topologyModels: parsed.topologyModels } : {}),
+    }
+    saveWorkspaceFile(next, dir)
+    const counts = [
+      Object.keys(next.constants).length > 0 ? '常数 ' + Object.keys(next.constants).length : '',
+      Object.keys(next.variables).length > 0 ? '变量 ' + Object.keys(next.variables).length : '',
+      next.customConstants.length > 0 ? '自创量 ' + next.customConstants.length : '',
+      next.customEntities.length > 0 ? '自创实体类型 ' + next.customEntities.length : '',
+      Object.keys(next.topologyModels).length > 0 ? '拓扑模型 ' + Object.keys(next.topologyModels).length : '',
+    ].filter(Boolean)
+    return { result: '✓ 已从工作区导入：' + path + '\n  当前状态：' + (counts.join('，') || '空'), value: { path, workspace: target, data: next } }
+  }
+
   if (action === 'export') {
+    /**
+     * 导出**结果**（工作区状态：自创常数/公式/变量/实体类型/拓扑模型），
+     * **不是**内置数据快照——内置数据是静态的，随插件版本走。
+     *
+     * 路径在工作区产物目录（<workspace>.artifacts/），与工作区同名同层。
+     */
+    const artifactDir = workspaceArtifactDir(target, dir)
+    if (!existsSync(artifactDir)) mkdirSync(artifactDir, { recursive: true })
+    {
+      const data = loadWorkspaceFile(target, dir)
+      const state = {
+        constants: data.constants,
+        customConstants: data.customConstants,
+        formulaTable: data.formulaTable,
+        variables: data.variables,
+        useWorkspaceVariables: data.useWorkspaceVariables,
+        customEntities: data.customEntities,
+        topologyModels: data.topologyModels,
+        exportedAt: new Date().toISOString(),
+      }
+      const path = join(artifactDir, 'workspace-state.json')
+      writeFileSync(path, JSON.stringify(state, null, 1), 'utf8')
+      const counts = [
+        Object.keys(state.constants).length > 0 ? '常数 ' + Object.keys(state.constants).length : '',
+        Object.keys(state.variables).length > 0 ? '变量 ' + Object.keys(state.variables).length : '',
+        state.customConstants.length > 0 ? '自创量 ' + state.customConstants.length : '',
+        state.customEntities.length > 0 ? '自创实体类型 ' + state.customEntities.length : '',
+        Object.keys(state.topologyModels).length > 0 ? '拓扑模型 ' + Object.keys(state.topologyModels).length : '',
+      ].filter(Boolean)
+      return { result: '✓ 已导出工作区状态到本地：' + path + '\n  内容：' + (counts.join('，') || '空') + '\n  ★ 这是\'结果\'（你算好的常数/公式/模型），不是内置数据；之后 action2:"import" 可读回。', value: { path, workspace: target, state } }
+    }
+  }
+
+  if (action === 'export-builtin') {
+    /** 兼容旧用法：导出内置数据快照（formulas/systems/…）。 */
     /**
      * 数据导出（不自动建表，但把内置数据落到本地供 AI 之后引用）。
      *

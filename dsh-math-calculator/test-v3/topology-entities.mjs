@@ -63,16 +63,16 @@ console.log('-- 3. 实体图校验 --')
 
 console.log('-- 4. 数据导出（本地快照，供 AI 之后引用）--')
 {
-  const one = await run({ operation: 'workspace', action2: 'export', what: 'formulas' })
+  const one = await run({ operation: 'workspace', action2: 'export-builtin', what: 'formulas' })
   assert('★ 导出 formulas 到本地', one.ok === true && existsSync(one.value.exports[0].path), JSON.stringify(one.value).slice(0, 120))
   const exported = JSON.parse(readFileSync(one.value.exports[0].path, 'utf8'))
   assert('导出的公式数 757', exported.length === 757, String(exported.length))
 
-  const all = await run({ operation: 'workspace', action2: 'export', what: 'all' })
+  const all = await run({ operation: 'workspace', action2: 'export-builtin', what: 'all' })
   assert('★ 全量导出 8 项', all.ok === true && all.value.exports.length === 8, JSON.stringify(all.value?.exports?.map((item) => item.what)))
   assert('导出目录在本地', all.value.directory.includes('exports'), all.value.directory)
 
-  const unknown = await run({ operation: 'workspace', action2: 'export', what: 'nope' })
+  const unknown = await run({ operation: 'workspace', action2: 'export-builtin', what: 'nope' })
   assert('未知导出项 → unknown_argument', unknown.ok === false && unknown.error?.type === 'unknown_argument', '')
 }
 

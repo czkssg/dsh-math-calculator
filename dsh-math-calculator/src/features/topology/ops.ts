@@ -30,7 +30,9 @@ import { assessStructure, type BuildingInput, type VehicleInput } from './struct
 import { checkRules, type RuleContext } from './rules.js'
 import { ENTITY_TYPES, RELATION_TYPES, mergeEntityTypes, validateEntityGraph, validateEntityType, type EntityTypeDef } from './entities.js'
 import { currentWorkspace } from '../workspace.js'
-import { loadWorkspaceFile, saveWorkspaceFile } from '../../io/workspace-store.js'
+import { loadWorkspaceFile, saveWorkspaceFile, workspaceArtifactDir } from '../../io/workspace-store.js'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 /** 输入。 */
 export interface TopologyOpInput {
@@ -61,6 +63,10 @@ export interface TopologyOpInput {
   entities?: Array<{ id: string; type?: string; [key: string]: unknown }>
   /** validate：关系边。 */
   relations?: Array<{ from: string; to: string; kind?: string }>
+  /** save/load/export/import：模型名与文件路径（相对工作区产物目录）。 */
+  modelKey?: string
+  /** export/import：文件名（相对 <工作区>.artifacts/）。 */
+  file?: string
 }
 
 /** 结果。 */
@@ -267,6 +273,58 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
+  if (action === 'save') {
+    const key = typeof input.modelKey === 'string' && input.modelKey.trim() !== '' ? input.modelKey.trim() : ''
+    if (key === '') throw new CalcError('missing_params', 'save 需要 modelKey（模型名）', '例如 {topology:{action:"save", modelKey:"北境军", nodes:[…], edges:[…]}}。')
+    if (!Array.isArray(input.nodes) || input.nodes.length === 0) throw new CalcError('missing_params', 'save 需要 nodes（要保存的拓扑）', '')
+    const workspace = currentWorkspace()
+    const data = loadWorkspaceFile(workspace)
+    const models = { ...(data.topologyModels as Record<string, unknown>), [key]: { nodes: input.nodes, edges: input.edges ?? [], savedAt: new Date().toISOString() } }
+    saveWorkspaceFile({ ...data, topologyModels: models })
+    return { result: '✓ 已保存拓扑模型「' + key + '」到工作区「' + workspace + '」（' + input.nodes.length + ' 节点，' + (input.edges?.length ?? 0) + ' 边）\n  之后可 action:"load" 取回、action:"export" 导出到工作区文件。', value: { modelKey: key, workspace, nodes: input.nodes.length } }
+  }
+
+  if (action === 'load') {
+    const key = typeof input.modelKey === 'string' ? input.modelKey.trim() : ''
+    if (key === '') throw new CalcError('missing_params', 'load 需要 modelKey', '用 action:"list" 看已保存的模型名。')
+    const workspace = currentWorkspace()
+    const models = loadWorkspaceFile(workspace).topologyModels as Record<string, { nodes?: unknown; edges?: unknown; savedAt?: string }>
+    const model = models[key]
+    if (model === undefined) throw new CalcError('unknown_symbol', '工作区「' + workspace + '」里没有模型「' + key + '」', '已有：' + (Object.keys(models).join('、') || '（无）'))
+    return { result: '✓ 已载入拓扑模型「' + key + '」（' + ((model.nodes as unknown[])?.length ?? 0) + ' 节点，' + ((model.edges as unknown[])?.length ?? 0) + ' 边，保存于 ' + (model.savedAt ?? '未知') + '）', value: { modelKey: key, nodes: model.nodes, edges: model.edges, workspace } }
+  }
+
+  if (action === 'list') {
+    const workspace = currentWorkspace()
+    const models = loadWorkspaceFile(workspace).topologyModels as Record<string, { nodes?: unknown[]; edges?: unknown[]; savedAt?: string }>
+    const keys = Object.keys(models)
+    const lines = ['═══ 已保存的拓扑模型（工作区 ' + workspace + '）═══', '']
+    if (keys.length === 0) lines.push('  （还没有模型；用 action:"save" 建一个）')
+    for (const key of keys) lines.push('  ' + key.padEnd(20) + ((models[key].nodes as unknown[])?.length ?? 0) + ' 节点 / ' + ((models[key].edges as unknown[])?.length ?? 0) + ' 边  ' + (models[key].savedAt ?? ''))
+    return { result: lines.join('\n'), value: { workspace, models: keys } }
+  }
+
+  if (action === 'export' || action === 'import') {
+    const workspace = currentWorkspace()
+    const dir = workspaceArtifactDir(workspace)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    if (action === 'export') {
+      if (!Array.isArray(input.nodes) || input.nodes.length === 0) {
+        throw new CalcError('missing_params', 'export 需要 nodes（或先 action:"save" 再 export 指定 modelKey）', '')
+      }
+      const name = typeof input.file === 'string' && input.file.trim() !== '' ? input.file.trim() : (typeof input.modelKey === 'string' && input.modelKey.trim() !== '' ? input.modelKey.trim() : 'topology') + '.json'
+      const path = join(dir, name)
+      writeFileSync(path, JSON.stringify({ nodes: input.nodes, edges: input.edges ?? [] }, null, 1), 'utf8')
+      return { result: '✓ 拓扑已导出到工作区：' + path + '\n  之后 action:"import" file:"' + name + '" 可读回。', value: { path, workspace, file: name, nodes: input.nodes.length } }
+    }
+    const name = typeof input.file === 'string' ? input.file.trim() : ''
+    if (name === '') throw new CalcError('missing_params', 'import 需要 file（工作区产物目录里的文件名）', '用 action:"export" 先导出，或给已存在的文件名。')
+    const path = join(dir, name)
+    if (!existsSync(path)) throw new CalcError('unknown_symbol', '工作区产物目录里没有「' + name + '」', '目录：' + dir)
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as { nodes?: unknown; edges?: unknown }
+    return { result: '✓ 已从工作区载入拓扑：' + path, value: { path, workspace, nodes: parsed.nodes, edges: parsed.edges } }
+  }
+
   if (action === 'define') {
     const type = validateEntityType(input.entityType)
     const workspace = currentWorkspace()
