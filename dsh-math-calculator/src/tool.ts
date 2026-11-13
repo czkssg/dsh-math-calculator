@@ -128,7 +128,7 @@ const PARAMETER_SPEC = {
      * enum 让调用方一眼看到有哪些 operation（不用先查 help）。
      * 与 dispatch 的 MIGRATED_OPERATIONS 同源，避免两处清单漂移。
      */
-    enum: [...MIGRATED_OPERATIONS, 'auto'],
+    enum: [...new Set([...MIGRATED_OPERATIONS, 'auto'])],
     description: '默认 auto。简易算式 evaluate；数据 stats；改设定 world/derivation；不确定调 help',
   },
   variable: { type: 'string', description: '求导/求根/积分的自变量，默认 x' },

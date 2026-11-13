@@ -39,6 +39,8 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 单条公式 | `formula` | `formula` + `params`（或 `overrides`） |
 | **反解公式参数** | `formula` | 加 `solveFor:"m"` + `targetValue:100`；其余参数放 `params`，解不出时给 `solveRange:{min,max}` |
 | **相邻公式** | `formulas` | `query:"neighbors", formulaFocus:"ideal_gas"`——按共用物理量/常数连边 |
+| **公式带单位参数** | `formula` | `params:{T:"300 K", P:"1 atm"}`——自动换算到 SI，量纲不符报 **unit_mismatch** |
+| **链数值传导** | `formulas` | `query:"chain", formulaFocus:"sys-material", initial:{…}`——按显式数据流逐步算 |
 | 公式-链结构图 | `formulas` | `query:"graph"`（`formulaFocus:"sys-material"` 看某条链） |
 | 多条公式一次算 | `formulas` | `formulas:[{formula,overrides,label}]` |
 | 查公式参数表 | `formula-table` | 不传参就看全表 |
@@ -189,15 +191,16 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 | 「三个方案选哪个」 | `compare{compare:{rows,cols,data}}` |
 | 「别把前面推的忘了」 | `world_state set` 建条目，之后 `get` 按需取 |
 
-## 三个已知边界（规划中，尚未实现）
+## 两个已知边界（一条已实现、一条未接入）
 
-以下三处在报告的规划里，**当前工具还做不到**，遇到时要如实告知：
+遇到时要如实告知，**不要承诺工具做不到的事**：
 
-| 缺口 | 现状 | 规划 |
-|---|---|---|
-| **复合单位写法不全** | `kg/m^3` ✅ `kg/m3` ✅ 但 `kg/m³`（上标）❌ | docs/复合单位体系规划.md |
-| **编制树只能等比** | 不等比/跨级/缺编/兵种混合都表达不了 | docs/带拓扑的编制树规划.md |
-| **空间拓扑缺失** | 无距离/行军/遮蔽（`dependency` 是抽象传导，不是空间） | docs/空间拓扑层规划.md |
+| 边界 | 现状 |
+|---|---|
+| **复合单位写法不全** | `kg/m^3` ✅ `kg/m3` ✅ 但 `kg/m³`（上标）❌（实测） |
+| **空间拓扑尚未接入** | 能力已实现（距离/最短路径/视线/可达预算/建筑容量/七条规则），但**还没接成 operation**——AI 暂时调不到 |
+
+> 编制树已支持等比与不等比（`hierarchy` 重写）；跨级混编/兵种比例仍简化。
 
 ## 给开发者的规则（不是给使用者的）
 

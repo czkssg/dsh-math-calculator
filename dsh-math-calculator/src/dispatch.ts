@@ -166,6 +166,15 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     case 'derivation':
       return runDerivation(args, worldDeps)
 
+    case 'impact': {
+      /** 影响面分析：老的独立 operation，v3 里以 derivation:impact 子命令实现。 */
+      const target = typeof args['traceTarget'] === 'string' ? args['traceTarget'] : (typeof args['node'] === 'string' ? args['node'] : '')
+      if (target === '') {
+        throw new CalcError('missing_params', 'impact 需要 traceTarget（要查影响的量）', '例如 {operation:"impact", traceTarget:"建筑高度上限"}。')
+      }
+      return runDerivation({ derivation: 'impact', traceTarget: target, ...(args['world'] !== undefined ? { world: args['world'] } : {}) }, worldDeps)
+    }
+
     case 'bodies': {
       const bodies = dataOf<Array<Record<string, unknown>>>('bodies', 'bodies.json', [])
       const taxonomy = dataOf<Array<Record<string, unknown>>>('taxonomy', 'body-taxonomy.json', [])
@@ -657,5 +666,7 @@ export const MIGRATED_OPERATIONS = [
   'formula-table',
   'workspace',
   'help',
+  /** 老 operation，v3 以 derivation:impact 实现。 */
+  'impact',
   'auto',
 ] as const
