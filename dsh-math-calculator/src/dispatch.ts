@@ -144,7 +144,22 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
           )
         }
       }
-      return runWorld(args as WorldOpInput, worldDeps)
+      const outcome = runWorld(args as WorldOpInput, worldDeps)
+      /**
+       * 地球标定提示（W09-T4-11）。
+       *
+       * 全部用默认值时，输出就是地球的推算结果；不标出来的话，
+       * 作者会把「地球值」当成自己世界的结论。
+       */
+      const WORLD_KEYS = ['planetMass', 'planetRadius', 'rotationHours', 'obliquityDeg', 'starMass', 'starRadius', 'starTemp', 'orbitAU', 'eccentricity', 'albedo', 'pressure', 'molarMass', 'world']
+      const customized = WORLD_KEYS.some((key) => args[key] !== undefined)
+      const earthNotice = customized ? undefined : '地球标定：本次未改任何星球参数，结果即地球默认值；要推演别的世界请改 planetMass / starTemp 等。'
+      const merged = [outcome.notice, earthNotice].filter((item): item is string => typeof item === 'string' && item !== '')
+      return {
+        result: outcome.result,
+        value: outcome.value,
+        ...(merged.length > 0 ? { notice: merged.join('\n') } : {}),
+      }
     }
 
     case 'derivation':

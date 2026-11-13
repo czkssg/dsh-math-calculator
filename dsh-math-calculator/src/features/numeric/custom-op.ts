@@ -121,6 +121,11 @@ export function runCustom(input: {
     for (const item of data.customConstants as unknown as CustomConstant[]) dimensions[item.name] = item.dimension
     Object.assign(dimensions, BASE_DIMENSIONS)
     const result = checkDimension(expression, dimensions, input.expectedDimension)
+    /** 未知量是硬错误（T7-N8 族：用户错误必须给出可执行错误类型，不是 ok=true）。 */
+    const unknownSymbol = result.problems.find((problem) => problem.includes('未知量'))
+    if (unknownSymbol !== undefined) {
+      throw new CalcError('unknown_symbol', unknownSymbol, '先用 custom add 定义它的量纲，或改用已有量纲名称（mass/length/time/…）。')
+    }
     out.push('═══ 量纲检查 ═══', '')
     out.push('  表达式：' + expression)
     out.push('  结果量纲：' + dimensionText(result.resultDimension), '')

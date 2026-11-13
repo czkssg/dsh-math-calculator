@@ -252,10 +252,20 @@ export function evaluateFormula(
     ? String(numeric)
     : trimDecimal(numeric, displayPrecision)
 
+  /**
+   * 适用域（T4-24 / T4-23）。
+   *
+   * 从 desc 里提取「适用域：…」这一句。**不编造**：desc 没写就不加。
+   * terse 也保留——旧行为是 terse 只剩数值，把「这条式子在什么条件下成立」
+   * 一起丢掉，那比多几个字危险。
+   */
+  const domainMatch = /适用域[:：]([^。；]+)/.exec(entry.desc ?? '')
+  const domain = domainMatch !== null ? domainMatch[1].trim() : null
+
   if (terse) {
     return {
-      result: shown + (entry.unit !== '' ? ' ' + entry.unit : ''),
-      value: { id: entry.id, result: numeric, unit: entry.unit },
+      result: shown + (entry.unit !== '' ? ' ' + entry.unit : '') + (domain !== null ? '（适用域：' + domain + '）' : ''),
+      value: { id: entry.id, result: numeric, unit: entry.unit, ...(domain !== null ? { domain } : {}) },
     }
   }
 
@@ -277,6 +287,9 @@ export function evaluateFormula(
     lines.push('单位: ' + entry.unit)
   }
   lines.push('结果: ' + shown + (entry.unit !== '' ? ' ' + entry.unit : ''))
+  if (domain !== null) {
+    lines.push('', '【适用域】' + domain)
+  }
 
   return {
     result: lines.join('\n'),
@@ -288,6 +301,7 @@ export function evaluateFormula(
       unit: entry.unit,
       appliedOverrides: applied,
       params: scope,
+      ...(domain !== null ? { domain } : {}),
     },
   }
 }

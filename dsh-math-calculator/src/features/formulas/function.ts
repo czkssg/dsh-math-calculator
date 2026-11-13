@@ -99,6 +99,14 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
     unit: entry.unit,
     params,
     call: (values = {}, options = {}): FormulaCallResult => {
+      /** 展示式不能调用（先于参数检查，否则会先报「缺参数」误导）。 */
+      if (entry.executable === false) {
+        throw new CalcError(
+          'invalid_argument',
+          '这条公式是展示式，不能直接求值：' + entry.id + '（' + entry.name + '）',
+          '表达式含 Σᵢ / log_base 这类排版符号，mathjs 无法解析。要看含义用公式检索；要算同类量请用可执行版本。',
+        )
+      }
       /**
        * 未知参数名必须点名（T4-15）。
        *

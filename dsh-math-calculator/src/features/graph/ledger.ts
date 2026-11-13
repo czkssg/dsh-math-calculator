@@ -62,7 +62,26 @@ export interface LedgerOutcome {
  * @param input - 输入
  * @returns 结果
  */
-export function checkLedger(input: LedgerInput): LedgerOutcome {
+export function checkLedger(rawInput: LedgerInput | Record<string, unknown>): LedgerOutcome {
+  /**
+   * 占比简写（`{士:1, 农:85, 工:10, 商:4}`）。
+   *
+   * v3 重写时只保留了 parts/total 显式形态，把 help 里写着的简写弄丢了——
+   * 文档示例跑不通是「功能回归」，不是文档过时。这里补回：
+   * 没有 parts/total 时，把顶层数字键当分项，total 默认 100（占比）。
+   */
+  let input: LedgerInput
+  const raw = rawInput as Record<string, unknown>
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw) && raw['parts'] === undefined && raw['total'] === undefined) {
+    const entries = Object.entries(raw).filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
+    if (entries.length > 0) {
+      input = { parts: entries.map(([name, value]) => ({ name, value: value as number })), total: 100 }
+    } else {
+      throw new CalcError('missing_params', 'ledger 需要 parts 列表或占比简写', '例如 {ledger:{士:1,农:85,工:10,商:4}}（合计 100）或 {ledger:{parts:[...],total:100}}。')
+    }
+  } else {
+    input = rawInput as LedgerInput
+  }
   if (!Array.isArray(input.parts) || input.parts.length === 0) {
     throw new CalcError(
       'missing_params',

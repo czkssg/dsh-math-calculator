@@ -270,6 +270,26 @@ export function solveRecurrence(
   const last = rows[rows.length - 1][names[0]]
   const growth = first !== 0 ? last / first : Infinity
 
+  /**
+   * 连续 vs 离散（T6-14）。
+   *
+   * 离散递推按「期」跳，连续模型按「时间」走；同一增长率两边数值不同：
+   * 离散 r_d，连续 r_c = ln(1+r_d)。这里按首末期给平均增长率并标出差额。
+   * 近似：只反映首末两点，不反映中间路径（有波动时只作量级参考）。
+   */
+  const steps = Math.max(1, periods)
+  const discreteRate = first !== 0 && last / first > 0 ? Math.pow(last / first, 1 / steps) - 1 : Number.NaN
+  const continuousRate = first > 0 && last > 0 ? Math.log(last / first) / steps : Number.NaN
+  if (Number.isFinite(discreteRate) && Number.isFinite(continuousRate)) {
+    lines.push(
+      '',
+      '连续 vs 离散（按首末期平均，近似）：',
+      '  离散增长率 ' + (discreteRate * 100).toFixed(4) + '%/期',
+      '  连续等效增长率 ' + (continuousRate * 100).toFixed(4) + '%/期',
+      '  差额 ' + ((continuousRate - Math.log1p(discreteRate)) * 100).toFixed(6) + '%（≈ ln(1+r_d) 与 r_d 的差）',
+    )
+  }
+
   const notices: string[] = []
   if (Number.isFinite(growth) && Math.abs(growth) > 100 && periods >= 10) {
     notices.push(
@@ -283,7 +303,14 @@ export function solveRecurrence(
 
   return {
     result: lines.join('\n'),
-    value: { periods, recurrence, rows, growth: Number.isFinite(growth) ? growth : null },
+    value: {
+      periods,
+      recurrence,
+      rows,
+      growth: Number.isFinite(growth) ? growth : null,
+      discreteRate: Number.isFinite(discreteRate) ? discreteRate : null,
+      continuousRate: Number.isFinite(continuousRate) ? continuousRate : null,
+    },
     notice: notices.length > 0 ? notices.join(' ') : undefined,
   }
 }

@@ -108,6 +108,54 @@ console.log('-- 6. 已知修复回归（W09-T4-14 / T3-11）--')
   assert('T3-11 world 无参给出行星级默认值', world.ok === true && world.result.includes('【行星】'), world.result.slice(0, 80))
 }
 
+console.log('-- 7. 阶段 1：适用域 / solve 语义 / recurrence 差额 / 批量量纲 --')
+{
+  const terse = await run({ operation: 'formula', formula: 'ideal_gas', params: { n: 1, T: 300 }, terse: true })
+  assert('★ T4-23 terse 仍保留适用域', terse.ok === true && terse.result.includes('适用域'), terse.result)
+  const full = await run({ operation: 'formula', formula: 'ideal_gas', params: { n: 1, T: 300 } })
+  assert('★ T4-24 完整输出含【适用域】段', full.ok === true && full.result.includes('【适用域】'), full.result.slice(-140))
+  const noDomain = await run({ operation: 'formula', formula: 'velocity_uniform', params: { s: 10, t: 2 } })
+  assert('T4-24 无该段公式不编造', noDomain.ok === true && !noDomain.result.includes('【适用域】'), noDomain.result.slice(-80))
+
+  const identity = await run({ operation: 'solve', expression: 'x = x' })
+  assert('★ T8-D05 恒等式 → singular（说无穷多解）', identity.ok === false && identity.error?.type === 'singular' && String(identity.error.message).includes('恒等式'), JSON.stringify(identity.error))
+  const noSolution = await run({ operation: 'solve', expression: 'x + 1 = x + 2' })
+  assert('★ T8-D06 矛盾 → no_solution（与 D05 区分）', noSolution.ok === false && noSolution.error?.type === 'no_solution', JSON.stringify(noSolution.error))
+  const degenerate = await run({ operation: 'solve', expression: 'x + y = 1, 2x + 2y = 2' })
+  assert('T8-D05 退化方程组 → singular（解不唯一）', degenerate.ok === false && String(degenerate.error?.message).includes('不唯一'), String(degenerate.error?.message))
+
+  const rec = await run({ operation: 'recurrence', recurrence: 'P*1.1', initial: { P: 100 }, periods: 3 })
+  assert(
+    '★ T6-14 连续 vs 离散给出差额',
+    rec.ok === true && rec.result.includes('连续 vs 离散') && typeof rec.value.discreteRate === 'number' && typeof rec.value.continuousRate === 'number',
+    rec.result.slice(-160),
+  )
+
+  const batch = await run({ operation: 'evaluate', expressions: ['1 m + 1 s', '2+2'] })
+  assert('★ T4-25 批量量纲错只失败那条', batch.ok === true && batch.value?.succeeded === 1 && batch.value?.failed === 1, JSON.stringify(batch.value))
+}
+
+console.log('-- 8. 阶段 1 抽测（1.6）：展示式 / 未知量 / 地球标定 --')
+{
+  const display = await run({ operation: 'formula', formula: 'gini' })
+  assert('★ 展示式先报「展示式」（不再报缺参）', display.ok === false && display.error?.type === 'invalid_argument' && String(display.error.message).includes('展示式'), JSON.stringify(display.error))
+
+  const unknown = await run({ operation: 'custom', customAction: 'check', expression: 'xyz' })
+  assert('★ 量纲检查未知量 → unknown_symbol', unknown.ok === false && unknown.error?.type === 'unknown_symbol', JSON.stringify(unknown.error))
+
+  const earth = await run({ operation: 'world' })
+  assert('★ world 默认标「地球标定」', earth.ok === true && typeof earth.notice === 'string' && earth.notice.includes('地球标定'), String(earth.notice).slice(0, 80))
+  const custom = await run({ operation: 'world', planetMass: 0.75 })
+  assert('world 改了参数不再标地球', custom.ok === true && !(custom.notice ?? '').includes('地球标定'), String(custom.notice).slice(0, 80))
+
+  const rigid = await run({ operation: 'ode', expression: 'dy/dt = 1000*y', initial: { y: 1 }, from: 0, to: 0.01 })
+  assert('ode 刚性方程有警告或结果有限', rigid.ok === true, String(rigid.error?.message))
+
+  /** help 里的 ledger 示例（占比简写）必须能原样跑通——文档与实现一致。 */
+  const shorthand = await run({ operation: 'ledger', ledger: { 士: 1, 农: 85, 工: 10, 商: 4 } })
+  assert('★ ledger 占比简写（help 示例）可跑通且闭合', shorthand.ok === true && shorthand.result.includes('闭合'), shorthand.result.slice(0, 120))
+}
+
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }
