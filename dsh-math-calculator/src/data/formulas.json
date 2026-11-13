@@ -19044,5 +19044,489 @@
    "social",
    "military"
   ]
+ },
+ {
+  "id": "gauss_law_electric",
+  "cat": "physics/em",
+  "name": "高斯定理（电通量形式）",
+  "expr": "Q / epsilon0",
+  "params": {
+   "Q": {
+    "value": 1e-9,
+    "desc": "包围的净电荷 C"
+   },
+   "epsilon0": {
+    "value": 8.8541878128e-12,
+    "desc": "真空介电常数 F/m"
+   }
+  },
+  "unit": "V·m",
+  "keys": [
+   "高斯定理",
+   "电通量",
+   "gauss",
+   "通量"
+  ],
+  "desc": "Φ_E = Q_enc/ε₀：闭合曲面电通量只由面内净电荷决定。适用域：真空或线性介质（介质里把 ε₀ 换成 ε）；强场/非线性电介质失效。这是麦克斯韦方程组的积分形式之一。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 5 章（电场与高斯定理）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "em_wave_speed",
+  "cat": "physics/em",
+  "name": "电磁波速（真空）",
+  "expr": "1 / sqrt(mu0 * epsilon0)",
+  "params": {
+   "mu0": {
+    "value": 0.00000125663706212,
+    "desc": "真空磁导率 H/m"
+   },
+   "epsilon0": {
+    "value": 8.8541878128e-12,
+    "desc": "真空介电常数 F/m"
+   }
+  },
+  "unit": "m/s",
+  "keys": [
+   "电磁波",
+   "光速",
+   "麦克斯韦",
+   "em wave"
+  ],
+  "desc": "c = 1/√(μ₀ε₀)：电磁波在真空中的传播速度，由两个电磁常数决定，不需要测光速。适用域：真空或稀薄介质；介质中 v = 1/√(με)。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章（麦克斯韦方程组）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "planck_law",
+  "cat": "physics/quantum",
+  "name": "普朗克黑体辐射谱",
+  "expr": "2 * h * c^2 / (lambda^5 * (exp(h * c / (lambda * k * T)) - 1))",
+  "params": {
+   "T": {
+    "value": 5778,
+    "desc": "温度 K"
+   },
+   "lambda": {
+    "value": 5e-7,
+    "desc": "波长 m"
+   },
+   "h": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "W/(m^3·sr)",
+  "keys": [
+   "普朗克",
+   "黑体",
+   "planck",
+   "辐射谱"
+  ],
+  "desc": "B_λ(T) = 2hc²/[λ⁵(e^{hc/λkT}−1)]：单位波长单位立体角的谱辐亮度。适用域：热平衡黑体；短波极限给维恩分布、长波极限给瑞利-金斯。经典物理在此发散（紫外灾难）。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 6 章（光子与物质波）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "boltzmann_entropy",
+  "cat": "physics/thermo",
+  "name": "玻尔兹曼熵",
+  "expr": "k * log(W)",
+  "params": {
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   },
+   "W": {
+    "value": 10000000000,
+    "desc": "微观状态数（无量纲）"
+   }
+  },
+  "unit": "J/K",
+  "keys": [
+   "熵",
+   "玻尔兹曼",
+   "entropy",
+   "统计"
+  ],
+  "desc": "S = k·log W（mathjs 的 log 即自然对数）：熵是微观状态数的对数。适用域：平衡态统计；W 必须计入可及微观状态（粗粒化口径决定熵值）。宏观式 ΔS=Q/T 是它的热力学对应。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章（热力学第二定律）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "fermi_dirac_distribution",
+  "cat": "physics/quantum",
+  "name": "费米-狄拉克分布",
+  "expr": "1 / (exp((E - mu) / (k * T)) + 1)",
+  "params": {
+   "E": {
+    "value": 1e-19,
+    "desc": "能量 J"
+   },
+   "mu": {
+    "value": 1e-19,
+    "desc": "化学势 J"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "费米",
+   "狄拉克",
+   "fermi",
+   "统计分布"
+  ],
+  "desc": "f(E) = 1/[e^{(E−μ)/kT}+1]：费米子（电子）占据概率。适用域：无相互作用费米气体；E−μ ≫ kT 退化为玻尔兹曼分布。T→0 时成为阶跃函数（费米面）。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章（统计物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "bose_einstein_distribution",
+  "cat": "physics/quantum",
+  "name": "玻色-爱因斯坦分布",
+  "expr": "1 / (exp((E - mu) / (k * T)) - 1)",
+  "params": {
+   "E": {
+    "value": 2e-19,
+    "desc": "能量 J"
+   },
+   "mu": {
+    "value": 1e-19,
+    "desc": "化学势 J（须低于 E）"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "玻色",
+   "爱因斯坦",
+   "bose",
+   "统计分布",
+   "光子"
+  ],
+  "desc": "n(E) = 1/[e^{(E−μ)/kT}−1]：玻色子平均占据数。适用域：无相互作用玻色气体；μ 必须低于最低能级，否则发散（玻色-爱因斯坦凝聚的信号）。光子气体 μ=0。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章（统计物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "infinite_well_energy",
+  "cat": "physics/quantum",
+  "name": "一维无限深势阱能级",
+  "expr": "n^2 * h^2 / (8 * m * L^2)",
+  "params": {
+   "n": {
+    "value": 1,
+    "desc": "主量子数（1,2,3…）"
+   },
+   "h": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s"
+   },
+   "m": {
+    "value": 9.1093837015e-31,
+    "desc": "粒子质量 kg（默认电子）"
+   },
+   "L": {
+    "value": 1e-9,
+    "desc": "势阱宽度 m"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "势阱",
+   "能级",
+   "量子",
+   "well"
+  ],
+  "desc": "E_n = n²h²/(8mL²)：无限深方势阱的允许能级。适用域：阱壁无限高（近似用于有限深阱的浅能级）；非相对论。能级 ∝ 1/L²，尺度越小能级越高。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 7 章（量子力学）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "relativistic_momentum",
+  "cat": "physics/relativity",
+  "name": "相对论动量",
+  "expr": "m * v / sqrt(1 - (v / c)^2)",
+  "params": {
+   "m": {
+    "value": 1,
+    "desc": "静质量 kg"
+   },
+   "v": {
+    "value": 10000000,
+    "desc": "速度 m/s"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   }
+  },
+  "unit": "kg·m/s",
+  "keys": [
+   "相对论",
+   "动量",
+   "relativity",
+   "momentum"
+  ],
+  "desc": "p = γmv = mv/√(1−v²/c²)：低速极限给 p=mv。适用域：狭义相对论；v→c 时动量发散（需要无穷能量继续加速）。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 5 章（相对论）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "double_slit_condition",
+  "cat": "physics/optics",
+  "name": "双缝干涉明纹角",
+  "expr": "asin(n * lambda / d)",
+  "params": {
+   "n": {
+    "value": 1,
+    "desc": "条纹级次（0,±1,±2…）"
+   },
+   "lambda": {
+    "value": 5e-7,
+    "desc": "波长 m"
+   },
+   "d": {
+    "value": 0.000001,
+    "desc": "缝距 m"
+   }
+  },
+  "unit": "rad",
+  "keys": [
+   "双缝",
+   "干涉",
+   "杨氏",
+   "double slit"
+  ],
+  "desc": "d·sinθ = nλ：双缝明纹方向。适用域：缝距 ≫ 波长、远场（夫琅禾费）、单色相干光；nλ/d > 1 时该级次不存在（asin 会报错或给 NaN）。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章（干涉）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "single_slit_condition",
+  "cat": "physics/optics",
+  "name": "单缝衍射暗纹角",
+  "expr": "asin(n * lambda / a)",
+  "params": {
+   "n": {
+    "value": 1,
+    "desc": "暗纹级次（±1,±2…；0 不是暗纹）"
+   },
+   "lambda": {
+    "value": 5e-7,
+    "desc": "波长 m"
+   },
+   "a": {
+    "value": 0.000001,
+    "desc": "缝宽 m"
+   }
+  },
+  "unit": "rad",
+  "keys": [
+   "单缝",
+   "衍射",
+   "diffraction",
+   "缝宽"
+  ],
+  "desc": "a·sinθ = nλ：单缝衍射暗纹方向（n≠0）。适用域：远场、缝宽与波长可比；中央明纹宽度是两侧暗纹间距的两倍。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章（衍射）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "photoelectric_kinetic",
+  "cat": "physics/quantum",
+  "name": "光电效应最大动能",
+  "expr": "h * f - phi",
+  "params": {
+   "f": {
+    "value": 1000000000000000,
+    "desc": "入射光频率 Hz"
+   },
+   "phi": {
+    "value": 2e-19,
+    "desc": "逸出功 J（约 1.25 eV）"
+   },
+   "h": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "光电效应",
+   "逸出功",
+   "photoelectric",
+   "爱因斯坦"
+  ],
+  "desc": "K_max = hf − φ：光电子最大动能。适用域：单光子过程、金属表面清洁；hf < φ 时无电子逸出（阈频）。解释不了的是光强不影响最大动能——这正是光的粒子性证据。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 6 章（光子与物质波）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
  }
 ]

@@ -59,7 +59,7 @@ console.log('-- 3. 参数与错误路径 --')
 console.log('-- 4. 公式-链结构图 --')
 {
   const graph = await run({ operation: 'formulas', query: 'graph' })
-  assert('★ 公式 665 条 + 链 22 条', graph.ok === true && graph.value.formulas === 665 && graph.value.systems === 22, JSON.stringify({ f: graph.value?.formulas, s: graph.value?.systems }))
+  assert('★ 公式 676 条 + 链 22 条', graph.ok === true && graph.value.formulas === 676 && graph.value.systems === 22, JSON.stringify({ f: graph.value?.formulas, s: graph.value?.systems }))
   assert('边数 > 0', graph.value.edges > 0, String(graph.value?.edges))
   assert('★ 明确标出「steps 缺参数映射」的缺口', graph.result.includes('没有参数映射') && graph.value.gap.includes('缺参数映射'), '')
   assert('孤立公式统计', Array.isArray(graph.value.isolatedFormulas), '')

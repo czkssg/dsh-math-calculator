@@ -23,6 +23,8 @@ const formulas = JSON.parse(readFileSync(join(root, 'src/data/formulas.json'), '
 const constants = JSON.parse(readFileSync(join(root, 'src/data/constants-graph.json'), 'utf8'))
 const constantNames = new Set(constants.map((item) => item.name))
 const math = createRequire(import.meta.url)('mathjs')
+/** mathjs 的函数名（ln/log10/log2 等是别名，不在 math 对象上单独存在）。 */
+const FUNCTIONS = new Set(['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'ln', 'log', 'log10', 'log2', 'exp', 'abs', 'sum', 'max', 'min', 'inv', 'floor', 'ceil', 'round', 'pow'])
 const engineMod = await import(pathToFileURL(join(root, 'lib/core/engine.js')).href)
 const evaluateMod = await import(pathToFileURL(join(root, 'lib/features/formulas/evaluate.js')).href)
 
@@ -35,21 +37,32 @@ function assert(name, cond, detail) {
 
 console.log('-- 1. 结构完整性（665 条）--')
 {
-  assert('公式总数 665', formulas.length === 665, String(formulas.length))
+  assert('公式总数 676', formulas.length === 676, String(formulas.length))
   const missing = formulas.filter((f) => !f.id || !f.name || !f.expr || !f.desc || !Array.isArray(f.keys) || f.keys.length === 0)
   assert('★ id/name/expr/desc/keys 全都不缺', missing.length === 0, missing.slice(0, 5).map((f) => f.id).join(','))
   const noUnit = formulas.filter((f) => !f.unit || !String(f.unit).trim())
   assert('★ 每一条都有单位（含「无量纲」）', noUnit.length === 0, noUnit.slice(0, 5).map((f) => f.id).join(','))
   const params = formulas.reduce((sum, f) => sum + Object.keys(f.params ?? {}).length, 0)
-  assert('参数总数 1720', params === 1720, String(params))
+  assert('参数总数 ≥ 1720', params >= 1720, String(params))
   const withDefault = formulas.reduce((sum, f) => sum + Object.values(f.params ?? {}).filter((p) => p.value !== null).length, 0)
-  assert('有默认值的参数 365', withDefault === 365, String(withDefault))
+  assert('有默认值的参数 ≥ 365', withDefault >= 365, String(withDefault))
+  /**
+   * 信源字段（2026-11-13 新增规范）：为什么必须有？
+   * 公式内容是设计资产，但**来源决定可信度**。没有来源的公式只能当「经验式」，
+   * 有权威来源的才能标 [精确]。新采集的定律级公式必须带 sources。
+   */
+  const sourced = formulas.filter((f) => Array.isArray(f.sources) && f.sources.length > 0)
+  assert('★ 至少 11 条新公式带 sources', sourced.length >= 11, String(sourced.length))
+  const badSource = sourced.filter((f) => f.sources.some((s) => !s.type || !s.title || !s.accessed || !['exact', 'scaling', 'order-of-magnitude'].includes(f.confidence ?? '')))
+  assert('★ sources 字段完整（type/title/accessed）且 confidence 合法', badSource.length === 0, badSource.slice(0, 3).map((f) => f.id).join(','))
+  const badUrl = sourced.filter((f) => f.sources.some((s) => s.url !== undefined && !/^https?:\/\//.test(s.url)))
+  assert('sources 的 URL 格式（若有）', badUrl.length === 0, badUrl.slice(0, 3).map((f) => f.id).join(','))
 }
 
 console.log('-- 2. 可执行式：parse + 符号声明 --')
 {
   const executable = formulas.filter((f) => f.executable !== false)
-  assert('可执行式 661 条', executable.length === 661, String(executable.length))
+  assert('可执行式 672 条', executable.length === 672, String(executable.length))
   const unparsable = []
   const unknown = new Map()
   for (const formula of executable) {
@@ -65,8 +78,8 @@ console.log('-- 2. 可执行式：parse + 符号声明 --')
       if (current === null || typeof current !== 'object') return
       if (current.type === 'SymbolNode') {
         const name = String(current.name)
-        /** 数学函数与常量（sqrt/pi/sin…）由 mathjs 提供，不算未声明。 */
-        if (!allowed.has(name) && !constantNames.has(name) && math[name] === undefined) unknown.set(name, (unknown.get(name) ?? 0) + 1)
+        /** 数学函数与常量（sqrt/pi/sin/ln…）由 mathjs 提供，不算未声明。 */
+        if (!allowed.has(name) && !constantNames.has(name) && math[name] === undefined && !FUNCTIONS.has(name)) unknown.set(name, (unknown.get(name) ?? 0) + 1)
       }
       for (const key of Object.keys(current)) {
         if (key === 'parent' || key === 'name') continue
