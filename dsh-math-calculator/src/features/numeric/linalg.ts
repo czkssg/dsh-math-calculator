@@ -191,7 +191,13 @@ function parseValue(text: string): number | number[][] | null {
 
 /** 解析单个标量（可能是分数）。 */
 function parseScalar(text: string): number | null {
-  const trimmed = text.trim()
+  /**
+   * algebrite 对浮点特征值输出带省略号：`3.000000...`。
+   * 直接 Number 会得到 NaN，于是 eig 被误判成「未能算出」。
+   * 去掉尾随的 `...` 再解析；精度受限于 algebrite 的展示位数（约 6 位小数），
+   * 需要更多位数请用 mathjs 路径（n > SYMBOLIC_DET_LIMIT）。
+   */
+  const trimmed = text.trim().replace(/\.{3,}$/, '').replace(/\.+$/, '')
   const frac = /^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/.exec(trimmed)
   if (frac !== null) {
     const value = Number(frac[1]) / Number(frac[2])

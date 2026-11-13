@@ -39,6 +39,21 @@ import { runExtractNumbers } from './features/graph/extract-numbers.js'
 import { runUnitsAudit } from './features/graph/units-audit.js'
 import { runTimelineCheck } from './features/graph/timeline-check.js'
 import { loadStateBook, saveStateBook } from './io/state-store.js'
+import { buildEngine } from './core/engine.js'
+import { evaluateBatch, evaluateOne } from './features/numeric/evaluate.js'
+import { findRoots, solveEquation, symbolicOperation } from './features/numeric/algebra.js'
+import { eigenValues, matrixProfile, solveLinearSystem } from './features/numeric/linalg.js'
+import { describe, distribution, regression } from './features/numeric/stats.js'
+import { solveOde, solveRecurrence } from './features/numeric/ode.js'
+import { convertUnits, describeUnit } from './features/numeric/units.js'
+import { evaluateFormula } from './features/formulas/evaluate.js'
+import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
+import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
+import { analyzeDependency } from './features/graph/dependency.js'
+import { checkConsistency } from './features/graph/consistency.js'
+import { checkLedger } from './features/graph/ledger.js'
+import { comparePlans } from './features/graph/compare.js'
+import { intervalOperation } from './features/graph/interval.js'
 
 /** 统一的返回形状（与老 Outcome 对齐）。 */
 export interface DispatchOutcome {
@@ -156,13 +171,163 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     case 'timeline_check':
       return runTimelineCheck({ events: args['events'] as never, maxSpan: args['maxSpan'] as never, overlapAllowed: args['overlapAllowed'] === true })
 
+    // ── 数值计算（features/numeric）──
+    case 'evaluate': {
+      /**
+       * 变量注入与显式精度仍走老入口：
+       * evaluateOne 不接受 scope，且引擎是单例（精度固定 64）。
+       * 这两类交给老入口才不会丢功能。
+       */
+      if (args['variables'] !== undefined || args['precision'] !== undefined) return null
+      const options = { terse: args['terse'] === true, displayPrecision: displayPrecisionOf(args) }
+      if (Array.isArray(args['expressions'])) {
+        return toOutcome(evaluateBatch(buildEngine(), args['expressions'] as never, options))
+      }
+      const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
+      return toOutcome(evaluateOne(buildEngine(), expression, options))
+    }
+
+    case 'solve':
+    case 'derivative':
+    case 'integral':
+    case 'simplify':
+    case 'expand':
+    case 'roots': {
+      const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
+      const variable = typeof args['variable'] === 'string' ? args['variable'] : 'x'
+      if (operation === 'solve') return toOutcome(solveEquation(buildEngine(), expression))
+      if (operation === 'roots') return toOutcome(findRoots(buildEngine(), expression, variable))
+      const from = typeof args['from'] === 'number' ? args['from'] : undefined
+      const to = typeof args['to'] === 'number' ? args['to'] : undefined
+      return toOutcome(symbolicOperation(operation as 'derivative' | 'integral' | 'simplify' | 'expand', expression, variable, from, to))
+    }
+
+    case 'matrix':
+      return toOutcome(matrixProfile(buildEngine(), args['matrix'], displayPrecisionOf(args)))
+
+    case 'eigen':
+      return toOutcome(eigenValues(buildEngine(), args['matrix']))
+
+    case 'system':
+      return toOutcome(solveLinearSystem(buildEngine(), args['matrix'], args['vector']))
+
+    case 'stats':
+      return toOutcome(describe(args['data']))
+
+    case 'dist': {}
+      if (typeof args['distribution'] !== 'string') return null
+      return toOutcome(distribution(args['distribution'], args['params'], typeof args['x'] === 'number' ? args['x'] : 0, displayPrecisionOf(args)))
+
+    case 'regression':
+      return toOutcome(regression(args['data'], args['dataY'], typeof args['degree'] === 'number' ? args['degree'] : 1))
+
+    case 'ode': {
+      const initial = asRecord(args['initial'])
+      if (initial === undefined) return null
+      return toOutcome(
+        solveOde(
+          buildEngine(),
+          typeof args['expression'] === 'string' ? args['expression'] : '',
+          initial as Record<string, number>,
+          typeof args['from'] === 'number' ? args['from'] : 0,
+          typeof args['to'] === 'number' ? args['to'] : 1,
+          typeof args['steps'] === 'number' ? args['steps'] : 1000,
+          typeof args['samples'] === 'number' ? args['samples'] : 11,
+        ),
+      )
+    }
+
+    case 'recurrence': {
+      const initial = asRecord(args['initial'])
+      if (initial === undefined || typeof args['recurrence'] !== 'string') return null
+      return toOutcome(solveRecurrence(buildEngine(), args['recurrence'], initial as Record<string, number>, typeof args['periods'] === 'number' ? args['periods'] : 12))
+    }
+
+    case 'units': {
+      const from = typeof args['unitFrom'] === 'string' ? args['unitFrom'] : ''
+      const to = typeof args['unitTo'] === 'string' ? args['unitTo'] : ''
+      if (from === '') return null
+      if (to === '') return toOutcome(describeUnit(buildEngine(), from))
+      const value = typeof args['unitValue'] === 'number' ? args['unitValue'] : 1
+      return toOutcome(convertUnits(buildEngine(), value, from, to, args['terse'] === true, displayPrecisionOf(args)))
+    }
+
+    // ── 公式库（features/formulas）──
+    case 'formulas': {
+      const entries = formulaEntries()
+      /** 批量公式先交老入口：它按条报错、吞掉未知 key 的语义与通知都已调好。 */
+      if (Array.isArray(args['formulas'])) return null
+      const query = typeof args['query'] === 'string' ? args['query'].trim() : ''
+      if (query === '') return null
+      if (query.startsWith('sys')) {
+        const system = formulaSystems().find((item) => item.id === query || item.id === query.replace(/^sys:?/, ''))
+        if (system === undefined) return null
+        const initialRaw = asRecord(args['initial']) ?? {}
+        const initial: Record<string, number> = {}
+        for (const [key, value] of Object.entries(initialRaw)) {
+          if (typeof value === 'number' && Number.isFinite(value)) initial[key] = value
+        }
+        return toOutcome(evaluateSystem(buildEngine(), entries, system, initial, displayPrecisionOf(args)))
+      }
+      return toOutcome(queryFormulas(entries, query, typeof args['limit'] === 'number' ? args['limit'] : 8))
+    }
+
+    case 'formula': {
+      const id = typeof args['formula'] === 'string' ? args['formula'] : ''
+      if (id === '') return null
+      const entry = formulaEntries().find((item) => item.id === id || item.name === id)
+      if (entry === undefined) return null
+      return toOutcome(evaluateFormula(buildEngine(), entry, asRecord(args['overrides']) ?? {}, displayPrecisionOf(args), args['terse'] === true))
+    }
+
+    // ── 对账图谱（features/graph）──
+    case 'dependency':
+      return toOutcome(analyzeDependency(args['dependency'] as never, typeof args['traceTarget'] === 'string' ? args['traceTarget'] : (typeof args['start'] === 'string' ? args['start'] : undefined), args['direction'] === 'upstream' ? 'upstream' : 'downstream'))
+
+    case 'ledger':
+      return toOutcome(checkLedger(args['ledger'] as never))
+
+    case 'consistency':
+      return toOutcome(checkConsistency(args['consistency'] as never))
+
+    case 'compare':
+      return toOutcome(comparePlans(args['compare'] as never))
+
+    case 'interval':
+      return toOutcome(intervalOperation(args['interval'] as never))
+
     default:
       return null
   }
 }
 
+/** 把新实现的 {result,value,notice,ok?} 转成统一返回。 */
+function toOutcome(outcome: { result: string; value: unknown; notice?: string; ok?: boolean }): DispatchOutcome {
+  return {
+    result: outcome.result,
+    value: outcome.value,
+    ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}),
+  }
+}
+
+/** 显示精度（缺省 8）。 */
+function displayPrecisionOf(args: Record<string, unknown>): number {
+  return typeof args['displayPrecision'] === 'number' && Number.isFinite(args['displayPrecision']) ? args['displayPrecision'] : 8
+}
+
+/** 公式条目（懒加载）。 */
+function formulaEntries(): FormulaEntry[] {
+  return dataOf<FormulaEntry[]>('formulas', 'formulas.json', [])
+}
+
+/** 体系链（懒加载）。 */
+function formulaSystems(): FormulaSystem[] {
+  return dataOf<FormulaSystem[]>('systems', 'systems.json', [])
+}
+
 /** 已迁移的 operation 清单（供 help / 测试核对）。 */
 export const MIGRATED_OPERATIONS = [
+  // 推演与对账（第 6 步）
   'world',
   'derivation',
   'bodies',
@@ -177,4 +342,30 @@ export const MIGRATED_OPERATIONS = [
   'extract_numbers',
   'units_audit',
   'timeline_check',
+  // 数值计算（第 3 步）
+  'evaluate',
+  'solve',
+  'derivative',
+  'integral',
+  'simplify',
+  'expand',
+  'roots',
+  'matrix',
+  'eigen',
+  'system',
+  'stats',
+  'dist',
+  'regression',
+  'ode',
+  'recurrence',
+  'units',
+  // 公式库（第 4 步）
+  'formula',
+  'formulas',
+  // 对账图谱（第 5 步）
+  'dependency',
+  'ledger',
+  'consistency',
+  'compare',
+  'interval',
 ] as const

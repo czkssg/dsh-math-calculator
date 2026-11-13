@@ -122,8 +122,8 @@ console.log('-- 4. 新实现的错误被翻译成结构化 error --')
 console.log('-- 5. dispatch 路由表 --')
 {
   const migrated = dispatch.MIGRATED_OPERATIONS
-  assert('已迁移 14 个 operation', migrated.length === 14, String(migrated.length))
-  for (const operation of ['evaluate', 'units', 'help', 'constants', 'balance']) {
+  assert('已迁移 37 个 operation（第二批已并入）', migrated.length === 37, String(migrated.length))
+  for (const operation of ['constants', 'workspace', 'help', 'balance']) {
     assert('未迁移 ' + operation + ' → dispatchNew 返回 null', dispatch.dispatchNew(operation, {}) === null, '')
   }
 }

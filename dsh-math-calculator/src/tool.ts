@@ -131,7 +131,7 @@ const PARAMETER_SPEC = {
   data: { type: 'array', items: { type: 'number' }, description: '数据序列' },
   dataY: { type: 'array', items: { type: 'number' }, description: '第二条数据序列' },
   distribution: { type: 'string', description: '分布名（normal/binomial/poisson/exponential/chisquare/t）' },
-  params: { type: 'object', additionalProperties: true, description: '分布参数' },
+  params: { type: 'json', description: '分布参数：数组 [均值,标准差] 或对象' },
   x: { type: 'number', description: '分布求值点' },
   degree: { type: 'integer', description: '回归阶数 / 根' },
   formula: { type: 'string', description: '公式 id 或名称' },
