@@ -40,6 +40,7 @@ import { runUnitsAudit } from './features/graph/units-audit.js'
 import { runTimelineCheck } from './features/graph/timeline-check.js'
 import { loadStateBook, saveStateBook } from './io/state-store.js'
 import { buildEngine } from './core/engine.js'
+import { CalcError } from './core/errors.js'
 import { evaluateBatch, evaluateOne } from './features/numeric/evaluate.js'
 import { findRoots, solveEquation, symbolicOperation } from './features/numeric/algebra.js'
 import { eigenValues, matrixProfile, solveLinearSystem } from './features/numeric/linalg.js'
@@ -48,6 +49,8 @@ import { solveOde, solveRecurrence } from './features/numeric/ode.js'
 import { convertUnits, describeUnit } from './features/numeric/units.js'
 import { evaluateFormula } from './features/formulas/evaluate.js'
 import { solveFor } from './features/formulas/solve-for.js'
+import { buildRelationIndex, type RelationIndex } from './features/formulas/relations.js'
+import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
@@ -268,6 +271,26 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       if (Array.isArray(args['formulas'])) return null
       const query = typeof args['query'] === 'string' ? args['query'].trim() : ''
       /** 公式-链结构图：query="graph" 或 formulaGraph:true；焦点用 formulaFocus。 */
+      /** 相邻公式：query="neighbors" + formulaFocus / formula。 */
+      if (query === 'neighbors' || args['neighbors'] === true) {
+        const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['formula'] === 'string' ? args['formula'] : '')
+        if (focus === '') {
+          throw new CalcError('missing_params', 'neighbors 需要 formulaFocus（公式 id）', '例如 {operation:"formulas", query:"neighbors", formulaFocus:"ideal_gas"}。')
+        }
+        const entry = formulaEntries().find((item) => item.id === focus || item.name === focus)
+        if (entry === undefined) throw new CalcError('unknown_formula', '没有 id 为 "' + focus + '" 的公式', '用 formulas query 查可用的公式 id。')
+        const hits = relations().neighbors(entry.id, 10)
+        const lines: string[] = ['═══ 与 ' + entry.id + '（' + entry.name + '）相邻的公式 ═══', '', '  通过共用参数、共用常数与共性建立联系：', '']
+        for (const hit of hits) {
+          lines.push('  ' + hit.id.padEnd(28) + hit.name + '（' + hit.score + ' 分）')
+          lines.push('    ' + relationReasonOf(hit))
+        }
+        if (hits.length === 0) lines.push('  （没有相邻公式——它用的是独有参数，且没有同标签的节）')
+        return {
+          result: lines.join('\n'),
+          value: { focus: entry.id, neighbors: hits },
+        }
+      }
       if (query === 'graph' || args['formulaGraph'] === true) {
         const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : undefined)
         return toOutcome(runFormulaGraph(entries, formulaSystems(), focus))
@@ -311,7 +334,23 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       }
       const entry = formulaEntries().find((item) => item.id === id || item.name === id)
       if (entry === undefined) return null
-      return toOutcome(evaluateFormula(buildEngine(), entry, asRecord(args['overrides']) ?? {}, displayPrecisionOf(args), args['terse'] === true))
+      /**
+       * 走「公式即函数」：参数契约 + 相邻公式。
+       *
+       * params 与 overrides 等价（老调用方写 overrides，新调用方写 params）。
+       */
+      const values = asRecord(args['params']) ?? asRecord(args['overrides']) ?? {}
+      const call = callFormula(formulaEntries(), id, buildEngine(), values, relations(), {
+        displayPrecision: displayPrecisionOf(args),
+        terse: args['terse'] === true,
+      })
+      const neighborLine = call.neighbors.length > 0 ? '相邻公式：' + call.neighbors.slice(0, 4).map((hit) => hit.id + '（' + hit.reason + '）').join('；') : ''
+      return {
+        result: call.result,
+        value: call.value !== null && typeof call.value === 'object' ? { ...(call.value as Record<string, unknown>), neighbors: call.neighbors } : { value: call.value, neighbors: call.neighbors },
+        ...(call.notice !== undefined ? { notice: call.notice } : {}),
+        ...(neighborLine !== '' ? { notice: (call.notice !== undefined ? call.notice + '\n' : '') + neighborLine } : {}),
+      }
     }
 
     // ── 对账图谱（features/graph）──
@@ -405,6 +444,16 @@ function toOutcome(outcome: { result: string; value: unknown; notice?: string; o
   }
 }
 
+/** 关系理由（渲染用）。 */
+function relationReasonOf(hit: { sharedParams: string[]; sharedConstants: string[]; sameCat: boolean; cat: string; sharedKeys?: string[] }): string {
+  const parts: string[] = []
+  if (hit.sharedParams.length > 0) parts.push('共用参数 ' + hit.sharedParams.join('/'))
+  if (hit.sharedConstants.length > 0) parts.push('共用常数 ' + hit.sharedConstants.join('/'))
+  if ((hit.sharedKeys ?? []).length > 0) parts.push('同标签 ' + (hit.sharedKeys ?? []).slice(0, 3).join('/'))
+  if (parts.length === 0 && hit.sameCat) parts.push('同类别 ' + hit.cat)
+  return parts.join('；') || '同类'
+}
+
 /** 显示精度（缺省 8）。 */
 function displayPrecisionOf(args: Record<string, unknown>): number {
   return typeof args['displayPrecision'] === 'number' && Number.isFinite(args['displayPrecision']) ? args['displayPrecision'] : 8
@@ -418,6 +467,30 @@ function formulaEntries(): FormulaEntry[] {
 /** 体系链（懒加载）。 */
 function formulaSystems(): FormulaSystem[] {
   return dataOf<FormulaSystem[]>('systems', 'systems.json', [])
+}
+
+/** 关系索引（懒建一次）。 */
+let relationIndex: RelationIndex | null = null
+
+/**
+ * 常数名集合（来自 constants-graph.json），含公式惯用别名。
+ *
+ * 常数表把玻尔兹曼常数记作 \`kB\`，而公式库里参数名惯写 \`k\`。
+ * 不补别名的话，\`k\` 会被当成「共用参数」，关系图上「共用常数」这条边就丢了。
+ */
+function constantNames(): Set<string> {
+  const rows = dataOf<Array<{ name: string }>>('constants', 'constants-graph.json', [])
+  const names = new Set(rows.map((row) => row.name))
+  names.add('k')
+  names.add('mu_0')
+  names.add('epsilon_0')
+  return names
+}
+
+/** 取关系索引。 */
+function relations(): RelationIndex {
+  if (relationIndex === null) relationIndex = buildRelationIndex(formulaEntries(), constantNames())
+  return relationIndex
 }
 
 /** 已迁移的 operation 清单（供 help / 测试核对）。 */
