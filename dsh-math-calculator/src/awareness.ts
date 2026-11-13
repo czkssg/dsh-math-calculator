@@ -24,12 +24,28 @@
  * @module dsh-math-calculator/awareness
  */
 
-import { FORMULAS } from './formulas.js'
-import { FUNDAMENTAL_NAMES, getActiveConstants } from './constants-graph.js'
-import { currentWorkspace, loadWorkspace, workspaceDirectory } from './workspace.js'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { FUNDAMENTAL_NAMES, getActiveConstants } from './features/deduction/constants-graph.js'
+import { currentWorkspace } from './features/workspace.js'
+import { loadWorkspaceFile, workspaceDirectory } from './io/workspace-store.js'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { buildBriefPlaybook, buildPlaybook } from './playbook.js'
+
+/**
+ * 公式条数（系统提示里显示）。
+ *
+ * 阶段 2 删了老 `formulas.ts`；现在从 `src/data/formulas.json` 读，
+ * 与真正的公式库同源，避免「提示里的数字落后于库」。
+ */
+const FORMULA_COUNT = (() => {
+  try {
+    const data = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'formulas.json'), 'utf8'))
+    return Array.isArray(data) ? data.length : 0
+  } catch {
+    return 0
+  }
+})()
 
 /** 提示档位。 */
 export type PromptMode = 'off' | 'brief' | 'full'
@@ -126,17 +142,17 @@ export function buildSystemPromptSection(): string {
 
   try {
     workspaceName = currentWorkspace()
-    const workspace = loadWorkspace(workspaceName)
+    const workspace = loadWorkspaceFile(workspaceName)
     const active = getActiveConstants()
     const baseline = new Set(['c', 'G', 'h', 'kB', 'e_charge', 'me', 'mp', 'NA', 'epsilon0'])
     changedConstants = FUNDAMENTAL_NAMES.filter((name) => {
       const value = active[name]
       return typeof value === 'number'
     }).slice(0, 6)
-    const table = workspace.formulaTable
+    const table = workspace.formulaTable as { custom?: unknown[]; overrides?: Array<{ disabled?: boolean }> }
     if (table) {
-      customFormulaCount = table.custom.length
-      disabledCount = table.overrides.filter((o) => o.disabled).length
+      customFormulaCount = Array.isArray(table.custom) ? table.custom.length : 0
+      disabledCount = Array.isArray(table.overrides) ? table.overrides.filter((item) => item.disabled === true).length : 0
     }
   } catch {
     /* 读不到就按默认值 */
@@ -156,7 +172,7 @@ export function buildSystemPromptSection(): string {
   let customConstantCount = 0
   let hasArchive = false
   try {
-    const workspace = loadWorkspace(workspaceName)
+    const workspace = loadWorkspaceFile(workspaceName)
     customConstantCount = (workspace.customConstants ?? []).length
     hasArchive = existsSync(join(workspaceDirectory(), workspaceName + '.derivation.json'))
   } catch {
@@ -187,7 +203,7 @@ export function buildSystemPromptSection(): string {
       '涉及数值计算时**必须**调用，不要心算、不要用 bash 拼凑。',
       '',
       '**选哪个 operation**：一条式子 → `evaluate`（多条用 `expressions` 批量，可带 label）；',
-      '解方程 → `solve`；数据 → `stats`/`dist`/`regression`；公式 → `formula`（' + FORMULAS.length + ' 条，参数可覆盖）；',
+      '解方程 → `solve`；数据 → `stats`/`dist`/`regression`；公式 → `formula`（' + FORMULA_COUNT + ' 条，参数可覆盖）；',
       '单位 → `units`；改设定 → `world`/`constants`/`derivation`；不确定 → `help`。',
       '',
       '**读输出的约定**：',
@@ -216,7 +232,7 @@ export function buildSystemPromptSection(): string {
     '- derivative / integral / simplify / expand / roots：符号微积分与代数',
     '- matrix / eigen：线性代数；只给矩阵时额外给出 秩/行列式/迹/奇异值/零空间/逆',
     '- stats / dist / regression / ode：统计、概率、回归、微分方程',
-    '- formula / formulas：' + FORMULAS.length + ' 条自然科学公式，参数全部可覆盖',
+    '- formula / formulas：' + FORMULA_COUNT + ' 条自然科学公式，参数全部可覆盖',
     '- world：星球 → 体感画像 + 天空 + 恒星结构 + 卫星系统 + 生命闸门 + 跨模块检查',
     '- constants / quantities / impact：改物理常数并评估后果',
     '- workspace / formula-table：分世界观管理数据（完全隔离）',

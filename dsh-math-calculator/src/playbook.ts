@@ -30,7 +30,8 @@
  *   ④ 判据（什么算硬约束、什么算叙事选择）。
  */
 
-import { currentWorkspace, loadWorkspace, updateWorkspace } from './workspace.js'
+import { currentWorkspace } from './features/workspace.js'
+import { loadWorkspaceFile, saveWorkspaceFile } from './io/workspace-store.js'
 
 /** 底座的一项能力。 */
 export interface BaseCapability {
@@ -402,7 +403,7 @@ export interface PlaybookConfig {
 /** 读配置（存在工作区里）。 */
 export function loadPlaybookConfig(): PlaybookConfig {
   try {
-    const data = loadWorkspace(currentWorkspace())
+    const data = loadWorkspaceFile(currentWorkspace())
     return (data as any).playbookConfig ?? {}
   } catch {
     return {}
@@ -411,9 +412,8 @@ export function loadPlaybookConfig(): PlaybookConfig {
 
 /** 写配置。 */
 export function savePlaybookConfig(config: PlaybookConfig): void {
-  updateWorkspace(currentWorkspace(), function (current) {
-    return { ...current, playbookConfig: config } as never
-  })
+  const current = loadWorkspaceFile(currentWorkspace())
+  saveWorkspaceFile({ ...current, playbookConfig: config } as never)
 }
 
 /**
