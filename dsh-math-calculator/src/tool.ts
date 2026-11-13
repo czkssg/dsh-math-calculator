@@ -17,7 +17,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { TOOL_DESCRIPTION } from './awareness.js'
-import { dispatchNew } from './dispatch.js'
+import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
 
 /** JSON 值（与老入口的 MathResult.value 同构）。 */
@@ -122,7 +122,15 @@ const PARAMETER_SPEC = {
   expressions: { type: 'array', items: { type: 'json', description: '字符串或 {label?, expr, sanity?}' }, description: '批量求值，逐条独立报错' },
   terse: { type: 'boolean', description: '只回「表达式 = 结果」' },
   variables: { type: 'object', additionalProperties: true, description: '变量字典，如 {"m":500}' },
-  operation: { type: 'string', description: '默认 auto。简易算式 evaluate；数据 stats；改设定 world/derivation；不确定调 help' },
+  operation: {
+    type: 'string',
+    /**
+     * enum 让调用方一眼看到有哪些 operation（不用先查 help）。
+     * 与 dispatch 的 MIGRATED_OPERATIONS 同源，避免两处清单漂移。
+     */
+    enum: [...MIGRATED_OPERATIONS, 'auto'],
+    description: '默认 auto。简易算式 evaluate；数据 stats；改设定 world/derivation；不确定调 help',
+  },
   variable: { type: 'string', description: '求导/求根/积分的自变量，默认 x' },
   precision: { type: 'integer', description: '计算精度（默认 64，不要为好看调低）' },
   displayPrecision: { type: 'integer', description: '小数点后显示位数（默认 8）' },

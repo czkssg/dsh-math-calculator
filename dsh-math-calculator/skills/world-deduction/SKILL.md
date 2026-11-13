@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 40 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 46 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -36,7 +36,10 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 统计量 | `stats` | `data`（均值/方差/分位…） |
 | 概率分布 | `dist` | `distribution` + `params` + `x` |
 | 回归拟合 | `regression` | `data` + `dataY` + `degree` |
-| 单条公式 | `formula` | `formula` + `overrides` |
+| 单条公式 | `formula` | `formula` + `params`（或 `overrides`） |
+| **反解公式参数** | `formula` | 加 `solveFor:"m"` + `targetValue:100`；其余参数放 `params`，解不出时给 `solveRange:{min,max}` |
+| **相邻公式** | `formulas` | `query:"neighbors", formulaFocus:"ideal_gas"`——按共用物理量/常数连边 |
+| 公式-链结构图 | `formulas` | `query:"graph"`（`formulaFocus:"sys-material"` 看某条链） |
 | 多条公式一次算 | `formulas` | `formulas:[{formula,overrides,label}]` |
 | 查公式参数表 | `formula-table` | 不传参就看全表 |
 | 依赖传导 / 编制结构 | `dependency` | 给 `node` 查上下游；`levels`+`tree` 可简写编制 |
@@ -48,6 +51,12 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 自定义新量（以太压等） | `custom` | 带量纲的新常数 |
 | 天体数据 | `bodies` | 行星/恒星的半径质量温度 |
 | 单位换算 | `units` | `unitFrom`/`unitTo`/`unitValue` |
+| 链条传导（分段计价/成本递增） | `chain` | `chain:{raw, stages:[{name,expr}]}`；`prev` 指上一段的值 |
+| 阈值判定（落在哪一段） | `threshold` | `threshold:{value, thresholds:[{at,label}]}`；`at` 是**上界** |
+| 缩放律（平方立方律） | `scaling` | `scaling:{from:{size}, to:{size}}`；强度默认不随尺度变 |
+| 基准锚定（历史/现实换算） | `anchor` | `anchor:{anchor, anchors:[{name,value}]}` |
+| 量纲体检（同一量多处不同单位） | `units_audit` | `claims:[{name,unit}]` 或给 `text` |
+| 时间线体检（逆序/重叠/跨度） | `timeline_check` | `events:[{name,start,end}]`；`maxSpan`/`overlapAllowed` |
 
 **注意两处易错**：
 
@@ -81,7 +90,7 @@ world           星球参数 → 体感画像（重力/昼夜/气候/天空/生�
   ↓ brief:true 时只给 296 字符摘要（省 93%）
 derivation      接着往下推：敏感度/结论翻转/逆推校准/相图
   ↓ 29 个子命令
-formula         要具体数值时调公式（665 条，overrides 改参数）
+formula         要具体数值时调公式（740 条，params/overrides 改参数；solveFor 可反解）
   ↓ query:"sys" 可看 22 条推演链怎么连
 ```
 
@@ -159,7 +168,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（48 节带简介）
+{operation:"help"}                        能力目录（49 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数 25 个字段带默认值
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）

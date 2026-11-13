@@ -38,7 +38,8 @@ const home = mkdtempSync(join(tmpdir(), 'dsh-skill-'))
 process.env.DSH_MATH_CALC_HOME = home
 
 const { mathExecuteTool } = await import(pathToFileURL(join(root, 'lib/index.js')).href)
-const { HELP_TOPICS } = await import(pathToFileURL(join(root, 'lib/help.js')).href)
+/** help 节与公式条数改读 v3 数据文件（新架构下 lib/help.js 只是老实现，数据以 src/data 为准）。 */
+const HELP_TOPICS = JSON.parse(readFileSync(join(root, 'src/data/help.json'), 'utf8'))
 
 let pass = 0
 const fails = []
@@ -266,7 +267,7 @@ console.log('-- 8. ★ 写死的数字必须与当前一致（防止 skill 过�
   const formulaMatch = /(\d+)\s*条公式|（(\d+)\s*条[^）]*）/.exec(skill)
   if (formulaMatch) {
     const claimed = Number(formulaMatch[1] ?? formulaMatch[2])
-    const { FORMULAS } = await import(pathToFileURL(join(root, 'lib/formulas.js')).href)
+    const FORMULAS = JSON.parse(readFileSync(join(root, 'src/data/formulas.json'), 'utf8'))
     assert('skill 里的公式条数与实际一致',
       claimed === FORMULAS.length,
       `skill 写 ${claimed}，实际 ${FORMULAS.length}`)
