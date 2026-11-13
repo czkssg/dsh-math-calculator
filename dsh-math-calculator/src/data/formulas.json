@@ -15452,7 +15452,7 @@
   "id": "debye_temperature_heat_capacity",
   "cat": "physics/solid",
   "name": "德拜比热（低温下比热为什么掉到零）",
-  "expr": "9 * gas_constant * (temperature / debye_temperature)^3 / 1",
+  "expr": "12 * pi^4 / 5 * gas_constant * (temperature / debye_temperature)^3",
   "params": {
    "temperature": {
     "value": null,
@@ -15468,7 +15468,7 @@
    }
   },
   "unit": "J/(mol·K)（摩尔热容；此为低温近似 T≪Θ_D）",
-  "desc": "低温极限 C ≈ 9R·(T/Θ_D)³。**三次方 —— 解释「为什么低温下热容趋于零」。**★ 经典理论（杜隆-珀蒂）说固体热容恒为 3R ≈ 25 J/(mol·K)，与温度无关。  但实测低温下急剧下降 —— 这是**经典物理的又一次失败**，  因为声子（晶格振动）也被量子化了，低温下高频模冻结。★ 三次方的实际意义：**温度减半，热容降到 1/8**。  所以「把物体加热到 T」所需能量在低温段远少于线性估计 ——  这意味着**低温制冷的代价主要不在降温本身，而在维持**。★ Θ_D 是什么：它衡量「晶格有多硬」。金刚石 2230K（极硬），铅 105K（极软）。  **Θ_D 高的材料在室温下热容仍很低**（金刚石在 300K 时约 6 J/(mol·K)，远低于 25），  这就是金刚石导热极好但「不容易被烤热」的原因。⚠ 本式只在 **T ≪ Θ_D**（约 T < Θ_D/10）时成立。高温端应向 3R 饱和，  中间过渡区需用德拜积分（无闭合式），此时本式会**严重低估**。⚠ 单位是「每摩尔原子」，不是每千克。换算要除以摩尔质量。★ 实测对照：铜 Θ_D=343、T=50K → C ≈ 9·8.314·(50/343)³ ≈ **0.232 J/(mol·K)**（实测约 0.2，吻合）；        但 T=300K 时本式给 16.7，实测 24.4 —— 已超出 T≪Θ_D 适用域，会明显低估。",
+  "desc": "C ≈ (12π⁴/5)R·(T/Θ_D)³ ≈ 233.8R·(T/Θ)³ J/(mol·K)：德拜模型的低温（T≪Θ_D）摩尔热容。适用域：三维固体、低温；高温极限是杜隆-珀蒂 3R。旧实现写成 9R 是错的（偏低约 26 倍），已按德拜 T³ 律修正。",
   "keys": [
    "德拜",
    "Debye",
@@ -22132,5 +22132,438 @@
    }
   ],
   "confidence": "order-of-magnitude"
+ },
+ {
+  "id": "fresnel_reflectance_normal",
+  "cat": "physics/optics",
+  "name": "菲涅尔反射率（垂直入射）",
+  "expr": "((n1 - n2) / (n1 + n2))^2",
+  "params": {
+   "n1": {
+    "value": 1,
+    "desc": "入射介质折射率（空气）"
+   },
+   "n2": {
+    "value": 1.5,
+    "desc": "出射介质折射率（玻璃）"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "菲涅尔",
+   "反射率",
+   "fresnel",
+   "界面"
+  ],
+  "desc": "R = [(n₁−n₂)/(n₁+n₂)]²：垂直入射时的反射率。适用域：光滑界面、垂直入射（或小角度近似）；斜入射要用 s/p 分量的完整菲涅尔公式。玻璃/空气约 4%，这是镜头镀膜要解决的基本损耗。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章（几何光学）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "光学/近代物理相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "fresnel_transmittance_normal",
+  "cat": "physics/optics",
+  "name": "菲涅尔透射率（垂直入射）",
+  "expr": "4 * n1 * n2 / (n1 + n2)^2",
+  "params": {
+   "n1": {
+    "value": 1,
+    "desc": "入射介质折射率（空气）"
+   },
+   "n2": {
+    "value": 1.5,
+    "desc": "出射介质折射率（玻璃）"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "菲涅尔",
+   "透射率",
+   "fresnel",
+   "界面"
+  ],
+  "desc": "T = 4n₁n₂/(n₁+n₂)²：垂直入射的透射率（能量）。适用域：无吸收介质、垂直入射；R+T=1 可作校验。多层镀膜用它逐层算。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章（几何光学）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "光学/近代物理相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "wavefront_phase_difference",
+  "cat": "physics/optics",
+  "name": "波前相位差（由光程差）",
+  "expr": "2 * pi * opd / lambda",
+  "params": {
+   "opd": {
+    "value": 0.000001,
+    "desc": "光程差 m"
+   },
+   "lambda": {
+    "value": 5e-7,
+    "desc": "真空波长 m"
+   }
+  },
+  "unit": "rad",
+  "keys": [
+   "波前",
+   "相位差",
+   "光程",
+   "wavefront"
+  ],
+  "desc": "Δφ = 2π·OPD/λ：波前的相位差。适用域：单色、相干；Δφ=2πm 干涉加强、π 奇数倍减弱。它是干涉/衍射/全息共同的底层量。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章（干涉）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "光学/近代物理相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "malus_law",
+  "cat": "physics/optics",
+  "name": "马吕斯定律（偏振光强）",
+  "expr": "I0 * cos(theta)^2",
+  "params": {
+   "I0": {
+    "value": 1,
+    "desc": "入射偏振光强 W/m²"
+   },
+   "theta": {
+    "value": 0.7853981633974483,
+    "desc": "偏振片夹角 rad（默认 45°）"
+   }
+  },
+  "unit": "W/m²",
+  "keys": [
+   "马吕斯",
+   "偏振",
+   "malus",
+   "光强"
+  ],
+  "desc": "I = I₀cos²θ：线偏振光通过偏振片后的强度。适用域：入射线偏振、理想偏振片（无吸收）；自然光先经第一片变成 I₀/2。θ=90° 时全消光。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章（几何光学与偏振）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "光学/近代物理相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "nuclear_q_value",
+  "cat": "physics/nuclear",
+  "name": "核反应 Q 值",
+  "expr": "(m_in - m_out) * c^2",
+  "params": {
+   "m_in": {
+    "value": 3e-27,
+    "desc": "反应物总质量 kg"
+   },
+   "m_out": {
+    "value": 2.99e-27,
+    "desc": "产物总质量 kg"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "Q 值",
+   "核反应",
+   "q value",
+   "放能"
+  ],
+  "desc": "Q = (m_in − m_out)c²：核反应的净放能。适用域：任意核反应；Q>0 放能（聚变/裂变），Q<0 需入射能量。用原子质量时要一致地扣电子。1 u·c² ≈ 931.5 MeV。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章（核物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "光学与材料数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "liquidus_ideal_solution",
+  "cat": "chemistry/phase",
+  "name": "理想溶液液相线（相图）",
+  "expr": "exp(-dHfus / R * (1 / T - 1 / Tm))",
+  "params": {
+   "dHfus": {
+    "value": 6000,
+    "desc": "熔化焓 J/mol（铝约 10.7 kJ/mol）"
+   },
+   "R": {
+    "value": 8.314462618,
+    "desc": "气体常数 J/(mol·K)"
+   },
+   "T": {
+    "value": 1000,
+    "desc": "温度 K"
+   },
+   "Tm": {
+    "value": 933,
+    "desc": "纯组分熔点 K"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "液相线",
+   "相图",
+   "共晶",
+   "liquidus"
+  ],
+  "desc": "x_L = exp[−ΔH_fus/R·(1/T − 1/T_m)]：理想溶液的二组分液相线（摩尔分数）。适用域：理想溶液（无相互作用）、稀到中等浓度；两条液相线交点即**共晶点**。真实体系要用活度系数修正。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "光学与材料数据",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章（温度与热）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "tidal_force_gradient",
+  "cat": "physics/astronomy",
+  "name": "潮汐力梯度",
+  "expr": "2 * G * M * m / R^3",
+  "params": {
+   "G": {
+    "value": 6.6743e-11,
+    "desc": "引力常数 m³/(kg·s²)"
+   },
+   "M": {
+    "value": 7.342e+22,
+    "desc": "月球质量 kg"
+   },
+   "m": {
+    "value": 1,
+    "desc": "被作用质点质量 kg"
+   },
+   "R": {
+    "value": 384400000,
+    "desc": "天体间距 m（地月）"
+   }
+  },
+  "unit": "N/m",
+  "keys": [
+   "潮汐",
+   "潮汐力",
+   "tidal",
+   "天文"
+  ],
+  "desc": "dF/dr ≈ 2GMm/R³：潮汐力沿径向的梯度（起潮力）。适用域：被作用体尺度 ≪ R；它按 1/R³ 衰减（比引力快）。这是潮汐锁定、洛希极限与海潮的共同来源。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 13 章（万有引力）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "光学/近代物理相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "cantilever_deflection",
+  "cat": "engineering/structures",
+  "name": "悬臂梁端部挠度",
+  "expr": "F * L^3 / (3 * E * I)",
+  "params": {
+   "F": {
+    "value": 1000,
+    "desc": "端部集中力 N"
+   },
+   "L": {
+    "value": 2,
+    "desc": "悬臂长度 m"
+   },
+   "E": {
+    "value": 200000000000,
+    "desc": "弹性模量 Pa（钢）"
+   },
+   "I": {
+    "value": 0.000001,
+    "desc": "截面惯性矩 m⁴"
+   }
+  },
+  "unit": "m",
+  "keys": [
+   "悬臂梁",
+   "挠度",
+   "cantilever",
+   "结构"
+  ],
+  "desc": "δ = FL³/(3EI)：悬臂梁端部集中力下的挠度。适用域：小变形、线弹性、等截面；简支梁中点同类式是 FL³/(48EI)（库里已有）。挠度 ∝ L³，所以跨度翻倍变形变 8 倍。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 12 章（静力学与弹性）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "光学与材料数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "gear_speed_ratio",
+  "cat": "engineering/mechanics",
+  "name": "齿轮转速比",
+  "expr": "n1 * N1 / N2",
+  "params": {
+   "n1": {
+    "value": 1500,
+    "desc": "主动轮转速 rpm"
+   },
+   "N1": {
+    "value": 20,
+    "desc": "主动轮齿数"
+   },
+   "N2": {
+    "value": 60,
+    "desc": "从动轮齿数"
+   }
+  },
+  "unit": "rpm",
+  "keys": [
+   "齿轮",
+   "转速比",
+   "gear",
+   "传动"
+  ],
+  "desc": "n₂ = n₁·N₁/N₂：从动轮转速（齿数反比）。适用域：刚性啮合、无滑动；转速降低则扭矩按同比例升高（能量守恒）。多级传动逐级相乘。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "光学与材料数据",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章（转动）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
  }
 ]
