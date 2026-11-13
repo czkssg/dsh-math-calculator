@@ -31,7 +31,12 @@ export interface FormulaSystem {
   name: string
   purpose?: string
   keys?: string[]
-  steps: Array<{ formula: string; note?: string }>
+  steps: Array<{
+    formula: string
+    note?: string
+    /** 显式参数映射：参数 ← 前序步骤输出（用 dataFlow 以免与 systems.ts 的 inputs 冲突）。 */
+    dataFlow?: Record<string, { fromStep: number; note?: string }>
+  }>
 }
 
 /** 结果。 */
@@ -60,6 +65,15 @@ export function buildFormulaGraph(
       /** 同一对节点可能出现在多条链里：non-multi 图要先判重，否则 addEdge 直接抛错。 */
       if (!graph.hasEdge('system:' + system.id, 'formula:' + step.formula)) {
         graph.addEdge('system:' + system.id, 'formula:' + step.formula, { kind: 'has-step', order: index })
+      }
+      /** 显式声明的数据流（inputs 映射）→ 图上的 data-flow 边。 */
+      for (const [param, mapping] of Object.entries(step.dataFlow ?? {})) {
+        const source = system.steps[(mapping as { fromStep: number }).fromStep - 1]
+        if (source === undefined) continue
+        if (!formulaIds.has(source.formula) || !formulaIds.has(step.formula)) continue
+        const fromNode = 'formula:' + source.formula
+        const toNode = 'formula:' + step.formula
+        if (!graph.hasEdge(fromNode, toNode)) graph.addEdge(fromNode, toNode, { kind: 'data-flow', param, system: system.id })
       }
       /** 链内顺序边：只表示「先算这一步，再算下一步」，不代表数据流。 */
       if (index > 0) {
@@ -118,6 +132,7 @@ export function runFormulaGraph(formulas: FormulaEntry[], systems: FormulaSystem
     throw new CalcError('unknown_symbol', '公式图里没有 "' + wanted + '"', '可查：公式 id（如 ideal_strength）或链 id（如 sys-material）。')
   }
 
+  const dataFlowEdges = graph.filterEdges((edge) => String(graph.getEdgeAttribute(edge, 'kind')) === 'data-flow').length
   const formulaNodes = graph.filterNodes((node) => node.startsWith('formula:'))
   const systemNodes = graph.filterNodes((node) => node.startsWith('system:'))
   const isolatedFormulas = formulaNodes.filter((node) => graph.inDegree(node) === 0)
@@ -130,9 +145,10 @@ export function runFormulaGraph(formulas: FormulaEntry[], systems: FormulaSystem
   lines.push('  不在任何链里的公式：' + isolatedFormulas.length + ' 条（' + isolatedFormulas.slice(0, 8).map((node) => node.replace('formula:', '')).join('、') + (isolatedFormulas.length > 8 ? ' …' : '') + '）')
   lines.push('', '  链与步数：')
   for (const link of links) lines.push('    ' + link.id.padEnd(24) + link.steps + ' 步')
+  lines.push('', '  显式数据流边：' + dataFlowEdges + ' 条（systems.json 的 inputs 映射；顺序边不代表数据流）')
   lines.push('')
-  lines.push('【已知缺口】链的每一步只写了 formula + note，**没有参数映射**（「上一步的哪个输出喂给这一步的哪个参数」）。')
-  lines.push('  所以本图只能做结构查询；「改 A → 末端变多少」的数值传导需要先补这份映射。')
+  lines.push('【缺口】链的多数步骤只有 formula + note；已声明的数据流能数值传导（query:"chain"），')
+  lines.push('  未声明的是并列主题，不硬连——链的步骤顺序也不等于数据流方向。')
   if (missingFormulaSteps.length > 0) {
     lines.push('', '【悬空引用】' + missingFormulaSteps.length + ' 处')
     for (const item of missingFormulaSteps.slice(0, 10)) lines.push('  · ' + item)
@@ -146,8 +162,9 @@ export function runFormulaGraph(formulas: FormulaEntry[], systems: FormulaSystem
       connectedComponents: components.length,
       isolatedFormulas: isolatedFormulas.map((node) => node.replace('formula:', '')),
       systemsList: links,
+      dataFlowEdges,
       missingFormulaSteps,
-      gap: 'steps 缺参数映射（上一步输出 → 这一步输入），数值传导暂不可做',
+      gap: '多数步骤未声明参数映射；已声明的可数值传导（query:"chain"）',
     },
     ...(missingFormulaSteps.length > 0 ? { notice: '链里有悬空公式引用' } : {}),
   }

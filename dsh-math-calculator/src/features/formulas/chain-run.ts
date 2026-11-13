@@ -28,8 +28,8 @@ import type { RelationIndex } from './relations.js'
 export interface ChainStep {
   formula: string
   note?: string
-  /** 参数 ← 前序步骤输出。 */
-  inputs?: Record<string, { fromStep: number; note?: string }>
+  /** 参数 ← 前序步骤输出（用 dataFlow 以免与 systems.ts 的 inputs 冲突）。 */
+  dataFlow?: Record<string, { fromStep: number; note?: string }>
 }
 
 /** 一条链。 */
@@ -102,7 +102,7 @@ export function runChainNumeric(
     /** 参数取值：显式映射 > initial > 默认值。 */
     const values: Record<string, number | string> = {}
     const linked: Record<string, { fromStep: number; value: number }> = {}
-    for (const [param, mapping] of Object.entries(step.inputs ?? {})) {
+    for (const [param, mapping] of Object.entries(step.dataFlow ?? {})) {
       const source = results[mapping.fromStep - 1]
       if (source === undefined) {
         throw new CalcError(

@@ -47,7 +47,7 @@
    {
     "formula": "safety_factor_check",
     "note": "屈服强度 → 许用应力（判安全的基准）",
-    "inputs": {
+    "dataFlow": {
      "yield_strength": {
       "fromStep": 5,
       "note": "Hall-Petch 的屈服强度 → 安全系数校核的基准"

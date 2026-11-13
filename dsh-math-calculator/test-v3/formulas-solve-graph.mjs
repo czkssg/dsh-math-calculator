@@ -61,7 +61,7 @@ console.log('-- 4. 公式-链结构图 --')
   const graph = await run({ operation: 'formulas', query: 'graph' })
   assert('★ 公式 686 条 + 链 22 条', graph.ok === true && graph.value.formulas === 740 && graph.value.systems === 22, JSON.stringify({ f: graph.value?.formulas, s: graph.value?.systems }))
   assert('边数 > 0', graph.value.edges > 0, String(graph.value?.edges))
-  assert('★ 明确标出「steps 缺参数映射」的缺口', graph.result.includes('没有参数映射') && graph.value.gap.includes('缺参数映射'), '')
+  assert('★ 标出「数据流」与缺口（多数步骤未声明映射）', graph.result.includes('显式数据流边') && graph.result.includes('并列主题'), '')
   assert('孤立公式统计', Array.isArray(graph.value.isolatedFormulas), '')
 
   const focusFormula = await run({ operation: 'formulas', formulaGraph: true, formulaFocus: 'ideal_strength' })

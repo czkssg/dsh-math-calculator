@@ -68,7 +68,7 @@ console.log('-- 3. 缺参 / 未知链 / 逆序映射 --')
   const badSystem = [{
     id: 'test-reverse', name: '逆序测试',
     steps: [
-      { formula: 'safety_factor_check', inputs: { yield_strength: { fromStep: 2 } } },
+      { formula: 'safety_factor_check', dataFlow: { yield_strength: { fromStep: 2 } } },
       { formula: 'hall_petch' },
     ],
   }]
