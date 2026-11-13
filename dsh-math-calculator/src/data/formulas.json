@@ -21584,5 +21584,553 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "density_of_states_3d",
+  "cat": "physics/solid",
+  "name": "三维自由电子态密度",
+  "expr": "(2 * m)^(3 / 2) * sqrt(E) / (2 * pi^2 * hbar^3)",
+  "params": {
+   "m": {
+    "value": 9.1093837015e-31,
+    "desc": "电子质量 kg"
+   },
+   "E": {
+    "value": 1e-19,
+    "desc": "能量（相对带底）J"
+   },
+   "hbar": {
+    "value": 1.054571817e-34,
+    "desc": "约化普朗克常数 J·s"
+   }
+  },
+  "unit": "1/(J·m³)",
+  "keys": [
+   "态密度",
+   "自由电子",
+   "density of states",
+   "固体"
+  ],
+  "desc": "g(E) = (2m)^{3/2}√E/(2π²ħ³)：三维自由电子气的态密度。适用域：抛物线能带、自旋简并已计入；二维/一维的 E 依赖不同（常数/1/√E）。费米能级处的 g(E_F) 决定热容与电导。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章（固体物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "fermi_wavevector",
+  "cat": "physics/solid",
+  "name": "费米波矢",
+  "expr": "(3 * pi^2 * n)^(1 / 3)",
+  "params": {
+   "n": {
+    "value": 8.5e+28,
+    "desc": "电子数密度 1/m³（铜约 8.5e28）"
+   }
+  },
+  "unit": "1/m",
+  "keys": [
+   "费米波矢",
+   "费米面",
+   "fermi",
+   "固体"
+  ],
+  "desc": "k_F = (3π²n)^{1/3}：自由电子气的费米波矢。适用域：三维、自由电子近似；费米能 E_F=ħ²k_F²/(2m)，费米速度 v_F=ħk_F/m。它是金属导电与热容的基准尺度。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章（固体物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "brewster_angle",
+  "cat": "physics/optics",
+  "name": "布儒斯特角",
+  "expr": "atan(n2 / n1)",
+  "params": {
+   "n1": {
+    "value": 1,
+    "desc": "入射介质折射率（空气）"
+   },
+   "n2": {
+    "value": 1.5,
+    "desc": "出射介质折射率（玻璃）"
+   }
+  },
+  "unit": "rad",
+  "keys": [
+   "布儒斯特",
+   "偏振",
+   "brewster",
+   "反射"
+  ],
+  "desc": "θ_B = atan(n₂/n₁)：反射光完全偏振的入射角。适用域：两种各向同性介质界面；此时反射光与折射光垂直。偏振片、激光窗片按它设计。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章（几何光学）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "近代物理/光学相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "optical_path_length",
+  "cat": "physics/optics",
+  "name": "光程",
+  "expr": "n * L",
+  "params": {
+   "n": {
+    "value": 1.5,
+    "desc": "折射率"
+   },
+   "L": {
+    "value": 0.001,
+    "desc": "几何路程 m"
+   }
+  },
+  "unit": "m",
+  "keys": [
+   "光程",
+   "干涉",
+   "optical path",
+   "相位"
+  ],
+  "desc": "OPL = nL：光在介质中走过的等效真空路程。适用域：单色光、各向同性介质；相位差 Δφ=2π·OPD/λ₀。干涉/衍射的条纹条件都用光程差，不是几何路程差。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章（干涉）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "近代物理/光学相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "nuclear_geometric_cross_section",
+  "cat": "physics/nuclear",
+  "name": "核几何截面",
+  "expr": "pi * (r0 * A^(1 / 3))^2",
+  "params": {
+   "r0": {
+    "value": 1.2e-15,
+    "desc": "核子半径参数 m（约 1.2 fm）"
+   },
+   "A": {
+    "value": 56,
+    "desc": "质量数（默认铁）"
+   }
+  },
+  "unit": "m²",
+  "keys": [
+   "核截面",
+   "截面",
+   "nuclear",
+   "核物理"
+  ],
+  "desc": "σ ≈ π(r₀A^{1/3})²：原子核的几何截面（靶面积）。适用域：高能/几何散射的量级估计；真实反应截面还含量子隧穿与共振，可差几个数量级。1 b = 1e-28 m²。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章（核物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "order-of-magnitude"
+ },
+ {
+  "id": "mass_defect_binding_energy",
+  "cat": "physics/nuclear",
+  "name": "质量亏损结合能",
+  "expr": "(Z * mp + N * mn - M) * c^2",
+  "params": {
+   "Z": {
+    "value": 26,
+    "desc": "质子数（默认铁）"
+   },
+   "N": {
+    "value": 30,
+    "desc": "中子数"
+   },
+   "mp": {
+    "value": 1.67262192369e-27,
+    "desc": "质子质量 kg"
+   },
+   "mn": {
+    "value": 1.67492749804e-27,
+    "desc": "中子质量 kg"
+   },
+   "M": {
+    "value": 9.2732796e-26,
+    "desc": "原子核质量 kg"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "结合能",
+   "质量亏损",
+   "binding energy",
+   "核物理"
+  ],
+  "desc": "B = (Zm_p + Nm_n − M)c²：原子核的结合能。适用域：任意核素，需精确核质量（原子质量要扣除电子结合能）。每核子结合能在铁附近最大（约 8.8 MeV），这是裂变/聚变都放能的原因。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章（核物理）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "lever_rule",
+  "cat": "chemistry/phase",
+  "name": "相图杠杆定律",
+  "expr": "(x_solid - x) / (x_solid - x_liquid)",
+  "params": {
+   "x": {
+    "value": 0.4,
+    "desc": "合金总成分（B 的摩尔分数）"
+   },
+   "x_solid": {
+    "value": 0.2,
+    "desc": "固相成分"
+   },
+   "x_liquid": {
+    "value": 0.6,
+    "desc": "液相成分"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "杠杆定律",
+   "相图",
+   "lever rule",
+   "合金"
+  ],
+  "desc": "f_L = (x_s − x)/(x_s − x_L)：两相区中液相的摩尔分数。适用域：二元相图的两相区、平衡态；x 必须在两相成分之间。它是「成分决定相比例」的定量表达。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章（温度与热）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "photosynthetic_efficiency",
+  "cat": "biology/ecology",
+  "name": "光合效率",
+  "expr": "P_out / (I * A)",
+  "params": {
+   "P_out": {
+    "value": 10,
+    "desc": "净光合功率 W"
+   },
+   "I": {
+    "value": 1000,
+    "desc": "入射辐照度 W/m²"
+   },
+   "A": {
+    "value": 1,
+    "desc": "叶面积 m²"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "光合",
+   "效率",
+   "photosynthesis",
+   "生态"
+  ],
+  "desc": "η = P_out/(I·A)：光合有效辐照转化为化学能的效率。适用域：单叶片/冠层净交换；典型 C3 作物 1–2%，C4 可达 3–4%，藻类更高。受光饱和、CO₂ 与温度限制。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "近代物理/光学相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "coriolis_acceleration",
+  "cat": "geology/river",
+  "name": "科里奥利加速度（水平分量）",
+  "expr": "2 * omega * v * sin(lat)",
+  "params": {
+   "omega": {
+    "value": 0.000072921,
+    "desc": "地球自转角速度 rad/s"
+   },
+   "v": {
+    "value": 10,
+    "desc": "运动速度 m/s"
+   },
+   "lat": {
+    "value": 0.698,
+    "desc": "纬度 rad（约 40°）"
+   }
+  },
+  "unit": "m/s²",
+  "keys": [
+   "科里奥利",
+   "地转偏向",
+   "coriolis",
+   "地球"
+  ],
+  "desc": "a_C = 2ωv·sinφ：水平运动的科里奥利加速度。适用域：旋转参考系、大尺度运动；赤道为零、极地最大。它使北半球右偏，是气旋与洋流转向的原因。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 6 章（圆周运动）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "近代物理/光学相关章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "bass_diffusion",
+  "cat": "social/decision",
+  "name": "Bass 创新扩散（累计采用）",
+  "expr": "M * (1 - exp(-(p1 + q1) * t)) / (1 + (q1 / p1) * exp(-(p1 + q1) * t))",
+  "params": {
+   "M": {
+    "value": 1000000,
+    "desc": "潜在市场总量"
+   },
+   "p1": {
+    "value": 0.03,
+    "desc": "创新系数（外部影响）"
+   },
+   "q1": {
+    "value": 0.4,
+    "desc": "模仿系数（内部影响）"
+   },
+   "t": {
+    "value": 5,
+    "desc": "时间（年）"
+   }
+  },
+  "unit": "人",
+  "keys": [
+   "Bass",
+   "创新扩散",
+   "diffusion",
+   "社会"
+  ],
+  "desc": "N(t) = M[1−e^{−(p+q)t}]/[1+(q/p)e^{−(p+q)t}]：Bass 模型的累计采用量。适用域：首次购买、单一创新、无重复购买；峰值出现在 t* = ln(q/p)/(p+q)。它解释「为什么扩散是 S 曲线」。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "A New Product Growth for Model Consumer Durables",
+    "authors": "Frank M. Bass",
+    "publisher": "Management Science",
+    "chapter": "1969, 15(5)",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "logistic_map",
+  "cat": "math/growth",
+  "name": "逻辑斯蒂映射",
+  "expr": "r1 * x * (1 - x)",
+  "params": {
+   "r1": {
+    "value": 3.7,
+    "desc": "增长率参数（3.57 以上进混沌）"
+   },
+   "x": {
+    "value": 0.5,
+    "desc": "当前值（0–1）"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "逻辑斯蒂映射",
+   "混沌",
+   "logistic map",
+   "迭代"
+  ],
+  "desc": "x_{n+1} = r·x_n(1−x_n)：离散逻辑斯蒂映射。适用域：单变量、无噪声、离散代；r<3 收敛、3–3.57 分岔、>3.57 混沌。它是「简单规则产生复杂行为」的最小例子。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Physics",
+    "authors": "Halliday, Resnick, Walker",
+    "publisher": "Wiley",
+    "chapter": "近代物理/光学相关章",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "moore_law",
+  "cat": "perception/technology",
+  "name": "摩尔定律（倍增）",
+  "expr": "N0 * 2^(t / T)",
+  "params": {
+   "N0": {
+    "value": 1000,
+    "desc": "初始数量"
+   },
+   "t": {
+    "value": 10,
+    "desc": "经过年数"
+   },
+   "T": {
+    "value": 2,
+    "desc": "倍增周期（年）"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "摩尔定律",
+   "指数增长",
+   "moore",
+   "技术"
+  ],
+  "desc": "N(t) = N₀·2^{t/T}：数量按固定周期翻倍。适用域：经验规律、有限时间窗；它不是物理定律，硅工艺近年已放缓（T 变大）。用于估算算力/存储的历史与近期趋势。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "材料与核数据",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "order-of-magnitude"
  }
 ]
