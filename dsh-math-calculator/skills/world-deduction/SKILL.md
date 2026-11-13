@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 46 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 47 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -45,6 +45,10 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 多条公式一次算 | `formulas` | `formulas:[{formula,overrides,label}]` |
 | 查公式参数表 | `formula-table` | 不传参就看全表 |
 | 依赖传导 / 编制结构 | `dependency` | 给 `node` 查上下游；`levels`+`tree` 可简写编制 |
+| **层级拓扑（军队/政府）** | `topology` | `action:"org"` + `units:[{id,level,headcount,parent}]`——查缺编/多上级/指挥链深度 |
+| **地形拓扑（地图）** | `topology` | `action:"terrain"` + `nodes`/`edges`（`kind:"road|river|pass|sea"`）——连通区域/咽喉/桥/最短路 |
+| **舱室拓扑（建筑/舰船）** | `topology` | `action:"ship"` + `compartments`/`passages`/`entry`——可达/割点/桥/容量瓶颈 |
+| 通用图 | `topology` | `action:"model|route|sightline|reachable"`；`structure`/`rules` 是建筑与体检入口 |
 | 微分方程 / 离散递推 | `ode` / `recurrence` | `initial` + `periods`；年表用 `at:[5,10,20]` |
 | 改物理常数看后果 | `constants` | 传新值；`preview:true` 只算不存 |
 | 工作区（存变量/切世界） | `workspace` | `action2:"set"`、`workspaceVariables` |
@@ -191,16 +195,17 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 | 「三个方案选哪个」 | `compare{compare:{rows,cols,data}}` |
 | 「别把前面推的忘了」 | `world_state set` 建条目，之后 `get` 按需取 |
 
-## 两个已知边界（一条已实现、一条未接入）
+## 已知边界
 
 遇到时要如实告知，**不要承诺工具做不到的事**：
 
 | 边界 | 现状 |
 |---|---|
 | **复合单位写法不全** | `kg/m^3` ✅ `kg/m3` ✅ 但 `kg/m³`（上标）❌（实测） |
-| **空间拓扑尚未接入** | 能力已实现（距离/最短路径/视线/可达预算/建筑容量/七条规则），但**还没接成 operation**——AI 暂时调不到 |
+| **拓扑图规模** | 割点/桥用定义式判（几十到几百节点够用）；上千节点会慢，需换 Tarjan |
 
-> 编制树已支持等比与不等比（`hierarchy` 重写）；跨级混编/兵种比例仍简化。
+> 层级/地形/舱室拓扑已接入 `topology` operation；编制树已支持等比与不等比（`hierarchy`）；
+> 跨级混编/兵种比例仍简化。
 
 ## 给开发者的规则（不是给使用者的）
 

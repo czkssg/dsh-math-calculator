@@ -122,7 +122,7 @@ console.log('-- 4. 新实现的错误被翻译成结构化 error --')
 console.log('-- 5. dispatch 路由表 --')
 {
   const migrated = dispatch.MIGRATED_OPERATIONS
-  assert('★ 46 个 operation 全部迁移（含 impact）', migrated.length === 46, String(migrated.length))
+  assert('★ 47 个 operation 全部迁移（含 impact/topology）', migrated.length === 47, String(migrated.length))
   assert('清单含 constants/workspace/help/balance/auto', ['constants', 'workspace', 'help', 'balance', 'auto'].every((operation) => migrated.includes(operation)), '')
 }
 

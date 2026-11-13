@@ -53,6 +53,7 @@ import { buildRelationIndex, relationReason, type RelationIndex } from './featur
 import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
+import { runTopology } from './features/topology/ops.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -165,6 +166,9 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
 
     case 'derivation':
       return runDerivation(args, worldDeps)
+
+    case 'topology':
+      return runTopology((args['topology'] ?? args) as never)
 
     case 'impact': {
       /** 影响面分析：老的独立 operation，v3 里以 derivation:impact 子命令实现。 */
@@ -668,5 +672,6 @@ export const MIGRATED_OPERATIONS = [
   'help',
   /** 老 operation，v3 以 derivation:impact 实现。 */
   'impact',
+  'topology',
   'auto',
 ] as const

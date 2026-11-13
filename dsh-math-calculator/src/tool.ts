@@ -186,6 +186,10 @@ const PARAMETER_SPEC = {
   bodyFactor: { type: 'number', description: '常数倍数' },
   quickFeasible: { type: 'object', additionalProperties: true, description: '一句话可行性 {claim,world?}' },
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
+  topology: {
+    type: 'json',
+    description: '拓扑：{action:"model|route|sightline|reachable|structure|rules|org|terrain|ship", nodes, edges, from, to, mode, maxKm, units, compartments, passages, entry, building, vehicle, rules}',
+  },
   world_state: { type: 'object', additionalProperties: true, description: '设定库 {action,entries?,id?,query?}' },
   chain: { type: 'object', additionalProperties: true, description: '链条传导 {stages,raw}' },
   threshold: { type: 'object', additionalProperties: true, description: '阈值判断 {value,thresholds}' },
