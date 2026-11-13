@@ -158,8 +158,10 @@ export function apply(ctx: any): void {
   }
 }
 
+/** cordis 插件名：必须与 package.json 的 name 一致（宿主用它去重与排序）。 */
 export const name = PLUGIN_NAME
 
+/** 必需服务：只有 tools（其它服务一律走 optionalService）。 */
 export const inject = ["tools"]
 
 export { mathExecuteTool }
