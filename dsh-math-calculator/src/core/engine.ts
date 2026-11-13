@@ -21,6 +21,8 @@
  *
  * 为什么删 `createUnit`：它允许运行时注册单位，而注册体是**函数**，
  * 等于把任意代码执行权交出去。这是本项目唯一主动放弃的能力。
+  *
+ * @module dsh-math-calculator/core/engine
  */
 
 import { create, all, type MathJsInstance } from 'mathjs'

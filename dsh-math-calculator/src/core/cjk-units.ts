@@ -28,6 +28,8 @@
  *
  * 全部沿用老插件 `units-data.ts` 的因子（那些已经过实测校对），
  * 不在重写时重新推算 —— 换算是**历史约定**，不是可以重新发明的。
+  *
+ * @module dsh-math-calculator/core/cjk-units
  */
 
 import type { MathJsInstance } from 'mathjs'

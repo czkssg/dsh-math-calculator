@@ -19528,5 +19528,451 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "maxwell_two_level_partition",
+  "cat": "physics/quantum",
+  "name": "两能级系统配分函数",
+  "expr": "1 + exp(-dE / (k * T))",
+  "params": {
+   "dE": {
+    "value": 1e-19,
+    "desc": "能级间隔 J"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "配分函数",
+   "两能级",
+   "partition",
+   "统计"
+  ],
+  "desc": "Z = 1 + e^{−ΔE/kT}：基态取 0、激发态 ΔE 的两能级系统。适用域：只有两个可及能级的系统（自旋、二聚体）；多个能级要逐项求和，不能套这个式子。高温极限 Z→2，低温极限 Z→1。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章（统计物理）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "two_level_average_energy",
+  "cat": "physics/quantum",
+  "name": "两能级系统平均能量",
+  "expr": "dE / (exp(dE / (k * T)) + 1)",
+  "params": {
+   "dE": {
+    "value": 1e-19,
+    "desc": "能级间隔 J"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "平均能量",
+   "两能级",
+   "average energy",
+   "统计"
+  ],
+  "desc": "<E> = ΔE/(e^{ΔE/kT}+1)：两能级系统的平均能量（基态 0）。适用域：两能级、无相互作用；高温极限 → ΔE/2（各占一半），低温 → 0。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章（统计物理）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "helmholtz_free_energy",
+  "cat": "physics/thermo",
+  "name": "亥姆霍兹自由能",
+  "expr": "-k * T * log(Z)",
+  "params": {
+   "Z": {
+    "value": 2,
+    "desc": "配分函数（无量纲，须 > 0）"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "自由能",
+   "亥姆霍兹",
+   "helmholtz",
+   "free energy"
+  ],
+  "desc": "F = −kT·log Z：等温等容过程的可用能。适用域：正则系综（固定 N、V、T）；Z 必须 > 0。与吉布斯自由能 G 的区别：F 对应等容，G 对应等压。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章（统计物理）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "textbook",
+    "title": "Statistical Physics (Part 1)",
+    "authors": "Landau & Lifshitz",
+    "publisher": "Pergamon",
+    "chapter": "第 4—5 章",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "thermal_de_broglie_wavelength",
+  "cat": "physics/quantum",
+  "name": "热德布罗意波长",
+  "expr": "h / sqrt(2 * pi * m * k * T)",
+  "params": {
+   "m": {
+    "value": 4.65e-26,
+    "desc": "粒子质量 kg（默认 N₂ 分子）"
+   },
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "h": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "m",
+  "keys": [
+   "德布罗意",
+   "热波长",
+   "de broglie",
+   "量子简并"
+  ],
+  "desc": "λ_th = h/√(2πmkT)：热运动对应的物质波波长。适用域：非相对论、理想气体。判据：粒子间距 ≪ λ_th 时量子简并显著（玻色/费米统计不能退化为经典）。室温 N₂ 约 0.02 nm。",
+  "sources": {
+   "type": "textbook",
+   "title": "University Physics Volume 3",
+   "authors": "Moebs, Ling, Sanny",
+   "publisher": "OpenStax",
+   "chapter": "第 9 章（统计物理）",
+   "url": "https://openstax.org/books/university-physics-volume-3",
+   "license": "CC BY 4.0",
+   "accessed": "2026-11-13"
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "energy_momentum_relation",
+  "cat": "physics/relativity",
+  "name": "相对论能量-动量关系",
+  "expr": "sqrt((p * c)^2 + (m * c^2)^2)",
+  "params": {
+   "p": {
+    "value": 1e-21,
+    "desc": "动量 kg·m/s"
+   },
+   "m": {
+    "value": 9.1093837015e-31,
+    "desc": "静质量 kg（默认电子）"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "相对论",
+   "能量动量",
+   "energy momentum",
+   "质能"
+  ],
+  "desc": "E² = (pc)² + (mc²)²：总能量由动量与静质量共同决定。适用域：狭义相对论。p=0 退化为 E=mc²；m=0（光子）给 E=pc。低速极限展开给 E ≈ mc² + p²/2m（经典动能）。",
+  "sources": {
+   "type": "textbook",
+   "title": "University Physics Volume 3",
+   "authors": "Moebs, Ling, Sanny",
+   "publisher": "OpenStax",
+   "chapter": "第 5 章（相对论）",
+   "url": "https://openstax.org/books/university-physics-volume-3",
+   "license": "CC BY 4.0",
+   "accessed": "2026-11-13"
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "displacement_current",
+  "cat": "physics/em",
+  "name": "位移电流",
+  "expr": "epsilon0 * dPhiE_dt",
+  "params": {
+   "epsilon0": {
+    "value": 8.8541878128e-12,
+    "desc": "真空介电常数 F/m"
+   },
+   "dPhiE_dt": {
+    "value": 1000000,
+    "desc": "电通量变化率 V·m/s"
+   }
+  },
+  "unit": "A",
+  "keys": [
+   "位移电流",
+   "麦克斯韦",
+   "displacement current",
+   "安培"
+  ],
+  "desc": "I_d = ε₀·dΦ_E/dt：变化的电场等效为电流，补上安培环路定理的缺口。适用域：真空或介质（介质用 ε）；它是电磁波能自持传播的关键项，也是电容器「隔直通交」的物理原因。",
+  "sources": {
+   "type": "textbook",
+   "title": "University Physics Volume 2",
+   "authors": "Moebs, Ling, Sanny",
+   "publisher": "OpenStax",
+   "chapter": "第 16 章（麦克斯韦方程组）",
+   "url": "https://openstax.org/books/university-physics-volume-2",
+   "license": "CC BY 4.0",
+   "accessed": "2026-11-13"
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "relativistic_doppler",
+  "cat": "physics/relativity",
+  "name": "相对论多普勒（远离）",
+  "expr": "f0 * sqrt((1 - v / c) / (1 + v / c))",
+  "params": {
+   "f0": {
+    "value": 1000000000000000,
+    "desc": "固有频率 Hz"
+   },
+   "v": {
+    "value": 10000000,
+    "desc": "远离速度 m/s"
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "真空光速 m/s"
+   }
+  },
+  "unit": "Hz",
+  "keys": [
+   "多普勒",
+   "相对论",
+   "红移",
+   "doppler"
+  ],
+  "desc": "f = f₀√[(1−v/c)/(1+v/c)]：光源远离时的频率。适用域：狭义相对论（含横向时间膨胀）；v 为正表示远离（红移），接近时取负号。低速极限退化为经典多普勒。",
+  "sources": {
+   "type": "textbook",
+   "title": "University Physics Volume 3",
+   "authors": "Moebs, Ling, Sanny",
+   "publisher": "OpenStax",
+   "chapter": "第 5 章（相对论）",
+   "url": "https://openstax.org/books/university-physics-volume-3",
+   "license": "CC BY 4.0",
+   "accessed": "2026-11-13"
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "maxwell_speed_peak",
+  "cat": "physics/thermo",
+  "name": "麦克斯韦速率分布最概然速率",
+  "expr": "sqrt(2 * k * T / m)",
+  "params": {
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "m": {
+    "value": 4.65e-26,
+    "desc": "分子质量 kg（默认 N₂）"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "m/s",
+  "keys": [
+   "麦克斯韦",
+   "速率分布",
+   "最概然速率",
+   "maxwell"
+  ],
+  "desc": "v_p = √(2kT/m)：速率分布 f(v) 的峰值位置。适用域：理想气体平衡态、非相对论。注意 v_p < v_avg < v_rms，三者不要混用。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章（气体动理论）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "course",
+    "title": "8.01SC Classical Mechanics",
+    "publisher": "MIT OpenCourseWare",
+    "url": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/",
+    "license": "CC BY-NC-SA 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "maxwell_speed_average",
+  "cat": "physics/thermo",
+  "name": "麦克斯韦速率分布平均速率",
+  "expr": "sqrt(8 * k * T / (pi * m))",
+  "params": {
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "m": {
+    "value": 4.65e-26,
+    "desc": "分子质量 kg（默认 N₂）"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "m/s",
+  "keys": [
+   "麦克斯韦",
+   "平均速率",
+   "maxwell",
+   "速率分布"
+  ],
+  "desc": "v_avg = √(8kT/πm)：速率分布的平均值。适用域：理想气体平衡态。计算「分子撞壁频率」「扩散系数」时用它，不要用最概然速率。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章（气体动理论）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "course",
+    "title": "8.01SC Classical Mechanics",
+    "publisher": "MIT OpenCourseWare",
+    "url": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/",
+    "license": "CC BY-NC-SA 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "equipartition_energy",
+  "cat": "physics/thermo",
+  "name": "能量均分（单原子平均动能）",
+  "expr": "3 / 2 * k * T",
+  "params": {
+   "T": {
+    "value": 300,
+    "desc": "温度 K"
+   },
+   "k": {
+    "value": 1.380649e-23,
+    "desc": "玻尔兹曼常数 J/K"
+   }
+  },
+  "unit": "J",
+  "keys": [
+   "能量均分",
+   "equipartition",
+   "动能",
+   "温度"
+  ],
+  "desc": "<E> = (3/2)kT：单原子理想气体每个分子的平均平动动能。适用域：经典高温极限；低温下转动/振动自由度冻结（量子效应），双原子分子要用 5/2 或 7/2 kT。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章（气体动理论）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "CC BY 4.0",
+    "accessed": "2026-11-13"
+   },
+   {
+    "type": "course",
+    "title": "8.01SC Classical Mechanics",
+    "publisher": "MIT OpenCourseWare",
+    "url": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/",
+    "license": "CC BY-NC-SA 4.0",
+    "accessed": "2026-11-13"
+   }
+  ],
+  "confidence": "exact"
  }
 ]

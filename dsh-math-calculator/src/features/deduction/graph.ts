@@ -181,9 +181,13 @@ export function impactOf(target: string, edges: DependencyEdge[]): { direct: str
 
 /** 布局参数。 */
 export const NODE_W = 108
+/** 节点高度（px）。 */
 export const NODE_H = 24
+/** 同层节点水平间距（px）。 */
 export const GAP_X = 14
+/** 相邻层垂直间距（px）。 */
 export const GAP_Y = 56
+/** 画布内边距（px）。 */
 export const PAD = 16
 
 /** 一个节点。 */

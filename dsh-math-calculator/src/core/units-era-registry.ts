@@ -17,6 +17,8 @@
  * 光有 `cnchi_h` 还不够 —— 用户会直接问「汉代一尺多少厘米」。
  * 所以这里还给一个 `ERA_ALIAS` 表，把「汉尺」「唐大尺」这类写法
  * 映射到注册名。
+  *
+ * @module dsh-math-calculator/core/units-era-registry
  */
 
 import type { MathJsInstance } from 'mathjs'

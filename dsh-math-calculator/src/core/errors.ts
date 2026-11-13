@@ -30,6 +30,8 @@
  *
  * **`internal` 是最后一个该用的类型**：用户输入错却报 internal，
  * 会把人引向错误的排查方向（这是反馈包 T7-N8 报过的）。
+  *
+ * @module dsh-math-calculator/core/errors
  */
 
 /** 错误类型。 */

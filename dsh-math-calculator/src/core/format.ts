@@ -23,6 +23,8 @@
  *
  * **`displayPrecision` 是小数位，不是有效数字** —— 这个语义曾写错过一次，
  * 导致 AI 建立了错的心智模型（以为设 8 得到 8 位有效数字）。
+  *
+ * @module dsh-math-calculator/core/format
  */
 
 /** 格式化选项。 */
