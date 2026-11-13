@@ -544,6 +544,7 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
         workspaceVariables: args['workspaceVariables'] as never,
         useWorkspaceVariables: args['useWorkspaceVariables'] === true,
         world: asRecord(args['world']),
+        what: typeof args['what'] === 'string' ? args['what'] : undefined,
       })
 
     case 'help':

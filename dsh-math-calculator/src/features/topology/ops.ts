@@ -28,6 +28,9 @@ import { buildTopology, summarizeTopology, type Topology, type TopologyEdge, typ
 import { distanceBetween, reachableWithin, shortestRoute, sightline } from './geometry.js'
 import { assessStructure, type BuildingInput, type VehicleInput } from './structure.js'
 import { checkRules, type RuleContext } from './rules.js'
+import { ENTITY_TYPES, RELATION_TYPES, mergeEntityTypes, validateEntityGraph, validateEntityType, type EntityTypeDef } from './entities.js'
+import { currentWorkspace } from '../workspace.js'
+import { loadWorkspaceFile, saveWorkspaceFile } from '../../io/workspace-store.js'
 
 /** 输入。 */
 export interface TopologyOpInput {
@@ -50,6 +53,14 @@ export interface TopologyOpInput {
   passages?: Array<{ from: string; to: string; kind?: string; capacity?: number }>
   /** ship：入口节点。 */
   entry?: string
+  /** define：自创实体类型。 */
+  entityType?: Record<string, unknown>
+  /** entities：按类别过滤。 */
+  category?: 'physical' | 'conceptual'
+  /** validate：实体类型图。 */
+  entities?: Array<{ id: string; type?: string; [key: string]: unknown }>
+  /** validate：关系边。 */
+  relations?: Array<{ from: string; to: string; kind?: string }>
 }
 
 /** 结果。 */
@@ -256,6 +267,47 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
+  if (action === 'define') {
+    const type = validateEntityType(input.entityType)
+    const workspace = currentWorkspace()
+    const data = loadWorkspaceFile(workspace)
+    const customs = (data.customEntities as unknown as EntityTypeDef[]).filter((item) => item.name !== type.name)
+    saveWorkspaceFile({ ...data, customEntities: [...customs, type] as unknown as Array<Record<string, unknown>> })
+    return {
+      result: '✓ 已定义实体类型「' + type.name + '」（' + type.label + '，' + type.category + '）\n  必填：' + type.required.join('、') + (type.relations !== undefined ? '\n  允许关系：' + type.relations.join('、') : '') + '\n  之后 model/org/terrain/ship/validate 都能用它。',
+      value: { entityType: type, workspace },
+    }
+  }
+
+  if (action === 'entities') {
+    const customs = loadWorkspaceFile(currentWorkspace()).customEntities as unknown as EntityTypeDef[]
+    const all = mergeEntityTypes(customs).filter((type) => input.category === undefined || type.category === input.category)
+    const lines: string[] = ['═══ 实体类型（内置 + 自创 ' + customs.length + ' 个）═══', '']
+    for (const type of all) {
+      lines.push('  ' + type.name.padEnd(14) + type.label.padEnd(12) + type.category.padEnd(10) + '必填：' + type.required.join('、'))
+      if (type.note !== undefined) lines.push('  ' + ''.padEnd(14) + type.note)
+    }
+    lines.push('', '【关系类型】')
+    for (const relation of RELATION_TYPES) lines.push('  ' + relation.name.padEnd(14) + relation.label.padEnd(10) + relation.direction.padEnd(11) + relation.cardinality)
+    lines.push('', '自创：{topology:{action:"define", entityType:{name,label,category,required,relations?}}}')
+    return { result: lines.join('\n'), value: { entityTypes: all, relationTypes: RELATION_TYPES } }
+  }
+
+  if (action === 'validate') {
+    const customs = loadWorkspaceFile(currentWorkspace()).customEntities as unknown as EntityTypeDef[]
+    const problems = validateEntityGraph(input.entities ?? [], input.relations ?? [], customs)
+    const lines: string[] = ['═══ 实体图校验 ═══', '']
+    if (problems.length === 0) lines.push('  ✓ 没有发现问题（' + (input.entities?.length ?? 0) + ' 个实体，' + (input.relations?.length ?? 0) + ' 条关系）')
+    else {
+      for (const problem of problems) lines.push('  · [' + problem.kind + '] ' + problem.where + '：' + problem.message)
+    }
+    return {
+      result: lines.join('\n'),
+      value: { problems, entityCount: input.entities?.length ?? 0, relationCount: input.relations?.length ?? 0 },
+      ...(problems.length > 0 ? { notice: '有 ' + problems.length + ' 个结构问题（类型/字段/关系/基数）' } : {}),
+    }
+  }
+
   if (action === 'org') return runOrg(input)
   if (action === 'terrain') return runTerrainTopology(input)
   if (action === 'ship' || action === 'building') return runShipTopology(input)

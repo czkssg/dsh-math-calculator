@@ -229,6 +229,7 @@ const PARAMETER_SPEC = {
   inheritSync: { type: 'boolean', description: '列出受影响的表' },
   tableNames: { type: 'array', items: { type: 'string' }, description: '已存在的表名' },
   workspace: { type: 'string', description: '工作区名' },
+  what: { type: 'string', description: 'workspace export 的导出项：formulas/systems/help/units/constants/bodies/entities/world_state/all' },
   note: { type: 'string', description: '归档备注' },
   flipClaim: { type: 'string', description: '翻转判据 id' },
   flipEpsilon: { type: 'number', description: '扰动幅度' },

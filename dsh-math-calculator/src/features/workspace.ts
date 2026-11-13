@@ -29,7 +29,9 @@
  * @module dsh-math-calculator/features/workspace
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { CalcError } from '../core/errors.js'
 import {
   deleteWorkspaceFile,
@@ -71,6 +73,8 @@ export interface WorkspaceInput {
   world?: Record<string, unknown>
   /** 备注。 */
   description?: string
+  /** export：要导出的数据（formulas/systems/help/units/constants/bodies/entities/world_state/all）。 */
+  what?: string
 }
 
 /** 结果。 */
@@ -207,6 +211,57 @@ export function runWorkspace(input: WorkspaceInput | undefined, dir: string = wo
       result: removed ? '✓ 已删除工作区「' + target + '」' : '工作区「' + target + '」不存在，没有可删的。',
       value: { removed, target },
     }
+  }
+
+  if (action === 'export') {
+    /**
+     * 数据导出（不自动建表，但把内置数据落到本地供 AI 之后引用）。
+     *
+     * 导出到 `<DSH_MATH_CALC_HOME>/exports/`；返回路径，之后的调用可以把路径
+     * 当作「本地数据源」——公式表、体系链、单位表、常数、天体、实体类型、设定库都能导。
+     */
+    const what = typeof input.what === 'string' && input.what.trim() !== '' ? input.what.trim() : 'all'
+    const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data')
+    const home = join(dirname(workspaceDirectory()), 'exports')
+    if (!existsSync(home)) mkdirSync(home, { recursive: true })
+    const files: Record<string, string[]> = {
+      formulas: ['formulas.json'],
+      systems: ['systems.json'],
+      help: ['help.json'],
+      units: ['units.json'],
+      constants: ['constants-graph.json'],
+      bodies: ['bodies.json', 'body-taxonomy.json'],
+      entities: [],
+      world_state: [],
+    }
+    const wanted = what === 'all' ? Object.keys(files) : [what]
+    const written: Array<{ what: string; path: string; bytes: number }> = []
+    for (const key of wanted) {
+      const names = files[key]
+      if (names === undefined) {
+        throw new CalcError('unknown_argument', '不认识的导出项「' + key + '」', '可用：formulas / systems / help / units / constants / bodies / entities / world_state / all。')
+      }
+      let payload: unknown
+      if (key === 'entities') {
+        const data = loadWorkspaceFile(target, dir)
+        payload = { builtin: '见 topology action="entities"', custom: data.customEntities }
+      } else if (key === 'world_state') {
+        payload = { note: '设定条目库在 state-store，用 world_state action="list"/"get" 取；此处导出摘要', workspace: target }
+      } else if (names.length === 1) {
+        payload = JSON.parse(readFileSync(join(dataDir, names[0]), 'utf8'))
+      } else {
+        payload = Object.fromEntries(names.map((name) => [name.replace(/\.json$/, ''), JSON.parse(readFileSync(join(dataDir, name), 'utf8'))]))
+      }
+      const path = join(home, key + '.json')
+      const text = JSON.stringify(payload, null, 1)
+      writeFileSync(path, text, 'utf8')
+      written.push({ what: key, path, bytes: text.length })
+    }
+    const lines: string[] = ['✓ 已导出 ' + written.length + ' 份数据到本地', '']
+    for (const item of written) lines.push('  ' + item.what.padEnd(12) + item.path + '（' + item.bytes + ' 字节）')
+    lines.push('', '  ★ 这些是静态数据快照：之后的对话可以把路径给 AI，让它按需读取/引用；')
+    lines.push('    数据更新（如公式库升级）后重新导出即可。')
+    return { result: lines.join('\n'), value: { exports: written, what, directory: home } }
   }
 
   if (action === 'stats') {

@@ -34,6 +34,8 @@ export interface WorkspaceData {
   useWorkspaceVariables: boolean
   /** 世界参数（可选的当前设定）。 */
   world: Record<string, unknown>
+  /** 自创实体类型（topology 的自定义接口）。 */
+  customEntities: Array<Record<string, unknown>>
   updatedAt: string
   createdAt: string
 }
@@ -74,6 +76,7 @@ export function emptyWorkspace(name: string, now = new Date().toISOString()): Wo
     variables: {},
     useWorkspaceVariables: false,
     world: {},
+    customEntities: [],
     createdAt: now,
     updatedAt: now,
   }
@@ -103,6 +106,7 @@ export function loadWorkspaceFile(name: string, dir: string = workspaceDirectory
       formulaTable: typeof parsed.formulaTable === 'object' && parsed.formulaTable !== null ? parsed.formulaTable : {},
       variables: typeof parsed.variables === 'object' && parsed.variables !== null ? parsed.variables : {},
       world: typeof parsed.world === 'object' && parsed.world !== null ? parsed.world : {},
+      customEntities: Array.isArray(parsed.customEntities) ? parsed.customEntities : [],
     }
   } catch (error) {
     throw new CalcError(
