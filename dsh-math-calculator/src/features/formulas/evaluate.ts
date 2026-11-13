@@ -50,6 +50,21 @@ export function evaluateFormula(
   displayPrecision = 8,
   terse = false,
 ): FormulaOutcome {
+  /**
+   * 展示式不可求值。
+   *
+   * 实测（2026-11-13 静态校验）：665 条里有 4 条表达式含 Σᵢ / log_base 这类
+   * 排版符号，mathjs 解析不了。它们是给检索与帮助看的展示式，
+   * 调用求值时应明确说「不可求值」，而不是把语法错误甩给调用方。
+   */
+  if (entry.executable === false) {
+    throw new CalcError(
+      'invalid_argument',
+      '这条公式是展示式，不能直接求值：' + entry.id + '（' + entry.name + '）',
+      '这是展示式（不是可执行公式）：表达式含 Σᵢ / log_base 这类排版符号，mathjs 无法解析。' +
+        '要看公式含义用公式检索；要算同类量请用可执行版本，或直接用 evaluate 写式子。',
+    )
+  }
   /** 收集参数：默认值 + 覆盖。 */
   const defaults: Record<string, number | null> = {}
   const descs: Record<string, string> = {}

@@ -47,6 +47,8 @@ import { describe, distribution, regression } from './features/numeric/stats.js'
 import { solveOde, solveRecurrence } from './features/numeric/ode.js'
 import { convertUnits, describeUnit } from './features/numeric/units.js'
 import { evaluateFormula } from './features/formulas/evaluate.js'
+import { solveFor } from './features/formulas/solve-for.js'
+import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -265,6 +267,11 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       /** 批量公式先交老入口：它按条报错、吞掉未知 key 的语义与通知都已调好。 */
       if (Array.isArray(args['formulas'])) return null
       const query = typeof args['query'] === 'string' ? args['query'].trim() : ''
+      /** 公式-链结构图：query="graph" 或 formulaGraph:true；焦点用 formulaFocus。 */
+      if (query === 'graph' || args['formulaGraph'] === true) {
+        const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : undefined)
+        return toOutcome(runFormulaGraph(entries, formulaSystems(), focus))
+      }
       if (query === '') return null
       if (query.startsWith('sys')) {
         const system = formulaSystems().find((item) => item.id === query || item.id === query.replace(/^sys:?/, ''))
@@ -282,6 +289,26 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     case 'formula': {
       const id = typeof args['formula'] === 'string' ? args['formula'] : ''
       if (id === '') return null
+      /** 反解：{formula:"ideal_strength", solveFor:"sigma", targetValue:1e8, params:{E:...}} */
+      if (typeof args['solveFor'] === 'string' && args['solveFor'].trim() !== '') {
+        const rangeRaw = asRecord(args['solveRange'])
+        const range = rangeRaw !== undefined && typeof rangeRaw['min'] === 'number' && typeof rangeRaw['max'] === 'number' ? { min: rangeRaw['min'] as number, max: rangeRaw['max'] as number } : undefined
+        const paramsRaw = asRecord(args['params'])
+        const params: Record<string, number> = {}
+        for (const [key, value] of Object.entries(paramsRaw ?? {})) if (typeof value === 'number' && Number.isFinite(value)) params[key] = value
+        return toOutcome(
+          solveFor(
+            {
+              formulaId: id,
+              target: args['solveFor'].trim(),
+              value: typeof args['targetValue'] === 'number' ? args['targetValue'] : Number.NaN,
+              params,
+              ...(range !== undefined ? { range } : {}),
+            },
+            formulaEntries(),
+          ),
+        )
+      }
       const entry = formulaEntries().find((item) => item.id === id || item.name === id)
       if (entry === undefined) return null
       return toOutcome(evaluateFormula(buildEngine(), entry, asRecord(args['overrides']) ?? {}, displayPrecisionOf(args), args['terse'] === true))

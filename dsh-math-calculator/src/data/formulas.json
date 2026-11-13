@@ -941,7 +941,7 @@
     "desc": "标度指数"
    }
   },
-  "unit": "",
+  "unit": "与 Y0 同单位",
   "desc": "Y = Y₀(m/m₀)^b。b 可任意改，用于架空生物设定。",
   "keys": [
    "allometric",
@@ -1180,7 +1180,7 @@
     "desc": "高温热源 K"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "任何热机的理论上限。",
   "keys": [
    "carnot",
@@ -1491,7 +1491,7 @@
     "desc": "物距 m"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "m = -v/u。",
   "keys": [
    "magnification",
@@ -1561,7 +1561,7 @@
     "desc": "光速 m/s（架空世界可改）"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "γ = 1/√(1-β²)。",
   "keys": [
    "lorentz",
@@ -1832,7 +1832,7 @@
     "desc": "动力粘度 Pa·s"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "Re > 4000 通常为湍流。",
   "keys": [
    "reynolds",
@@ -1876,7 +1876,7 @@
     "desc": "经过时间 s"
    }
   },
-  "unit": "",
+  "unit": "与 N0 同单位",
   "desc": "N = N₀·(½)^(t/T)。架空世界的\"高辐射区\"设定常用。",
   "keys": [
    "radioactive",
@@ -1903,7 +1903,7 @@
     "desc": "时间 s"
    }
   },
-  "unit": "",
+  "unit": "与 N0 同单位",
   "desc": "N = N₀e^(-λt)。",
   "keys": [
    "exponential decay",
@@ -1943,7 +1943,7 @@
     "desc": "半径"
    }
   },
-  "unit": "",
+  "unit": "m²",
   "desc": "S = πr²。",
   "keys": [
    "circle",
@@ -1961,7 +1961,7 @@
     "desc": "半径"
    }
   },
-  "unit": "",
+  "unit": "m³",
   "desc": "V = 4πr³/3。",
   "keys": [
    "sphere",
@@ -1979,7 +1979,7 @@
     "desc": "半径"
    }
   },
-  "unit": "",
+  "unit": "m²",
   "desc": "S = 4πr²。",
   "keys": [
    "sphere",
@@ -2001,7 +2001,7 @@
     "desc": "高"
    }
   },
-  "unit": "",
+  "unit": "m³",
   "desc": "V = πr²h。",
   "keys": [
    "cylinder",
@@ -2023,7 +2023,7 @@
     "desc": "高"
    }
   },
-  "unit": "",
+  "unit": "m³",
   "desc": "V = πr²h/3。",
   "keys": [
    "cone",
@@ -2053,7 +2053,7 @@
     "desc": "半周长 (a+b+c)/2"
    }
   },
-  "unit": "",
+  "unit": "m²",
   "desc": "S = √(p(p-a)(p-b)(p-c))。",
   "keys": [
    "heron",
@@ -2076,7 +2076,7 @@
     "desc": "直角边 b"
    }
   },
-  "unit": "",
+  "unit": "m",
   "desc": "c = √(a²+b²)。",
   "keys": [
    "pythagoras",
@@ -2102,7 +2102,7 @@
     "desc": "末项"
    }
   },
-  "unit": "",
+  "unit": "与 a1 同单位",
   "desc": "S = n(a₁+aₙ)/2。",
   "keys": [
    "arithmetic",
@@ -2128,7 +2128,7 @@
     "desc": "项数"
    }
   },
-  "unit": "",
+  "unit": "与 a1 同单位",
   "desc": "S = a₁(1-rⁿ)/(1-r)。",
   "keys": [
    "geometric",
@@ -2154,7 +2154,7 @@
     "desc": "时间"
    }
   },
-  "unit": "",
+  "unit": "与 N0 同单位",
   "desc": "N = N₀e^(rt)。",
   "keys": [
    "exponential",
@@ -2202,7 +2202,7 @@
     "desc": "时间"
    }
   },
-  "unit": "",
+  "unit": "与 K 同单位",
   "desc": "N(t) = K/(1+((K-N₀)/N₀)e^(-rt))。人口/资源上限推演核心公式。",
   "keys": [
    "logistic",
@@ -2239,7 +2239,7 @@
     "desc": "氢离子浓度 mol/L"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "pH = -log₁₀[H⁺]。",
   "keys": [
    "ph",
@@ -2269,7 +2269,7 @@
     "desc": "年数"
    }
   },
-  "unit": "",
+  "unit": "元",
   "desc": "A = P(1+r/n)^(nt)。n=1 为年复利，n=12 为月复利。",
   "keys": [
    "compound",
@@ -2295,7 +2295,7 @@
     "desc": "年数"
    }
   },
-  "unit": "",
+  "unit": "元",
   "desc": "A = Pe^(rt)。",
   "keys": [
    "continuous",
@@ -2321,7 +2321,7 @@
     "desc": "年数"
    }
   },
-  "unit": "",
+  "unit": "元",
   "desc": "PV = FV/(1+r)^t。",
   "keys": [
    "present value",
@@ -2348,7 +2348,7 @@
     "desc": "期数"
    }
   },
-  "unit": "",
+  "unit": "元",
   "desc": "PV = PMT·(1-(1+r)^-t)/r。",
   "keys": [
    "annuity",
@@ -2374,7 +2374,7 @@
     "desc": "年数"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "CAGR = (终/始)^(1/t) - 1。",
   "keys": [
    "cagr",
@@ -2400,7 +2400,7 @@
     "desc": "年数"
    }
   },
-  "unit": "",
+  "unit": "元",
   "desc": "未来同等购买力折算到今天的金额。",
   "keys": [
    "inflation",
@@ -2422,7 +2422,7 @@
     "desc": "成本"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "ROI = (收益-成本)/成本。",
   "keys": [
    "roi",
@@ -2448,7 +2448,7 @@
     "desc": "单位变动成本"
    }
   },
-  "unit": "",
+  "unit": "个",
   "desc": "Q = FC/(P-VC)。",
   "keys": [
    "break even",
@@ -2478,7 +2478,7 @@
     "desc": "原价格"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "|E|>1 富有弹性。",
   "keys": [
    "elasticity",
@@ -2496,7 +2496,7 @@
     "desc": "准备金率"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "基础货币扩张倍数。",
   "keys": [
    "money multiplier",
@@ -2530,7 +2530,7 @@
     "desc": "劳动弹性 β"
    }
   },
-  "unit": "",
+  "unit": "与 A 同单位",
   "desc": "Y = A·Kᵅ·Lᵝ。α+β=1 为规模报酬不变。",
   "keys": [
    "cobb douglas",
@@ -2568,7 +2568,7 @@
     "desc": "资本份额 α"
    }
   },
-  "unit": "",
+  "unit": "与 A 同单位",
   "desc": "稳态人均资本 k* = (sA/(δ+n+g))^(1/(1-α))。",
   "keys": [
    "solow",
@@ -2591,7 +2591,7 @@
     "desc": "资本产出比"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "g = s/v。",
   "keys": [
    "harrod",
@@ -2613,7 +2613,7 @@
     "desc": "报告期 GDP"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "(新-旧)/旧。",
   "keys": [
    "gdp",
@@ -2643,7 +2643,7 @@
     "desc": "部门2→2"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "(I-A)⁻¹ 的两部门形式。多部门请用 operation=\"matrix\" 直接写表达式。",
   "keys": [
    "leontief",
@@ -2666,7 +2666,7 @@
     "desc": "相对风险厌恶系数 γ ≠ 1"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "常数相对风险厌恶效用，γ=1 时退化为 ln c。",
   "keys": [
    "utility",
@@ -2686,12 +2686,13 @@
     "desc": "按收入升序排列的收入份额数组"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "分组数据的梯形法近似。小样本建议直接用 operation=\"stats\" 取分位数后手工积分。",
   "keys": [
    "gini",
    "基尼"
-  ]
+  ],
+  "executable": false
  },
  {
   "id": "hhi",
@@ -2705,13 +2706,14 @@
     "desc": "各主体份额数组（小数，如 [0.4,0.3,0.3]）"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "市场集中度。HHI>0.25 视为高度集中。",
   "keys": [
    "hhi",
    "集中度",
    "垄断"
-  ]
+  ],
+  "executable": false
  },
  {
   "id": "shannon_entropy",
@@ -2735,7 +2737,8 @@
    "entropy",
    "熵",
    "香农"
-  ]
+  ],
+  "executable": false
  },
  {
   "id": "simpson_diversity",
@@ -2749,12 +2752,13 @@
     "desc": "各物种相对丰度数组"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "D = 1 - Σp²。生态/语言多样性。",
   "keys": [
    "simpson",
    "多样性"
-  ]
+  ],
+  "executable": false
  },
  {
   "id": "power_law",
@@ -2775,7 +2779,7 @@
     "desc": "幂指数 α"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "y = C·r^(-α)。城市规模、财富、词频通用。",
   "keys": [
    "power law",
@@ -2857,7 +2861,7 @@
     "desc": "康复率 1/时间"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "R₀ = β/γ。R₀>1 疫情扩散。",
   "keys": [
    "r0",
@@ -2876,7 +2880,7 @@
     "desc": "基本传染数"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "需免疫的人口比例。",
   "keys": [
    "herd",
@@ -2898,7 +2902,7 @@
     "desc": "最终感染比例猜测值（迭代求解用）"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "S∞ 满足 1-S∞ = exp(-R₀(1-S∞))。传入猜测值做不动点迭代。",
   "keys": [
    "sir",
@@ -2932,7 +2936,7 @@
     "desc": "距离衰减指数"
    }
   },
-  "unit": "",
+  "unit": "与 G 同单位",
   "desc": "T = G·M₁M₂/D^β。城市间互动、贸易流。",
   "keys": [
    "gravity model",
@@ -2956,7 +2960,7 @@
     "desc": "捕食效率"
    }
   },
-  "unit": "",
+  "unit": "个",
   "desc": "猎物平衡量 x* = d/β。完整轨迹需要数值积分。",
   "keys": [
    "lotka",
@@ -3328,7 +3332,7 @@
     "desc": "质量"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "ζ<1 欠阻尼，=1 临界，>1 过阻尼。",
   "keys": [
    "damping ratio",
@@ -3394,7 +3398,7 @@
     "desc": "原长 m"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "ε = ΔL/L₀。",
   "keys": [
    "strain",
@@ -3934,7 +3938,7 @@
     "desc": "高温 K"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "制冷机的理论极限 COP。",
   "keys": [
    "cop",
@@ -4453,7 +4457,7 @@
     "desc": "卫星半径 m"
    }
   },
-  "unit": "",
+  "unit": "年",
   "desc": "相对量级，用于比较不同天体的锁定快慢。",
   "keys": [
    "tidal locking",
@@ -4675,7 +4679,7 @@
     "desc": "捕食效率"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "平衡时猎物/捕食者数量比。",
   "keys": [
    "predator prey",
@@ -4723,7 +4727,7 @@
     "desc": "营养级 n"
    }
   },
-  "unit": "",
+  "unit": "与 E0 同单位",
   "desc": "每升一级损失约 90%。支撑食物链长度的估算。",
   "keys": [
    "trophic",
@@ -4880,7 +4884,7 @@
     "desc": "酸浓度"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "pH = pKa + log([A⁻]/[HA])。",
   "keys": [
    "buffer",
@@ -5042,7 +5046,7 @@
     "desc": "敌方效率"
    }
   },
-  "unit": "",
+  "unit": "人",
   "desc": "逐个交战模型，优势线性累积。结果为我方剩余兵力。",
   "keys": [
    "lanchester",
@@ -5073,7 +5077,7 @@
     "desc": "敌方效率"
    }
   },
-  "unit": "",
+  "unit": "人",
   "desc": "集中火力模型，平方优势。兵力比 2:1 时损失约 1:4。",
   "keys": [
    "lanchester",
@@ -5096,7 +5100,7 @@
     "desc": "所需倍数（经典 3:1）"
    }
   },
-  "unit": "",
+  "unit": "人",
   "desc": "进攻方需要的兵力优势。架空战术可改 ratio。",
   "keys": [
    "force ratio",
@@ -5119,7 +5123,7 @@
     "desc": "轮数"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "累计损耗。后勤/消耗战推演。",
   "keys": [
    "attrition",
@@ -5235,7 +5239,7 @@
    }
   },
   "builtin": "effectiveParties",
-  "unit": "",
+  "unit": "无量纲",
   "desc": "N = 1/Σp²。衡量政党体系碎片化程度。",
   "keys": [
    "effective parties",
@@ -5254,7 +5258,7 @@
     "desc": "投票者数量"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "等权情形的基线。加权情形需枚举联盟，不在此公式范围。",
   "keys": [
    "banzhaf",
@@ -5272,7 +5276,7 @@
     "desc": "帕累托指数 α（越大越平等）"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "财富分布的幂律关系。",
   "keys": [
    "popitz",
@@ -5295,7 +5299,7 @@
     "desc": "腐败损耗率"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "制度效率损失的粗略估算。",
   "keys": [
    "corruption",
@@ -5317,7 +5321,7 @@
     "desc": "再生率 1/时间"
    }
   },
-  "unit": "",
+  "unit": "个",
   "desc": "可持续采伐上限。超出即资源崩溃。",
   "keys": [
    "commons",
@@ -5344,7 +5348,7 @@
     "desc": "时间"
    }
   },
-  "unit": "",
+  "unit": "人",
   "desc": "知识/谣言波及人数。",
   "keys": [
    "information spread",
@@ -5366,7 +5370,7 @@
     "desc": "理论上限"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "0-1 归一化的人力资本。",
   "keys": [
    "human capital",
@@ -5593,7 +5597,7 @@
     "desc": "表面重力 m/s²"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "这个比值接近 1 时星球会解体。决定\"最大自转速度\"，进而决定最短的一天。",
   "keys": [
    "centrifugal",
@@ -6121,7 +6125,7 @@
     "desc": "距离 km"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "比值 <1 说明运过去的成本超过了货值——贸易半径的硬边界。",
   "keys": [
    "transport",
@@ -6197,7 +6201,7 @@
     "desc": "农民自身消耗"
    }
   },
-  "unit": "",
+  "unit": "无量纲",
   "desc": "剩余率决定能养多少工匠/士兵/祭司。这是城市化的基本原理。",
   "keys": [
    "surplus",

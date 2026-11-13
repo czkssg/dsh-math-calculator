@@ -43,6 +43,14 @@ export interface FormulaEntry {
   desc: string
   keys?: string[]
   builtin?: boolean
+  /**
+   * 是否可求值。缺省 true。
+   *
+   * 少数公式是**展示式**（含 Σᵢ、log_base 这类排版符号，mathjs 无法解析），
+   * 例如 gini / hhi / shannon_entropy / simpson_diversity。它们只出现在检索与
+   * 帮助里；调用求值时必须明确报「这是展示式」，而不是抛语法错。
+   */
+  executable?: boolean
 }
 
 /** 检索结果。 */
