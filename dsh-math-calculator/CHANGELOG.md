@@ -2,7 +2,7 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布] — 2026-11-13
+## [3.0.0] — 2026-11-13
 
 **v3 重写（rewrite/v3 分支）**。这一版把实现按「数据 / 功能 / 入口」三层重排，
 功能与输出契约保持不变，测试从 14 套扩到 42 套。
