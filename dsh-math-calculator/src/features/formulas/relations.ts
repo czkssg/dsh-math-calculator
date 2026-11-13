@@ -1,28 +1,28 @@
 /**
  * 公式关系图：通过**共用物理量、共用常数与共性**把 740 条公式连起来。
  *
- * ## 为什么需要
+ * ## 为什么要按「物理量」而不是「符号名」
  *
- * 公式库是一条条孤立的式子。作者真正要问的往往是「这条公式算出来的东西，
- * 下一步还能喂给谁」——比如 `ideal_gas` 的压强，可以进 `pressure_depth`、
- * `bernoulli`、`sound_speed`。没有关系图，AI 只能靠检索词碰运气。
+ * 同名符号不等于同义：`m` 可能是质量，也可能是「阳离子计量数」；
+ * `n` 可能是物质的量、项数、折射率、人口……实测 740 条公式里
+ * 同名符号最多有 28 种含义。
+ *
+ * 所以每个参数除 `desc` 外还有一个 **`quantity`（语义标签）**：
+ * ```
+ *   { "value": 1, "desc": "物质的量 mol", "quantity": "物质的量" }
+ * ```
+ * 关系图按 quantity 连边——`ideal_gas` 的 `n`（物质的量）会和
+ * `isothermal_work` 的 `n`（物质的量）强连，而不会和 `compound_interest`
+ * 的 `n`（期数）混在一起；后者会被标成「同名异义」。
  *
  * ## 三类边（权重不同）
  *
  * ```
- *   共用参数     ×2   ← 同名参数，如 m、T、v、rho
- *   共用常数     ×1   ← 参数名本身就是常数，如 k、h、c、G、R
- *   同类别/同标签 ×0.5 ← 同 cat 或 keys 有交集
+ *   共用物理量  ×2  ← quantity 相同（跨符号也算，如 m 与 mass）
+ *   共用常数    ×1  ← 参数名是常数（k、h、c、G、R…）
+ *   同名异义    ×0.5 ← 同一符号、不同含义：连上但标注「别混用」
+ *   同类别/标签 ×0.5
  * ```
- *
- * **同名参数不等于同义**（`m` 可能是质量，也可能是摩尔浓度）。所以边只说明
- * 「这两条公式用了同一个符号」，理由里把符号名写出来，由调用方判断语义。
- * 这是有意保守：宁可少连，不可乱连。
- *
- * ## 性能
- *
- * 用倒排索引（参数名 → 公式集合）累积分数，构建一次 O(参数总数 × 平均度数)，
- * 远小于 740×740 的两两比较。结果按公式 id 缓存。
  *
  * @module dsh-math-calculator/features/formulas/relations
  */
@@ -35,83 +35,146 @@ export interface RelationHit {
   name: string
   cat: string
   score: number
-  /** 共用的参数名。 */
-  sharedParams: string[]
-  /** 共用的常数名。 */
+  /** 共用的物理量（语义标签），如「质量」「速度」。 */
+  sharedQuantities: string[]
+  /** 同符号且同义的符号名，如 m、v。 */
+  sharedSymbols: string[]
+  /** 同名异义：符号与两种含义。 */
+  symbolConflicts: Array<{ symbol: string; meanings: string[] }>
   sharedConstants: string[]
-  /** 是否同类别。 */
   sameCat: boolean
-  /** 共用的标签。 */
   sharedKeys: string[]
 }
 
 /** 关系索引。 */
 export interface RelationIndex {
-  /** 取某条公式的相邻公式（按分数降序）。 */
   neighbors: (id: string, limit?: number) => RelationHit[]
-  /** 图规模（调试/展示用）。 */
-  stats: () => { formulas: number; edges: number; constants: number }
+  stats: () => { formulas: number; edges: number; constants: number; quantities: number }
 }
 
 /** 分数权重。 */
-const WEIGHT = { param: 2, constant: 1, sameCat: 0.5, key: 0.5 } as const
+const WEIGHT = { quantity: 2, constant: 1, conflict: 0.5, sameCat: 0.5, key: 0.5 } as const
+
+/** 一条参数记录。 */
+interface ParamRecord {
+  formula: number
+  symbol: string
+  quantity: string | undefined
+  isConstant: boolean
+}
 
 /**
  * 构建关系索引。
  *
  * @param formulas - 公式库
- * @param constantNames - 常数名集合（来自 constants-graph）
+ * @param constantNames - 常数名集合
  * @returns 关系索引
  */
 export function buildRelationIndex(
   formulas: FormulaEntry[],
   constantNames: ReadonlySet<string>,
 ): RelationIndex {
-  /** 参数名 → 公式下标集合（倒排）。 */
-  const inverted = new Map<string, number[]>()
+  /** 物理量 → 参数记录。 */
+  const byQuantity = new Map<string, ParamRecord[]>()
+  /** 符号 → 参数记录（用于发现同名异义）。 */
+  const bySymbol = new Map<string, ParamRecord[]>()
+  const records: ParamRecord[] = []
   for (let index = 0; index < formulas.length; index += 1) {
-    for (const name of Object.keys(formulas[index].params ?? {})) {
-      const bucket = inverted.get(name)
-      if (bucket === undefined) inverted.set(name, [index])
-      else bucket.push(index)
+    for (const [symbol, spec] of Object.entries(formulas[index].params ?? {})) {
+      const quantity = (spec as { quantity?: string }).quantity
+      const record: ParamRecord = { formula: index, symbol, quantity, isConstant: constantNames.has(symbol) }
+      records.push(record)
+      if (record.isConstant) {
+        const bucket = bySymbol.get(symbol)
+        if (bucket === undefined) bySymbol.set(symbol, [record])
+        else bucket.push(record)
+        continue
+      }
+      if (quantity !== undefined) {
+        const bucket = byQuantity.get(quantity)
+        if (bucket === undefined) byQuantity.set(quantity, [record])
+        else bucket.push(record)
+      }
+      const symBucket = bySymbol.get(symbol)
+      if (symBucket === undefined) bySymbol.set(symbol, [record])
+      else symBucket.push(record)
     }
   }
 
-  /** 成对累积分数与共用项。 */
-  const pairs = new Map<string, { score: number; sharedParams: string[]; sharedConstants: string[]; sameCat: boolean; sharedKeys: string[] }>()
+  interface PairRecord {
+    score: number
+    sharedQuantities: Set<string>
+    sharedSymbols: Set<string>
+    conflicts: Map<string, Set<string>>
+    sharedConstants: Set<string>
+    sameCat: boolean
+    sharedKeys: Set<string>
+  }
+  const pairs = new Map<string, PairRecord>()
   const pairKey = (a: number, b: number): string => (a < b ? a + ':' + b : b + ':' + a)
-  const touch = (a: number, b: number) => {
+  const touch = (a: number, b: number): PairRecord => {
     const key = pairKey(a, b)
     let record = pairs.get(key)
     if (record === undefined) {
-      record = { score: 0, sharedParams: [], sharedConstants: [], sameCat: false, sharedKeys: [] }
+      record = {
+        score: 0,
+        sharedQuantities: new Set(),
+        sharedSymbols: new Set(),
+        conflicts: new Map(),
+        sharedConstants: new Set(),
+        sameCat: false,
+        sharedKeys: new Set(),
+      }
       pairs.set(key, record)
     }
     return record
   }
 
-  for (const [name, bucket] of inverted) {
-    const isConstant = constantNames.has(name)
+  /** 共用物理量 + 同符号同义强化。 */
+  for (const [quantity, bucket] of byQuantity) {
     for (let i = 0; i < bucket.length; i += 1) {
       for (let j = i + 1; j < bucket.length; j += 1) {
-        const record = touch(bucket[i], bucket[j])
-        if (isConstant) {
-          record.sharedConstants.push(name)
-          record.score += WEIGHT.constant
-        } else {
-          record.sharedParams.push(name)
-          record.score += WEIGHT.param
+        const a = bucket[i]
+        const b = bucket[j]
+        if (a.formula === b.formula) continue
+        const record = touch(a.formula, b.formula)
+        record.sharedQuantities.add(quantity)
+        if (a.symbol === b.symbol) record.sharedSymbols.add(a.symbol)
+      }
+    }
+  }
+  /** 共用常数。 */
+  for (const [symbol, bucket] of bySymbol) {
+    if (!constantNames.has(symbol)) continue
+    for (let i = 0; i < bucket.length; i += 1) {
+      for (let j = i + 1; j < bucket.length; j += 1) {
+        if (bucket[i].formula === bucket[j].formula) continue
+        touch(bucket[i].formula, bucket[j].formula).sharedConstants.add(symbol)
+      }
+    }
+  }
+  /** 同名异义：同一符号在不同公式里有不同含义。 */
+  for (const [symbol, bucket] of bySymbol) {
+    if (constantNames.has(symbol)) continue
+    for (let i = 0; i < bucket.length; i += 1) {
+      for (let j = i + 1; j < bucket.length; j += 1) {
+        const a = bucket[i]
+        const b = bucket[j]
+        if (a.formula === b.formula) continue
+        if (a.quantity === undefined || b.quantity === undefined) continue
+        if (a.quantity === b.quantity) continue
+        const record = touch(a.formula, b.formula)
+        const meanings = record.conflicts.get(symbol)
+        if (meanings === undefined) record.conflicts.set(symbol, new Set([a.quantity, b.quantity]))
+        else {
+          meanings.add(a.quantity)
+          meanings.add(b.quantity)
         }
       }
     }
   }
 
-  for (let index = 0; index < formulas.length; index += 1) {
-    const formula = formulas[index]
-    /** 同类别：只看分数够不够高，不在两两循环里重复遍历（用桶做）。 */
-    void formula
-  }
-  /** 同类别与同标签：按 cat / key 分组，组内两两加边。 */
+  /** 同类别与同标签。 */
   const byCat = new Map<string, number[]>()
   const byKey = new Map<string, number[]>()
   for (let index = 0; index < formulas.length; index += 1) {
@@ -126,30 +189,25 @@ export function buildRelationIndex(
     }
   }
   for (const bucket of byCat.values()) {
-    /** 同类别组合可能很大（physics/mechanics 45 条 → 990 对），只在有共用参数时才有意义；这里仍加边但权重低。 */
     for (let i = 0; i < bucket.length; i += 1) {
-      for (let j = i + 1; j < bucket.length; j += 1) {
-        const record = touch(bucket[i], bucket[j])
-        record.sameCat = true
-        record.score += WEIGHT.sameCat
-      }
+      for (let j = i + 1; j < bucket.length; j += 1) touch(bucket[i], bucket[j]).sameCat = true
     }
   }
   for (const [key, bucket] of byKey) {
     for (let i = 0; i < bucket.length; i += 1) {
-      for (let j = i + 1; j < bucket.length; j += 1) {
-        const record = touch(bucket[i], bucket[j])
-        if (!record.sharedKeys.includes(key)) {
-          record.sharedKeys.push(key)
-          record.score += WEIGHT.key
-        }
-      }
+      for (let j = i + 1; j < bucket.length; j += 1) touch(bucket[i], bucket[j]).sharedKeys.add(key)
     }
   }
 
-  /** 邻接表。 */
-  const adjacency = new Map<number, Array<{ other: number; record: { score: number; sharedParams: string[]; sharedConstants: string[]; sameCat: boolean; sharedKeys: string[] } }>>()
+  /** 算分并建邻接表。 */
+  const adjacency = new Map<number, Array<{ other: number; record: PairRecord }>>()
   for (const [key, record] of pairs) {
+    record.score =
+      record.sharedQuantities.size * WEIGHT.quantity +
+      record.sharedConstants.size * WEIGHT.constant +
+      record.conflicts.size * WEIGHT.conflict +
+      (record.sameCat ? WEIGHT.sameCat : 0) +
+      record.sharedKeys.size * WEIGHT.key
     const [aText, bText] = key.split(':')
     const a = Number(aText)
     const b = Number(bText)
@@ -161,7 +219,6 @@ export function buildRelationIndex(
     else listB.push({ other: a, record })
   }
 
-  /** 缓存。 */
   const cache = new Map<string, RelationHit[]>()
   const byId = new Map(formulas.map((formula, index) => [formula.id, index]))
 
@@ -171,14 +228,15 @@ export function buildRelationIndex(
       if (cached !== undefined) return cached
       const index = byId.get(id)
       if (index === undefined) return []
-      const list = adjacency.get(index) ?? []
-      const hits: RelationHit[] = list
+      const hits: RelationHit[] = (adjacency.get(index) ?? [])
         .map(({ other, record }) => ({
           id: formulas[other].id,
           name: formulas[other].name,
           cat: formulas[other].cat,
           score: Number(record.score.toFixed(2)),
-          sharedParams: [...record.sharedParams].sort(),
+          sharedQuantities: [...record.sharedQuantities].sort(),
+          sharedSymbols: [...record.sharedSymbols].sort(),
+          symbolConflicts: [...record.conflicts].map(([symbol, meanings]) => ({ symbol, meanings: [...meanings].sort() })),
           sharedConstants: [...record.sharedConstants].sort(),
           sameCat: record.sameCat,
           sharedKeys: [...record.sharedKeys].sort(),
@@ -188,15 +246,25 @@ export function buildRelationIndex(
       cache.set(id + '@' + limit, hits)
       return hits
     },
-    stats: () => ({ formulas: formulas.length, edges: pairs.size, constants: constantNames.size }),
+    stats: () => ({
+      formulas: formulas.length,
+      edges: pairs.size,
+      constants: constantNames.size,
+      quantities: byQuantity.size,
+    }),
   }
 }
 
 /** 把关系渲染成一行理由（给调用方看为什么相邻）。 */
 export function relationReason(hit: RelationHit): string {
   const parts: string[] = []
-  if (hit.sharedParams.length > 0) parts.push('共用参数 ' + hit.sharedParams.join('/'))
-  if (hit.sharedConstants.length > 0) parts.push('共用常数 ' + hit.sharedConstants.join('/'))
+  if (hit.sharedQuantities.length > 0) {
+    parts.push('共用物理量 ' + hit.sharedQuantities.slice(0, 4).join('/') + (hit.sharedSymbols.length > 0 ? '（' + hit.sharedSymbols.slice(0, 4).join('/') + '）' : ''))
+  }
+  if (hit.sharedConstants.length > 0) parts.push('共用常数 ' + hit.sharedConstants.slice(0, 4).join('/'))
+  if (hit.symbolConflicts.length > 0) {
+    parts.push('同名异义：' + hit.symbolConflicts.slice(0, 2).map((conflict) => conflict.symbol + '（' + conflict.meanings.join(' vs ') + '）').join('、'))
+  }
   if (hit.sharedKeys.length > 0) parts.push('同标签 ' + hit.sharedKeys.slice(0, 3).join('/'))
   if (parts.length === 0 && hit.sameCat) parts.push('同类别 ' + hit.cat)
   return parts.join('；')

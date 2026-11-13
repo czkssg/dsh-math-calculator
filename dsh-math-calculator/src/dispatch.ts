@@ -49,7 +49,7 @@ import { solveOde, solveRecurrence } from './features/numeric/ode.js'
 import { convertUnits, describeUnit } from './features/numeric/units.js'
 import { evaluateFormula } from './features/formulas/evaluate.js'
 import { solveFor } from './features/formulas/solve-for.js'
-import { buildRelationIndex, type RelationIndex } from './features/formulas/relations.js'
+import { buildRelationIndex, relationReason, type RelationIndex } from './features/formulas/relations.js'
 import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
@@ -283,7 +283,7 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
         const lines: string[] = ['═══ 与 ' + entry.id + '（' + entry.name + '）相邻的公式 ═══', '', '  通过共用参数、共用常数与共性建立联系：', '']
         for (const hit of hits) {
           lines.push('  ' + hit.id.padEnd(28) + hit.name + '（' + hit.score + ' 分）')
-          lines.push('    ' + relationReasonOf(hit))
+          lines.push('    ' + relationReason(hit))
         }
         if (hits.length === 0) lines.push('  （没有相邻公式——它用的是独有参数，且没有同标签的节）')
         return {
@@ -442,16 +442,6 @@ function toOutcome(outcome: { result: string; value: unknown; notice?: string; o
     value: outcome.value,
     ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}),
   }
-}
-
-/** 关系理由（渲染用）。 */
-function relationReasonOf(hit: { sharedParams: string[]; sharedConstants: string[]; sameCat: boolean; cat: string; sharedKeys?: string[] }): string {
-  const parts: string[] = []
-  if (hit.sharedParams.length > 0) parts.push('共用参数 ' + hit.sharedParams.join('/'))
-  if (hit.sharedConstants.length > 0) parts.push('共用常数 ' + hit.sharedConstants.join('/'))
-  if ((hit.sharedKeys ?? []).length > 0) parts.push('同标签 ' + (hit.sharedKeys ?? []).slice(0, 3).join('/'))
-  if (parts.length === 0 && hit.sameCat) parts.push('同类别 ' + hit.cat)
-  return parts.join('；') || '同类'
 }
 
 /** 显示精度（缺省 8）。 */

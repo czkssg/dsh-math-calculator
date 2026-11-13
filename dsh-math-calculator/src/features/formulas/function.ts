@@ -51,8 +51,17 @@ export interface FormulaCallResult {
   substituted: Record<string, number>
   /** 没给又没有默认值的参数（正常调用不应出现；出现即报错）。 */
   missing: string[]
-  /** 相邻公式（共用参数/常数/标签）。 */
-  neighbors: Array<{ id: string; name: string; score: number; reason: string; sharedParams: string[]; sharedConstants: string[] }>
+  /** 相邻公式（共用物理量/常数/标签）。 */
+  neighbors: Array<{
+    id: string
+    name: string
+    score: number
+    reason: string
+    sharedQuantities: string[]
+    sharedSymbols: string[]
+    sharedConstants: string[]
+    symbolConflicts: Array<{ symbol: string; meanings: string[] }>
+  }>
 }
 
 /** 公式函数。 */
@@ -120,8 +129,10 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
         name: hit.name,
         score: hit.score,
         reason: relationReason(hit),
-        sharedParams: hit.sharedParams,
+        sharedQuantities: hit.sharedQuantities,
+        sharedSymbols: hit.sharedSymbols,
         sharedConstants: hit.sharedConstants,
+        symbolConflicts: hit.symbolConflicts,
       }))
 
       return {

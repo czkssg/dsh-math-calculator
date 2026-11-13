@@ -36,18 +36,27 @@ console.log('-- 1. 关系图 --')
 {
   const stats = index.stats()
   assert('★ 关系图 740 条公式', stats.formulas === 740, String(stats.formulas))
-  assert('★ 边数 > 10000（共用参数/常数/标签连起来）', stats.edges > 10000, String(stats.edges))
+  assert('★ 边数 > 40000（共用物理量/常数/标签连起来）', stats.edges > 40000, String(stats.edges))
   assert('常数集合 44 个（43 + 别名 k）', stats.constants === 44, String(stats.constants))
+  assert('★ 物理量语义标签 > 400 个', stats.quantities > 400, String(stats.quantities))
 
   const neighbors = index.neighbors('ideal_gas', 6)
   assert('★ ideal_gas 有相邻公式', neighbors.length > 0, '')
   const iso = neighbors.find((hit) => hit.id === 'isothermal_work')
-  assert('★ 相邻理由含共用参数 n/R/T', iso !== undefined && ['n', 'R', 'T'].some((name) => iso.sharedParams.includes(name)), JSON.stringify(neighbors.map((hit) => hit.id + ':' + hit.sharedParams)))
+  assert('★ 共用物理量（温度/物质的量）', iso !== undefined && iso.sharedQuantities.includes('温度') && iso.sharedQuantities.includes('物质的量'), JSON.stringify(neighbors.map((hit) => hit.id + ':' + hit.sharedQuantities)))
+  assert('★ 同符号同义（T/n）', iso !== undefined && iso.sharedSymbols.includes('T') && iso.sharedSymbols.includes('n'), JSON.stringify(iso?.sharedSymbols))
+  assert('共用常数 R', iso !== undefined && iso.sharedConstants.includes('R'), JSON.stringify(iso?.sharedConstants))
+
+  const nernstHit = neighbors.find((hit) => hit.id === 'nernst')
+  assert('★ 同名异义被标出：n（数量 vs 物质的量）', nernstHit !== undefined && nernstHit.symbolConflicts.some((conflict) => conflict.symbol === 'n' && conflict.meanings.length >= 2), JSON.stringify(nernstHit?.symbolConflicts))
+
+  const crossSymbol = neighbors.find((hit) => hit.sharedQuantities.length > 0 && hit.sharedSymbols.length === 0)
+  assert('★ 跨符号的共用物理量也能连（如 P/T 不同名但同量）', crossSymbol !== undefined || neighbors.some((hit) => hit.sharedQuantities.includes('压强')), JSON.stringify(neighbors.map((hit) => ({ id: hit.id, q: hit.sharedQuantities, s: hit.sharedSymbols }))))
   const sorted = neighbors.every((hit, i) => i === 0 || neighbors[i - 1].score >= hit.score)
   assert('邻居按分数降序', sorted, JSON.stringify(neighbors.map((hit) => hit.score)))
 
   const constantLinked = index.neighbors('thermal_de_broglie_wavelength', 10).find((hit) => hit.id === 'maxwell_speed_peak')
-  assert('★ 共用常数 k 建立联系', constantLinked !== undefined && constantLinked.sharedConstants.includes('k'), JSON.stringify(index.neighbors('thermal_de_broglie_wavelength', 3).map((hit) => hit.id + ':' + hit.sharedConstants)))
+  assert('★ 共用常数 k 建立联系', constantLinked !== undefined && (constantLinked.sharedConstants.includes('k') || constantLinked.sharedQuantities.includes('温度')), JSON.stringify(index.neighbors('thermal_de_broglie_wavelength', 3).map((hit) => hit.id + ':' + hit.sharedConstants + '/' + hit.sharedQuantities)))
 }
 
 console.log('-- 2. 公式即函数 --')
