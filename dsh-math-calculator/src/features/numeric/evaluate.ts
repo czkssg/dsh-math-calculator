@@ -288,8 +288,10 @@ export function evaluateOne(
   engine: Engine,
   expression: string,
   options: EvaluateOptions,
+  /** 变量作用域（variables 注入；与老入口行为对齐）。 */
+  scope?: Record<string, unknown>,
 ): EvaluateOutcome {
-  const raw = engine.evaluate(expression)
+  const raw = engine.evaluate(expression, scope)
 
   /**
    * ## ★ 非有限值必须报错，不能当结果返回
@@ -377,6 +379,8 @@ export function evaluateBatch(
   engine: Engine,
   expressions: Array<string | { label?: string; expr: string }>,
   options: EvaluateOptions,
+  /** 变量作用域（variables 注入）。 */
+  scope?: Record<string, unknown>,
 ): EvaluateOutcome {
   /** 上限 100 条 —— 再多该走数据引用，不是堆表达式撑上下文。 */
   const MAX_BATCH = 100
@@ -398,7 +402,7 @@ export function evaluateBatch(
     const expr = typeof item === 'string' ? item : item.expr
     const label = typeof item === 'string' ? '' : (item.label ?? '')
     try {
-      const one = evaluateOne(engine, expr, options)
+      const one = evaluateOne(engine, expr, options, scope)
       results.push({
         index: i + 1,
         label,

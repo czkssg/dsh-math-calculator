@@ -222,17 +222,31 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     // ── 数值计算（features/numeric）──
     case 'evaluate': {
       /**
-       * 变量注入与显式精度仍走老入口：
-       * evaluateOne 不接受 scope，且引擎是单例（精度固定 64）。
-       * 这两类交给老入口才不会丢功能。
+       * 变量注入与精度：
+       * - variables 交给 engine.evaluate 的 scope（已支持）；
+       * - precision 是引擎级（BigNumber 固定 64），按调用改不了——
+       *   显式给了就提示一句，不再回退老入口。
        */
-      if (args['variables'] !== undefined || args['precision'] !== undefined) return null
-      const options = { terse: args['terse'] === true, displayPrecision: displayPrecisionOf(args) }
+      const scope = asRecord(args['variables'])
+      const options = {
+        terse: args['terse'] === true,
+        displayPrecision: displayPrecisionOf(args),
+        ...(typeof args['precision'] === 'number' ? { precision: args['precision'] } : {}),
+      } as never
+      const precisionNotice =
+        typeof args['precision'] === 'number' && Math.round(args['precision']) !== 64
+          ? '计算精度固定为 64 位有效数字（BigNumber 引擎级），本次的 precision=' + args['precision'] + ' 未改变引擎精度；显示位数请用 displayPrecision。'
+          : undefined
       if (Array.isArray(args['expressions'])) {
-        return toOutcome(evaluateBatch(buildEngine(), args['expressions'] as never, options))
+        const batch = evaluateBatch(buildEngine(), args['expressions'] as never, options, scope as never)
+        return toOutcome({ ...batch, ...(precisionNotice !== undefined ? { notice: precisionNotice } : {}) })
       }
       const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
-      return toOutcome(evaluateOne(buildEngine(), expression, options))
+      const single = evaluateOne(buildEngine(), expression, options, scope as never)
+      return toOutcome({
+        ...single,
+        ...(single.notice !== undefined && precisionNotice !== undefined ? { notice: single.notice + ' ' + precisionNotice } : single.notice !== undefined ? { notice: single.notice } : precisionNotice !== undefined ? { notice: precisionNotice } : {}),
+      })
     }
 
     case 'solve':
@@ -266,16 +280,23 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
       }
       return toOutcome(describe(args['data']))
 
-    case 'dist': {}
-      if (typeof args['distribution'] !== 'string') return null
-      return toOutcome(distribution(args['distribution'], args['params'], typeof args['x'] === 'number' ? args['x'] : 0, displayPrecisionOf(args)))
+    case 'dist':
+      if (typeof args['distribution'] !== 'string') {
+        throw new CalcError('missing_params', 'dist 需要 distribution（分布名）', '可用：normal / binomial / poisson / exponential / chisquare / t。')
+      }
+      if (typeof args['x'] !== 'number' || !Number.isFinite(args['x'])) {
+        throw new CalcError('missing_params', 'dist 需要 x（求值点）', '例如 {operation:"dist", distribution:"normal", params:[0,1], x:0}。')
+      }
+      return toOutcome(distribution(args['distribution'], args['params'], args['x'], displayPrecisionOf(args)))
 
     case 'regression':
       return toOutcome(regression(args['data'], args['dataY'], typeof args['degree'] === 'number' ? args['degree'] : 1))
 
     case 'ode': {
       const initial = asRecord(args['initial'])
-      if (initial === undefined) return null
+      if (initial === undefined) {
+        throw new CalcError('missing_params', 'ode 需要 initial（状态初值）', '例如 {operation:"ode", expression:"dy/dt = -y", initial:{y:1}, from:0, to:1}。')
+      }
       return toOutcome(
         solveOde(
           buildEngine(),
@@ -291,14 +312,21 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
 
     case 'recurrence': {
       const initial = asRecord(args['initial'])
-      if (initial === undefined || typeof args['recurrence'] !== 'string') return null
+      if (initial === undefined) {
+        throw new CalcError('missing_params', 'recurrence 需要 initial（初值）', '例如 {operation:"recurrence", recurrence:"P*1.02", initial:{P:100}, periods:10}。')
+      }
+      if (typeof args['recurrence'] !== 'string' || args['recurrence'].trim() === '') {
+        throw new CalcError('missing_params', 'recurrence 需要递推式', '例如 {operation:"recurrence", recurrence:"P*1.02", initial:{P:100}, periods:10}。')
+      }
       return toOutcome(solveRecurrence(buildEngine(), args['recurrence'], initial as Record<string, number>, typeof args['periods'] === 'number' ? args['periods'] : 12))
     }
 
     case 'units': {
       const from = typeof args['unitFrom'] === 'string' ? args['unitFrom'] : ''
       const to = typeof args['unitTo'] === 'string' ? args['unitTo'] : ''
-      if (from === '') return null
+      if (from === '') {
+        throw new CalcError('missing_params', 'units 需要 unitFrom（源单位）', '例如 {operation:"units", unitValue:30, unitFrom:"里", unitTo:"km"}；只给 unitFrom 会列出该单位信息。')
+      }
       if (to === '') return toOutcome(describeUnit(buildEngine(), from))
       const value = typeof args['unitValue'] === 'number' ? args['unitValue'] : 1
       return toOutcome(convertUnits(buildEngine(), value, from, to, args['terse'] === true, displayPrecisionOf(args)))
@@ -380,10 +408,14 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
         const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : undefined)
         return toOutcome(runFormulaGraph(entries, formulaSystems(), focus))
       }
-      if (query === '') return null
+      if (query === '') {
+        throw new CalcError('missing_params', 'formulas 需要 query（检索词、公式 id、"sys:链id" 或 "graph"/"neighbors"/"chain"）', '例如 {operation:"formulas", query:"克莱伯"}。')
+      }
       if (query.startsWith('sys')) {
         const system = formulaSystems().find((item) => item.id === query || item.id === query.replace(/^sys:?/, ''))
-        if (system === undefined) return null
+        if (system === undefined) {
+          throw new CalcError('unknown_symbol', '没有 id 为 "' + query + '" 的体系链', '可查：' + formulaSystems().map((item) => item.id).join('、'))
+        }
         const initialRaw = asRecord(args['initial']) ?? {}
         const initial: Record<string, number> = {}
         for (const [key, value] of Object.entries(initialRaw)) {
@@ -396,7 +428,9 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
 
     case 'formula': {
       const id = typeof args['formula'] === 'string' ? args['formula'] : ''
-      if (id === '') return null
+      if (id === '') {
+        throw new CalcError('missing_params', 'formula 需要 formula（公式 id 或名称）', '例如 {operation:"formula", formula:"ideal_gas", params:{n:1,T:300}}；用 formulas query 查可用的公式。')
+      }
       /** 反解：{formula:"ideal_strength", solveFor:"sigma", targetValue:1e8, params:{E:...}} */
       if (typeof args['solveFor'] === 'string' && args['solveFor'].trim() !== '') {
         const rangeRaw = asRecord(args['solveRange'])
@@ -418,7 +452,9 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
         )
       }
       const entry = formulaEntries().find((item) => item.id === id || item.name === id)
-      if (entry === undefined) return null
+      if (entry === undefined) {
+        throw new CalcError('unknown_formula', '没有 id 或名称为 "' + id + '" 的公式', '用 formulas query 查可用的公式 id。')
+      }
       /**
        * 走「公式即函数」：参数契约 + 相邻公式。
        *
@@ -507,11 +543,13 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     // ── 自动识别：与老入口同规则，但落到新实现 ──
     case 'auto': {
       const expression = typeof args['expression'] === 'string' ? args['expression'].trim() : ''
+      if (expression === '' && !Array.isArray(args['matrix']) && !Array.isArray(args['expressions'])) {
+        throw new CalcError('missing_params', 'auto 需要 expression（表达式）或 matrix（矩阵）', '例如 {expression:"2+3*4"}；不确定时先调 help 看目录。')
+      }
       if (expression !== '' && expression.includes('=') && !expression.includes('>') && !expression.includes('<')) {
         return dispatchNew('solve', args)
       }
       if (Array.isArray(args['matrix'])) return dispatchNew('matrix', args)
-      if (expression === '' && typeof args['expression'] !== 'string') return null
       return dispatchNew('evaluate', args)
     }
 
