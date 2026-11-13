@@ -34,7 +34,8 @@ const constants = Object.fromEntries(
 )
 const stars = JSON.parse(readFileSync(join(root, 'src/data/stars.json'), 'utf8'))
 
-const oldMod = await import(pathToFileURL(join(root, 'lib/world.js')).href)
+/** 老实现的输出快照（lib/world.js 已随阶段 2 删除，改用快照对账）。 */
+const snapshots = JSON.parse(readFileSync(join(root, 'test-v3/fixtures/world-parity-old.json'), 'utf8'))
 const newMod = await import(pathToFileURL(join(root, 'lib/features/deduction/world.js')).href)
 
 let pass = 0
@@ -77,7 +78,7 @@ function expectedWinterElevation(latitudeDeg, obliquityDeg) {
 }
 
 for (const [name, params] of CASES) {
-  const a = flat(oldMod.generateWorld(params, { constants }))
+  const a = snapshots[name]
   const b = flat(newMod.generateWorld(params, { constants, starClasses: stars }))
 
   const numberDiffs = []
