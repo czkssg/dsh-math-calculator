@@ -1,0 +1,412 @@
+{
+ "realConflicts": [
+  {
+   "alias": "Torr",
+   "localFactor": 133.32236842105263,
+   "localDim": "pressure",
+   "ucumName": "Torr",
+   "ucumCode": "Torr",
+   "ucumMagSi": 133.322,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "B",
+   "localFactor": 8,
+   "localDim": "data",
+   "ucumName": "bel",
+   "ucumCode": "B",
+   "ucumMagSi": 1,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "mol",
+   "localFactor": 1,
+   "localDim": "amount_of_substance",
+   "ucumName": "mole",
+   "ucumCode": "mol",
+   "ucumMagSi": 6.0221367e+23,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "mmol",
+   "localFactor": 0.001,
+   "localDim": "amount_of_substance",
+   "ucumName": "millimole",
+   "ucumCode": "mmol",
+   "ucumMagSi": 602213670000000000000,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "nmol",
+   "localFactor": 1e-9,
+   "localDim": "amount_of_substance",
+   "ucumName": "nanomole",
+   "ucumCode": "nmol",
+   "ucumMagSi": 602213670000000,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "kat",
+   "localFactor": 1,
+   "localDim": "catalytic_activity",
+   "ucumName": "katal",
+   "ucumCode": "kat",
+   "ucumMagSi": 6.0221367e+23,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  },
+  {
+   "alias": "U",
+   "localFactor": 1.6666666666666667e-8,
+   "localDim": "catalytic_activity",
+   "ucumName": "enzyme unit",
+   "ucumCode": "U",
+   "ucumMagSi": 10036894500000000,
+   "ucumDim": "other",
+   "reason": "因子不同"
+  }
+ ],
+ "ambiguous": [
+  {
+   "alias": "meter",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "meter",
+   "ucumCode": "m"
+  },
+  {
+   "alias": "kilometer",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "kilometer",
+   "ucumCode": "km"
+  },
+  {
+   "alias": "centimeter",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "centimeter",
+   "ucumCode": "cm"
+  },
+  {
+   "alias": "millimeter",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "millimeter",
+   "ucumCode": "mm"
+  },
+  {
+   "alias": "mile",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "mile",
+   "ucumCode": "[mi_i]"
+  },
+  {
+   "alias": "fathom",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "fathom",
+   "ucumCode": "[fth_i]"
+  },
+  {
+   "alias": "yard",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "yard",
+   "ucumCode": "[yd_i]"
+  },
+  {
+   "alias": "foot",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "foot",
+   "ucumCode": "[ft_i]"
+  },
+  {
+   "alias": "hand",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "hand",
+   "ucumCode": "[hd_i]"
+  },
+  {
+   "alias": "parsec",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "parsec",
+   "ucumCode": "pc"
+  },
+  {
+   "alias": "kilogram",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "kilogram",
+   "ucumCode": "kg"
+  },
+  {
+   "alias": "metric ton",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "metric ton",
+   "ucumCode": "t"
+  },
+  {
+   "alias": "gram",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "gram",
+   "ucumCode": "g"
+  },
+  {
+   "alias": "pound",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "pound",
+   "ucumCode": "[lb_av]"
+  },
+  {
+   "alias": "scruple",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "scruple",
+   "ucumCode": "[sc_ap]"
+  },
+  {
+   "alias": "minute",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "minute",
+   "ucumCode": "min"
+  },
+  {
+   "alias": "day",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "day",
+   "ucumCode": "d"
+  },
+  {
+   "alias": "week",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "week",
+   "ucumCode": "wk"
+  },
+  {
+   "alias": "month",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "month",
+   "ucumCode": "mo"
+  },
+  {
+   "alias": "year",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "year",
+   "ucumCode": "a"
+  },
+  {
+   "alias": "acre",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "acre",
+   "ucumCode": "[acr_br]"
+  },
+  {
+   "alias": "section",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "section",
+   "ucumCode": "[sct]"
+  },
+  {
+   "alias": "township",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "township",
+   "ucumCode": "[twp]"
+  },
+  {
+   "alias": "barn",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "barn",
+   "ucumCode": "b"
+  },
+  {
+   "alias": "gal",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "Gal",
+   "ucumCode": "Gal"
+  },
+  {
+   "alias": "cord",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "cord",
+   "ucumCode": "[cr_i]"
+  },
+  {
+   "alias": "knot",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "knot",
+   "ucumCode": "[kn_i]"
+  },
+  {
+   "alias": "byte",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "byte",
+   "ucumCode": "By"
+  },
+  {
+   "alias": "mil",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "mil",
+   "ucumCode": "[mil_i]"
+  },
+  {
+   "alias": "pied",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "pied",
+   "ucumCode": "[pied]"
+  },
+  {
+   "alias": "pouce",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "pouce",
+   "ucumCode": "[pouce]"
+  },
+  {
+   "alias": "ligne",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "ligne",
+   "ucumCode": "[ligne]"
+  },
+  {
+   "alias": "ampere",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "Ampere",
+   "ucumCode": "A"
+  },
+  {
+   "alias": "mole",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "mole",
+   "ucumCode": "mol"
+  },
+  {
+   "alias": "candela",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "candela",
+   "ucumCode": "cd"
+  },
+  {
+   "alias": "coulomb",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "coulomb",
+   "ucumCode": "C"
+  },
+  {
+   "alias": "volt",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "volt",
+   "ucumCode": "V"
+  },
+  {
+   "alias": "farad",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "farad",
+   "ucumCode": "F"
+  },
+  {
+   "alias": "ohm",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "ohm",
+   "ucumCode": "Ohm"
+  },
+  {
+   "alias": "siemens",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "siemens",
+   "ucumCode": "S"
+  },
+  {
+   "alias": "weber",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "weber",
+   "ucumCode": "Wb"
+  },
+  {
+   "alias": "tesla",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "tesla",
+   "ucumCode": "T"
+  },
+  {
+   "alias": "henry",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "henry",
+   "ucumCode": "H"
+  },
+  {
+   "alias": "lumen",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "lumen",
+   "ucumCode": "lm"
+  },
+  {
+   "alias": "lux",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "lux",
+   "ucumCode": "lx"
+  },
+  {
+   "alias": "becquerel",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "becquerel",
+   "ucumCode": "Bq"
+  },
+  {
+   "alias": "gray",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "gray",
+   "ucumCode": "Gy"
+  },
+  {
+   "alias": "sievert",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "sievert",
+   "ucumCode": "Sv"
+  },
+  {
+   "alias": "millimole",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "millimole",
+   "ucumCode": "mmol"
+  },
+  {
+   "alias": "micromole",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "micromole",
+   "ucumCode": "umol"
+  },
+  {
+   "alias": "nanomole",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "nanomole",
+   "ucumCode": "nmol"
+  },
+  {
+   "alias": "katal",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "katal",
+   "ucumCode": "kat"
+  },
+  {
+   "alias": "millivolt",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "millivolt",
+   "ucumCode": "mV"
+  },
+  {
+   "alias": "gauss",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "Gauss",
+   "ucumCode": "G"
+  },
+  {
+   "alias": "curie",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "Curie",
+   "ucumCode": "Ci"
+  },
+  {
+   "alias": "enzyme unit",
+   "note": "仅按名称小写命中（可能是同名异物）",
+   "ucumName": "enzyme unit",
+   "ucumCode": "U"
+  }
+ ]
+}
