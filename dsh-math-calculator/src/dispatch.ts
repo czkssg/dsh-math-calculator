@@ -55,6 +55,7 @@ import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
 import { runDocument } from './features/document/pdf.js'
+import { tryUcumExpression } from './core/ucum.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -260,7 +261,17 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return toOutcome({ ...batch, ...(precisionNotice !== undefined ? { notice: precisionNotice } : {}) })
       }
       const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
-      const single = evaluateOne(buildEngine(), expression, options, scope as never)
+      let single
+      try {
+        single = evaluateOne(buildEngine(), expression, options, scope as never)
+      } catch (error) {
+        /** 复合单位：mathjs 不认时交给 UCUM（NLM 实现）。 */
+        const ucum = tryUcumExpression(expression)
+        if (ucum !== null) {
+          return toOutcome({ result: ucum.text, value: ucum.value, ok: true, notice: 'mathjs 不认这个复合单位，已用 UCUM 换算（源 ' + ucum.from + ' → 目标 ' + ucum.to + '）。' })
+        }
+        throw error
+      }
       return toOutcome({
         ...single,
         ...(single.notice !== undefined && precisionNotice !== undefined ? { notice: single.notice + ' ' + precisionNotice } : single.notice !== undefined ? { notice: single.notice } : precisionNotice !== undefined ? { notice: precisionNotice } : {}),

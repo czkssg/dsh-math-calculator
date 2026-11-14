@@ -40,6 +40,7 @@
 
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
+import { tryUcumExpression } from '../../core/ucum.js'
 import {
   fmtNumber,
   trimDecimal,
@@ -291,7 +292,25 @@ export function evaluateOne(
   /** 变量作用域（variables 注入；与老入口行为对齐）。 */
   scope?: Record<string, unknown>,
 ): EvaluateOutcome {
-  const raw = engine.evaluate(expression, scope)
+  let raw: unknown
+  try {
+    raw = engine.evaluate(expression, scope)
+  } catch (error) {
+    /**
+     * 复合单位兜底：mathjs 不认 `kg/m³` 这类写法时，交给 UCUM（NLM 实现）。
+     * 只处理「数值 + 单位 to 单位」的纯换算式，不接管一般表达式。
+     */
+    const ucum = tryUcumExpression(expression)
+    if (ucum !== null) {
+      return {
+        result: ucum.text,
+        value: ucum.value,
+        ok: true,
+        notice: 'mathjs 不认这个复合单位，已用 UCUM 换算（源 ' + ucum.from + ' → 目标 ' + ucum.to + '）。',
+      }
+    }
+    throw error
+  }
 
   /**
    * ## ★ 非有限值必须报错，不能当结果返回

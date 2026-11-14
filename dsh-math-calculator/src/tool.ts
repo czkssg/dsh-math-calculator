@@ -19,6 +19,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { TOOL_DESCRIPTION } from './awareness.js'
 import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
+import { tryUcumExpression } from './core/ucum.js'
 
 /** JSON 值（与老入口的 MathResult.value 同构）。 */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
@@ -337,6 +338,26 @@ export const mathExecuteTool = defineTool({
        * 那会让「缺参数」看起来像工具 bug（反馈包 T7-N8 报过的正是这一类）。
        * 只有不带 type 的异常（库抛的、内部 bug）才交老翻译器。
        */
+      /**
+       * 复合单位最后一层兜底：mathjs 不认的上标写法（`kg/m³`）交给 UCUM。
+       *
+       * 为什么放在这里而不是只放 evaluateOne：
+       * 真实错误可能来自 unit 解析的任意一层（归一化、歧义修正…）；
+       * 在出口统一拦一次，比在每层各放一次稳。
+       */
+      const expressionText = typeof args['expression'] === 'string' ? (args['expression'] as string) : ''
+      const ucum = expressionText !== '' ? tryUcumExpression(expressionText) : null
+      if (ucum !== null) {
+        return {
+          ok: true,
+          operation,
+          input: expressionText,
+          result: ucum.text,
+          precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
+          value: ucum.value,
+          notice: 'mathjs 不认这个复合单位，已用 UCUM 换算（源 ' + ucum.from + ' → 目标 ' + ucum.to + '）。',
+        }
+      }
       const typed = error !== null && typeof error === 'object' && typeof (error as { type?: unknown }).type === 'string'
       const direct = typed
         ? {
