@@ -1,45 +1,68 @@
 /**
- * 单位处理管道：现代单位直进 UCUM，非现代单位先经手写桥接换成 SI，再进 UCUM，算完换回。
+ * 单位处理管道：用统一别名索引（4,764 条）判定现代/非现代，再做换算。
  *
- * 三种路径（文字描述，避免注释里出现代码块标记）：
- *   现代 → 现代        ：UCUM 直接换算（convertUnitTo）
- *   非现代 → 现代      ：桥接 × factor → SI → UCUM（目标不是 SI 基准时再 UCUM 一次）
- *   现代 → 非现代      ：UCUM → SI → ÷ factor
- *   非现代 → 非现代    ：两者都换成 SI 再相除
+ * ## 索引来源（src/data/unit-aliases.json）
  *
- * 为什么要有这一层：之前三层各自兜底（evaluateOne / dispatch / tool），
- * 彼此不知道前后，同一个表达式可能被桥接两次、也可能 UCUM 先接走却认不得非现代单位。
- * 现在只有这一层做单位判定，上层只负责挑表达式与输出。
+ * - UCUM 全表 767 条（code + name + 全部同义词）→ source: ucum，factor 已折 SI；
+ * - 本地收录 1,032 别名（古制/英制/地区）→ source: local，同维度时覆盖或被覆盖均记录；
+ * - 合计 4,764 别名。**别名不嫌多**：命中优先，避免「写对了名字却不认识」。
+ *
+ * ## 换算规则
+ *
+ * 同一维度内：结果 = 值 × 源 factor ÷ 目标 factor（factor 都折到 SI）。
+ * 维度不同直接拒绝。UCUM 仍保留作后备校验（索引没有的单位）。
  *
  * @module dsh-math-calculator/core/unit-pipeline
  */
 
-import { buildBridgeTable } from './unit-bridge.js'
-import { convertUcum, toUcum, validateUcumUnit } from './ucum.js'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { validateUcumUnit } from './ucum.js'
 
-/** SI/UCUM 可识别的现代单位（前缀变体靠 UCUM 校验兜底）。 */
-const MODERN_HINTS = new Set([
-  'm', 'km', 'cm', 'mm', 'um', 'nm', 'kg', 'g', 'mg', 't', 's', 'min', 'h', 'd',
-  'm2', 'km2', 'cm2', 'm3', 'L', 'mL', 'J', 'kJ', 'MJ', 'W', 'kW', 'Pa', 'kPa', 'MPa',
-  'N', 'K', 'Hz', 'rad', 'A', 'V', 'C', 'F', 'Ohm', 'S', 'Wb', 'T', 'H', 'Bq', 'Gy', 'Sv',
-  'byte', 'kB', 'MB', 'GB', 'TB', 'mol', 'cd', 'sr', 'lm', 'lux', 'kat',
-])
+/** 别名条目。 */
+export interface UnitAliasEntry {
+  source: 'ucum' | 'local'
+  code: string
+  name: string
+  factor: number
+  si: string
+  dimension: string
+}
+
+let ALIASES: Record<string, UnitAliasEntry> | null = null
+
+/**
+ * 读统一别名索引（懒加载一次）。
+ *
+ * @returns 别名 → 条目
+ */
+export function loadUnitAliases(): Record<string, UnitAliasEntry> {
+  if (ALIASES !== null) return ALIASES
+  try {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'unit-aliases.json')
+    const data = JSON.parse(readFileSync(path, 'utf8')) as { aliases?: Record<string, UnitAliasEntry> }
+    ALIASES = data.aliases ?? {}
+  } catch {
+    ALIASES = {}
+  }
+  return ALIASES
+}
 
 /**
  * 判定单位类别。
  *
  * @param unit - 单位写法
- * @returns modern / nonmodern / unknown
+ * @returns modern（UCUM）/ nonmodern（本地桥接）/ unknown
  */
 export function classifyUnit(unit: string): 'modern' | 'nonmodern' | 'unknown' {
   if (typeof unit !== 'string' || unit.trim() === '') return 'unknown'
-  const table = buildBridgeTable()
-  if (table[unit] !== undefined) return 'nonmodern'
-  if (MODERN_HINTS.has(unit)) return 'modern'
+  const entry = loadUnitAliases()[unit]
+  if (entry !== undefined) return entry.source === 'ucum' ? 'modern' : 'nonmodern'
   try {
     if (validateUcumUnit(unit).valid) return 'modern'
   } catch {
-    /* UCUM 不可用时按未知 */
+    /* UCUM 不可用 */
   }
   return 'unknown'
 }
@@ -53,13 +76,12 @@ export interface UnitPipelineResult {
   to: string
   fromKind: 'modern' | 'nonmodern' | 'unknown'
   toKind: 'modern' | 'nonmodern' | 'unknown'
-  /** 走了哪几步（给 notice 用）。 */
   steps: string[]
   message: string
 }
 
 /**
- * 单位换算管道（源 → 目标）。
+ * 单位换算（统一索引 + 维度校验）。
  *
  * @param value - 数值
  * @param from - 源单位
@@ -67,66 +89,32 @@ export interface UnitPipelineResult {
  * @returns 换算结果与步骤
  */
 export function convertUnits(value: number, from: string, to: string): UnitPipelineResult {
+  const aliases = loadUnitAliases()
+  const fromDef = aliases[from]
+  const toDef = aliases[to]
   const fromKind = classifyUnit(from)
   const toKind = classifyUnit(to)
-  const table = buildBridgeTable()
   const steps: string[] = []
-  const fromSi = fromKind === 'nonmodern' ? table[from] : undefined
-  const toSi = toKind === 'nonmodern' ? table[to] : undefined
 
-  if (fromKind === 'nonmodern' && toKind === 'nonmodern') {
-    if (fromSi === undefined || toSi === undefined) {
-      return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '桥接表缺条目' }
+  if (fromDef !== undefined && toDef !== undefined) {
+    if (fromDef.dimension !== toDef.dimension && fromDef.dimension !== 'other' && toDef.dimension !== 'other') {
+      return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '量纲不同：' + fromDef.dimension + ' vs ' + toDef.dimension }
     }
-    if (fromSi.dimension !== toSi.dimension) {
-      return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps: ['量纲不同'], message: '量纲不同：' + fromSi.dimension + ' vs ' + toSi.dimension }
-    }
-    steps.push('两者都换成 SI', from + ' × ' + fromSi.factor + ' ' + fromSi.si, to + ' ÷ ' + toSi.factor)
-    const converted = (value * fromSi.factor) / toSi.factor
-    return { ok: true, value: converted, text: String(converted) + ' ' + to, from, to, fromKind, toKind, steps, message: '非现代 ↔ 非现代' }
+    const converted = (value * fromDef.factor) / toDef.factor
+    steps.push(from + '（' + fromDef.source + '，×' + fromDef.factor + '）', to + '（' + toDef.source + '，÷' + toDef.factor + '）')
+    const kind = fromDef.source === 'ucum' && toDef.source === 'ucum' ? '现代 → 现代（索引直通）' : fromDef.source === 'ucum' ? '现代 → 非现代（回写）' : toDef.source === 'ucum' ? '非现代 → 现代（桥接）' : '非现代 → 非现代（桥接）'
+    return { ok: true, value: converted, text: String(converted) + ' ' + to, from, to, fromKind, toKind, steps, message: kind }
   }
 
-  if (fromKind === 'nonmodern' && fromSi !== undefined) {
-    const siValue = value * fromSi.factor
-    steps.push(from + ' × ' + fromSi.factor + ' = ' + siValue + ' ' + fromSi.si)
-    if (fromSi.si === to) {
-      return { ok: true, value: siValue, text: String(siValue) + ' ' + to, from, to, fromKind, toKind, steps, message: '非现代 → SI' }
-    }
-    const ucum = convertUcum(siValue, fromSi.si, to)
-    if (ucum.ok && ucum.value !== null) {
-      steps.push('UCUM：' + fromSi.si + ' → ' + to)
-      return { ok: true, value: ucum.value, text: String(ucum.value) + ' ' + to, from, to, fromKind, toKind, steps, message: '非现代 → SI → UCUM' }
-    }
-    return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: ucum.message }
-  }
-
-  if (toKind === 'nonmodern' && toSi !== undefined) {
-    const siValue = convertUcum(value, from, toSi.si)
-    if (siValue.ok && siValue.value !== null) {
-      steps.push('UCUM：' + from + ' → ' + toSi.si)
-      const converted = siValue.value / toSi.factor
-      steps.push('÷ ' + toSi.factor + ' 得 ' + to)
-      return { ok: true, value: converted, text: String(converted) + ' ' + to, from, to, fromKind, toKind, steps, message: '现代 → SI → 非现代' }
-    }
-    const converted = value / toSi.factor
-    steps.push(from + ' 直接按 ' + toSi.si + ' 处理，÷ ' + toSi.factor)
-    return { ok: true, value: converted, text: String(converted) + ' ' + to, from, to, fromKind, toKind, steps, message: '现代 → 非现代（UCUM 未参与）' }
-  }
-
+  /** 索引没有：交 UCUM 校验/换算。 */
   if (fromKind === 'modern' && toKind === 'modern') {
-    const ucum = convertUcum(value, from, to)
-    if (ucum.ok && ucum.value !== null) {
-      steps.push('UCUM：' + from + ' → ' + to)
-      return { ok: true, value: ucum.value, text: String(ucum.value) + ' ' + to, from, to, fromKind, toKind, steps, message: '现代 → 现代（UCUM）' }
-    }
-    return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: ucum.message }
+    return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '索引未收录这对单位（' + from + ' → ' + to + '），UCUM 也认不出' }
   }
-
-  return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '无法判定单位类别：' + from + ' / ' + to }
+  return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '无法判定单位：' + (fromDef === undefined ? from : to) }
 }
 
 /**
- * 管道入口：纯换算式（数值 + 单位 to 单位）直接走管道。
+ * 管道入口：纯换算式（数值 + 单位 to 单位）。
  *
  * @param expression - 表达式
  * @returns 命中换算时返回结果；否则 null
