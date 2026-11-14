@@ -55,6 +55,37 @@ export interface ConsistencyOutcome {
 }
 
 /**
+ * 中文数字转数值（八百 / 二千 / 一万 / 十二 / 两万）。
+ */
+function parseChineseNumber(raw: string | undefined): number {
+  if (raw === undefined || raw === '') return Number.NaN
+  const digits: Record<string, number> = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 }
+  const units: Record<string, number> = { 十: 10, 百: 100, 千: 1000, 万: 10000, 亿: 100000000 }
+  let total = 0
+  let section = 0
+  let digit = 0
+  for (const char of raw) {
+    if (digits[char] !== undefined) {
+      digit = digits[char]
+    } else if (units[char] !== undefined) {
+      const unit = units[char]
+      if (unit >= 10000) {
+        section = (section + digit) * unit
+        total += section
+        section = 0
+        digit = 0
+      } else {
+        section += (digit === 0 ? 1 : digit) * unit
+        digit = 0
+      }
+    } else {
+      return Number.NaN
+    }
+  }
+  return total + section + digit
+}
+
+/**
  * 中文量级折算。
  *
  * ```
@@ -119,12 +150,20 @@ function extractClaims(section: ConsistencySection): Claim[] {
    *
    * 修法：主体用**非贪婪**匹配，程度词单独成组（`(?:约|达到|为|是|有)?` 在主体之后）。
    */
-  const pattern = /([\u4e00-\u9fa5]{2,6}?)\s*[:：]?\s*(约|达到|大约|约为|为|是|有)?\s*([0-9]+(?:\.[0-9]+)?)\s*(万亿|亿|万|千|百)?/g
+  const pattern = /([\u4e00-\u9fa5]{2,6}?)\s*[:：]?\s*(约|达到|大约|约为|为|是|有)?\s*(?:([0-9]+(?:\.[0-9]+)?)|([零〇一二三四五六七八九十百千万亿两]+))\s*(万亿|亿|万|千|百)?/g
 
   for (const match of text.matchAll(pattern)) {
-    const subject = match[1]
-    const base = Number(match[3])
-    const magnitudeWord = match[4]
+    /** 同义词归一：『总人口』与『人口』是同一个量（反馈报告：主体切分漏报）。 */
+    const SUBJECT_ALIASES: Record<string, string> = {
+      总人口: '人口', 人口数: '人口', 总人口数: '人口',
+      总兵力: '兵力', 兵力总数: '兵力',
+      总面积: '面积', 总产量: '产量', 总储量: '储量',
+      总成本: '成本', 总预算: '预算', 总支出: '支出', 总收入: '收入',
+    }
+    const subject = SUBJECT_ALIASES[match[1]] ?? match[1]
+    /** 阿拉伯数字或中文数字（八百 / 二千）。 */
+    const base = match[3] !== undefined ? Number(match[3]) : parseChineseNumber(match[4])
+    const magnitudeWord = match[5]
     if (!Number.isFinite(base)) continue
 
     /**
@@ -211,7 +250,14 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
     const min = Math.min(...uniqueValues)
     const max = Math.max(...uniqueValues)
     const ratio = min === 0 ? Infinity : max / min
-    if (ratio < 2) continue
+    /**
+     * 判据（反馈报告 §3 修复路径）：**相对差 ≥10% 或 ≥2 倍**都算冲突。
+     *
+     * 只报 ≥2 倍会漏掉「800 万 vs 700 万」这种 14% 的差——
+     * 14% 在设定里往往是改了一位数（700→800），不是精度。
+     */
+    const relative = min === 0 ? Infinity : (max - min) / min
+    if (relative < 0.1 && ratio < 2) continue
 
     conflicts.push({ subject, claims, ratio })
   }
@@ -228,7 +274,7 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
   lines.push('')
 
   if (conflicts.length === 0) {
-    lines.push('✓ 没有发现同一量出现多个不同值（差异 ≥2 倍的才算冲突）。')
+    lines.push('✓ 没有发现同一量出现多个不同值（差异 ≥10% 或 ≥2 倍的才算冲突）。')
   } else {
     lines.push('  发现 ' + conflicts.length + ' 处：')
     lines.push('')
