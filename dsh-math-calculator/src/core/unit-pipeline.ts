@@ -21,6 +21,52 @@ import { fileURLToPath } from 'node:url'
 import { validateUcumUnit } from './ucum.js'
 import { convertViaUcum } from './ucum-registry.js'
 
+/** 复合单位条目（有物理意义）。 */
+export interface CompoundEntry {
+  symbol: string
+  label: string
+  dimVec: number[]
+  category: string
+}
+
+let COMPOUNDS: Record<string, CompoundEntry> | null = null
+
+/**
+ * 读复合单位清单（unit-compounds.json）。
+ *
+ * @returns 归一符号 → 条目
+ */
+export function loadUnitCompounds(): Record<string, CompoundEntry> {
+  if (COMPOUNDS !== null) return COMPOUNDS
+  try {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'unit-compounds.json')
+    const data = JSON.parse(readFileSync(path, 'utf8')) as { compounds?: CompoundEntry[] }
+    const map: Record<string, CompoundEntry> = {}
+    for (const item of data.compounds ?? []) {
+      /** 归一：`kg/m^3`、`kg/m³`、`kg·m-3` 都映射到 kg/m3。 */
+      const normalized = item.symbol.replace(/\s+/g, '').replace(/\./g, '*').replace(/\^/g, '').replace(/[²³]/g, (c) => (c === '²' ? '2' : '3'))
+      map[normalized] = item
+      map[item.symbol] = item
+    }
+    COMPOUNDS = map
+  } catch {
+    COMPOUNDS = {}
+  }
+  return COMPOUNDS
+}
+
+/**
+ * 识别复合单位的物理意义。
+ *
+ * @param unit - 单位写法
+ * @returns 条目标签；不识别返回 null
+ */
+export function identifyCompound(unit: string): string | null {
+  const normalized = String(unit).replace(/\s+/g, '').replace(/\./g, '*').replace(/\^/g, '').replace(/[²³]/g, (c) => (c === '²' ? '2' : '3'))
+  const entry = loadUnitCompounds()[normalized]
+  return entry !== undefined ? entry.label : null
+}
+
 /** 别名条目。 */
 export interface UnitAliasEntry {
   source: 'ucum' | 'local'
@@ -105,7 +151,10 @@ export function convertUnits(value: number, from: string, to: string): UnitPipel
     const viaUcum = convertViaUcum(value, from, to)
     if (viaUcum !== null) {
       steps.push('UCUM 引擎（含注册的本地单位）')
-      return { ok: true, value: viaUcum, text: String(viaUcum) + ' ' + to, from, to, fromKind, toKind, steps, message: 'UCUM 引擎换算' }
+      /** 复合单位附中文物理意义，便于 AI 直接引用。 */
+      const labels = [identifyCompound(from), identifyCompound(to)].filter((item): item is string => item !== null)
+      const hint = labels.length > 0 ? '（' + [...new Set(labels)].join(' / ') + '）' : ''
+      return { ok: true, value: viaUcum, text: String(viaUcum) + ' ' + to + hint, from, to, fromKind, toKind, steps, message: 'UCUM 引擎换算' }
     }
     const converted = (value * fromDef.factor) / toDef.factor
     steps.push(from + '（' + fromDef.source + '，×' + fromDef.factor + '）', to + '（' + toDef.source + '，÷' + toDef.factor + '）')
@@ -113,7 +162,17 @@ export function convertUnits(value: number, from: string, to: string): UnitPipel
     return { ok: true, value: converted, text: String(converted) + ' ' + to, from, to, fromKind, toKind, steps, message: kind }
   }
 
-  /** 索引没有：交 UCUM 校验/换算。 */
+  /** 索引没有（多半是复合单位）：直接交 UCUM 引擎。 */
+  {
+    const viaUcum = convertViaUcum(value, from, to)
+    if (viaUcum !== null) {
+      const labels = [identifyCompound(from), identifyCompound(to)].filter((item): item is string => item !== null)
+      const hint = labels.length > 0 ? '（' + [...new Set(labels)].join(' / ') + '）' : ''
+      steps.push('UCUM 引擎（复合单位）')
+      return { ok: true, value: viaUcum, text: String(viaUcum) + ' ' + to + hint, from, to, fromKind, toKind, steps, message: 'UCUM 引擎换算（复合单位）' }
+    }
+  }
+
   if (fromKind === 'modern' && toKind === 'modern') {
     return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '索引未收录这对单位（' + from + ' → ' + to + '），UCUM 也认不出' }
   }

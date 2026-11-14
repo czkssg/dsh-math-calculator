@@ -32,11 +32,19 @@ interface LocalEntry {
 
 /** 维度 → 模板单位（UCUM 全名）与基准换算。 */
 const TEMPLATE: Record<string, { unit: string; scale: number }> = {
+  /** scale = 该模板单位的 magnitudeSi（本地 factor / scale = UCUM magnitude）。 */
   length: { unit: 'meter', scale: 1 },
-  mass: { unit: 'gram', scale: 1000 },
+  mass: { unit: 'gram', scale: 0.001 },
   time: { unit: 'second - time', scale: 1 },
-  area: { unit: 'square meter', scale: 1 },
-  /** volume 暂不注册（UCUM 无 'cubic meter' 这个 name，容量走别名索引换算）。 */
+  area: { unit: 'square inch', scale: 0.00064516 },
+  volume: { unit: 'Liters', scale: 0.001 },
+  energy: { unit: 'joule', scale: 1 },
+  power: { unit: 'watt', scale: 1 },
+  pressure: { unit: 'pascal', scale: 1 },
+  force: { unit: 'newton', scale: 1 },
+  temperature: { unit: 'degree Kelvin', scale: 1 },
+  luminous_intensity: { unit: 'candela', scale: 1 },
+  angle: { unit: 'radian', scale: 1 },
 }
 
 /** ASCII 安全码（UCUM 码允许字母数字与下划线）。 */
@@ -80,7 +88,8 @@ export function registerLocalUnits(): { registered: number; skipped: number; err
       const templateUnit = tables.getUnitByName(template.unit)
       const found = Array.isArray(templateUnit) ? templateUnit[0] : templateUnit
       if (!found || !(found as { dim_?: unknown }).dim_) { result.skipped += 1; continue }
-      const magnitude = entry.factor * template.scale
+      /** UCUM 的 magnitude 相对该维度的基准单位：质量基准是 gram（×1000），其他基准已是 SI 值（×1）。 */
+      const magnitude = entry.factor * (entry.dimension === 'mass' ? 1000 : 1)
       try {
         /** 关键：必须继承模板 Unit 的原型（clone 等方法在原型上），否则换算时报 not a function。 */
         const unitObject = Object.create(Object.getPrototypeOf(found)) as Record<string, unknown>
@@ -127,8 +136,9 @@ export function convertViaUcum(value: number, from: string, to: string): number 
     const requireLocal = createRequire(import.meta.url)
     const { UcumLhcUtils } = requireLocal('@lhncbc/ucum-lhc') as { UcumLhcUtils: { getInstance: () => { convertUnitTo: (from: string, value: number, to: string) => { status: string; toVal?: number } } } }
     const utils = UcumLhcUtils.getInstance()
-    /** 单位写法先折 UCUM（上标/中文别名）。 */
-    const result = utils.convertUnitTo(from, value, to)
+    /** 单位写法先折 UCUM：`·` → `.`（UCUM 用点号连接），上标 → 普通数字。 */
+    const normalize = (unit: string): string => String(unit).replace(/·/g, '.').replace(/[²³]/g, (c) => (c === '²' ? '2' : '3'))
+    const result = utils.convertUnitTo(normalize(from), value, normalize(to))
     if (result.status === 'succeeded' && typeof result.toVal === 'number') return result.toVal
   } catch {
     /* 失败由调用方决定是否回退 */

@@ -22,8 +22,8 @@ function assert(name, cond, detail) {
 console.log('-- 1. 注册规模 --')
 {
   const result = regMod.registerLocalUnits()
-  assert('★ 注册 ≥ 400 个本地单位', result.registered >= 400, String(result.registered))
-  assert('注册错误可控（< 40）', result.errors.length < 40, String(result.errors.length))
+  assert('★ 注册 ≥ 650 个本地单位', result.registered >= 650, String(result.registered))
+  assert('注册错误可控（< 60）', result.errors.length < 60, String(result.errors.length))
 }
 
 console.log('-- 2. UCUM 引擎直接换算本地单位 --')
@@ -33,6 +33,12 @@ console.log('-- 2. UCUM 引擎直接换算本地单位 --')
   assert('★ 市尺 → cm = 33.33', shichi !== null && Math.abs(shichi - 33.333) < 0.01, String(shichi))
   const pood = regMod.convertViaUcum(1, '普特', 'kg')
   assert('★ 普特 → kg = 16.38', pood !== null && Math.abs(pood - 16.38) < 0.001, String(pood))
+  const acre = regMod.convertViaUcum(1, '英亩', 'm2')
+  assert('★ 英亩 → m² = 4046.86', acre !== null && Math.abs(acre - 4046.8564224) < 0.01, String(acre))
+  const bushel = regMod.convertViaUcum(1, '蒲式耳', 'L')
+  assert('★ 蒲式耳 → L = 35.239', bushel !== null && Math.abs(bushel - 35.239) < 0.01, String(bushel))
+  const versta = regMod.convertViaUcum(1, '俄里', 'm')
+  assert('★ 俄里 → m = 1066.8', versta !== null && Math.abs(versta - 1066.8) < 0.01, String(versta))
 }
 
 console.log('-- 3. 管道：UCUM 引擎优先，体积回退索引 --')

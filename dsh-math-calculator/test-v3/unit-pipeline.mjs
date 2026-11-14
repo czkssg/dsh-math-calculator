@@ -50,7 +50,20 @@ console.log('-- 3. 本地非现代单位（桥接）--')
   assert('★ 回写：1 kg → 0.02 担', rev.ok === true && rev.result.includes('0.02'), rev.result.slice(0, 50))
 }
 
-console.log('-- 4. 分类与拒绝 --')
+console.log('-- 4. 复合单位（有物理意义）--')
+{
+  assert('★ kg/m3 识别为密度', pipeMod.identifyCompound('kg/m3') === '密度', String(pipeMod.identifyCompound('kg/m3')))
+  assert('★ kg/m³（上标）也识别', pipeMod.identifyCompound('kg/m³') === '密度', '')
+  const dens = pipeMod.convertUnits(1, 'kg/m3', 'g/cm3')
+  assert('★ 密度换算 1 kg/m³ = 0.001 g/cm³', dens.ok && Math.abs((dens.value ?? 0) - 0.001) < 1e-9, String(dens.value))
+  const heat = pipeMod.convertUnits(1, 'J/kg/K', 'kJ/kg/K')
+  assert('★ 比热容换算', heat.ok && Math.abs((heat.value ?? 0) - 0.001) < 1e-9, String(heat.value))
+  const visc = pipeMod.convertUnits(1, 'Pa·s', 'kg/m/s')
+  assert('★ 动力粘度（· 号）', visc.ok && Math.abs((visc.value ?? 0) - 1) < 1e-9, String(visc.value))
+  assert('复合清单 ≥ 55 条', Object.keys(pipeMod.loadUnitCompounds()).length >= 55, String(Object.keys(pipeMod.loadUnitCompounds()).length))
+}
+
+console.log('-- 5. 分类与拒绝 --')
 {
   assert('classify km = modern', pipeMod.classifyUnit('km') === 'modern', pipeMod.classifyUnit('km'))
   assert('classify 担 = nonmodern', pipeMod.classifyUnit('担') === 'nonmodern', pipeMod.classifyUnit('担'))
