@@ -120,7 +120,8 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
  * @param args - 原始参数
  * @returns 结果；未迁移返回 null
  */
-export function dispatchNew(operation: string, args: Record<string, unknown>): DispatchOutcome | null {
+export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
+  const args = normalizeArgs(rawArgs)
   const worldDeps = {
     constants: constantsTable(),
     starClasses: dataOf<Array<Record<string, unknown>>>('stars', 'stars.json', []) as never,
@@ -574,6 +575,55 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
     default:
       return null
   }
+}
+
+/**
+ * 参数归一：把「文档/直觉」的写法映射到内部字段。
+ *
+ * 反馈报告里最集中的痛点不是算错，而是**参数猜不到**：
+ * solve 写 equation、ode 写 y0、chain 直接给 stages/raw、impact 写 from/to…
+ * 这些别名在入口层统一收，比在 37 个 feature 里各写一遍稳。
+ */
+function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
+  const args: Record<string, unknown> = { ...raw }
+
+  /** solve：equation / equations / expr → expression。 */
+  if (args['expression'] === undefined) {
+    if (typeof args['equation'] === 'string') args['expression'] = args['equation']
+    else if (Array.isArray(args['equations'])) args['expression'] = (args['equations'] as unknown[]).join(',')
+    else if (typeof args['expr'] === 'string') args['expression'] = args['expr']
+  }
+
+  /** world：嵌套 world 对象合并到顶层（显式顶层优先）。 */
+  const worldObject = asRecord(args['world'])
+  if (worldObject !== undefined) {
+    for (const [key, value] of Object.entries(worldObject)) if (args[key] === undefined) args[key] = value
+  }
+
+  /** ode / recurrence：initial 允许数字、数组、y0。 */
+  if (args['initial'] !== undefined && typeof args['initial'] !== 'object') {
+    const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
+    /** 从 dy/dt = … 里取状态名；取不到就用 y / P。 */
+    const stateMatch = /d\s*([A-Za-z_][A-Za-z0-9_]*)\s*\/\s*dt/.exec(expression)
+    const stateName = stateMatch !== null ? stateMatch[1] : (args['recurrence'] !== undefined ? 'P' : 'y')
+    args['initial'] = Array.isArray(args['initial']) ? { [stateName]: Number((args['initial'] as unknown[])[0]) } : { [stateName]: Number(args['initial']) }
+  }
+  if (args['initial'] === undefined && args['y0'] !== undefined) {
+    args['initial'] = { y: Number(args['y0']) }
+  }
+
+  /** chain：顶层 stages/raw 收进 chain 对象。 */
+  if (args['chain'] === undefined && (args['stages'] !== undefined || args['raw'] !== undefined)) {
+    args['chain'] = { raw: args['raw'], stages: args['stages'] }
+  }
+
+  /** impact / trace：from 或 node → traceTarget。 */
+  if (args['traceTarget'] === undefined) {
+    if (typeof args['from'] === 'string') args['traceTarget'] = args['from']
+    else if (typeof args['node'] === 'string') args['traceTarget'] = args['node']
+  }
+
+  return args
 }
 
 /** 把新实现的 {result,value,notice,ok?} 转成统一返回。 */

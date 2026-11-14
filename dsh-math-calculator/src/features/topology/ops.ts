@@ -370,7 +370,15 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   if (action === 'terrain') return runTerrainTopology(input)
   if (action === 'ship' || action === 'building') return runShipTopology(input)
   if (action === 'structure') {
-    const outcome = assessStructure(input.building ?? input.vehicle)
+    /** 扁平写法（反馈：kind/levels/area 或 massKg/speedKph/…）也能用。 */
+    const flat = input as unknown as Record<string, unknown>
+    const building = input.building ?? (flat['kind'] === 'building' || flat['levels'] !== undefined || flat['area'] !== undefined
+      ? { kind: 'building', floors: Number(flat['levels'] ?? flat['floors'] ?? 1), footprintM2: Number(flat['area'] ?? flat['footprintM2'] ?? 0), ...(flat['world'] !== undefined ? { world: flat['world'] } : {}) }
+      : undefined)
+    const vehicle = input.vehicle ?? (flat['massKg'] !== undefined
+      ? { kind: 'vehicle', massKg: Number(flat['massKg']), speedKph: Number(flat['speedKph'] ?? 0), energyJ: Number(flat['energyJ'] ?? 0), energyPerKmJ: Number(flat['energyPerKmJ'] ?? 0), ...(flat['payloadKg'] !== undefined ? { payloadKg: Number(flat['payloadKg']) } : {}) }
+      : undefined)
+    const outcome = assessStructure((building ?? vehicle) as never)
     return { result: outcome.result, value: outcome.value, ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}) }
   }
   if (action === 'rules') {
