@@ -93,6 +93,9 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
   ['公里', 'km'], ['千米', 'km'], ['厘米', 'cm'], ['毫米', 'mm'], ['米', 'm'],
   ['微米', 'um'], ['纳米', 'nm'],
   ['英里', 'mi'], ['英尺', 'ft'], ['英寸', 'inch'], ['码', 'yd'],
+  /** 天文/工程常用（反馈报告：AU/光年/桶在 114 次失败里占大头）。 */
+  ['天文单位', 'AU'], ['光年', 'ly'], ['桶', 'barrel'], ['石油桶', 'barrel'],
+  ['吨', 'tonne'], ['年', 'year'],
   /**
    * ## ⚠ 中文古制单位必须加 `cn_` 前缀
    *
@@ -257,7 +260,9 @@ export function normalizeUnits(source: string): string {
         /** 前面是不是 `to` / `in` / `as`（目标单位位）。 */
         const beforeWord = out.slice(0, j + 1)
         const isTargetSlot = /(?:^|\s)(?:to|in|as)$/i.test(beforeWord)
-        if (prevIsDigitOrSpace || /[\d)\]]/.test(nearest) || isTargetSlot) {
+        /** 复合单位位置：`吨/年` 的「年」前是 `/`，也要替换。 */
+        const isInCompound = /[/*×·^]/.test(nearest)
+        if (prevIsDigitOrSpace || /[\d)\]]/.test(nearest) || isTargetSlot || isInCompound) {
           out += symbol
           i += cjk.length
           matched = true
@@ -616,6 +621,18 @@ export function buildEngine(): Engine {
 
   /** 注册中文古制单位（里/丈/斤/时辰/亩…）—— UCUM 不管这些，必须自己来。 */
   registerCjkUnits(math)
+  /**
+   * 额外单位：mathjs 没有 AU 与石油桶。
+   *
+   * 用 createUnit 的常量定义（不是可执行代码），与中文古制单位同一机制。
+   */
+  try {
+    math.createUnit('AU', '149597870700 m')
+    math.createUnit('barrel', '0.158987294928 m3')
+    math.createUnit('bbl', '0.158987294928 m3')
+  } catch {
+    /* 已存在/注册失败都不致命 */
+  }
   /**
    * ## 注册矩阵扩展函数
    *

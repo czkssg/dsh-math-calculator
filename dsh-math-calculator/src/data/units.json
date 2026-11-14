@@ -4159,6 +4159,18 @@
    "factor": 1.6666666666666667e-8,
    "category": "science",
    "note": "1 U = 1 µmol/min = 10⁻⁶ mol / 60 s ≈ 1.6666666666666667×10⁻⁸ kat。源：NC-IUB 酶单位定义 / ISO 18153"
+  },
+  {
+   "name": "barrel",
+   "aliases": [
+    "桶",
+    "石油桶",
+    "bbl",
+    "barrels"
+   ],
+   "dimension": "volume",
+   "factor": 0.158987294928,
+   "note": "石油桶（反馈报告补）"
   }
  ],
  "ANGLE_UNITS": [
