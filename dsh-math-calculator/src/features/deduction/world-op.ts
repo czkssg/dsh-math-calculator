@@ -73,8 +73,9 @@ const NUMERIC_FIELDS: Array<{ key: keyof WorldParams; min?: number; max?: number
   { key: 'starTemp', min: 1000, label: 'starTemp（K）' },
   { key: 'orbitAU', min: 0.001, label: 'orbitAU（AU）' },
   { key: 'eccentricity', min: 0, max: 0.95, label: 'eccentricity（0–0.95）' },
-  { key: 'planetMass', min: 0.001, label: 'planetMass（地球质量）' },
-  { key: 'planetRadius', min: 0.001, label: 'planetRadius（地球半径）' },
+  /** 下限放到 1e-6：小行星/矮行星（冥王星约 0.0022）也要能建模。 */
+  { key: 'planetMass', min: 1e-6, label: 'planetMass（地球质量，1e-6 起）' },
+  { key: 'planetRadius', min: 1e-4, label: 'planetRadius（地球半径，1e-4 起）' },
   { key: 'rotationHours', min: 0.01, label: 'rotationHours（小时）' },
   { key: 'obliquityDeg', min: 0, max: 90, label: 'obliquityDeg（0–90 度）' },
   { key: 'albedo', min: 0, max: 1, label: 'albedo（0–1）' },

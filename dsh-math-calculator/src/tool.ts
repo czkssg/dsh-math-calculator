@@ -271,7 +271,7 @@ export const TOOL_NAME = 'math_execute'
  * 3. 其它（含 auto）→ 老入口；
  * 4. 任何异常都翻译成结构化错误（不吞）。
  */
-export const mathExecuteTool = defineTool({
+const baseTool = defineTool({
   name: TOOL_NAME,
   description: TOOL_DESCRIPTION,
   parameters: PARAMETER_SPEC,
@@ -366,8 +366,11 @@ export const mathExecuteTool = defineTool({
             ...(typeof (error as { hint?: unknown }).hint === 'string' ? { hint: (error as { hint: string }).hint } : {}),
           }
         : null
+      const rawMessage = error instanceof Error ? error.message : String(error)
+      /** 语法错误不能当 internal：mathjs 的 Value expected / Unexpected 都是输入问题。 */
+      const syntaxLike = /value expected|syntax error|unexpected|unexpected end of expression|parenthesis/i.test(rawMessage)
       const translated = direct ?? (errorTranslator !== null ? errorTranslator(error, 'internal', typeof args['expression'] === 'string' ? (args['expression'] as string) : '') : null)
-      const type = translated?.type ?? 'internal'
+      const type = translated?.type ?? (syntaxLike ? 'syntax' : 'internal')
       const message = translated?.message ?? (error instanceof Error ? error.message : String(error))
       const hint = translated?.hint
       return {
@@ -383,3 +386,31 @@ export const mathExecuteTool = defineTool({
     }
   },
 })
+
+/**
+ * 工具导出：包一层，把 schema 校验错误也转成结构化结果。
+ *
+ * 不包的话，`operation` 不在 enum 里时宿主收到的是 **THROW**，
+ * 反馈报告里「73% 错误不可解析」有一类就是这种。
+ */
+export const mathExecuteTool = {
+  ...baseTool,
+  execute: async (args: unknown, ctx?: unknown): Promise<MathResult> => {
+    try {
+      return (await (baseTool as { execute: (a: unknown, c?: unknown) => Promise<MathResult> }).execute(args, ctx)) as MathResult
+    } catch (error) {
+      const name = error !== null && typeof error === 'object' ? (error as { name?: string }).name : ''
+      const code = error !== null && typeof error === 'object' ? (error as { code?: string }).code : ''
+      if (name !== 'ToolArgsError' && code !== 'INVALID_ARGS') throw error
+      const message = error instanceof Error ? error.message : String(error)
+      return {
+        ok: false,
+        operation: 'unknown',
+        input: '',
+        result: '错误[invalid_argument]: ' + message,
+        precision: 64,
+        error: { type: 'invalid_argument', message, hint: '参数名或类型不对；operation 必须是已迁移的值（用 help 查），参数类型见工具 schema。' },
+      }
+    }
+  },
+}

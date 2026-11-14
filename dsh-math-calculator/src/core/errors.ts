@@ -203,6 +203,11 @@ export function normalizeError(error: unknown, source?: string): CalcError {
     return new CalcError('non_finite', `除以零${where}`, '检查分母是否可能取到 0。')
   }
 
+  /** 其余语法类提示（mathjs 的 Value expected / Unexpected / 括号不配对）→ syntax。 */
+  if (/value expected|unexpected|parenthesis|missing|end of expression|invalid character/i.test(raw)) {
+    return new CalcError('syntax', `表达式语法错${where}（原文：${raw}）`, '检查括号配对、运算符是否连续、函数名是否拼错。')
+  }
+
   /** 其余归 internal，但**保留原文** —— 吞掉信息会让排查更难。 */
   return new CalcError(
     'internal',
