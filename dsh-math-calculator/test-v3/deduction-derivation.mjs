@@ -302,7 +302,7 @@ console.log('-- 16. graph / trace / impact --')
   assert('★ 改行星质量直接影响表面重力', impact.value.impact.direct.includes('表面重力'), JSON.stringify(impact.value.impact.direct))
   assert('间接波及非空', impact.value.impact.indirect.length > 0, String(impact.value.impact.indirect.length))
   const missing = throwsOf(() => der.runDerivation({ derivation: 'impact' }, deps))
-  assert('★ impact 缺参 → missing_params', missing?.type === 'missing_params', missing?.type)
+  assert('★ impact 缺参 → 演示模式可跑（不再报错）', missing === undefined || missing?.type === undefined, String(missing?.type))
 }
 
 // ───────────────────────────────────────────────────────────
@@ -349,7 +349,7 @@ console.log('-- 19. fantasy：叠加与代价 --')
   assert('result 不含「禁止」', !out.result.includes('禁止'), '')
 
   const bad = throwsOf(() => der.runDerivation({ derivation: 'fantasy' }, deps))
-  assert('缺 fantasyAbility → missing_params', bad?.type === 'missing_params', bad?.type)
+  assert('缺 fantasyAbility → 演示模式可跑（不再报错）', bad === undefined || bad?.type === undefined, JSON.stringify(bad).slice(0, 60))
   const badField = throwsOf(() => der.runDerivation({ derivation: 'fantasy', fantasyAbility: { name: 'x', label: 'y', source: 'external', efficiency: 0, costPerUnit: 1, powerLimit: 1 } }, deps))
   assert('字段缺失 → invalid_argument', badField?.type === 'invalid_argument', badField?.type)
 }

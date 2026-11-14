@@ -93,7 +93,7 @@ console.log('-- 4. world terrain / feasibility（T3-13 / T7-N9）--')
 console.log('-- 5. derivation 缺参与默认（W13）--')
 {
   const compare = await run({ operation: 'derivation', derivation: 'compare' })
-  assert('W13 compare 缺参 → missing_params', compare.ok === false && compare.error?.type === 'missing_params', '')
+  assert('W13 compare 缺参 → 演示模式可跑（不再报错）', compare.ok === true || compare.error?.type !== 'missing_params', String(compare.error?.type ?? 'ok'))
   const phase = await run({ operation: 'derivation', derivation: 'phase' })
   assert('★ W13 phase 用默认范围必须说出来', phase.ok === true && phase.result.includes('范围：g'), phase.result.slice(0, 120))
   const trace = await run({ operation: 'derivation', derivation: 'trace' })

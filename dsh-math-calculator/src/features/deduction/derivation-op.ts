@@ -57,7 +57,7 @@ import { estimateTimeline, estimatePhase, estimateBackSolve, estimateSweep, rend
 import { buildWhitepaper, buildPromptCard, renderWhitepaper, renderPromptCard } from './whitepaper.js'
 import { checkFields, computeCost, overlay, renderFantasy, type FantasyAbility } from './fantasy-layer.js'
 import { runCivilization } from './civilization.js'
-import { archiveVersion, compareVersions, readArchiveInput, renderCompare, renderHistory, type ArchiveVersion } from './derivation-archive.js'
+import { archiveVersion, compareVersions, readArchiveInput, renderCompare, renderHistory, snapshotOf, type ArchiveVersion } from './derivation-archive.js'
 import { affectedBy, checkInheritance, linkInherit, renderInherit, type InheritLink } from './inherit.js'
 import { loadArchiveFile, saveArchiveFile, loadInheritFile, saveInheritFile } from '../../io/archive-store.js'
 
@@ -471,14 +471,19 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
   } else if (sub === 'backSolve') {
     const anchorId = typeof input['anchor'] === 'string' ? input['anchor'].trim() : ''
     const anchorValue = typeof input['anchorValue'] === 'number' && Number.isFinite(input['anchorValue']) ? input['anchorValue'] : 0
-    if (anchorId === '' || anchorValue <= 0) {
-      throw new CalcError(
-        'missing_params',
-        'derivation 子命令 backSolve 缺少必需参数',
-        '需要 anchor（锚点 id）与 anchorValue（正数）。锚点清单见 derivation="anchors"。' +
-          '可复制的调用：' + JSON.stringify({ operation: 'derivation', derivation: 'backSolve', anchor: 'creatureHeight', anchorValue: 50 }) +
-          '。可用 anchor：' + ANCHORS.map((anchor) => anchor.kind).join(' / ') + '。',
-      )
+    if (anchorId === '') {
+      /** 演示模式：没给锚点就列清单 + 用第一个锚点演示，不报错。 */
+      lines.push('═══ 可反推的叙事锚点（backSolve 演示）═══', '')
+      lines.push('  锚点 id              名称                单位        提示')
+      for (const anchor of ANCHORS) lines.push('  ' + anchor.kind.padEnd(22) + anchor.label.padEnd(20) + anchor.unit.padEnd(12) + anchor.hint)
+      lines.push('', '  演示：用 creatureHeight = 50 反推；要算别的请传 anchor + anchorValue。')
+      value['anchors'] = ANCHORS
+      const demo = solveAnchor(ANCHORS[0].kind, 50, (input['world'] ?? {}) as Record<string, unknown>, { constants: deps.constants, starClasses: deps.starClasses })
+      lines.push('', renderBackSolve(demo))
+      value['solution'] = demo
+    } else {
+    if (anchorValue <= 0) {
+      throw new CalcError('missing_params', 'backSolve 需要 anchorValue（正数）', '例如 ' + JSON.stringify({ operation: 'derivation', derivation: 'backSolve', anchor: anchorId, anchorValue: 50 }) + '。')
     }
     if (!ANCHORS.some((anchor) => anchor.kind === anchorId)) {
       throw new CalcError(
@@ -491,6 +496,7 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     const solution = solveAnchor(anchorId as AnchorKind, anchorValue, worldParams, { constants: deps.constants, starClasses: deps.starClasses })
     lines.push(renderBackSolve(solution))
     value['solution'] = solution
+    }
   } else if (sub === 'heatmap') {
     const massValues = linspace(0.2, 5, 9)
     const orbitValues = linspace(0.5, 2.5, 9)
@@ -553,18 +559,24 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     const edges = buildDependencyGraph()
     const names = [...allNodeNames(edges)].sort()
     if (target === '') {
-      throw new CalcError(
-        'missing_params',
-        'derivation 子命令 impact 缺少 traceTarget（要改的量名）',
-        '可查的量共 ' + names.length + ' 个，前 12 个：' + names.slice(0, 12).join(' · ') + '。完整清单用 derivation="trace"。',
-      )
-    }
+      /** 演示模式：列可查量并演示第一个。 */
+      lines.push('═══ 可查影响的量（共 ' + names.length + ' 个）═══', '')
+      for (let index = 0; index < names.length; index += 3) lines.push('  ' + names.slice(index, index + 3).map((name) => name.padEnd(22)).join(''))
+      lines.push('', '  演示：查第一个量「' + (names[0] ?? '') + '」的影响面；要查别的请传 traceTarget。')
+      if (names.length > 0) {
+        const demo = impactOf(names[0], edges)
+        lines.push('', renderImpact(names[0], demo))
+        value['impact'] = demo
+      }
+      value['nodes'] = names
+    } else {
     if (!names.includes(target)) {
       throw new CalcError('unknown_symbol', '依赖图里没有「' + target + '」', '可查的量：' + names.slice(0, 20).join(' · ') + (names.length > 20 ? ' …' : '') + '。')
     }
     const result = impactOf(target, edges)
     lines.push(renderImpact(target, result))
     value['impact'] = result
+    }
   } else if (sub === 'cost') {
     const kind = typeof input['costKind'] === 'string' ? input['costKind'] : 'timeline'
     let estimate
@@ -593,13 +605,16 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
   } else if (sub === 'fantasy') {
     const raw = input['fantasyAbility']
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-      throw new CalcError(
-        'missing_params',
-        'derivation 子命令 fantasy 缺少 fantasyAbility（幻想能力定义）',
-        '需要 { name, label, source, efficiency, costPerUnit, powerLimit, boosts, meaning }。' +
-          '三种常见来源：metabolism（自身代谢）/ ambient-field（环境场）/ artifact（器物）/ external（外部注入）。',
-      )
-    }
+      /** 演示模式：用「代谢驱动的短距瞬移」示例，不报错。 */
+      const demoAbility = { name: 'blink', label: '短距瞬移', source: 'metabolism', efficiency: 0.1, costPerUnit: 2, powerLimit: 50, boosts: { speed: 3 }, meaning: '以自身代谢为代价的短距瞬移' } as unknown as FantasyAbility
+      lines.push('═══ 幻想能力核算（演示模式）═══', '')
+      lines.push('  未给 fantasyAbility，用示例：代谢驱动的短距瞬移（eff 0.1 / 限 50 kW）')
+      lines.push('  字段：{ name, label, source, efficiency, costPerUnit, powerLimit, boosts, meaning }', '')
+      lines.push(renderFantasy(demoAbility, 1000, 100, 1.8))
+      value['fantasy'] = overlay(100, demoAbility, 1000)
+      value['cost'] = computeCost(overlay(100, demoAbility, 1000).fantasy * demoAbility.costPerUnit, 1.8)
+      value['demo'] = true
+    } else {
     const ability = raw as unknown as FantasyAbility
     const problems = checkFields(ability)
     if (problems.length > 0) {
@@ -615,6 +630,7 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     lines.push(renderFantasy(ability, demand, physical, bodyArea))
     value['fantasy'] = overlay(physical, ability, demand)
     value['cost'] = computeCost(overlay(physical, ability, demand).fantasy * ability.costPerUnit, bodyArea)
+    }
   } else if (sub === 'civilization') {
     const worldParams = (input['world'] ?? {}) as Record<string, unknown>
     const civ = runCivilization(worldParams)
@@ -670,19 +686,49 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     const from = typeof input['compareFrom'] === 'string' ? input['compareFrom'] : ''
     if (from === '') {
       const known = book.versions.map((item) => item.version)
-      throw new CalcError(
-        'missing_params',
-        'derivation 子命令 compare 缺少 compareFrom（起始版本）',
-        known.length === 0
-          ? '这个工作区还没有归档版本。先存一版：' + JSON.stringify({ operation: 'derivation', derivation: 'archive' }) + '，改点东西后再存一版，然后对比。'
-          : '已有版本：' + known.join(' · ') + '。示例：' + JSON.stringify({ operation: 'derivation', derivation: 'compare', compareFrom: known[0] }),
-      )
-    }
+      if (known.length >= 2) {
+        throw new CalcError(
+          'missing_params',
+          'derivation 子命令 compare 缺少 compareFrom（起始版本）',
+          '已有版本：' + known.join(' · ') + '。示例：' + JSON.stringify({ operation: 'derivation', derivation: 'compare', compareFrom: known[0] }),
+        )
+      }
+      /** 演示模式：没有两个归档版本时，用两个示例版本演示对比。 */
+      const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+      const now = new Date().toISOString()
+      const demoA = { version: 'v-demo-1', at: now, ...snapshotOf(worldParams, { constants: deps.constants, starClasses: deps.starClasses }) }
+      const demoB = { version: 'v-demo-2', at: now, ...snapshotOf({ ...worldParams, planetMass: 1.2 }, { constants: deps.constants, starClasses: deps.starClasses }) }
+      const demoResult = compareVersions([demoA, demoB], 'v-demo-1', 'v-demo-2')
+      lines.push('═══ 版本对比（演示模式）═══', '')
+      lines.push('  工作区「' + workspace + '」没有两个归档版本，用示例版本演示：v-demo-1（默认）vs v-demo-2（行星质量 1.2×）。')
+      lines.push('  真实对比：先 derivation="archive" 存两版，再 compare。', '')
+      lines.push(renderCompare(demoResult))
+      value['diff'] = demoResult
+      value['demo'] = true
+    } else {
     const result = compareVersions(book.versions, from, typeof input['compareTo'] === 'string' ? input['compareTo'] : undefined)
     if (!result.ok) throw new CalcError('invalid_argument', result.message, '用 derivation="history" 查看已有版本。')
     lines.push(renderCompare(result))
     value['diff'] = result
+    }
   } else if (sub === 'diff') {
+    const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
+    const a = typeof input['diffA'] === 'string' ? input['diffA'] : ''
+    const b = typeof input['diffB'] === 'string' ? input['diffB'] : ''
+    if (a === '' || b === '') {
+      /** 演示模式：用两个示例版本演示差异。 */
+      const worldParams = (input['world'] ?? {}) as Record<string, unknown>
+      const now = new Date().toISOString()
+      const demoA = { version: 'v-demo-1', at: now, ...snapshotOf(worldParams, { constants: deps.constants, starClasses: deps.starClasses }) }
+      const demoB = { version: 'v-demo-2', at: now, ...snapshotOf({ ...worldParams, planetMass: 1.2 }, { constants: deps.constants, starClasses: deps.starClasses }) }
+      const demoResult = compareVersions([demoA, demoB], 'v-demo-1', 'v-demo-2')
+      lines.push('═══ 版本差异（演示模式）═══', '')
+      lines.push('  未给 diffA/diffB，用示例版本演示：v-demo-1（默认）vs v-demo-2（行星质量 1.2×）。')
+      lines.push('  真实对比：先 derivation="archive" 存两版，再 diff。', '')
+      lines.push(renderCompare(demoResult))
+      value['diff'] = demoResult
+      value['demo'] = true
+    } else {
     const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
     const book = loadArchiveFile<ArchiveVersion>(workspace)
     const aName = typeof input['diffA'] === 'string' ? input['diffA'].trim() : ''
@@ -699,6 +745,7 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     if (!result.ok) throw new CalcError('invalid_argument', result.message, '用 derivation="history" 查看已有版本。')
     lines.push(renderCompare(result))
     value['diff'] = result
+    }
   } else if (sub === 'inherit') {
     const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
     const store = loadInheritFile<InheritLink>(workspace)

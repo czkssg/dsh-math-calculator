@@ -213,7 +213,7 @@ const PARAMETER_SPEC = {
   chain: { type: 'object', additionalProperties: true, description: '链条传导 {stages,raw}' },
   threshold: { type: 'object', additionalProperties: true, description: '阈值判断 {value,thresholds}' },
   scaling: { type: 'object', additionalProperties: true, description: '缩放判定 {law,from,to}' },
-  anchor: { type: 'object', additionalProperties: true, description: '基准锚定 {anchor,anchors}' },
+  anchor: { type: 'json', description: '锚定：anchor op 传 {anchor,anchors} 对象；derivation backSolve 传锚点 id（字符串）' },
   text: { type: 'string', description: 'extract_numbers / units_audit 的正文' },
   keepNoise: { type: 'boolean', description: '保留噪音行' },
   limit: { type: 'integer', description: '最多抽多少条' },
