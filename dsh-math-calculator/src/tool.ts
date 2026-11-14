@@ -20,6 +20,7 @@ import { TOOL_DESCRIPTION } from './awareness.js'
 import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
+import { entryFromResult, writeRunLog } from './core/run-log.js'
 
 /** JSON 值（与老入口的 MathResult.value 同构）。 */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
@@ -396,14 +397,16 @@ const baseTool = defineTool({
 export const mathExecuteTool = {
   ...baseTool,
   execute: async (args: unknown, ctx?: unknown): Promise<MathResult> => {
+    const startedAt = Date.now()
+    let result: MathResult
     try {
-      return (await (baseTool as { execute: (a: unknown, c?: unknown) => Promise<MathResult> }).execute(args, ctx)) as MathResult
+      result = (await (baseTool as { execute: (a: unknown, c?: unknown) => Promise<MathResult> }).execute(args, ctx)) as MathResult
     } catch (error) {
       const name = error !== null && typeof error === 'object' ? (error as { name?: string }).name : ''
       const code = error !== null && typeof error === 'object' ? (error as { code?: string }).code : ''
       if (name !== 'ToolArgsError' && code !== 'INVALID_ARGS') throw error
       const message = error instanceof Error ? error.message : String(error)
-      return {
+      result = {
         ok: false,
         operation: 'unknown',
         input: '',
@@ -412,5 +415,12 @@ export const mathExecuteTool = {
         error: { type: 'invalid_argument', message, hint: '参数名或类型不对；operation 必须是已迁移的值（用 help 查），参数类型见工具 schema。' },
       }
     }
+    /** 运行日志：成功与失败都记一条（旁路，失败不影响返回）。 */
+    try {
+      writeRunLog(entryFromResult((args ?? {}) as Record<string, unknown>, result, startedAt))
+    } catch {
+      /* 日志失败静默 */
+    }
+    return result
   },
 }
