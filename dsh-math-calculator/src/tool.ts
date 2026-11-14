@@ -19,7 +19,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { TOOL_DESCRIPTION } from './awareness.js'
 import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
-import { tryUcumExpression } from './core/ucum.js'
+import { tryUnitPipeline } from './core/unit-pipeline.js'
 
 /** JSON 值（与老入口的 MathResult.value 同构）。 */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
@@ -346,16 +346,16 @@ export const mathExecuteTool = defineTool({
        * 在出口统一拦一次，比在每层各放一次稳。
        */
       const expressionText = typeof args['expression'] === 'string' ? (args['expression'] as string) : ''
-      const ucum = expressionText !== '' ? tryUcumExpression(expressionText) : null
-      if (ucum !== null) {
+      const pipeline = expressionText !== '' ? tryUnitPipeline(expressionText) : null
+      if (pipeline !== null && pipeline.ok && pipeline.value !== null) {
         return {
           ok: true,
           operation,
           input: expressionText,
-          result: ucum.text,
+          result: pipeline.text,
           precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
-          value: ucum.value,
-          notice: 'mathjs 不认这个复合单位，已用 UCUM 换算（源 ' + ucum.from + ' → 目标 ' + ucum.to + '）。',
+          value: pipeline.value,
+          notice: '单位管道：' + pipeline.message + '（' + pipeline.steps.join('；') + '）',
         }
       }
       const typed = error !== null && typeof error === 'object' && typeof (error as { type?: unknown }).type === 'string'

@@ -41,7 +41,8 @@
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { tryUcumExpression } from '../../core/ucum.js'
-import { toModernExpression, tryBridgeConversion } from '../../core/unit-bridge.js'
+import { toModernExpression } from '../../core/unit-bridge.js'
+import { tryUnitPipeline } from '../../core/unit-pipeline.js'
 import {
   fmtNumber,
   trimDecimal,
@@ -307,10 +308,15 @@ export function evaluateOne(
      * 非现代单位桥：把 `里/时辰` 这类换成 SI 再算一遍。
      * 这是用户要的「非现代 → 现代 → 非现代」链的第一段。
      */
-    /** 反向/纯桥接换算（`1 kg to 担`、`1 担 to kg`）先直接算。 */
-    const direct = tryBridgeConversion(expression)
-    if (direct !== null && direct.text !== '') {
-      return { result: direct.text, value: direct.value, ok: true, notice: '已用非现代单位桥换算（' + direct.from + ' → ' + direct.to + '）。' }
+    /** 统一单位管道：现代↔现代走 UCUM，非现代先桥接成 SI 再 UCUM。 */
+    const pipeline = tryUnitPipeline(expression)
+    if (pipeline !== null && pipeline.ok && pipeline.value !== null) {
+      return {
+        result: pipeline.text,
+        value: pipeline.value,
+        ok: true,
+        notice: '单位管道：' + pipeline.message + '（' + pipeline.steps.join('；') + '）',
+      }
     }
     const bridged = toModernExpression(expression)
     if (bridged.replaced.length > 0) {

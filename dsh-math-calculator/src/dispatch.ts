@@ -55,7 +55,7 @@ import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
 import { runDocument } from './features/document/pdf.js'
-import { tryUcumExpression } from './core/ucum.js'
+import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -265,10 +265,10 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       try {
         single = evaluateOne(buildEngine(), expression, options, scope as never)
       } catch (error) {
-        /** 复合单位：mathjs 不认时交给 UCUM（NLM 实现）。 */
-        const ucum = tryUcumExpression(expression)
-        if (ucum !== null) {
-          return toOutcome({ result: ucum.text, value: ucum.value, ok: true, notice: 'mathjs 不认这个复合单位，已用 UCUM 换算（源 ' + ucum.from + ' → 目标 ' + ucum.to + '）。' })
+        /** 统一单位管道（现代↔现代走 UCUM，非现代先桥接）。 */
+        const pipeline = tryUnitPipeline(expression)
+        if (pipeline !== null && pipeline.ok && pipeline.value !== null) {
+          return toOutcome({ result: pipeline.text, value: pipeline.value, ok: true, notice: '单位管道：' + pipeline.message + '（' + pipeline.steps.join('；') + '）' })
         }
         throw error
       }
