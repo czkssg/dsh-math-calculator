@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validateUcumUnit } from './ucum.js'
+import { convertViaUcum } from './ucum-registry.js'
 
 /** 别名条目。 */
 export interface UnitAliasEntry {
@@ -99,6 +100,12 @@ export function convertUnits(value: number, from: string, to: string): UnitPipel
   if (fromDef !== undefined && toDef !== undefined) {
     if (fromDef.dimension !== toDef.dimension && fromDef.dimension !== 'other' && toDef.dimension !== 'other') {
       return { ok: false, value: null, text: '', from, to, fromKind, toKind, steps, message: '量纲不同：' + fromDef.dimension + ' vs ' + toDef.dimension }
+    }
+    /** 优先借 UCUM 引擎（本地单位已注册进 UnitTables），失败再按索引因子相除。 */
+    const viaUcum = convertViaUcum(value, from, to)
+    if (viaUcum !== null) {
+      steps.push('UCUM 引擎（含注册的本地单位）')
+      return { ok: true, value: viaUcum, text: String(viaUcum) + ' ' + to, from, to, fromKind, toKind, steps, message: 'UCUM 引擎换算' }
     }
     const converted = (value * fromDef.factor) / toDef.factor
     steps.push(from + '（' + fromDef.source + '，×' + fromDef.factor + '）', to + '（' + toDef.source + '，÷' + toDef.factor + '）')
