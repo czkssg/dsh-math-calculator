@@ -54,6 +54,7 @@ import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
+import { runDocument } from './features/document/pdf.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
@@ -169,6 +170,9 @@ export function dispatchNew(operation: string, args: Record<string, unknown>): D
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'document':
+      return runDocument((args['document'] ?? args) as never) as never
 
     case 'impact': {
       /** 影响面分析：老的独立 operation，v3 里以 derivation:impact 子命令实现。 */
@@ -674,5 +678,7 @@ export const MIGRATED_OPERATIONS = [
   /** 老 operation，v3 以 derivation:impact 实现。 */
   'impact',
   'topology',
+  /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
+  'document',
   'auto',
 ] as const

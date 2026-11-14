@@ -102,7 +102,7 @@ console.log('-- 5. 对账图谱五件套 --')
 
 console.log('-- 6. 迁移清单 --')
 {
-  assert('★ 全部 47 个 operation 已迁移', dispatch.MIGRATED_OPERATIONS.length === 47, String(dispatch.MIGRATED_OPERATIONS.length))
+  assert('★ 全部 48 个 operation 已迁移', dispatch.MIGRATED_OPERATIONS.length === 48, String(dispatch.MIGRATED_OPERATIONS.length))
   const rest = ['constants', 'workspace', 'quantities', 'formula-table', 'custom', 'balance', 'help']
   for (const op of rest) {
     assert('收尾批 ' + op + ' 已在迁移清单', dispatch.MIGRATED_OPERATIONS.includes(op), '')

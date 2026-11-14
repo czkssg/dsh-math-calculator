@@ -186,6 +186,10 @@ const PARAMETER_SPEC = {
   bodyFactor: { type: 'number', description: '常数倍数' },
   quickFeasible: { type: 'object', additionalProperties: true, description: '一句话可行性 {claim,world?}' },
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
+  document: {
+    type: 'json',
+    description: '文档：{action:"extract|tables|numbers", path:"某.pdf", text?}——PDF 文本/表格/数字台账（不做 OCR）',
+  },
   topology: {
     type: 'json',
     description: '拓扑：{action:"model|route|sightline|reachable|structure|rules|org|terrain|ship", nodes, edges, from, to, mode, maxKm, units, compartments, passages, entry, building, vehicle, rules}',
@@ -286,7 +290,8 @@ export const mathExecuteTool = defineTool({
         : operation
     try {
       {
-        const migrated = dispatchNew(operation, args)
+        /** document 是异步的（PDF 解析）；同步实现返回对象，await 解开两者都兼容。 */
+        const migrated = await Promise.resolve(dispatchNew(operation, args))
         if (migrated !== null) {
           return {
             ok: true,
