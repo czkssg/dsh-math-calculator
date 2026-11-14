@@ -22,7 +22,7 @@ function assert(name, cond, detail) {
 console.log('-- 1. 注册规模 --')
 {
   const result = regMod.registerLocalUnits()
-  assert('★ 注册 ≥ 650 个本地单位', result.registered >= 650, String(result.registered))
+  assert('★ 注册 ≥ 800 个本地单位（含古代）', result.registered >= 800, String(result.registered))
   assert('注册错误可控（< 60）', result.errors.length < 60, String(result.errors.length))
 }
 
@@ -39,6 +39,19 @@ console.log('-- 2. UCUM 引擎直接换算本地单位 --')
   assert('★ 蒲式耳 → L = 35.239', bushel !== null && Math.abs(bushel - 35.239) < 0.01, String(bushel))
   const versta = regMod.convertViaUcum(1, '俄里', 'm')
   assert('★ 俄里 → m = 1066.8', versta !== null && Math.abs(versta - 1066.8) < 0.01, String(versta))
+  /** 古代单位（本轮穷举 201 条）。 */
+  const pes = regMod.convertViaUcum(1, 'pes', 'm')
+  assert('★ 罗马尺 pes → 0.296 m', pes !== null && Math.abs(pes - 0.296) < 1e-9, String(pes))
+  const stade = regMod.convertViaUcum(1, 'stade', 'm')
+  assert('★ 希腊斯塔德 → 185 m', stade !== null && Math.abs(stade - 185) < 1e-9, String(stade))
+  const shekel = regMod.convertViaUcum(1, '舍客勒', 'g')
+  assert('★ 巴比伦舍客勒 → 8.33 g', shekel !== null && Math.abs(shekel - 8.33) < 1e-9, String(shekel))
+  const hanchi = regMod.convertViaUcum(1, '汉尺', 'cm')
+  assert('★ 汉尺 → 23.1 cm', hanchi !== null && Math.abs(hanchi - 23.1) < 1e-9, String(hanchi))
+  const tangjin = regMod.convertViaUcum(1, '唐斤', 'g')
+  assert('★ 唐斤 → 596 g', tangjin !== null && Math.abs(tangjin - 596) < 1e-9, String(tangjin))
+  const sho = regMod.convertViaUcum(1, '日升', 'L')
+  assert('★ 日升 → 1.8039 L', sho !== null && Math.abs(sho - 1.8039) < 0.001, String(sho))
 }
 
 console.log('-- 3. 管道：UCUM 引擎优先，体积回退索引 --')

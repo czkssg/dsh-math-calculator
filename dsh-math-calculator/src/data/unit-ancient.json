@@ -1,0 +1,2386 @@
+{
+ "generatedAt": "2026-11-14T17:44:44.726Z",
+ "count": 201,
+ "units": [
+  {
+   "name": "丝_长度",
+   "aliases": [
+    "市丝"
+   ],
+   "factor": 0.000032,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市丝 = 1/10 市毫 ≈ 32 µm"
+  },
+  {
+   "name": "忽_长度",
+   "aliases": [
+    "市忽"
+   ],
+   "factor": 0.0000032,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市忽 = 1/10 市丝 ≈ 3.2 µm（长度最小单位）"
+  },
+  {
+   "name": "咫",
+   "aliases": [],
+   "factor": 0.256,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "周制八寸为一咫 ≈ 25.6 cm（「咫尺天涯」的咫）"
+  },
+  {
+   "name": "庹",
+   "aliases": [],
+   "factor": 1.6,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "两臂平伸的长度 ≈ 1.6 m（口语量绳用）"
+  },
+  {
+   "name": "市尺_古",
+   "aliases": [
+    "营造尺"
+   ],
+   "factor": 0.32,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "明清营造尺 ≈ 32 cm（与市尺数值相同，但用途是建筑）"
+  },
+  {
+   "name": "汉尺",
+   "aliases": [],
+   "factor": 0.231,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一尺 ≈ 23.1 cm（出土汉尺实测）"
+  },
+  {
+   "name": "商尺",
+   "aliases": [],
+   "factor": 0.158,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "商制一尺 ≈ 15.8 cm"
+  },
+  {
+   "name": "周尺",
+   "aliases": [],
+   "factor": 0.199,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "周制一尺 ≈ 19.9 cm"
+  },
+  {
+   "name": "清里",
+   "aliases": [],
+   "factor": 576,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "清制一里 = 180 丈 ≈ 576 m（与市里 500 m 差 15%）"
+  },
+  {
+   "name": "周里",
+   "aliases": [],
+   "factor": 415.8,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "周制一里 = 300 步 ≈ 415.8 m"
+  },
+  {
+   "name": "丈_汉",
+   "aliases": [
+    "汉丈"
+   ],
+   "factor": 2.31,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一丈 = 10 汉尺 ≈ 2.31 m"
+  },
+  {
+   "name": "勺",
+   "aliases": [],
+   "factor": 0.00001,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市勺 = 1/10 市合 ≈ 10 mL"
+  },
+  {
+   "name": "撮",
+   "aliases": [],
+   "factor": 0.000001,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市撮 = 1/10 市勺 ≈ 1 mL（「一撮盐」）"
+  },
+  {
+   "name": "圭",
+   "aliases": [],
+   "factor": 1e-7,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市圭 = 1/10 市撮 ≈ 0.1 mL（容量最小单位）"
+  },
+  {
+   "name": "粟_容量",
+   "aliases": [
+    "市粟"
+   ],
+   "factor": 1e-8,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "一圭 = 10 粟，古制容量最小粒度"
+  },
+  {
+   "name": "龠",
+   "aliases": [],
+   "factor": 0.00005,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "古制一龠 = 半合 ≈ 50 mL（周礼量制基本单位）"
+  },
+  {
+   "name": "升_古",
+   "aliases": [
+    "汉升"
+   ],
+   "factor": 0.000198,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一升 ≈ 198 mL（出土汉量实测），与市升 1 L 差 5 倍"
+  },
+  {
+   "name": "斗_汉",
+   "aliases": [
+    "汉斗"
+   ],
+   "factor": 0.00198,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一斗 = 10 汉升 ≈ 1.98 L"
+  },
+  {
+   "name": "石_汉",
+   "aliases": [
+    "汉石"
+   ],
+   "factor": 0.0198,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一石 = 10 汉斗 ≈ 19.8 L"
+  },
+  {
+   "name": "毫_质量",
+   "aliases": [
+    "市毫质量"
+   ],
+   "factor": 5e-8,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市毫 = 1/10 市厘 = 0.05 mg"
+  },
+  {
+   "name": "丝_质量",
+   "aliases": [
+    "市丝质量"
+   ],
+   "factor": 5e-9,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市丝 = 1/10 市毫"
+  },
+  {
+   "name": "忽_质量",
+   "aliases": [
+    "市忽质量"
+   ],
+   "factor": 5e-10,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市忽 = 1/10 市丝（重量最小单位）"
+  },
+  {
+   "name": "镒",
+   "aliases": [],
+   "factor": 0.315,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "秦制二十两为一镒 ≈ 315 g（「黄金百镒」）"
+  },
+  {
+   "name": "汉斤",
+   "aliases": [],
+   "factor": 0.258,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一斤 = 16 汉两 ≈ 258 g（与市斤 500 g 差近一倍）"
+  },
+  {
+   "name": "汉两",
+   "aliases": [],
+   "factor": 0.016125,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "汉制一两 = 1/16 汉斤 ≈ 16.1 g"
+  },
+  {
+   "name": "清斤",
+   "aliases": [],
+   "factor": 0.5968,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "清制一斤 ≈ 596.8 g（库平制），比市斤重 19%"
+  },
+  {
+   "name": "库平两",
+   "aliases": [
+    "关平两"
+   ],
+   "factor": 0.037301,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "库平一两 ≈ 37.3 g，清代海关与国库用"
+  },
+  {
+   "name": "漕平两",
+   "aliases": [],
+   "factor": 0.036664,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "漕平一两 ≈ 36.66 g，漕运系统用（各地平砝不同）"
+  },
+  {
+   "name": "毫_面积",
+   "aliases": [
+    "市毫面积"
+   ],
+   "factor": 0.0666667,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "市毫 = 1/10 市厘面积 ≈ 0.067 m²"
+  },
+  {
+   "name": "弓",
+   "aliases": [
+    "步弓"
+   ],
+   "factor": 2.56,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "丈量单位，一弓 = 5 尺见方 = 25 平方尺 ≈ 2.56 m²"
+  },
+  {
+   "name": "方步",
+   "aliases": [],
+   "factor": 2.56,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "一平方步 ≈ 2.56 m²（「田若干步」的口径）"
+  },
+  {
+   "name": "畹",
+   "aliases": [],
+   "factor": 2020,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "古制三十亩为一畹（一说十二亩），差异大，仅作量级参考"
+  },
+  {
+   "name": "漏刻",
+   "aliases": [],
+   "factor": 864,
+   "si": "time",
+   "dimension": "time",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "百刻制中一刻的细分，约 14.4 分钟（与「刻」同源，此处按一昼夜 100 等分）"
+  },
+  {
+   "name": "一炷香细",
+   "aliases": [
+    "香"
+   ],
+   "factor": 1800,
+   "si": "time",
+   "dimension": "time",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "同「炷香」的口语简称"
+  },
+  {
+   "name": "一盅茶",
+   "aliases": [],
+   "factor": 900,
+   "si": "time",
+   "dimension": "time",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "约 15 分钟（无标准，与「盏茶」同族）"
+  },
+  {
+   "name": "周岁",
+   "aliases": [
+    "实岁"
+   ],
+   "factor": 31556926,
+   "si": "time",
+   "dimension": "time",
+   "civilization": "中国（历代）",
+   "era": "公元前 500 — 1911",
+   "note": "生日周期，按回归年计"
+  },
+  {
+   "name": "日尺",
+   "aliases": [
+    "曲尺",
+    "shaku"
+   ],
+   "factor": 0.30303,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日本尺 ≈ 30.3 cm（曲尺）。中国市尺 32 cm，差 5%"
+  },
+  {
+   "name": "日寸",
+   "aliases": [
+    "sun"
+   ],
+   "factor": 0.030303,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日寸 = 1/10 日尺 ≈ 3.03 cm"
+  },
+  {
+   "name": "日分",
+   "aliases": [
+    "bu_jp"
+   ],
+   "factor": 0.0030303,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日分 = 1/10 日寸 ≈ 3.03 mm"
+  },
+  {
+   "name": "日厘",
+   "aliases": [
+    "rin"
+   ],
+   "factor": 0.00030303,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日厘 = 1/10 日分"
+  },
+  {
+   "name": "间",
+   "aliases": [
+    "ken"
+   ],
+   "factor": 1.81818,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日本「间」= 6 日尺 ≈ 1.82 m（建筑开间模数）"
+  },
+  {
+   "name": "丈_日",
+   "aliases": [
+    "日丈"
+   ],
+   "factor": 3.0303,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日丈 = 10 日尺 ≈ 3.03 m"
+  },
+  {
+   "name": "鲸尺",
+   "aliases": [
+    "kujira-shaku"
+   ],
+   "factor": 0.378787,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "鲸尺 ≈ 37.9 cm（量布用，比曲尺长 25%）"
+  },
+  {
+   "name": "间_海",
+   "aliases": [
+    "hiro"
+   ],
+   "factor": 1.81818,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "航海用「寻」，同日间 ≈ 1.82 m（测水深）"
+  },
+  {
+   "name": "日反",
+   "aliases": [
+    "tan"
+   ],
+   "factor": 991.74,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日反 = 10 日亩 ≈ 992 m²（田地基本单位）"
+  },
+  {
+   "name": "日畝",
+   "aliases": [
+    "se"
+   ],
+   "factor": 99.174,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日亩 = 30 日坪 ≈ 99.2 m²（与中文「亩」差 6.7 倍）"
+  },
+  {
+   "name": "勺_日",
+   "aliases": [
+    "shao_jp"
+   ],
+   "factor": 0.000018039,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日勺 ≈ 18 mL（1/10 日合）"
+  },
+  {
+   "name": "日升量",
+   "aliases": [
+    "shō"
+   ],
+   "factor": 0.0018039,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日升 ≈ 1.80 L，中国市升 1 L，差 1.8 倍"
+  },
+  {
+   "name": "日斗量",
+   "aliases": [
+    "to"
+   ],
+   "factor": 0.018039,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日斗 = 10 日升 ≈ 18 L"
+  },
+  {
+   "name": "日匁",
+   "aliases": [
+    "monme"
+   ],
+   "factor": 0.00375,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日匁 = 3.75 g（1/1000 贯，贵金属与药）"
+  },
+  {
+   "name": "日斤_质量",
+   "aliases": [
+    "kin_jp"
+   ],
+   "factor": 0.6,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日斤 = 160 匁 ≈ 600 g（中国市斤 500 g，差 20%）"
+  },
+  {
+   "name": "贯",
+   "aliases": [
+    "kan_jp",
+    "贯目"
+   ],
+   "factor": 3.75,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日贯 = 1000 匁 = 3.75 kg（江户时代货币与重量两用）"
+  },
+  {
+   "name": "日両",
+   "aliases": [
+    "ryō_mass"
+   ],
+   "factor": 0.0375,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本（传统）",
+   "era": "1600 — 1924",
+   "note": "日两（重量）≈ 37.5 g（十匁）。注意与小判金币的「两」区分"
+  },
+  {
+   "name": "gaz",
+   "aliases": [
+    "加兹"
+   ],
+   "factor": 0.9144,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "莫卧儿加兹 ≈ 0.914 m（各统治期 0.7—1.0 m 不等）"
+  },
+  {
+   "name": "coss",
+   "aliases": [
+    "科斯"
+   ],
+   "factor": 1855,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "英属印度科斯 ≈ 1.855 km（与莫卧儿制不同）"
+  },
+  {
+   "name": "tola",
+   "aliases": [
+    "托拉"
+   ],
+   "factor": 0.0116638,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "印度托拉 ≈ 11.66 g（黄金与香料基本单位）"
+  },
+  {
+   "name": "seer",
+   "aliases": [
+    "锡尔"
+   ],
+   "factor": 0.9331,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "莫卧儿锡尔 ≈ 933 g（各邦 0.8—1.2 kg）"
+  },
+  {
+   "name": "maund",
+   "aliases": [
+    "芒德"
+   ],
+   "factor": 37.3242,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "英属印度芒德 = 40 锡尔 ≈ 37.3 kg（大宗货物）"
+  },
+  {
+   "name": "candy",
+   "aliases": [
+    "坎迪"
+   ],
+   "factor": 746.48,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "印度坎迪 = 20 芒德 ≈ 746 kg（棉花贸易）"
+  },
+  {
+   "name": "ser_ind",
+   "aliases": [
+    "印度升"
+   ],
+   "factor": 0.001041,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "印度容量单位 ≈ 1.04 L（各地差异大）"
+  },
+  {
+   "name": "bigha",
+   "aliases": [
+    "比加"
+   ],
+   "factor": 1337.8,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "印度比加 ≈ 1338 m²（各邦 1000—2500 m²，差异极大）"
+  },
+  {
+   "name": "katha",
+   "aliases": [
+    "卡塔"
+   ],
+   "factor": 66.89,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "印度（莫卧儿/英属）",
+   "era": "1526 — 1947",
+   "note": "1 卡塔 = 1/20 比加 ≈ 66.9 m²（孟加拉制）"
+  },
+  {
+   "name": "dhira",
+   "aliases": [
+    "迪拉",
+    "阿拉伯肘"
+   ],
+   "factor": 0.6496,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "阿拉伯肘 ≈ 65 cm（各学派 0.49—0.94 m，差异极大）"
+  },
+  {
+   "name": "farsakh",
+   "aliases": [
+    "法尔萨赫"
+   ],
+   "factor": 5544,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "波斯/阿拉伯「里」≈ 5.54 km（约 12000 肘）"
+  },
+  {
+   "name": "ratl",
+   "aliases": [
+    "拉特儿"
+   ],
+   "factor": 0.4375,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "阿拉伯磅 ≈ 437 g（巴格达制，各地 0.4—0.5 kg）"
+  },
+  {
+   "name": "dirham_mass",
+   "aliases": [
+    "迪拉姆重"
+   ],
+   "factor": 0.003125,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "伊斯兰迪拉姆（重量）≈ 3.125 g（与银币迪拉姆同源）"
+  },
+  {
+   "name": "qintar",
+   "aliases": [
+    "坎塔"
+   ],
+   "factor": 44.928,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "阿拉伯坎塔 = 100 拉特儿 ≈ 44.9 kg"
+  },
+  {
+   "name": "okka",
+   "aliases": [
+    "奥卡",
+    "奥斯曼欧克"
+   ],
+   "factor": 1.2829,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "奥斯曼欧克 ≈ 1.283 kg（100 德拉姆）"
+  },
+  {
+   "name": "dirhem_ott",
+   "aliases": [
+    "奥斯曼德拉姆"
+   ],
+   "factor": 0.003207,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "奥斯曼德拉姆 ≈ 3.21 g（欧克的 1/400）"
+  },
+  {
+   "name": "arshin_ott",
+   "aliases": [
+    "奥斯曼尺"
+   ],
+   "factor": 0.6503,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "阿拉伯/奥斯曼",
+   "era": "622 — 1922",
+   "note": "奥斯曼尺 ≈ 65 cm（与俄尺 71.1 cm 不同，容易混）"
+  },
+  {
+   "name": "sazhen",
+   "aliases": [
+    "沙绳",
+    "俄丈"
+   ],
+   "factor": 2.1336,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "俄丈 = 7 英尺 ≈ 2.134 m"
+  },
+  {
+   "name": "arshin",
+   "aliases": [
+    "阿尔申",
+    "俄尺"
+   ],
+   "factor": 0.7112,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "俄尺 = 16 维尔肖克 ≈ 71.1 cm"
+  },
+  {
+   "name": "vershok",
+   "aliases": [
+    "维尔肖克"
+   ],
+   "factor": 0.04445,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "1 维尔肖克 = 1/16 俄尺 ≈ 4.45 cm（量身高用）"
+  },
+  {
+   "name": "funt",
+   "aliases": [
+    "俄磅"
+   ],
+   "factor": 0.40951241,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "俄磅 ≈ 409.5 g，比国际磅重 9.7%"
+  },
+  {
+   "name": "zolotnik",
+   "aliases": [
+    "佐洛特尼克"
+   ],
+   "factor": 0.0042662,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "1 佐洛特尼克 = 1/96 俄磅 ≈ 4.27 g（金饰用）"
+  },
+  {
+   "name": "dolya",
+   "aliases": [
+    "多利亚"
+   ],
+   "factor": 0.000044429,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "1 多利亚 = 1/96 佐洛特尼克 ≈ 44.4 mg（最小单位）"
+  },
+  {
+   "name": "vedro",
+   "aliases": [
+    "维德罗"
+   ],
+   "factor": 0.012299,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "俄制液量单位 ≈ 12.3 L（一桶酒）"
+  },
+  {
+   "name": "shtof",
+   "aliases": [
+    "什托夫"
+   ],
+   "factor": 0.0012299,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "1 什托夫 = 1/10 维德罗 ≈ 1.23 L（伏特加瓶）"
+  },
+  {
+   "name": "charka",
+   "aliases": [
+    "恰尔卡"
+   ],
+   "factor": 0.00012299,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "沙俄",
+   "era": "1547 — 1917",
+   "note": "1 恰尔卡 = 1/100 维德罗 ≈ 123 mL（一杯酒）"
+  },
+  {
+   "name": "rhein_fuss",
+   "aliases": [
+    "莱茵尺"
+   ],
+   "factor": 0.3138,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士莱茵尺 ≈ 31.4 cm（1816 年定）"
+  },
+  {
+   "name": "rute",
+   "aliases": [
+    "鲁特"
+   ],
+   "factor": 3.766,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士路特 = 12 莱茵尺 ≈ 3.77 m（丈量用）"
+  },
+  {
+   "name": "meile",
+   "aliases": [
+    "德里"
+   ],
+   "factor": 7539.6,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士里 ≈ 7.54 km（比英制里长 4.7 倍）"
+  },
+  {
+   "name": "zoll_de",
+   "aliases": [
+    "德寸"
+   ],
+   "factor": 0.026154,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士寸 = 1/12 莱茵尺 ≈ 2.62 cm"
+  },
+  {
+   "name": "pfund_de",
+   "aliases": [
+    "德磅"
+   ],
+   "factor": 0.4676,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士磅 ≈ 467.6 g（各邦 460—510 g 不等）"
+  },
+  {
+   "name": "zentner",
+   "aliases": [
+    "德担"
+   ],
+   "factor": 51.4,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士担 = 110 德磅 ≈ 51.4 kg（一说 100 磅 = 46.8 kg）"
+  },
+  {
+   "name": "lot",
+   "aliases": [
+    "洛特"
+   ],
+   "factor": 0.014606,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "1 洛特 = 1/32 德磅 ≈ 14.6 g（药剂与贵金属）"
+  },
+  {
+   "name": "quint",
+   "aliases": [
+    "昆特"
+   ],
+   "factor": 0.014606,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "同洛特的旧写，各邦数值略异"
+  },
+  {
+   "name": "scheffel",
+   "aliases": [
+    "舍费尔"
+   ],
+   "factor": 0.054961,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "普鲁士谷量单位 ≈ 55 L（量谷物用）"
+  },
+  {
+   "name": "eimer",
+   "aliases": [
+    "艾默"
+   ],
+   "factor": 0.0687,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "德制液量单位 ≈ 68.7 L（各地 60—75 L）"
+  },
+  {
+   "name": "mass_de",
+   "aliases": [
+    "德马克"
+   ],
+   "factor": 0.2338,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "德意志（普鲁士）",
+   "era": "1816 — 1872",
+   "note": "德制马克（重量）≈ 233.8 g（铸币用）"
+  },
+  {
+   "name": "toise",
+   "aliases": [
+    "图瓦兹",
+    "法丈"
+   ],
+   "factor": 1.949,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法丈 ≈ 1.949 m（旧制长度基准）"
+  },
+  {
+   "name": "pied",
+   "aliases": [
+    "法尺"
+   ],
+   "factor": 0.32484,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法尺 = 1/6 法丈 ≈ 32.5 cm"
+  },
+  {
+   "name": "pouce",
+   "aliases": [
+    "法寸"
+   ],
+   "factor": 0.02707,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法寸 = 1/12 法尺 ≈ 2.71 cm"
+  },
+  {
+   "name": "ligne",
+   "aliases": [
+    "法分"
+   ],
+   "factor": 0.002256,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "1 法分 = 1/12 法寸 ≈ 2.26 mm（钟表游丝用）"
+  },
+  {
+   "name": "lieue",
+   "aliases": [
+    "法里"
+   ],
+   "factor": 4444.8,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法里 ≈ 4.44 km（旧制，各版本 3.9—4.7 km）"
+  },
+  {
+   "name": "livre",
+   "aliases": [
+    "法磅"
+   ],
+   "factor": 0.48950584,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法磅 ≈ 489.5 g（旧制常衡）"
+  },
+  {
+   "name": "once_fr",
+   "aliases": [
+    "法盎司"
+   ],
+   "factor": 0.030594,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法盎司 = 1/16 法磅 ≈ 30.6 g"
+  },
+  {
+   "name": "gros_fr",
+   "aliases": [
+    "格罗"
+   ],
+   "factor": 0.0038243,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "1 格罗 = 1/8 法盎司 ≈ 3.82 g"
+  },
+  {
+   "name": "quintal_fr",
+   "aliases": [
+    "法担"
+   ],
+   "factor": 48.9506,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法担 = 100 法磅 ≈ 49 kg"
+  },
+  {
+   "name": "boisseau",
+   "aliases": [
+    "布斯罗"
+   ],
+   "factor": 0.01297,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法制谷量 ≈ 13 L（巴黎口径）"
+  },
+  {
+   "name": "setier",
+   "aliases": [
+    "塞蒂耶"
+   ],
+   "factor": 0.1297,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "1 塞蒂耶 = 8 布斯罗 ≈ 130 L"
+  },
+  {
+   "name": "muid",
+   "aliases": [
+    "米伊"
+   ],
+   "factor": 0.268,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "法国旧制",
+   "era": "800 — 1799",
+   "note": "法制大桶 ≈ 268 L（酒桶口径）"
+  },
+  {
+   "name": "vara",
+   "aliases": [
+    "西尺"
+   ],
+   "factor": 0.8359,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "西班牙尺 ≈ 83.6 cm（卡斯蒂利亚制）"
+  },
+  {
+   "name": "legua",
+   "aliases": [
+    "西里"
+   ],
+   "factor": 5572.7,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "西班牙里 ≈ 5.57 km（约 6667 西尺）"
+  },
+  {
+   "name": "libra",
+   "aliases": [
+    "西磅"
+   ],
+   "factor": 0.460093,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "西班牙磅 ≈ 460 g"
+  },
+  {
+   "name": "arroba",
+   "aliases": [
+    "阿罗巴"
+   ],
+   "factor": 11.502,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "西班牙阿罗巴 = 25 西磅 ≈ 11.5 kg（农产品用）"
+  },
+  {
+   "name": "fanega",
+   "aliases": [
+    "法内加"
+   ],
+   "factor": 0.055501,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "西班牙谷量 ≈ 55.5 L"
+  },
+  {
+   "name": "braça",
+   "aliases": [
+    "葡丈"
+   ],
+   "factor": 2.2,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "葡萄牙丈 ≈ 2.2 m"
+  },
+  {
+   "name": "arroba_pt",
+   "aliases": [
+    "葡阿罗巴"
+   ],
+   "factor": 14.688,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "葡萄牙阿罗巴 ≈ 14.69 kg（比西班牙重 28%）"
+  },
+  {
+   "name": "braccio",
+   "aliases": [
+    "意丈"
+   ],
+   "factor": 0.5836,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "意大利丈 ≈ 58.4 cm（托斯卡纳制，各邦 50—70 cm）"
+  },
+  {
+   "name": "piede_it",
+   "aliases": [
+    "意尺"
+   ],
+   "factor": 0.2978,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "意大利尺 ≈ 29.8 cm（罗马制）"
+  },
+  {
+   "name": "libbra",
+   "aliases": [
+    "意磅"
+   ],
+   "factor": 0.339,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "意大利磅 ≈ 339 g（各邦差异大）"
+  },
+  {
+   "name": "miglia_it",
+   "aliases": [
+    "意里"
+   ],
+   "factor": 1481.7,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "意大利里 ≈ 1.48 km（罗马制）"
+  },
+  {
+   "name": "duim",
+   "aliases": [
+    "荷寸"
+   ],
+   "factor": 0.0257,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "荷兰寸 ≈ 2.57 cm"
+  },
+  {
+   "name": "voet",
+   "aliases": [
+    "荷尺"
+   ],
+   "factor": 0.2831,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "荷兰尺 ≈ 28.3 cm（阿姆斯特丹制）"
+  },
+  {
+   "name": "el",
+   "aliases": [
+    "荷兰厄尔"
+   ],
+   "factor": 0.6878,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "荷兰布尺 ≈ 68.8 cm（量布料用）"
+  },
+  {
+   "name": "pond_nl",
+   "aliases": [
+    "荷磅"
+   ],
+   "factor": 0.4954,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "荷兰磅 ≈ 495 g"
+  },
+  {
+   "name": "vat",
+   "aliases": [
+    "荷桶"
+   ],
+   "factor": 0.14157,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "荷兰桶 ≈ 141.6 L"
+  },
+  {
+   "name": "aln_sv",
+   "aliases": [
+    "瑞典尺"
+   ],
+   "factor": 0.5938,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "瑞典尺 ≈ 59.4 cm"
+  },
+  {
+   "name": "mil_sv",
+   "aliases": [
+    "瑞典里"
+   ],
+   "factor": 10688,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "瑞典里 ≈ 10.69 km（1889 年后改 10 km）"
+  },
+  {
+   "name": "skalpund",
+   "aliases": [
+    "瑞典磅"
+   ],
+   "factor": 0.425076,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "瑞典磅 ≈ 425 g"
+  },
+  {
+   "name": "canne_dk",
+   "aliases": [
+    "丹麦丈"
+   ],
+   "factor": 0.6277,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "丹麦丈 ≈ 62.8 cm"
+  },
+  {
+   "name": "pund_dk",
+   "aliases": [
+    "丹麦磅"
+   ],
+   "factor": 0.4963,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "丹麦磅 ≈ 496 g"
+  },
+  {
+   "name": "klafter",
+   "aliases": [
+    "克拉夫特"
+   ],
+   "factor": 1.8966,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "奥地利克拉夫特（丈）≈ 1.897 m"
+  },
+  {
+   "name": "wiertel",
+   "aliases": [
+    "维尔特尔"
+   ],
+   "factor": 0.001555,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "奥地利液量 ≈ 1.56 L"
+  },
+  {
+   "name": "metze",
+   "aliases": [
+    "梅策"
+   ],
+   "factor": 0.0619,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "奥地利谷量 ≈ 61.9 L"
+  },
+  {
+   "name": "sążeń",
+   "aliases": [
+    "波兰沙任"
+   ],
+   "factor": 1.728,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "波兰丈 ≈ 1.73 m"
+  },
+  {
+   "name": "łokieć",
+   "aliases": [
+    "波兰肘"
+   ],
+   "factor": 0.5956,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "西班牙/葡萄牙/北欧",
+   "era": "1200 — 1850",
+   "note": "波兰肘 ≈ 59.6 cm"
+  },
+  {
+   "name": "pik_th",
+   "aliases": [
+    "泰尺"
+   ],
+   "factor": 0.508,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "泰国「皮」≈ 50.8 cm（布料与建筑用）"
+  },
+  {
+   "name": "sen_th",
+   "aliases": [
+    "泰里"
+   ],
+   "factor": 400,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "泰国「森」≈ 400 m"
+  },
+  {
+   "name": "hath",
+   "aliases": [
+    "印度肘"
+   ],
+   "factor": 0.4572,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "印度「哈特」≈ 45.7 cm（等同英制肘）"
+  },
+  {
+   "name": "coyan",
+   "aliases": [
+    "科扬"
+   ],
+   "factor": 2419,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "东南亚大宗货物单位 ≈ 2.4 t（橡胶/锡）"
+  },
+  {
+   "name": "picul",
+   "aliases": [
+    "担_南洋"
+   ],
+   "factor": 60.478,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "南洋「担」≈ 60.5 kg（华侨与东南亚贸易单位）"
+  },
+  {
+   "name": "gantang",
+   "aliases": [
+    "甘唐"
+   ],
+   "factor": 0.00184,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "东南亚/南亚",
+   "era": "1500 — 1950",
+   "note": "马来亚容量单位 ≈ 1.84 L（量米）"
+  },
+  {
+   "name": "pes",
+   "aliases": [
+    "罗马尺"
+   ],
+   "factor": 0.296,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "罗马尺（1 pes = 4 palm）"
+  },
+  {
+   "name": "passus",
+   "aliases": [
+    "罗马步"
+   ],
+   "factor": 1.48,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 passus = 5 pes"
+  },
+  {
+   "name": "mille_passus",
+   "aliases": [
+    "罗马里"
+   ],
+   "factor": 1480,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 罗马里 = 1000 passus"
+  },
+  {
+   "name": "libra",
+   "aliases": [
+    "罗马磅"
+   ],
+   "factor": 0.327,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "罗马磅（12 uncia）"
+  },
+  {
+   "name": "uncia_mass",
+   "aliases": [
+    "罗马盎司"
+   ],
+   "factor": 0.0273,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 uncia = 1/12 libra"
+  },
+  {
+   "name": "modius",
+   "aliases": [
+    "罗马斗"
+   ],
+   "factor": 0.00875,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 modius ≈ 8.75 L"
+  },
+  {
+   "name": "amphora",
+   "aliases": [
+    "罗马双耳瓶"
+   ],
+   "factor": 0.0262,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 amphora ≈ 26.2 L"
+  },
+  {
+   "name": "iugerum",
+   "aliases": [
+    "罗马亩"
+   ],
+   "factor": 2520,
+   "si": "area",
+   "dimension": "area",
+   "civilization": "罗马",
+   "era": "公元前 200 — 476",
+   "note": "1 iugerum ≈ 2520 m²"
+  },
+  {
+   "name": "pous",
+   "aliases": [
+    "希腊尺"
+   ],
+   "factor": 0.308,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "希腊",
+   "era": "公元前 500 — 300",
+   "note": "希腊尺"
+  },
+  {
+   "name": "stade",
+   "aliases": [
+    "斯塔德",
+    "stadion"
+   ],
+   "factor": 185,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "希腊",
+   "era": "公元前 500 — 300",
+   "note": "1 stade ≈ 185 m（竞技场跑道长的来源）"
+  },
+  {
+   "name": "obol",
+   "aliases": [
+    "奥波尔"
+   ],
+   "factor": 0.00072,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "希腊",
+   "era": "公元前 600 — 300",
+   "note": "1 obol ≈ 0.72 g（银币兼重量）"
+  },
+  {
+   "name": "drachma",
+   "aliases": [
+    "德拉克马"
+   ],
+   "factor": 0.0043,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "希腊",
+   "era": "公元前 600 — 300",
+   "note": "1 drachma = 6 obol ≈ 4.3 g"
+  },
+  {
+   "name": "mina",
+   "aliases": [
+    "米纳"
+   ],
+   "factor": 0.436,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "希腊",
+   "era": "公元前 600 — 300",
+   "note": "1 mina = 100 drachma ≈ 436 g"
+  },
+  {
+   "name": "talent",
+   "aliases": [
+    "塔兰特"
+   ],
+   "factor": 26.2,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "希腊",
+   "era": "公元前 600 — 300",
+   "note": "1 talent = 60 mina ≈ 26.2 kg"
+  },
+  {
+   "name": "kotyle",
+   "aliases": [
+    "科提莱"
+   ],
+   "factor": 0.00027,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "希腊",
+   "era": "公元前 500 — 300",
+   "note": "1 kotyle ≈ 0.27 L"
+  },
+  {
+   "name": "medimnos",
+   "aliases": [
+    "墨提姆诺"
+   ],
+   "factor": 0.0525,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "希腊",
+   "era": "公元前 500 — 300",
+   "note": "1 medimnos ≈ 52.5 L"
+  },
+  {
+   "name": "royal_cubit",
+   "aliases": [
+    "皇家肘"
+   ],
+   "factor": 0.525,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "皇家肘 = 7 palm ≈ 52.5 cm"
+  },
+  {
+   "name": "remen",
+   "aliases": [
+    "雷门"
+   ],
+   "factor": 0.375,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "1 remen = 5 palm ≈ 37.5 cm"
+  },
+  {
+   "name": "palm",
+   "aliases": [
+    "埃及掌"
+   ],
+   "factor": 0.075,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "1 palm ≈ 7.5 cm"
+  },
+  {
+   "name": "finger",
+   "aliases": [
+    "埃及指"
+   ],
+   "factor": 0.0187,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "1 finger ≈ 1.87 cm"
+  },
+  {
+   "name": "deben",
+   "aliases": [
+    "德本"
+   ],
+   "factor": 0.091,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "1 deben ≈ 91 g（铜/银重量基准）"
+  },
+  {
+   "name": "okat",
+   "aliases": [
+    "奥卡"
+   ],
+   "factor": 1.28,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "埃及/奥斯曼",
+   "era": "1500 — 1900",
+   "note": "1 okat ≈ 1.28 kg"
+  },
+  {
+   "name": "hin",
+   "aliases": [
+    "欣"
+   ],
+   "factor": 0.00048,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "埃及",
+   "era": "公元前 3000 — 30",
+   "note": "1 hin ≈ 0.48 L"
+  },
+  {
+   "name": "artaba",
+   "aliases": [
+    "阿塔巴"
+   ],
+   "factor": 0.0388,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "埃及/波斯",
+   "era": "公元前 500 — 1900",
+   "note": "1 artaba ≈ 38.8 L"
+  },
+  {
+   "name": "shekel",
+   "aliases": [
+    "舍客勒"
+   ],
+   "factor": 0.00833,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 shekel = 1/60 mina ≈ 8.33 g（货币与重量合一）"
+  },
+  {
+   "name": "mina_babylon",
+   "aliases": [
+    "巴比伦米纳"
+   ],
+   "factor": 0.5,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 mina = 60 shekel ≈ 500 g"
+  },
+  {
+   "name": "talent_babylon",
+   "aliases": [
+    "巴比伦塔兰特"
+   ],
+   "factor": 30,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 talent = 60 mina ≈ 30 kg"
+  },
+  {
+   "name": "ninda",
+   "aliases": [
+    "宁达"
+   ],
+   "factor": 6,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 ninda ≈ 6 m"
+  },
+  {
+   "name": "beru",
+   "aliases": [
+    "贝鲁"
+   ],
+   "factor": 10800,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 beru = 1800 ninda ≈ 10.8 km"
+  },
+  {
+   "name": "qa",
+   "aliases": [
+    "卡"
+   ],
+   "factor": 0.001,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 qa ≈ 1 L"
+  },
+  {
+   "name": "sila",
+   "aliases": [
+    "西拉"
+   ],
+   "factor": 0.00084,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "巴比伦",
+   "era": "公元前 2000 — 500",
+   "note": "1 sila ≈ 0.84 L"
+  },
+  {
+   "name": "keration",
+   "aliases": [
+    "凯拉顿"
+   ],
+   "factor": 0.000218,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "拜占庭",
+   "era": "330 — 1453",
+   "note": "1 keration ≈ 0.218 g（「克拉」词源，≠ 钻石克拉）"
+  },
+  {
+   "name": "litra",
+   "aliases": [
+    "拜占庭磅"
+   ],
+   "factor": 0.327,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "拜占庭",
+   "era": "330 — 1453",
+   "note": "1 litra ≈ 327 g"
+  },
+  {
+   "name": "modios",
+   "aliases": [
+    "莫迪"
+   ],
+   "factor": 0.0171,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "拜占庭",
+   "era": "330 — 1453",
+   "note": "1 modios ≈ 17.1 L"
+  },
+  {
+   "name": "schoenus",
+   "aliases": [
+    "斯科尼"
+   ],
+   "factor": 5280,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "拜占庭",
+   "era": "330 — 1453",
+   "note": "1 schoenus ≈ 5.28 km"
+  },
+  {
+   "name": "alen",
+   "aliases": [
+    "北欧尺"
+   ],
+   "factor": 0.594,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "北欧",
+   "era": "1200 — 1850",
+   "note": "1 alen ≈ 59.4 cm"
+  },
+  {
+   "name": "fot",
+   "aliases": [
+    "北欧英尺"
+   ],
+   "factor": 0.297,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "北欧",
+   "era": "1200 — 1850",
+   "note": "1 fot ≈ 29.7 cm"
+  },
+  {
+   "name": "mark",
+   "aliases": [
+    "北欧马克"
+   ],
+   "factor": 0.218,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "北欧",
+   "era": "1200 — 1850",
+   "note": "1 mark ≈ 218 g"
+  },
+  {
+   "name": "skalpund",
+   "aliases": [
+    "北欧斯卡磅"
+   ],
+   "factor": 8.5,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "北欧",
+   "era": "1200 — 1850",
+   "note": "1 skalpund ≈ 8.5 kg"
+  },
+  {
+   "name": "tunna",
+   "aliases": [
+    "北欧桶"
+   ],
+   "factor": 0.125,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "北欧",
+   "era": "1200 — 1850",
+   "note": "1 tunna ≈ 125 L"
+  },
+  {
+   "name": "voet",
+   "aliases": [
+    "荷兰尺"
+   ],
+   "factor": 0.283,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "荷兰",
+   "era": "1500 — 1820",
+   "note": "1 voet ≈ 28.3 cm"
+  },
+  {
+   "name": "el",
+   "aliases": [
+    "荷兰肘"
+   ],
+   "factor": 0.69,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "荷兰",
+   "era": "1500 — 1820",
+   "note": "1 el ≈ 69 cm"
+  },
+  {
+   "name": "pond",
+   "aliases": [
+    "荷兰磅"
+   ],
+   "factor": 0.468,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "荷兰",
+   "era": "1500 — 1820",
+   "note": "1 pond ≈ 468 g"
+  },
+  {
+   "name": "mud",
+   "aliases": [
+    "荷兰斗"
+   ],
+   "factor": 0.1,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "荷兰",
+   "era": "1500 — 1820",
+   "note": "1 mud ≈ 100 L"
+  },
+  {
+   "name": "arsin",
+   "aliases": [
+    "奥斯曼尺"
+   ],
+   "factor": 0.68,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "奥斯曼",
+   "era": "1300 — 1922",
+   "note": "1 arsin ≈ 68 cm"
+  },
+  {
+   "name": "mudd",
+   "aliases": [
+    "奥斯曼斗"
+   ],
+   "factor": 0.02,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "奥斯曼",
+   "era": "1300 — 1922",
+   "note": "1 mudd ≈ 20 L"
+  },
+  {
+   "name": "kile",
+   "aliases": [
+    "奥斯曼基莱"
+   ],
+   "factor": 0.037,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "奥斯曼",
+   "era": "1300 — 1922",
+   "note": "1 kile ≈ 37 L"
+  },
+  {
+   "name": "persian_farsakh",
+   "aliases": [
+    "波斯里"
+   ],
+   "factor": 6200,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "波斯",
+   "era": "公元前 500 — 1900",
+   "note": "1 波斯里 ≈ 6.2 km"
+  },
+  {
+   "name": "mann",
+   "aliases": [
+    "波斯曼"
+   ],
+   "factor": 2.9,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "波斯",
+   "era": "公元前 500 — 1900",
+   "note": "1 mann ≈ 2.9 kg"
+  },
+  {
+   "name": "han_chi",
+   "aliases": [
+    "汉尺"
+   ],
+   "factor": 0.231,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "公元前 202 — 220",
+   "note": "汉尺 ≈ 23.1 cm（出土实测）"
+  },
+  {
+   "name": "tang_chi",
+   "aliases": [
+    "唐尺"
+   ],
+   "factor": 0.3,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "618 — 907",
+   "note": "唐尺 ≈ 30 cm（大尺）"
+  },
+  {
+   "name": "song_chi",
+   "aliases": [
+    "宋尺"
+   ],
+   "factor": 0.313,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "960 — 1279",
+   "note": "宋尺 ≈ 31.3 cm"
+  },
+  {
+   "name": "ming_chi",
+   "aliases": [
+    "明尺"
+   ],
+   "factor": 0.32,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "1368 — 1644",
+   "note": "明尺（营造尺）≈ 32 cm"
+  },
+  {
+   "name": "qing_chi",
+   "aliases": [
+    "清尺"
+   ],
+   "factor": 0.32,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "1644 — 1911",
+   "note": "清营造尺 ≈ 32 cm"
+  },
+  {
+   "name": "han_jin",
+   "aliases": [
+    "汉斤"
+   ],
+   "factor": 0.258,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国",
+   "era": "公元前 202 — 220",
+   "note": "汉斤 ≈ 258 g"
+  },
+  {
+   "name": "tang_jin",
+   "aliases": [
+    "唐斤"
+   ],
+   "factor": 0.596,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国",
+   "era": "618 — 907",
+   "note": "唐斤 ≈ 596 g"
+  },
+  {
+   "name": "song_jin",
+   "aliases": [
+    "宋斤"
+   ],
+   "factor": 0.633,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国",
+   "era": "960 — 1279",
+   "note": "宋斤 ≈ 633 g"
+  },
+  {
+   "name": "ming_jin",
+   "aliases": [
+    "明斤"
+   ],
+   "factor": 0.59,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国",
+   "era": "1368 — 1644",
+   "note": "明斤 ≈ 590 g"
+  },
+  {
+   "name": "qing_jin",
+   "aliases": [
+    "清斤"
+   ],
+   "factor": 0.596,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "中国",
+   "era": "1644 — 1911",
+   "note": "清库平斤 ≈ 596.8 g"
+  },
+  {
+   "name": "han_li",
+   "aliases": [
+    "汉里"
+   ],
+   "factor": 415.8,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "公元前 202 — 220",
+   "note": "汉里 ≈ 415.8 m（300 步）"
+  },
+  {
+   "name": "tang_li",
+   "aliases": [
+    "唐里"
+   ],
+   "factor": 531,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "中国",
+   "era": "618 — 907",
+   "note": "唐里 ≈ 531 m"
+  },
+  {
+   "name": "miles_jp",
+   "aliases": [
+    "日里"
+   ],
+   "factor": 3927.27,
+   "si": "length",
+   "dimension": "length",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "日里 ≈ 3.927 km（36 町）"
+  },
+  {
+   "name": "kin_jp",
+   "aliases": [
+    "日斤"
+   ],
+   "factor": 0.6,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "日斤 ≈ 600 g"
+  },
+  {
+   "name": "ryo_jp",
+   "aliases": [
+    "日两"
+   ],
+   "factor": 0.0375,
+   "si": "mass",
+   "dimension": "mass",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "1 日两 = 1/16 日斤 ≈ 37.5 g"
+  },
+  {
+   "name": "sho_jp",
+   "aliases": [
+    "日升"
+   ],
+   "factor": 0.001804,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "日升 ≈ 1.804 L"
+  },
+  {
+   "name": "to_jp",
+   "aliases": [
+    "日斗"
+   ],
+   "factor": 0.01804,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "1 日斗 = 10 日升 ≈ 18.04 L"
+  },
+  {
+   "name": "koku_jp",
+   "aliases": [
+    "日石"
+   ],
+   "factor": 0.1804,
+   "si": "volume",
+   "dimension": "volume",
+   "civilization": "日本",
+   "era": "1600 — 1924",
+   "note": "1 日石 = 10 日斗 ≈ 180.4 L（俸禄单位）"
+  }
+ ]
+}
