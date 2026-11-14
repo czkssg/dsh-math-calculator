@@ -41,6 +41,7 @@
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { tryUcumExpression } from '../../core/ucum.js'
+import { toModernExpression, tryBridgeConversion } from '../../core/unit-bridge.js'
 import {
   fmtNumber,
   trimDecimal,
@@ -293,6 +294,8 @@ export function evaluateOne(
   scope?: Record<string, unknown>,
 ): EvaluateOutcome {
   let raw: unknown
+  /** 非现代单位被桥接时的提示（`里/时辰` → SI）。 */
+  let bridgedNote: string | undefined
   try {
     raw = engine.evaluate(expression, scope)
   } catch (error) {
@@ -300,6 +303,27 @@ export function evaluateOne(
      * 复合单位兜底：mathjs 不认 `kg/m³` 这类写法时，交给 UCUM（NLM 实现）。
      * 只处理「数值 + 单位 to 单位」的纯换算式，不接管一般表达式。
      */
+    /**
+     * 非现代单位桥：把 `里/时辰` 这类换成 SI 再算一遍。
+     * 这是用户要的「非现代 → 现代 → 非现代」链的第一段。
+     */
+    /** 反向/纯桥接换算（`1 kg to 担`、`1 担 to kg`）先直接算。 */
+    const direct = tryBridgeConversion(expression)
+    if (direct !== null && direct.text !== '') {
+      return { result: direct.text, value: direct.value, ok: true, notice: '已用非现代单位桥换算（' + direct.from + ' → ' + direct.to + '）。' }
+    }
+    const bridged = toModernExpression(expression)
+    if (bridged.replaced.length > 0) {
+      try {
+        raw = engine.evaluate(bridged.expression, scope)
+        bridgedNote = '已把 ' + bridged.replaced.map((item) => item.unit + '→' + item.si).join('、') + ' 换成现代单位计算。'
+      } catch {
+        /* 桥接后仍算不出：继续 UCUM */
+      }
+    }
+    if (raw !== undefined) {
+      /** 桥接成功：落到下面的统一后处理（量级/精度/注释都照常）。 */
+    } else {
     const ucum = tryUcumExpression(expression)
     if (ucum !== null) {
       return {
@@ -310,6 +334,7 @@ export function evaluateOne(
       }
     }
     throw error
+    }
   }
 
   /**
@@ -372,6 +397,7 @@ export function evaluateOne(
   const notices: string[] = []
   if (overflow) notices.push('表达式或结果涉及超过当前计算精度 ' + precision + ' 位的量——末位可能不可信；需要精确请显式传更高的 precision（上限 64），或改写表达式。')
   if (truncatedToZero) notices.push('按 displayPrecision:0 显示整数，原值 ' + String(unwrapped.n) + ' 非零但被截成 0；需要小数位请传 displayPrecision:≥1。')
+  if (bridgedNote !== undefined) notices.push(bridgedNote)
   const notice = notices.length > 0 ? notices.join(' ') : undefined
   return {
     result,
