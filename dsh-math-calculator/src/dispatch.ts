@@ -55,8 +55,8 @@ import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
-import { buildEpochs } from './features/deduction/history.js'
-import { runConflict } from './features/deduction/conflict.js'
+import { buildEpochs, detectCrises } from './features/deduction/history.js'
+import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -192,14 +192,26 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'history': {
-      const series = Array.isArray(args['series']) ? (args['series'] as Array<Record<string, unknown>>).map((p) => ({ year: Number(p['year'] ?? 0), value: Number(p['value'] ?? 0) })) : []
-      const events = Array.isArray(args['events']) ? (args['events'] as Array<Record<string, unknown>>).map((e) => ({ year: Number(e['year'] ?? 0), label: String(e['label'] ?? ''), ...(e['kind'] !== undefined ? { kind: String(e['kind']) } : {}) })) : []
-      const result = buildEpochs({ series, events, minEpochYears: typeof args['minEpochYears'] === 'number' ? (args['minEpochYears'] as number) : undefined, threshold: typeof args['historyThreshold'] === 'number' ? (args['historyThreshold'] as number) : undefined })
+      let series = Array.isArray(args['series']) ? (args['series'] as Array<Record<string, unknown>>).map((p) => ({ year: Number(p['year'] ?? 0), value: Number(p['value'] ?? 0) })) : []
+      let events = Array.isArray(args['events']) ? (args['events'] as Array<Record<string, unknown>>).map((e) => ({ year: Number(e['year'] ?? 0), label: String(e['label'] ?? ''), ...(e['kind'] !== undefined ? { kind: String(e['kind']) } : {}) })) : []
+      /** 一站式：给 simulate 就先用冲突模型跑出「最强势力份额」序列与事件。 */
+      const simArgs = args['simulate'] as Record<string, unknown> | undefined
+      let simulation: Record<string, unknown> | null = null
+      if (simArgs !== undefined && simArgs !== null && typeof simArgs === 'object') {
+        const sim = runConflictSeries({ actors: Array.isArray(simArgs['actors']) ? (simArgs['actors'] as Array<Record<string, unknown>>).map((a) => ({ id: String(a['id'] ?? ''), wealth: Number(a['wealth'] ?? 0) })) : [], edges: Array.isArray(simArgs['edges']) ? (simArgs['edges'] as Array<Record<string, unknown>>).map((e) => ({ from: String(e['from'] ?? ''), to: String(e['to'] ?? '') })) : [], steps: typeof simArgs['steps'] === 'number' ? (simArgs['steps'] as number) : undefined, seed: typeof simArgs['seed'] === 'number' ? (simArgs['seed'] as number) : undefined })
+        series = sim.leaderShare
+        events = sim.events
+        simulation = { events: sim.events.length, finalHhi: sim.concentration[sim.concentration.length - 1].hhi }
+      }
+      const result = buildEpochs({ series, events, minEpochYears: typeof args['minEpochYears'] === 'number' ? (args['minEpochYears'] as number) : undefined, threshold: typeof args['historyThreshold'] === 'number' ? (args['historyThreshold'] as number) : undefined, smoothing: typeof args['smoothing'] === 'number' ? (args['smoothing'] as number) : undefined })
+      const crises = detectCrises(series, { dropRatio: typeof args['crisisDrop'] === 'number' ? (args['crisisDrop'] as number) : 0.2 })
       const lines = ['═══ 历史纪元划分 ═══', '']
+      if (simulation !== null) lines.push('  [模拟] 冲突事件 ' + simulation['events'] + ' 次，末态集中度 ' + Number(simulation['finalHhi']).toFixed(2), '')
       for (const epoch of result.epochs) lines.push('  ' + epoch.startYear + ' — ' + epoch.endYear + ' 年：' + epoch.turn + '（' + epoch.events.map((e) => e.label).join('、') + '）')
       lines.push('', '  转折年：' + (result.turningPoints.length > 0 ? result.turningPoints.join('、') : '无'))
+      if (crises.length > 0) lines.push('  危机年：' + crises.slice(0, 8).map((c) => c.year + '（' + c.detail + '）').join('；'))
       for (const note of result.notes) lines.push('  ' + note)
-      return { result: lines.join('\n'), value: result } as never
+      return { result: lines.join('\n'), value: { ...result, crises, simulation } } as never
     }
 
     case 'backtrace': {

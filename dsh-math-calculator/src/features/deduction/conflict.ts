@@ -149,3 +149,79 @@ export function runConflict(input: ConflictInput): ConflictResult {
     notes: ['步数 ' + steps + '，seed=' + (input.seed ?? 1) + '（同 seed 可复现）', '付贡/开战由「实力比 + 随机」决定；联盟按承诺度站队', '输出只给结构与数值，叙事由 AI 写'],
   }
 }
+/** 分步快照（供 history 使用）。 */
+export interface ConflictSeries {
+  /** 每年（步）总财富。 */
+  series: Array<{ year: number; value: number }>
+  /** 事件（战争/付贡高峰）。 */
+  events: Array<{ year: number; label: string; kind?: string }>
+  /** 每年最强势力。 */
+  leaders: Array<{ year: number; id: string }>
+  /** 财富集中度（HHI，0–1）。 */
+  concentration: Array<{ year: number; hhi: number }>
+  /** 最强势力份额（0–1，有涨落 → 可用于纪元划分）。 */
+  leaderShare: Array<{ year: number; value: number }>
+}
+
+/**
+ * 跑冲突并记录逐年快照（conflict → history 的桥）。
+ *
+ * @param input - 同 runConflict
+ * @returns 逐年序列与事件
+ */
+export function runConflictSeries(input: ConflictInput): ConflictSeries {
+  const actors = input.actors ?? []
+  if (!Array.isArray(actors) || actors.length < 2) throw new CalcError('invalid_argument', '至少需要 2 个行动者', '')
+  const steps = Math.max(1, Math.floor(input.steps ?? 50))
+  const growth = typeof input.growth === 'number' ? input.growth : 0.02
+  const prng = createPrng(seedFrom(typeof input.seed === 'number' ? input.seed : 1, actors.length, steps))
+  const wealth = new Map<string, number>(actors.map((a) => [a.id, Math.max(1, a.wealth)]))
+  const key = (a: string, b: string): string => (a < b ? a + '|' + b : b + '|' + a)
+  const commitment = new Map<string, number>()
+  const neighbors = new Map<string, string[]>()
+  for (const actor of actors) neighbors.set(actor.id, [])
+  for (const edge of input.edges ?? []) {
+    commitment.set(key(edge.from, edge.to), 0)
+    neighbors.get(edge.from)?.push(edge.to)
+    neighbors.get(edge.to)?.push(edge.from)
+  }
+  const series: ConflictSeries['series'] = []
+  const events: ConflictSeries['events'] = []
+  const leaders: ConflictSeries['leaders'] = []
+  const concentration: ConflictSeries['concentration'] = []
+  const leaderShare: ConflictSeries['leaderShare'] = []
+  for (let step = 0; step < steps; step += 1) {
+    for (const actor of actors) {
+      const rate = growth * (0.5 + roll(prng))
+      wealth.set(actor.id, (wealth.get(actor.id) ?? 1) * (1 + rate))
+    }
+    const actor = actors[rollInt(prng, 0, actors.length - 1)]
+    const candidates = (neighbors.get(actor.id) ?? []).filter((id) => (wealth.get(id) ?? 0) < (wealth.get(actor.id) ?? 0))
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => (wealth.get(a) ?? 0) - (wealth.get(b) ?? 0))
+      const target = candidates[0]
+      const targetWealth = wealth.get(target) ?? 1
+      const actorWealth = wealth.get(actor.id) ?? 1
+      if (targetWealth / actorWealth > 0.6 && roll(prng) > 0.5) {
+        const spoils = Math.max(1, targetWealth * 0.1)
+        wealth.set(target, targetWealth - spoils)
+        wealth.set(actor.id, actorWealth + spoils)
+        events.push({ year: step, label: actor.id + ' 对 ' + target + ' 开战并取胜', kind: 'war' })
+        commitment.set(key(actor.id, target), (commitment.get(key(actor.id, target)) ?? 0) - 0.2)
+      } else {
+        const toll = Math.max(1, targetWealth * 0.02)
+        wealth.set(target, targetWealth - toll)
+        wealth.set(actor.id, actorWealth + toll)
+        commitment.set(key(actor.id, target), (commitment.get(key(actor.id, target)) ?? 0) + 0.1)
+      }
+    }
+    const total = [...wealth.values()].reduce((sum, v) => sum + v, 0)
+    series.push({ year: step, value: total })
+    const sorted = [...wealth.entries()].sort((a, b) => b[1] - a[1])
+    leaders.push({ year: step, id: sorted[0][0] })
+    const hhi = [...wealth.values()].reduce((sum, v) => sum + (v / total) ** 2, 0)
+    concentration.push({ year: step, hhi })
+    leaderShare.push({ year: step, value: sorted[0][1] / total })
+  }
+  return { series, events, leaders, concentration, leaderShare }
+}
