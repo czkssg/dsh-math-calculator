@@ -280,6 +280,58 @@
      ]
     }
    ]
+  },
+  {
+   "id": "history-sim",
+   "label": "文明 → 历史推演",
+   "keywords": [
+    "历史怎么走",
+    "历史会怎么走",
+    "历史会怎样",
+    "文明演化",
+    "王朝更替",
+    "文明兴衰",
+    "历史推演",
+    "这段历史",
+    "文明的历史"
+   ],
+   "steps": [
+    {
+     "op": "conflict",
+     "label": "势力冲突与贡赋",
+     "needs": [
+      "actors",
+      "edges",
+      "steps",
+      "seed"
+     ],
+     "provides": [
+      "events",
+      "wealthSeries"
+     ]
+    },
+    {
+     "op": "history",
+     "label": "纪元划分与危机",
+     "needs": [
+      "series"
+     ],
+     "provides": [
+      "epochs",
+      "crises"
+     ]
+    },
+    {
+     "op": "diverge",
+     "label": "分支对照（换个前提）",
+     "needs": [
+      "base"
+     ],
+     "provides": [
+      "divergence"
+     ]
+    }
+   ]
   }
  ]
 }

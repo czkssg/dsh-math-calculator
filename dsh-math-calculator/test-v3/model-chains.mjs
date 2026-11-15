@@ -43,7 +43,9 @@ console.log('-- 2. 未命中模型链 → 回落公式链 --')
 
 console.log('-- 3. 模型链数据驱动 --')
 {
-  assert('★ 8 条模型链', MC.length === 8, String(MC.length))
+  assert('★ 9 条模型链（含文明→历史）', MC.length === 9, String(MC.length))
+  const historyChain = btMod.backtrace(F, '这个文明的历史会怎么走', { modelChains: MC })
+  assert('★ 历史推演链：conflict → history → diverge', historyChain.modelChain?.id === 'history-sim' && historyChain.modelChain.calls.map((x) => x.operation).join(',') === 'conflict,history,diverge', JSON.stringify(historyChain.modelChain?.calls))
   const custom = [{ id: 'custom', label: '自定义链', keywords: ['我的目标'], steps: [{ op: 'world', label: '第一步', needs: ['x'] }] }]
   const r = btMod.backtrace(F, '我的目标', { modelChains: custom })
   assert('★ 改数据即生效（自定义链）', r.modelChain?.id === 'custom', String(r.modelChain?.id))
