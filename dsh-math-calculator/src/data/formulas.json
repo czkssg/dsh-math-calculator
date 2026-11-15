@@ -31324,5 +31324,92 @@
    }
   ],
   "confidence": "scaling"
+ },
+ {
+  "id": "living_density",
+  "cat": "engineering/enclosure",
+  "name": "居住密度（人均面积）",
+  "expr": "area_m2 / people",
+  "params": {
+   "area_m2": {
+    "value": 4.5,
+    "desc": "可用面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "people": {
+    "value": 1,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "unit": "m²/人",
+  "keys": [
+   "人均面积",
+   "居住密度",
+   "避难所",
+   "density",
+   "生存面积",
+   "最低面积",
+   "空腔面积",
+   "单人"
+  ],
+  "desc": "人均面积 = 面积/人数。适用域：潜艇床位 2–3 m²/人、长期居住 10 m²/人、4.5 m² 属「极低但可短时维持」。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA/潜艇居住标准量级",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "growth_energy",
+  "cat": "biology/metabolism",
+  "name": "生长能量需求",
+  "expr": "mass_gain_kg * energy_density * 1e6",
+  "params": {
+   "mass_gain_kg": {
+    "value": 0.015,
+    "desc": "日增重 kg/天",
+    "quantity": "质量流量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
+   },
+   "energy_density": {
+    "value": 20,
+    "desc": "组织储能密度 MJ/kg（蛋白/脂肪混合约 20）",
+    "quantity": "比能",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
+   }
+  },
+  "unit": "J/天",
+  "keys": [
+   "生长能量",
+   "增重",
+   "metabolism",
+   "盈余",
+   "长身体",
+   "蜕壳",
+   "储能"
+  ],
+  "desc": "生长能量 ≈ 日增重 × 组织储能密度。适用域：肉 20–30 MJ/kg、脂肪 39；10–20 g/天增重 → 0.2–0.4 MJ/天。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "动物营养学",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
  }
 ]

@@ -67,7 +67,7 @@ console.log('-- 4. 数据导出（本地快照，供 AI 之后引用）--')
   const one = await run({ operation: 'workspace', action2: 'export-builtin', what: 'formulas' })
   assert('★ 导出 formulas 到本地', one.ok === true && existsSync(one.value.exports[0].path), JSON.stringify(one.value).slice(0, 120))
   const exported = JSON.parse(readFileSync(one.value.exports[0].path, 'utf8'))
-  assert('导出的公式数 801', exported.length === 801, String(exported.length))
+  assert('导出的公式数 803', exported.length === 803, String(exported.length))
 
   const all = await run({ operation: 'workspace', action2: 'export-builtin', what: 'all' })
   assert('★ 全量导出 8 项', all.ok === true && all.value.exports.length === 8, JSON.stringify(all.value?.exports?.map((item) => item.what)))

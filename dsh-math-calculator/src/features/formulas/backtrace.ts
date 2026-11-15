@@ -134,7 +134,8 @@ export function backtrace(formulas: FormulaEntry[], target: string, options: { m
        * 只对「派生量」展开（功率/能量/压强/力…）；
        * 时间/长度/质量/温度这些是基本输入，应由用户给，不能拿「圆周周期」去凑。
        */
-      const DERIVED = new Set(['功率', '能量', '压强', '力', '速度', '体积', '面积', '密度'])
+      /** 只展开「明显派生」的量；面积/体积/速度常是基本输入，展开会拼出荒谬链（见问题库实测）。 */
+      const DERIVED = new Set(['功率', '能量', '压强', '力'])
       const expandable = DERIVED.has(quantity)
       const covered = depth < maxDepth && expandable ? (producers.get(quantity) ?? []).filter((p) => !used.has(p.id))[0] : undefined
       if (covered !== undefined) {
