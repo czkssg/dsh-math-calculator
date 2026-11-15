@@ -30072,5 +30072,711 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "gear_tangential_force",
+  "cat": "engineering/mechanical",
+  "name": "齿轮圆周力",
+  "expr": "2 * T / d",
+  "params": {
+   "T": {
+    "value": 100,
+    "desc": "扭矩 N·m",
+    "quantity": "力矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "d": {
+    "value": 0.1,
+    "desc": "分度圆直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "N",
+  "keys": [
+   "齿轮",
+   "圆周力",
+   "mechanical"
+  ],
+  "desc": "Ft = 2T/d：齿轮圆周力。适用域：直齿轮；斜齿轮还有轴向力 Ft·tanβ。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "齿轮传动",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "gear_lewis_stress",
+  "cat": "engineering/mechanical",
+  "name": "齿轮齿根弯曲应力（Lewis）",
+  "expr": "Ft / (b * m * Y)",
+  "params": {
+   "Ft": {
+    "value": 2000,
+    "desc": "圆周力 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "b": {
+    "value": 0.05,
+    "desc": "齿宽 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "m": {
+    "value": 0.005,
+    "desc": "模数 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "Y": {
+    "value": 0.3,
+    "desc": "Lewis 齿形系数",
+    "quantity": "系数",
+    "dimension": {}
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "齿轮",
+   "弯曲应力",
+   "Lewis",
+   "mechanical"
+  ],
+  "desc": "σ_F = Ft/(b·m·Y)：Lewis 齿根弯曲应力。适用域：载荷作用于齿顶、不考虑应力集中；工程要乘 K 系数。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "齿轮强度",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "gear_contact_stress",
+  "cat": "engineering/mechanical",
+  "name": "齿轮接触应力（赫兹）",
+  "expr": "Ze * sqrt(Ft / (b * d1) * (u + 1) / u)",
+  "params": {
+   "Ze": {
+    "value": 189.8,
+    "desc": "弹性系数 √MPa",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "Ft": {
+    "value": 2000,
+    "desc": "圆周力 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "b": {
+    "value": 0.05,
+    "desc": "齿宽 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "d1": {
+    "value": 0.1,
+    "desc": "小齿轮直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "u": {
+    "value": 2,
+    "desc": "齿数比",
+    "quantity": "系数",
+    "dimension": {}
+   }
+  },
+  "unit": "MPa",
+  "keys": [
+   "齿轮",
+   "接触应力",
+   "赫兹",
+   "mechanical"
+  ],
+  "desc": "σ_H = Z_E√(Ft/(b·d₁)·(u+1)/u)：赫兹接触应力。适用域：钢对钢 Z_E=189.8；接触疲劳是齿轮的主要失效形式之一。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "齿轮强度",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "bearing_equivalent_load",
+  "cat": "engineering/mechanical",
+  "name": "轴承当量动载荷",
+  "expr": "X * Fr + Y * Fa",
+  "params": {
+   "X": {
+    "value": 1,
+    "desc": "径向系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "Fr": {
+    "value": 5000,
+    "desc": "径向载荷 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "Y": {
+    "value": 0,
+    "desc": "轴向系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "Fa": {
+    "value": 0,
+    "desc": "轴向载荷 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   }
+  },
+  "unit": "N",
+  "keys": [
+   "轴承",
+   "当量载荷",
+   "mechanical"
+  ],
+  "desc": "P = X·Fr + Y·Fa：当量动载荷。适用域：X/Y 查轴承手册（深沟球轴承 Fa/Fr≤e 时 X=1,Y=0）。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "滚动轴承",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "shaft_torsion",
+  "cat": "engineering/mechanical",
+  "name": "轴扭转切应力",
+  "expr": "T / Wt",
+  "params": {
+   "T": {
+    "value": 100,
+    "desc": "扭矩 N·m",
+    "quantity": "力矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "Wt": {
+    "value": 0.00002,
+    "desc": "抗扭截面系数 m³",
+    "quantity": "体积",
+    "dimension": {
+     "L": 3
+    }
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "轴",
+   "扭转",
+   "mechanical"
+  ],
+  "desc": "τ = T/W_t：轴扭转切应力。适用域：实心圆轴 W_t=πd³/16；τ_max 与许用切应力比较。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "材料力学",
+    "chapter": "扭转",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "shaft_critical_speed",
+  "cat": "engineering/mechanical",
+  "name": "轴临界转速",
+  "expr": "30 / pi * sqrt(g / delta)",
+  "params": {
+   "g": {
+    "value": 9.80665,
+    "desc": "重力加速度 m/s²",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
+   },
+   "delta": {
+    "value": 0.0005,
+    "desc": "静挠度 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "r/min",
+  "keys": [
+   "轴",
+   "临界转速",
+   "mechanical"
+  ],
+  "desc": "n_cr = 30/π·√(g/δ)：单盘转子临界转速。适用域：δ 为轴在盘重下的静挠度；工作转速要避开 ±20%。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "轴",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "weld_throat_stress",
+  "cat": "engineering/mechanical",
+  "name": "角焊缝应力",
+  "expr": "F / (0.707 * h * L)",
+  "params": {
+   "F": {
+    "value": 100000,
+    "desc": "载荷 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "h": {
+    "value": 0.008,
+    "desc": "焊脚尺寸 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "L": {
+    "value": 0.2,
+    "desc": "焊缝长度 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "焊接",
+   "焊缝",
+   "mechanical"
+  ],
+  "desc": "τ = F/(0.707·h·L)：角焊缝有效喉厚应力。适用域：45° 角焊缝；0.707h 是喉部厚度，不是焊脚尺寸。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "焊接结构",
+    "chapter": "焊缝强度",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "weld_heat_input",
+  "cat": "engineering/mechanical",
+  "name": "焊接热输入",
+  "expr": "eta * U * I / v",
+  "params": {
+   "eta": {
+    "value": 0.8,
+    "desc": "热效率",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "U": {
+    "value": 25,
+    "desc": "电弧电压 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   },
+   "I": {
+    "value": 200,
+    "desc": "焊接电流 A",
+    "quantity": "电流",
+    "dimension": {
+     "I": 1
+    }
+   },
+   "v": {
+    "value": 0.005,
+    "desc": "焊接速度 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   }
+  },
+  "unit": "J/m",
+  "keys": [
+   "焊接",
+   "热输入",
+   "mechanical"
+  ],
+  "desc": "q = ηUI/v：焊接热输入。适用域：热输入过大 → 热影响区晶粒粗大、变形；过小 → 未熔透。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "焊接结构",
+    "chapter": "热输入",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "spring_stiffness",
+  "cat": "engineering/mechanical",
+  "name": "螺旋弹簧刚度",
+  "expr": "G * d^4 / (8 * D^3 * n)",
+  "params": {
+   "G": {
+    "value": 79000000000,
+    "desc": "切变模量 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "d": {
+    "value": 0.002,
+    "desc": "钢丝直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "D": {
+    "value": 0.02,
+    "desc": "弹簧中径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "n": {
+    "value": 10,
+    "desc": "有效圈数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "unit": "N/m",
+  "keys": [
+   "弹簧",
+   "刚度",
+   "mechanical"
+  ],
+  "desc": "k = Gd⁴/(8D³n)：圆柱螺旋弹簧刚度。适用域：弹簧指数 C=D/d 在 4–16；C 太小难卷制、太大易颤。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "弹簧",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "belt_ratio",
+  "cat": "engineering/mechanical",
+  "name": "带传动比",
+  "expr": "d2 / d1",
+  "params": {
+   "d2": {
+    "value": 0.3,
+    "desc": "从动轮直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "d1": {
+    "value": 0.1,
+    "desc": "主动轮直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "带传动",
+   "传动比",
+   "mechanical"
+  ],
+  "desc": "i = d₂/d₁：带传动比（忽略打滑）。适用域：常用 i ≤ 7；i 过大 → 包角太小、打滑。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "带传动",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "belt_power",
+  "cat": "engineering/mechanical",
+  "name": "带传动功率",
+  "expr": "(F1 - F2) * v",
+  "params": {
+   "F1": {
+    "value": 1000,
+    "desc": "紧边拉力 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "F2": {
+    "value": 400,
+    "desc": "松边拉力 N",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   },
+   "v": {
+    "value": 10,
+    "desc": "带速 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   }
+  },
+  "unit": "W",
+  "keys": [
+   "带传动",
+   "功率",
+   "mechanical"
+  ],
+  "desc": "P = (F₁−F₂)·v：带传动的有效功率。适用域：F₁/F₂ = e^(fα)（欧拉公式）决定不打滑极限。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "带传动",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "bolt_preload",
+  "cat": "engineering/mechanical",
+  "name": "螺栓预紧力",
+  "expr": "T / (K * d)",
+  "params": {
+   "T": {
+    "value": 200,
+    "desc": "拧紧扭矩 N·m",
+    "quantity": "力矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "K": {
+    "value": 0.2,
+    "desc": "扭矩系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "d": {
+    "value": 0.02,
+    "desc": "螺纹公称直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "N",
+  "keys": [
+   "螺栓",
+   "预紧力",
+   "mechanical"
+  ],
+  "desc": "F = T/(K·d)：螺栓预紧力。适用域：K≈0.2（润滑钢）；拧紧扭矩法精度 ±25%，所以要防松。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "连接",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "bolt_shear",
+  "cat": "engineering/mechanical",
+  "name": "螺栓剪切承载力",
+  "expr": "tau_allow * pi * d^2 / 4",
+  "params": {
+   "tau_allow": {
+    "value": 100000000,
+    "desc": "许用切应力 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "d": {
+    "value": 0.02,
+    "desc": "螺栓直径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "N",
+  "keys": [
+   "螺栓",
+   "剪切",
+   "mechanical"
+  ],
+  "desc": "F = τ_allow·πd²/4：单剪螺栓承载力。适用域：受剪螺栓；承压破坏往往先于剪切破坏，要同时校核。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "连接",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "key_shear",
+  "cat": "engineering/mechanical",
+  "name": "平键剪切强度",
+  "expr": "2 * T / (d * b * L)",
+  "params": {
+   "T": {
+    "value": 100,
+    "desc": "扭矩 N·m",
+    "quantity": "力矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "d": {
+    "value": 0.03,
+    "desc": "轴径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "b": {
+    "value": 0.008,
+    "desc": "键宽 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "L": {
+    "value": 0.04,
+    "desc": "键长 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "平键",
+   "剪切",
+   "mechanical"
+  ],
+  "desc": "τ = 2T/(d·b·L)：平键剪切应力。适用域：键长按轮毂长度；键的挤压应力通常更危险。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "机械设计",
+    "chapter": "连接",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
  }
 ]

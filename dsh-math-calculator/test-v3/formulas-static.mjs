@@ -38,7 +38,7 @@ function assert(name, cond, detail) {
 
 console.log('-- 1. 结构完整性（665 条）--')
 {
-  assert('公式总数 773', formulas.length === 773, String(formulas.length))
+  assert('公式总数 787', formulas.length === 787, String(formulas.length))
   const missing = formulas.filter((f) => !f.id || !f.name || !f.expr || !f.desc || !Array.isArray(f.keys) || f.keys.length === 0)
   assert('★ id/name/expr/desc/keys 全都不缺', missing.length === 0, missing.slice(0, 5).map((f) => f.id).join(','))
   const noUnit = formulas.filter((f) => !f.unit || !String(f.unit).trim())
@@ -53,7 +53,7 @@ console.log('-- 1. 结构完整性（665 条）--')
    * 有权威来源的才能标 [精确]。新采集的定律级公式必须带 sources。
    */
   const sourced = formulas.filter((f) => Array.isArray(f.sources) && f.sources.length > 0)
-  assert('★ 至少 103 条新公式带 sources', sourced.length >= 11, String(sourced.length))
+  assert('★ 至少 117 条新公式带 sources', sourced.length >= 11, String(sourced.length))
   const badSource = sourced.filter((f) => f.sources.some((s) => !s.type || !s.title || !s.accessed || !['exact', 'scaling', 'order-of-magnitude'].includes(f.confidence ?? '')))
   assert('★ sources 字段完整（type/title/accessed）且 confidence 合法', badSource.length === 0, badSource.slice(0, 3).map((f) => f.id).join(','))
   const badUrl = sourced.filter((f) => f.sources.some((s) => s.url !== undefined && !/^https?:\/\//.test(s.url)))
@@ -63,7 +63,7 @@ console.log('-- 1. 结构完整性（665 条）--')
 console.log('-- 2. 可执行式：parse + 符号声明 --')
 {
   const executable = formulas.filter((f) => f.executable !== false)
-  assert('可执行式 769 条', executable.length === 769, String(executable.length))
+  assert('可执行式 769 条', executable.length === 783, String(executable.length))
   const unparsable = []
   const unknown = new Map()
   for (const formula of executable) {
