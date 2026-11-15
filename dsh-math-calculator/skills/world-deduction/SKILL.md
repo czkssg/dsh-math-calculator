@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 48 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 49 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -53,6 +53,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **自创实体类型** | `topology` | `action:"define", entityType:{name,label,category,required,relations?}`——存工作区，之后可用 |
 | **实体图校验** | `topology` | `action:"validate", entities:[{id,type,...}], relations:[{from,to,kind}]`——查未知类型/缺字段/非法关系/基数 |
 | **拓扑模型保存** | `topology` | `action:"save", modelKey:"北境军", nodes, edges`；`list`/`load`/`export`/`import` 都在工作区 |
+| **天文历表（真实地球）** | `astro` | `action:"rise-set"`（日出日落/日照时长）、`"sun"`（高度角/方位）、`"moon"`（月相/光照比例）——`date` + `lat` + `lon`；架空行星仍用 `world` |
 | **解析 PDF** | `document` | `action:"extract"`（文本）/ `"tables"`（表格）/ `"numbers"`（数字台账）——`path:"某.pdf"`；清洗 DeepSeek 打印版页眉页脚；**不做 OCR** |
 | **导出结果（推荐）** | `workspace` | `action2:"export"`——把自创常数/公式/变量/实体类型/拓扑模型写进 `<工作区>.artifacts/workspace-state.json`；`action2:"import"` 读回 |
 | 内置数据快照 | `workspace` | `action2:"export-builtin", what:"formulas|...|all"`——静态数据，随插件版本走 |

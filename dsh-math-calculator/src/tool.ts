@@ -202,6 +202,10 @@ const PARAMETER_SPEC = {
   bodyFactor: { type: 'number', description: '常数倍数' },
   quickFeasible: { type: 'object', additionalProperties: true, description: '一句话可行性 {claim,world?}' },
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
+  astro: {
+    type: 'json',
+    description: '天文历表：{action:"sun|rise-set|moon|position", date:"2026-06-21T12:00:00Z", lat, lon, elevation}',
+  },
   document: {
     type: 'json',
     description: '文档：{action:"extract|tables|numbers", path:"某.pdf", text?}——PDF 文本/表格/数字台账（不做 OCR）',

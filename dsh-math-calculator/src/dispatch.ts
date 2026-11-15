@@ -54,6 +54,7 @@ import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
+import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
@@ -172,6 +173,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'astro':
+      return runAstro((args['astro'] ?? args) as never) as never
 
     case 'document':
       return runDocument((args['document'] ?? args) as never) as never
@@ -739,6 +743,8 @@ export const MIGRATED_OPERATIONS = [
   /** 老 operation，v3 以 derivation:impact 实现。 */
   'impact',
   'topology',
+  /** 天文历表（astronomy-engine）。 */
+  'astro',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',
