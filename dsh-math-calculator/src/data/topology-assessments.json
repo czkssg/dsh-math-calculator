@@ -140,6 +140,32 @@
    },
    "calculator": "mechanism",
    "output": "engineering"
+  },
+  {
+   "id": "fluid-power",
+   "match": {
+    "action": "structure",
+    "kind": "fluid-power",
+    "requires": [
+     "pressurePa",
+     "flowM3s"
+    ]
+   },
+   "calculator": "fluid-power",
+   "output": "engineering"
+  },
+  {
+   "id": "gear-train",
+   "match": {
+    "action": "structure",
+    "kind": "gear-train",
+    "requires": [
+     "powerW",
+     "rpm"
+    ]
+   },
+   "calculator": "gear-train",
+   "output": "engineering"
   }
  ]
 }

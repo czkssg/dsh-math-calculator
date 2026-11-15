@@ -61,7 +61,9 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 通用图 / 路径 / 视线 / 可达 | `topology` | `action:"model|route|sightline|reachable"` |
 | 编制拓扑（军队/政府） | `topology` | `action:"org"` + `units:[{id,level,headcount,parent}]` |
 | 地形 / 舱室 / 建筑 | `topology` | `action:"terrain|ship"` + 节点/舱室/通道 |
-| 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind:"building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge|mechanism"`（规则表驱动；mechanism 给 powerW/rpm → 扭矩/齿轮/轴承 L10/轴扭转/临界转速） |
+| 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind`：`building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge|mechanism|fluid-power|gear-train`（规则表驱动） |
+| **液压/气动** | `topology` | `kind:"fluid-power"` + `{pressurePa,flowM3s,efficiency,boreMm,rodMm}` → 液压功率/输出功率/推力/回程力/缸速 |
+| **多级传动链** | `topology` | `kind:"gear-train"` + `{powerW,rpm,stages:[{ratio,efficiency}]}` → 总传动比/总效率/末级转速与扭矩/逐级累计 |
 | 实体类型 / 自创 / 校验 | `topology` | `action:"entities|define|validate"` |
 | 拓扑模型存取 | `topology` | `action:"save|load|list|export|import"` |
 | 后勤/信息时延（疆域上限） | `topology` | `action:"logistics"` + `{mode,distanceKm,maxRoundTripDays}` |

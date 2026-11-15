@@ -104,3 +104,111 @@ export function assessMechanism(input: MechanismInput): MechanismAssess {
   if (input.rpm > criticalRpm * 0.8) verdict.push('工作转速接近临界转速（' + criticalRpm.toFixed(0) + ' r/min），需避开 ±20%')
   return { torqueNm: torque, outputRpm, teethRatio, tangentialN: tangential, lewisStressPa: lewis, bearingLifeH: bearingLife, shaftTorsionPa: torsion, criticalRpm, verdict }
 }
+
+// ───────────────────────────── 液压/气动 + 多级传动（2026-11-16） ─────────────────────────────
+
+/** 液压/气动输入。 */
+export interface FluidPowerInput {
+  /** 系统压力 Pa。 */
+  pressurePa: number
+  /** 流量 m³/s。 */
+  flowM3s: number
+  /** 总效率（0–1，默认 0.85）。 */
+  efficiency?: number
+  /** 执行器缸径 mm（给则算推力）。 */
+  boreMm?: number
+  /** 杆径 mm（给则算回程力）。 */
+  rodMm?: number
+}
+
+/** 液压/气动结果。 */
+export interface FluidPowerAssess {
+  /** 液压功率 W（p·Q）。 */
+  hydraulicPowerW: number
+  /** 有效功率 W（乘效率）。 */
+  outputPowerW: number
+  /** 缸推力 N（给缸径时）。 */
+  thrustN: number | null
+  /** 回程推力 N（给杆径时）。 */
+  retractN: number | null
+  /** 缸速 m/s（给缸径时）。 */
+  pistonSpeedMps: number | null
+}
+
+/**
+ * 液压/气动功率与执行器。
+ *
+ * @param input - 压力/流量/缸径
+ * @returns 校核
+ */
+export function assessFluidPower(input: FluidPowerInput): FluidPowerAssess {
+  if (!(input.pressurePa > 0) || !(input.flowM3s > 0)) throw new CalcError('invalid_argument', '压力与流量必须为正', '')
+  const efficiency = input.efficiency ?? 0.85
+  const hydraulic = input.pressurePa * input.flowM3s
+  const thrust = typeof input.boreMm === 'number' && input.boreMm > 0 ? input.pressurePa * Math.PI * (input.boreMm / 2000) ** 2 : null
+  const retract = typeof input.boreMm === 'number' && typeof input.rodMm === 'number' && input.boreMm > input.rodMm
+    ? input.pressurePa * Math.PI * (((input.boreMm / 2000) ** 2) - ((input.rodMm / 2000) ** 2))
+    : null
+  const speed = typeof input.boreMm === 'number' && input.boreMm > 0 ? input.flowM3s / (Math.PI * (input.boreMm / 2000) ** 2) : null
+  return { hydraulicPowerW: hydraulic, outputPowerW: hydraulic * efficiency, thrustN: thrust, retractN: retract, pistonSpeedMps: speed }
+}
+
+/** 传动链一级。 */
+export interface TrainStage {
+  /** 传动比（从动/主动）。 */
+  ratio: number
+  /** 该级效率（0–1，默认 0.97）。 */
+  efficiency?: number
+}
+
+/** 传动链输入。 */
+export interface TrainInput {
+  /** 输入功率 W。 */
+  powerW: number
+  /** 输入转速 r/min。 */
+  rpm: number
+  /** 各级。 */
+  stages: TrainStage[]
+}
+
+/** 传动链结果。 */
+export interface TrainAssess {
+  /** 总传动比。 */
+  totalRatio: number
+  /** 总效率。 */
+  totalEfficiency: number
+  /** 末级转速 r/min。 */
+  outputRpm: number
+  /** 末级扭矩 N·m。 */
+  outputTorqueNm: number
+  /** 末级功率 W。 */
+  outputPowerW: number
+  /** 各级累计（比/效率/转速）。 */
+  perStage: Array<{ index: number; ratio: number; efficiency: number; rpm: number }>
+}
+
+/**
+ * 多级传动链（齿轮箱/减速器）。
+ *
+ * @param input - 功率/转速/各级
+ * @returns 校核
+ */
+export function assessTrain(input: TrainInput): TrainAssess {
+  if (!(input.powerW > 0) || !(input.rpm > 0)) throw new CalcError('invalid_argument', '功率与转速必须为正', '')
+  if (!Array.isArray(input.stages) || input.stages.length === 0) throw new CalcError('invalid_argument', 'stages 不能为空', '')
+  let ratio = 1
+  let efficiency = 1
+  let rpm = input.rpm
+  const perStage: TrainAssess['perStage'] = []
+  for (let index = 0; index < input.stages.length; index += 1) {
+    const stage = input.stages[index]
+    if (!(stage.ratio > 0)) throw new CalcError('invalid_argument', '第 ' + (index + 1) + ' 级传动比必须为正', '')
+    ratio *= stage.ratio
+    efficiency *= stage.efficiency ?? 0.97
+    rpm /= stage.ratio
+    perStage.push({ index: index + 1, ratio: stage.ratio, efficiency: stage.efficiency ?? 0.97, rpm })
+  }
+  const outputPower = input.powerW * efficiency
+  const outputTorque = (outputPower * 60) / (2 * Math.PI * rpm)
+  return { totalRatio: ratio, totalEfficiency: efficiency, outputRpm: rpm, outputTorqueNm: outputTorque, outputPowerW: outputPower, perStage }
+}
