@@ -24,6 +24,7 @@
 import Graph from 'graphology'
 import { connectedComponents } from 'graphology-components'
 import { CalcError } from '../../core/errors.js'
+import { assessBuildingEngineering, assessShipEngineering } from './engineering.js'
 import { buildTopology, summarizeTopology, type Topology, type TopologyEdge, type TopologyNode } from './model.js'
 import { distanceBetween, reachableWithin, shortestRoute, sightline } from './geometry.js'
 import { assessStructure, type BuildingInput, type VehicleInput } from './structure.js'
@@ -409,7 +410,20 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
 
   if (action === 'org') return runOrg(input)
   if (action === 'terrain') return runTerrainTopology(input)
-  if (action === 'ship' || action === 'building') return runShipTopology(input)
+  if (action === 'ship' || action === 'building') {
+    const outcome = runShipTopology(input)
+    /** 舰船：给了主尺度就附工程校核（排水量/弗劳德数/稳性/横摇）。 */
+    const flat = input as unknown as Record<string, unknown>
+    const L = Number(flat['lengthM'] ?? 0)
+    const B = Number(flat['beamM'] ?? 0)
+    const T = Number(flat['draftM'] ?? 0)
+    if (L > 0 && B > 0 && T > 0) {
+      const eng = assessShipEngineering({ lengthM: L, beamM: B, draftM: T, blockCoef: Number(flat['blockCoef'] ?? 0.65), speedMps: Number(flat['speedMps'] ?? 0), kgM: flat['kgM'] !== undefined ? Number(flat['kgM']) : undefined })
+      const text = outcome.result + '\n' + ['', '【工程校核】', '  排水量 ' + eng.displacementT.toFixed(0) + ' t', '  弗劳德数 ' + eng.froude.toFixed(3) + '（' + (eng.froude < 0.4 ? '排水型' : eng.froude < 1 ? '过渡型' : '滑行型') + '）', '  初稳性高 GM ' + eng.metacentricHeightM.toFixed(2) + ' m' + (isFinite(eng.rollPeriodS) ? '，横摇周期 ' + eng.rollPeriodS.toFixed(1) + ' s' : '，GM≤0 不稳'), '  航速 ' + eng.speedKn.toFixed(1) + ' kn'].join('\n')
+      return { result: text, value: { ...(outcome.value as Record<string, unknown>), engineering: eng } }
+    }
+    return outcome
+  }
   if (action === 'structure') {
     /** 扁平写法（反馈：kind/levels/area 或 massKg/speedKph/…）也能用。 */
     const flat = input as unknown as Record<string, unknown>
@@ -420,7 +434,24 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
       ? { kind: 'vehicle', massKg: Number(flat['massKg']), speedKph: Number(flat['speedKph'] ?? 0), energyJ: Number(flat['energyJ'] ?? 0), energyPerKmJ: Number(flat['energyPerKmJ'] ?? 0), ...(flat['payloadKg'] !== undefined ? { payloadKg: Number(flat['payloadKg']) } : {}) }
       : undefined)
     const outcome = assessStructure((building ?? vehicle) as never)
-    return { result: outcome.result, value: outcome.value, ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}) }
+    /** 建筑：附工程校核（疏散/电梯/风压/抗震）——与公式库批次 8 同一套公式。 */
+    let engineering: unknown = null
+    let extra: string[] = []
+    if (building !== undefined && building.floors > 0 && building.footprintM2 > 0) {
+      const eng = assessBuildingEngineering({ floors: building.floors, footprintM2: building.footprintM2 })
+      engineering = eng
+      extra = [
+        '',
+        '【工程校核】',
+        '  估算人数 ' + eng.people + '（按 10 m²/人）',
+        '  疏散出口总宽 ' + eng.egressWidthM.toFixed(1) + ' m',
+        '  电梯约 ' + eng.elevators + ' 台（13 人/梯、6 次/时）',
+        '  顶部风压 ' + eng.windPressureKnm2.toFixed(2) + ' kN/m²（100 m 处 ' + eng.heightM + ' m 高）',
+        '  抗震底部剪力 ' + eng.baseShearKn.toFixed(0) + ' kN',
+      ]
+    }
+    const merged = extra.length > 0 ? outcome.result + '\n' + extra.join('\n') : outcome.result
+    return { result: merged, value: { ...(outcome.value as Record<string, unknown>), engineering }, ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}) }
   }
   if (action === 'rules') {
     const topology = buildTopology({ nodes: input.nodes ?? [], edges: input.edges ?? [], planetRadiusKm: input.planetRadiusKm })
