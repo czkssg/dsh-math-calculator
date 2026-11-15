@@ -67,13 +67,13 @@ console.log('-- 2. 批量与参数契约（T4-15 / T7-N3 / T7-N4 / T7-N6）--')
 console.log('-- 3. balance 量纲（T7-N1/N2）--')
 {
   const cross = await run({ operation: 'balance', balance: { a: { demand: 1, supply: 2, unit: 'm³' }, b: { demand: 1, supply: 1, unit: 'kW' } } })
-  assert('★ N1 跨量纲 → invalid_argument', cross.ok === false && cross.error?.type === 'invalid_argument', JSON.stringify(cross.error))
+  assert('★ N1 跨量纲 → 分项盘点（含提示）', cross.ok === true && cross.result.includes('跨量纲提示'), JSON.stringify(cross.error).slice(0, 80))
 
   const absurd = await run({ operation: 'balance', balance: { water: { demand: 1, supply: 2, unit: '光年' } } })
   assert('★ N2 水量用光年 → invalid_argument', absurd.ok === false && absurd.error?.type === 'invalid_argument', JSON.stringify(absurd.error))
 
   const same = await run({ operation: 'balance', balance: { grain: { demand: 1, supply: 2, unit: '吨' }, water: { demand: 1, supply: 2, unit: 'L' } } })
-  assert('N1/N2 正向对照：同族（质量+体积）仍会跨族被拒', same.ok === false, '')
+  assert('N1/N2 正向对照：质量+体积 → 分项盘点（含提示）', same.ok === true && same.result.includes('跨量纲提示'), '')
   const valid = await run({ operation: 'balance', balance: { grain: { demand: 1, supply: 2, unit: '吨' } } })
   assert('单族常量 → 通过', valid.ok === true, String(valid.error?.message))
 }
