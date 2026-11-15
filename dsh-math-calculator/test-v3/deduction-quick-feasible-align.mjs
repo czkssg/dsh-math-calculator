@@ -6,6 +6,7 @@
  *   ② 尺寸/能量交给已有上限判（feasibility / 行星截获功率）；
  *   ③ 认不出就明说「判不了」，不编「大概勉强」。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -10,6 +10,7 @@
  * 这一套把「可执行式必须 parse 通过、符号必须已声明」变成硬断言；
  * 展示式必须显式标记，且调用求值时报明确错误。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

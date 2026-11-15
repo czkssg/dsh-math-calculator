@@ -4,6 +4,7 @@
  * 老实现的已知失败模式是「静默」——单位丢了、区间拆出负数、噪音混进台账。
  * 这里成对验证：该抽的抽到、该拒的拒掉、该标注的标注。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

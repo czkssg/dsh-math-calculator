@@ -5,6 +5,7 @@
  * 海拔按绝热递减率降温、距海越远温差越大、洋流冷暖、迎风/背风雨影与焚风、
  * 雪线/林线、谷地逆温、海陆风。测试逐条核对方向与量级。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

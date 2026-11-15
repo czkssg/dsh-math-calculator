@@ -1,6 +1,7 @@
 /**
  * 单位处理管道：统一别名索引（4,764 条）判定 + 换算。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

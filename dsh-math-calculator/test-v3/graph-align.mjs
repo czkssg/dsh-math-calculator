@@ -22,6 +22,7 @@
  *   修正后：主体名归一 → 检出 115 倍差异
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -1,6 +1,7 @@
 /**
  * 文档解析（PDF）：来自实践文档 _tools/pdf2md 的整合。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

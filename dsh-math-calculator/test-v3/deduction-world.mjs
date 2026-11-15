@@ -23,6 +23,7 @@
  * 倾角 0 + 圆轨道 → 无季节；倾角 80° → 赤道也有季节（老实现曾用
  * sin²φ 作纬度因子，导致赤道永远无季节，那是错的）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

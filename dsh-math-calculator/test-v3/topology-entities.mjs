@@ -1,6 +1,7 @@
 /**
  * 实体类型 / 自创接口 / 数据导出。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, existsSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

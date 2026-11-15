@@ -26,6 +26,7 @@
  *   ① 裸名默认指向国际标准（GB 3100 / 1959 协定）
  *   ② **变体一个都没删** —— 需要时显式调用仍能拿到别的值
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import { REBINDS, verifyRebinds } from '../lib/core/units-default-rebind.js'
 import { DEFAULT_DECISIONS, defaultFor, defaultNotice } from '../lib/core/units-default-policy.js'

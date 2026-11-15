@@ -1,6 +1,7 @@
 /**
  * 反馈报告 v3：consistency 三漏（中文数字 / 阈值 / 同义词）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

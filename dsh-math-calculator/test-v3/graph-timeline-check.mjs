@@ -4,6 +4,7 @@
  * 这是反馈包 N9 新增的 op。核心设计：重叠是否合理由作者定
  * （`overlapAllowed`），工具只列冲突不说「该删哪个」。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

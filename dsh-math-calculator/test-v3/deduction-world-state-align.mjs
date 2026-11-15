@@ -5,6 +5,7 @@
  * 核心判据是「废弃链而不是删除」：改设定时标 deprecated 并指向新条目，
  * 留下完整演化史——这是压缩总结永远做不到的。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -1,6 +1,7 @@
 /**
  * 反馈报告 v3：单位缺口（AU / 光年 / 桶 / 吨·年复合）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

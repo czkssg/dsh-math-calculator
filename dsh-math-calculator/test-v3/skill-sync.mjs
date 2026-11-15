@@ -27,6 +27,7 @@
  * 所以**不测「skill 是否抄全了 help」** —— 抄全反而是重复付费。
  * 只测「skill 有没有提到这个能力的存在」与「提到的 key 是否真实存在」。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, rmSync, readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

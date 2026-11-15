@@ -14,6 +14,7 @@
  * 这 19 个必须报 unknown_subcommand，并在 message 里说清"老插件里有、这里还没接"，
  * 不能回一个空壳让人误以为功能还在。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

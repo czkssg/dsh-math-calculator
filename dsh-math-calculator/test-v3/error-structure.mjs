@@ -1,6 +1,7 @@
 /**
  * 错误结构化：所有失败都带 {type,message,hint?}，不再有 THROW / [object Object]。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

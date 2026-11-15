@@ -1,6 +1,7 @@
 /**
  * world_state 边界测试：非法输入、未知动作、文件层读坏不当空库。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

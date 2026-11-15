@@ -20,6 +20,7 @@
  *   ③ **无变体写法落到日常主变体**（「唐朝的尺」= 大尺 30，不是小尺 24.6）
  *   ④ **可信度如实标注**（exact / typical / range 三级，不把常用值说成精确值）
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import {
   CHINESE_ERA_UNITS, findEraVariant, eraTimeline,

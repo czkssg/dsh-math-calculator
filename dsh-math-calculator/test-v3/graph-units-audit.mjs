@@ -6,6 +6,7 @@
  *   · 数字后面没有单位 → 进裸数字护栏；
  *   · 不认识的单位 → unknown-unit，不静默当无量纲。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

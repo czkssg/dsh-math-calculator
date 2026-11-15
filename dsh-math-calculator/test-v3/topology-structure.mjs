@@ -1,6 +1,7 @@
 /**
  * structure 测试：建筑容量/限高、载具续航/载荷。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -4,6 +4,7 @@
  * 每条都成对验证：健康的拓扑判 ok，人为破坏的结构判 warn。
  * 缺数据时必须「未检查」，不能当通过。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

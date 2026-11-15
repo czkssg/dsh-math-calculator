@@ -4,6 +4,7 @@
  * 判据：参数标注了量纲，就给「带单位的值」做量纲检查；
  * 没标注的不猜（只解析数值，不拦），宁可少拦不可乱拦。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

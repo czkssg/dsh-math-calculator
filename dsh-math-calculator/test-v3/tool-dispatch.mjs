@@ -10,6 +10,7 @@
  *
  * 直接在进程内调 tool.execute，不依赖宿主。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

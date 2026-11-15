@@ -4,6 +4,7 @@
  * 用户要求：导出路径在工作区；导出的是**结果**（建好的模型/自创常数/公式），
  * 并且要能**导入**（常用字段不必每次重抄）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -5,6 +5,7 @@
  * 仍走老入口的只剩 constants / workspace / quantities / formula-table /
  * custom / balance / help / auto（不在本轮范围，见交接）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -23,6 +23,7 @@
  *
  * 现在用 minisearch + segmentit（中文分词），并**显式区分**精确/近似。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

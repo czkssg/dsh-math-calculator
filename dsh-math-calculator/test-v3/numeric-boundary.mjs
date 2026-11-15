@@ -16,6 +16,7 @@
  * ④ 性能红线    会不会卡死（不可接受的输入要**快速拒绝**）
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

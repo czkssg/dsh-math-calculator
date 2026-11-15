@@ -10,6 +10,7 @@
  * 3. 噪音过滤：「已思考（用时 7 秒）」这类行不进台账（老版实测 60% 是噪音）。
  * 4. 上下文：每个数字带它所在那半句，否则抽出来也不知道是什么。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

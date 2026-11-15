@@ -1,6 +1,7 @@
 /**
  * 公式结果单位自检（反馈 §1 公式量纲类）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

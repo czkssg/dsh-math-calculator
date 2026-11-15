@@ -10,6 +10,7 @@
  * （prev+trans=10.4，prev*0.25=2.6，10.4+2.6=13）。测试以**表达式实算**为准，
  * 并在注释里记下这处不自洽——照抄示例数字会让工具输出假值。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -1,6 +1,7 @@
 /**
  * 非现代单位桥：穷举映射（1032 别名）抽样验证。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

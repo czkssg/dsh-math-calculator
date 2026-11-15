@@ -17,6 +17,7 @@
  *   1 里 + 3 米 → 中文单位要能参与运算
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine, normalizeUnits } from '../lib/core/engine.js'
 import {
   fmtNumber, fmtShort, FMT, trimDecimal, magnitudeOf, annotateMagnitude,

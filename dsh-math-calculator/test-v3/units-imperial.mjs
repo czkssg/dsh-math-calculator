@@ -28,6 +28,7 @@
  *   各朝代尺            15.8–34 cm ← 历史语境（见 units-era）
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import { IMPERIAL_AND_MISC_UNITS, COUNT_UNITS } from '../lib/core/units-imperial.js'
 import { CN_MARKET_UNITS } from '../lib/core/units-cn-market.js'

@@ -17,6 +17,7 @@
  * 每条上限都来自明确公式（见模块注释）。本套件核对地球基准值与参数变化的方向性：
  * 重力升高 → 生物/山高上限下降；大气密度升高 → 飞行质量上限上升。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

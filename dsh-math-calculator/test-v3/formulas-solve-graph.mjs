@@ -1,6 +1,7 @@
 /**
  * 阶段 2：公式反解（solve-for）与公式-链结构图。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -7,6 +7,7 @@
  *   3. 缺初始参数要说清缺谁；
  *   4. 逆序映射必须拒绝——链的步骤顺序 ≠ 数据流方向。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

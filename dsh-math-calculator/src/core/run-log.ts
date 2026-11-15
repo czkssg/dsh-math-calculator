@@ -9,6 +9,10 @@
  *
  * 位置：`<DSH_MATH_CALC_HOME>/logs/run.log.jsonl`；超过 2 MB 轮转成 `run.log.1.jsonl`。
  *
+ * ## 开关
+ *
+ * `DSH_MATH_CALC_LOG=off` 时完全跳过（测试与压测用，零开销）。
+ *
  * @module dsh-math-calculator/core/run-log
  */
 
@@ -29,6 +33,11 @@ export interface RunLogEntry {
   input?: string
 }
 
+/** 日志是否启用（默认开；DSH_MATH_CALC_LOG=off 关闭）。 */
+export function runLogEnabled(): boolean {
+  return String(process.env['DSH_MATH_CALC_LOG'] ?? '').toLowerCase() !== 'off'
+}
+
 /** 日志目录。 */
 export function runLogDirectory(): string {
   return join(workspaceDirectory(), '..', 'logs')
@@ -39,7 +48,7 @@ export function runLogPath(): string {
   return join(runLogDirectory(), 'run.log.jsonl')
 }
 
-/** 轮转阈值（2 MB）。 */
+/** 轮转阈值（2 MB，由 rotating-file-stream 执行）。 */
 const MAX_BYTES = 2 * 1024 * 1024
 
 let stream: RotatingFileStream | null = null
@@ -62,6 +71,7 @@ function getLogger(): Logger {
  * @param entry - 日志内容
  */
 export function writeRunLog(entry: RunLogEntry): void {
+  if (!runLogEnabled()) return
   try {
     getLogger().info(entry)
   } catch {

@@ -17,6 +17,7 @@
  * 26 个天体的物理量值全部来自 `src/data/bodies.json`，
  * 32 类类型的物理锁/常见错误来自 `body-taxonomy.json`。测试只核对查询与传导。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

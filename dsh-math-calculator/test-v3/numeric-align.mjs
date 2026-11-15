@@ -18,6 +18,7 @@
  *
  * **不做「只要看起来差不多就算过」的宽松比对** —— 那会让重构失去意义。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync } from 'node:fs'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'

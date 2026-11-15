@@ -1,6 +1,7 @@
 /**
  * 公式即函数 + 关系图：共用物理量/常数建立联系，调用时看见相邻公式。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

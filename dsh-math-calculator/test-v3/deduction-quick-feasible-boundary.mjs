@@ -1,6 +1,7 @@
 /**
  * quick_feasible 边界测试：缺参、世界参数变化、数值边界。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

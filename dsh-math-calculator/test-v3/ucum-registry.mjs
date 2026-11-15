@@ -1,6 +1,7 @@
 /**
  * 借 UCUM 代码建体系：把本地单位注册进 UnitTables，换算走 UCUM 引擎。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

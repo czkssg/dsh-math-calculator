@@ -1,6 +1,7 @@
 /**
  * 入口收尾批：剩余 8 个 operation（constants/workspace/quantities/formula-table/custom/balance/help/auto）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

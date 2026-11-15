@@ -1,6 +1,7 @@
 /**
  * 反馈报告 v3 的参数兼容层（solve/ode/chain/impact/topology structure/world 嵌套）。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

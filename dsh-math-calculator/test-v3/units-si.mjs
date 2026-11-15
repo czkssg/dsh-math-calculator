@@ -22,6 +22,7 @@
  *   ③ 天文与核单位的换算正确
  *   ④ 对数量（分贝）**不注册进 mathjs**，且能解释为什么
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

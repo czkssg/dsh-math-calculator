@@ -23,6 +23,7 @@
  * 若不分时代，「罗马一 libra 银」会算出多 131 克。在货币与军饷推演里这是致命的。
  * 这个例子说明**为什么必须把历史单位与同名的现代单位分开**。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import {
   EGYPTIAN_UNITS, GREEK_UNITS, ROMAN_UNITS, ENGLISH_UNITS, JAPANESE_UNITS, ISLAMIC_UNITS,

@@ -24,6 +24,7 @@
  *   英制 inch = 1/12 foot
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import {
   OTTOMAN_UNITS, PERSIAN_UNITS, MAYA_UNITS, AZTEC_UNITS,

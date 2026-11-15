@@ -28,6 +28,7 @@
  *   英制 grain     0.0648 g
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import { BYZANTINE_DETAIL_UNITS, ARAB_UNITS, BYZANTINE_ARAB_UNITS } from '../lib/core/units-byzantine-arab.js'
 import { ALL_ERA_UNITS, findEraVariant } from '../lib/core/units-era.js'

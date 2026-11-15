@@ -20,6 +20,7 @@
  *
  * 除这两类外，任何数值差异都算失败——相对误差阈值 1e-9。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

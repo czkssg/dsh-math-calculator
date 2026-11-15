@@ -11,6 +11,7 @@
  * 这条界线是本模块的核心：把"缺编"当报错会让作者没法写战损后的部队，
  * 把"环"当报告则会输出一个无限累加的总人数。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'

@@ -16,6 +16,7 @@
  *   ③ 干量加仑 vs 液量加仑        差 16%（谷物与液体不能混）
  * ```
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { buildEngine } from '../lib/core/engine.js'
 import { IMPERIAL_EXT_UNITS, ENERGY_VARIANTS, IMPERIAL_VOLUME_EXT } from '../lib/core/units-imperial-ext.js'
 import { ANCIENT_MORE_UNITS } from '../lib/core/units-ancient-more.js'

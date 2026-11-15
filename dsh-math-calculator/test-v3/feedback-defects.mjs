@@ -4,6 +4,7 @@
  * 每条都成对：**该拒绝的拒绝，该放行的放行**。
  * 已修的在 v3 下必须保持；文档里过时的（如 feasibility 字符串单位）在这里锁住现状。
  */
+process.env.DSH_MATH_CALC_LOG = 'off'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
