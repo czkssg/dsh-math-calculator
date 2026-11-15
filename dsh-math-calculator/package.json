@@ -54,6 +54,7 @@
   "dependencies": {
     "@lhncbc/ucum-lhc": "^8.0.1",
     "algebrite": "^1.4.0",
+    "astronomy-engine": "^2.1.19",
     "graphology": "^0.26.0",
     "graphology-components": "^1.5.4",
     "graphology-dag": "^0.4.1",
@@ -67,7 +68,8 @@
     "pdf-parse": "^2.4.5",
     "pino": "^10.4.0",
     "rotating-file-stream": "^4.0.0",
-    "segmentit": "^2.0.3"
+    "segmentit": "^2.0.3",
+    "suncalc": "^2.1.4"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
