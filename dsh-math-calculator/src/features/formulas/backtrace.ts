@@ -25,6 +25,59 @@ export interface ModelChain {
   steps: Array<{ op: string; action?: string; formula?: string; kind?: string; label: string; needs?: string[]; provides?: string[] }>
 }
 
+/** 模型链一步的依赖排序结果。 */
+export interface OrderedSteps {
+  steps: ModelChain['steps']
+  /** 无法满足的依赖（前面没有步骤提供）。 */
+  unresolved: string[]
+  /** 是否检测到循环。 */
+  cyclic: boolean
+}
+
+/**
+ * 按 provides / needs 做拓扑排序。
+ *
+ * 用户要求（2026-11-16）：加链不该人工排步骤——声明每步产出与需要，顺序自动推。
+ *
+ * 规则：
+ * 1. 每步的 needs 若已被前面步骤的 provides 覆盖 → 可放后；
+ * 2. 找不到提供者的 needs → 记为 unresolved（由用户给，不是错）；
+ * 3. 检测环 → cyclic=true，保持原序并报告。
+ *
+ * @param steps - 原始步骤
+ * @returns 排序结果
+ */
+export function orderSteps(steps: ModelChain['steps']): OrderedSteps {
+  const provided = new Map<string, number>()
+  const remaining = steps.map((_, index) => index)
+  const ordered: ModelChain['steps'] = []
+  const unresolved = new Set<string>()
+  let guard = 0
+  while (remaining.length > 0 && guard < steps.length * steps.length + 1) {
+    guard += 1
+    let progressed = false
+    for (let position = 0; position < remaining.length; position += 1) {
+      const index = remaining[position]
+      const step = steps[index]
+      const needs = step.needs ?? []
+      const satisfied = needs.every((need) => provided.has(need) || unresolved.has(need) === false && !steps.some((s) => (s.provides ?? []).includes(need)))
+      if (!satisfied) continue
+      ordered.push(step)
+      for (const key of step.provides ?? []) provided.set(key, index)
+      for (const need of needs) if (!provided.has(need)) unresolved.add(need)
+      remaining.splice(position, 1)
+      progressed = true
+      break
+    }
+    if (!progressed) break
+  }
+  if (remaining.length > 0) {
+    /** 有环/阻塞：保持原序，标注。 */
+    return { steps, unresolved: [...unresolved], cyclic: true }
+  }
+  return { steps: ordered, unresolved: [...unresolved], cyclic: false }
+}
+
 /** 公式条目（data/formulas.json 的运行时形状）。 */
 export interface FormulaEntry {
   id: string
@@ -82,9 +135,15 @@ export function backtrace(formulas: FormulaEntry[], target: string, options: { m
   const chains = options.modelChains ?? []
   const hitChain = chains.find((chain) => chain.keywords.some((word) => target.includes(word)))
   if (hitChain !== undefined) {
-    const calls = hitChain.steps.map((step) => ({ operation: step.op, ...(step.action !== undefined ? { action: step.action } : {}), ...(step.formula !== undefined ? { formula: step.formula } : {}), ...(step.kind !== undefined ? { kind: step.kind } : {}) }))
-    const needs = [...new Set(hitChain.steps.flatMap((step) => step.needs ?? []))]
-    return { target, modelChain: { id: hitChain.id, label: hitChain.label, steps: hitChain.steps, calls, needs }, matches: [], chain: [], missing: [], calls, notes: ['命中模型链「' + hitChain.label + '」：' + hitChain.steps.map((s) => s.label).join(' → '), '按 calls 逐条执行；needs 是各步需要你补的参数名。'] }
+    /** 自动排序：按 provides/needs 拓扑排，不靠人工排步骤。 */
+    const ordered = orderSteps(hitChain.steps)
+    const steps = ordered.steps
+    const calls = steps.map((step) => ({ operation: step.op, ...(step.action !== undefined ? { action: step.action } : {}), ...(step.formula !== undefined ? { formula: step.formula } : {}), ...(step.kind !== undefined ? { kind: step.kind } : {}) }))
+    const needs = [...new Set(steps.flatMap((step) => step.needs ?? []))]
+    const notes = ['命中模型链「' + hitChain.label + '」：' + steps.map((s) => s.label).join(' → '), '按 calls 逐条执行；needs 是各步需要你补的参数名。']
+    if (ordered.cyclic) notes.push('⚠ 依赖环：未能自动排序，保持原序。')
+    if (ordered.unresolved.length > 0) notes.push('这些依赖由你提供：' + ordered.unresolved.join('、'))
+    return { target, modelChain: { id: hitChain.id, label: hitChain.label, steps, calls, needs }, matches: [], chain: [], missing: [], calls, notes }
   }
   const tokens = tokenize(target)
   const scored: Array<{ entry: FormulaEntry; score: number }> = []
