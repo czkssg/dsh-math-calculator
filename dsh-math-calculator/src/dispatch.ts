@@ -58,6 +58,7 @@ import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runDiverge } from './features/deduction/diverge.js'
+import { putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -212,6 +213,45 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'data': {
+      /** 统一数据层：put/get/query/lineage/stats/export/import。 */
+      const action = typeof args['dataAction'] === 'string' ? (args['dataAction'] as string) : (typeof args['action'] === 'string' ? (args['action'] as string) : 'stats')
+      if (action === 'put') {
+        const record = putRecord({ kind: String(args['kind'] ?? 'note'), name: String(args['name'] ?? ''), tags: Array.isArray(args['tags']) ? (args['tags'] as unknown[]).map(String) : [], refs: Array.isArray(args['refs']) ? (args['refs'] as unknown[]).map(String) : [], payload: args['payload'] })
+        return { result: '已写入 ' + record.id + '（v' + record.version + '）', value: record } as never
+      }
+      if (action === 'get') {
+        const id = typeof args['id'] === 'string' ? (args['id'] as string) : typeof args['name'] === 'string' ? String(args['kind'] ?? 'note') + ':' + String(args['name']) : ''
+        const record = getRecord(id)
+        return { result: record === null ? '没有这条记录：' + id : JSON.stringify(record, null, 1), value: { record } } as never
+      }
+      if (action === 'query') {
+        const rows = queryRecords({ kind: typeof args['kind'] === 'string' ? (args['kind'] as string) : undefined, tag: typeof args['tag'] === 'string' ? (args['tag'] as string) : undefined, nameContains: typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : undefined, refsTo: typeof args['refsTo'] === 'string' ? (args['refsTo'] as string) : undefined })
+        const lines = ['═══ 数据查询（' + rows.length + ' 条）═══']
+        for (const row of rows.slice(0, 50)) lines.push('  ' + row.id + '  v' + row.version + '  [' + row.kind + ']  ' + (row.tags.length > 0 ? row.tags.join('/') : '-'))
+        return { result: lines.join('\n'), value: { count: rows.length, records: rows.map((r) => ({ id: r.id, kind: r.kind, name: r.name, version: r.version, tags: r.tags, refs: r.refs })) } } as never
+      }
+      if (action === 'lineage') {
+        const id = typeof args['id'] === 'string' ? (args['id'] as string) : ''
+        const result = lineage(id)
+        const lines = ['═══ 血缘：' + id + ' ═══']
+        lines.push('  上游（它引用的）：' + (result.upstream.length > 0 ? result.upstream.map((r) => r.id).join('、') : '无'))
+        lines.push('  下游（引用它的）：' + (result.downstream.length > 0 ? result.downstream.map((r) => r.id).join('、') : '无'))
+        return { result: lines.join('\n'), value: result } as never
+      }
+      if (action === 'export') {
+        return { result: exportRecords(), value: { exported: true } } as never
+      }
+      if (action === 'import') {
+        const count = importRecords(String(args['dataJson'] ?? '[]'))
+        return { result: '导入 ' + count + ' 条', value: { imported: count } } as never
+      }
+      const stats = storeStats()
+      const lines = ['═══ 数据层统计 ═══', '  记录 ' + stats.total + ' 条，累计版本 ' + stats.versions]
+      for (const [kind, count] of Object.entries(stats.byKind)) lines.push('  ' + kind + '：' + count)
+      return { result: lines.join('\n'), value: stats } as never
+    }
 
     case 'diverge': {
       const base = (args['base'] ?? {}) as Record<string, unknown>
@@ -878,6 +918,8 @@ export const MIGRATED_OPERATIONS = [
   'conflict',
   /** 分支推演（两条时间线对照）。 */
   'diverge',
+  /** 统一数据层（记录/血缘/统计/导入导出）。 */
+  'data',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',
