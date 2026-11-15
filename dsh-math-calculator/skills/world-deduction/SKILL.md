@@ -18,81 +18,76 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **不猜** | 判据由调用方给（`sanity:{max,min,expect,note}`）。工具不会替你决定「这个数合不合理」 |
 | **`result` 是数据通道** | 提示走 `notice`。不要把提示当结论读 |
 
-## 基础能力速查（推演之外的日常操作）
+## 能力速查（三类门面 + 专项）
 
-推演会用到的底子都在这里。**大多数时候一句话就够，不必查 help**。
+**先记三个门面**：`calc`（数值/公式）、`derive`（推演/对账）、`manage`（帮助/工作区）。
+`{operation:"calc", op:"solve", expression:"x^2-4=0"}` 等价于 `{operation:"solve", ...}`。
+旧 op 名全部继续可用；下面按用途分组。
 
-| 你想做的事 | operation | 关键参数 |
+### calc：算数、线代、公式
+
+| 想做什么 | op | 关键参数 |
 |---|---|---|
-| 算一条式子（可带单位） | `evaluate` | `expression` 或 `expressions[]` 批量 |
-| 解方程 / 方程组 | `solve` | `expression` 写等式，逗号分隔多式 |
-| 求导 | `derivative` | `expression` + `variable`（默认 x） |
-| 积分（含定积分） | `integral` | `expression` + `from`/`to` |
-| 化简 / 展开 | `simplify` / `expand` | `expression` |
-| 求根 / 零点 | `roots` | `expression` |
-| 线性方程组 | `system` | `matrix` + `vector` |
-| 矩阵运算 | `matrix` | `matrix`（乘法/求逆/行列式） |
-| 特征值 | `eigen` | `matrix` |
-| 统计量 | `stats` | `data`（均值/方差/分位…） |
-| 概率分布 | `dist` | `distribution` + `params` + `x` |
-| 回归拟合 | `regression` | `data` + `dataY` + `degree` |
-| 单条公式 | `formula` | `formula` + `params`（或 `overrides`） |
-| **反解公式参数** | `formula` | 加 `solveFor:"m"` + `targetValue:100`；其余参数放 `params`，解不出时给 `solveRange:{min,max}` |
-| **相邻公式** | `formulas` | `query:"neighbors", formulaFocus:"ideal_gas"`——按共用物理量/常数连边 |
-| **公式带单位参数** | `formula` | `params:{T:"300 K", P:"1 atm"}`——自动换算到 SI，量纲不符报 **unit_mismatch** |
-| **链数值传导** | `formulas` | `query:"chain", formulaFocus:"sys-material", initial:{…}`——按显式数据流逐步算 |
-| 公式-链结构图 | `formulas` | `query:"graph"`（`formulaFocus:"sys-material"` 看某条链） |
-| 多条公式一次算 | `formulas` | `formulas:[{formula,overrides,label}]` |
-| 查公式参数表 | `formula-table` | 不传参就看全表 |
-| 依赖传导 / 编制结构 | `dependency` | 给 `node` 查上下游；`levels`+`tree` 可简写编制 |
-| **层级拓扑（军队/政府）** | `topology` | `action:"org"` + `units:[{id,level,headcount,parent}]`——查缺编/多上级/指挥链深度 |
-| **地形拓扑（地图）** | `topology` | `action:"terrain"` + `nodes`/`edges`（`kind:"road|river|pass|sea"`）——连通区域/咽喉/桥/最短路 |
-| **舱室拓扑（建筑/舰船）** | `topology` | `action:"ship"` + `compartments`/`passages`/`entry`——可达/割点/桥/容量瓶颈 |
-| 通用图 | `topology` | `action:"model|route|sightline|reachable"`；`structure`/`rules` 是建筑与体检入口 |
-| **实体类型清单** | `topology` | `action:"entities"`——20 种内置实体（军队/行政/聚落/地形/建筑/舰船/舱室/资源/战线/派系/官职/法令/技术/信仰/事件/头衔/人物/器物/商路）+ 14 种关系 |
-| **自创实体类型** | `topology` | `action:"define", entityType:{name,label,category,required,relations?}`——存工作区，之后可用 |
-| **实体图校验** | `topology` | `action:"validate", entities:[{id,type,...}], relations:[{from,to,kind}]`——查未知类型/缺字段/非法关系/基数 |
-| **拓扑模型保存** | `topology` | `action:"save", modelKey:"北境军", nodes, edges`；`list`/`load`/`export`/`import` 都在工作区 |
-| **天文历表（真实地球）** | `astro` | `action:"rise-set"`（日出日落/日照时长）、`"sun"`（高度角/方位）、`"moon"`（月相/光照比例）——`date` + `lat` + `lon` |
-| **通用轨道（架空天体/双星）** | `astro` | `action:"orbit"`（给轨道根数 a/e/i/omega/w/M0 + centralMass → 周期/位置/速度）、`"binary"`（双星互绕：周期/质心距）——开普勒模型，任意质量 |
-| **world → 历法（耦合）** | `astro` | `action:"world-calendar"` + `{orbitAU, starMass, rotationHours, obliquityDeg, moonCount}`——用开普勒从轨道推一年，再推历法（一键从行星参数到历法） |
-| **分支推演（两条时间线）** | `diverge` | `{base:{actors,edges,steps,seed}, variant:{seed|edges|actors}, threshold}` → 分歧年、最大差异年、终局最强对照、战争数差（DIVERGE 阶段的可执行版） |
-| **冲突/贡赋模拟** | `conflict` | `{actors:[{id,wealth}], edges:[{from,to}], steps, seed}` → 谁崛起/战争几次/谁亡（Axelrod 贡赋模型；同 seed 可复现；只给结构数值，叙事由 AI 写） |
-| **三类门面（最省心）** | `calc` / `derive` / `manage` | `{operation:"calc", op:"solve"}`、`{operation:"derive", op:"world"}`、`{operation:"manage", op:"help"}`——不必记 53 个 op；旧 op 名仍可用 |
-| **历史纪元划分（可一站式模拟）** | `history` | 给 `series` 直接切纪元；或给 `simulate:{actors,edges,steps,seed}` **先跑冲突模型**（最强势力份额序列）再切纪元；`smoothing` 平滑、`historyThreshold` 控转折、`crisisDrop` 标危机年 | `series:[{year,value}]` + `events:[{year,label}]` → 按局部极值切纪元（rise/fall/flat）+ 事件归入 + 转折年；`minEpochYears`、`historyThreshold` 控噪 |
-| **目标回溯（公式链 + 模型链）** | `backtrace` | `{target, given, maxDepth}` → 先匹配**模型链**（world→人口→财政、军队→后勤、行星→历法…共 8 条，数据在 `src/data/model-chains.json`），未命中回落**公式链**；输出链、缺参、可执行调用序列 |
-| **历法换算（日期↔年日）** | `astro` | `action:"calendar-convert"` + `{year, dayOfYear}` 或 `{absoluteDay}` → 第几年第几天、闰年、太阳黄经、季节 |
-| **后勤/信息时延（疆域上限）** | `topology` | `action:"logistics"` + `{mode:"horse|beacon|ship|rail|telegraph|pigeon", distanceKm, stationKm, stationDelayHours, maxRoundTripDays}` → 单程/往返天数、中转站数、**半径上限** |
-| **天文观测 → 科技** | `astro` | `action:"tech"` + `{device:"telescope|sextant|clock|pendulum|shadow|calendar-drift", precision}`——口径→角分辨率、角分→定位误差、日误差→经度误差、秒摆长度、圭表→回归年分辨率、历法漂移→几年差 1 天 |
-| **历法推导** | `astro` | `action:"calendar"` + `{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}`——一年多少天/闰年规则/太阴月/阴阳历/季节/分至点 |
-| **引力与相对论（黑洞/中子星）** | `astro` | `action:"gravity"`（逃逸/圆轨道速度、潮汐、N 体加速度、引力区间）、`"relativity"`（史瓦西半径/光子球/ISCO/时间膨胀/红移）——`massKg` + `radiusM` |
-| **海绵状庇护所（小空腔）** | `topology` | `structure` + `kind:"sponge"`（`{targetPeople, cavityVolumeM3, volumePerPersonM3, maxSpanM, excavationRatio, mediumDensityKgM3}`）→ 空腔数/边长/跨度校验/支护面积/排土量——**双限制**：太大跨度失效、太小 S/V 暴增 |
-| **千万级聚居（舱室网络）** | `topology` | `structure` + `kind:"megastructure"`（`{targetPeople, compartmentAreaM2, compartmentVolumeM3, areaPerPerson, selfSufficient, cropAreaPerPersonM2}`）→ 居住舱/温室舱数、总容积、总泄漏、氧/食/水需求——支持 1 人到亿级 |
-| **封闭系统闭环/上限** | `topology` | `structure` + `kind:"closed-loop"`（`{people, cropAreaM2, algaeM3, waterRecycle, bufferO2Kg, volumeM3}`）→ 自持上限人数（木桶短板）、氧/食物缺口、**故障小时数**（CO₂ 失效/氧耗尽）；`kind:"enclosure"`/`"greenhouse"` 算日需求 |
-| **建筑/舰船/太空工程校核** | `topology` | `structure`（kind=building/space-habitat）与 `ship`（kind=ship/space-vessel）自动附【工程校核】；规则表在 `src/data/topology-assessments.json`，新增类型只改数据+注册 calculator |
-| **行星系统（多行星+卫星）** | `astro` | `action:"system"` + `{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons:[{name,a}]}]}`——逐行星周期/希尔球/卫星可行域（洛希内限、希尔/3 外限）+ 稳定性警告 |
-| **解析 PDF** | `document` | `action:"extract"`（文本）/ `"tables"`（表格）/ `"numbers"`（数字台账）——`path:"某.pdf"`；清洗 DeepSeek 打印版页眉页脚；**不做 OCR** |
-| **导出结果（推荐）** | `workspace` | `action2:"export"`——把自创常数/公式/变量/实体类型/拓扑模型写进 `<工作区>.artifacts/workspace-state.json`；`action2:"import"` 读回 |
-| 内置数据快照 | `workspace` | `action2:"export-builtin", what:"formulas|...|all"`——静态数据，随插件版本走 |
-| 微分方程 / 离散递推 | `ode` / `recurrence` | `initial` + `periods`；年表用 `at:[5,10,20]` |
-| 改物理常数看后果 | `constants` | 传新值；`preview:true` 只算不存 |
-| 工作区（存变量/切世界） | `workspace` | `action2:"set"`、`workspaceVariables` |
-| 影响面分析 | `impact` | 改一个量，看哪些派生量变 |
-| 量纲与量级体检 | `quantities` | 给定量的量纲声明 |
-| 自定义新量（以太压等） | `custom` | 带量纲的新常数 |
-| 天体数据 | `bodies` | 行星/恒星的半径质量温度 |
-| 单位换算 | `units` | `unitFrom`/`unitTo`/`unitValue` |
-| 链条传导（分段计价/成本递增） | `chain` | `chain:{raw, stages:[{name,expr}]}`；`prev` 指上一段的值 |
-| 阈值判定（落在哪一段） | `threshold` | `threshold:{value, thresholds:[{at,label}]}`；`at` 是**上界** |
-| 缩放律（平方立方律） | `scaling` | `scaling:{from:{size}, to:{size}}`；强度默认不随尺度变 |
-| 基准锚定（历史/现实换算） | `anchor` | `anchor:{anchor, anchors:[{name,value}]}` |
-| 量纲体检（同一量多处不同单位） | `units_audit` | `claims:[{name,unit}]` 或给 `text` |
-| 时间线体检（逆序/重叠/跨度） | `timeline_check` | `events:[{name,start,end}]`；`maxSpan`/`overlapAllowed` |
+| 算一条式子（可带单位） | `evaluate` | `expression`，批量用 `expressions[]` |
+| 解方程 / 方程组 | `solve` | 等式写法，逗号分隔多式 |
+| 求导 / 积分 / 化简 / 展开 / 求根 | `derivative` / `integral` / `simplify` / `expand` / `roots` | `expression`；积分给 `from`/`to` |
+| 矩阵 / 特征值 / 线性方程组 | `matrix` / `eigen` / `system` | `matrix`（+ `vector`） |
+| 统计 / 分布 / 回归 | `stats` / `dist` / `regression` | `data`；`distribution`+`params`+`x` |
+| 微分方程 / 递推 | `ode` / `recurrence` | `initial` + `at:[...]` / `periods` |
+| 单条公式 | `formula` | `formula` + `params`（单位可写 "300 K"）；反解用 `solveFor`+`targetValue` |
+| 多条公式 / 链传导 / 结构图 | `formulas` | `query:"chain|neighbors|graph"`，或 `formulas:[...]` 批量 |
+| 公式参数表 | `formula-table` | 不传参看全表 |
+| 单位换算 / 量纲体检 | `units` / `units_audit` | `unitFrom`/`unitTo`/`unitValue`；`claims` |
+| 账本闭合 / 收支 / 口径冲突 / 区间 / 方案对比 | `ledger` / `balance` / `consistency` / `interval` / `compare` | 分项；冲突判据 ≥10% 或 ≥2 倍 |
 
-**注意两处易错**：
+### derive：推演与对账
 
-- `workspace` 存了变量后**默认不参与计算**（为保「同输入同输出」）。要生效必须 `action2:"set", useWorkspaceVariables:true`。报 `Undefined symbol` 时先查这个开关。
-- `constants` 改的是**全局**常数表。只想看后果不想污染当前世界时，传 `preview:true`。
+| 想做什么 | op | 关键参数 |
+|---|---|---|
+| 行星骨架与气候 | `world` | 质量/半径/轨道/恒星；`brief:true` 只看骨架 |
+| 推导栈（29 子命令） | `derivation` | `derivation:"pipeline|backSolve|heatmap|timeline|compare|diff|fantasy|impact…"`；缺参给**演示模式** |
+| 可行性 / 快速判定 | `feasibility` / `quick_feasible` | 给约束与数值 |
+| 编制树 / 世界状态 / 常数 | `hierarchy` / `world_state` / `constants` | 见对应 help 节 |
+| 链条 / 阈值 / 缩放 / 锚定 | `chain` / `threshold` / `scaling` / `anchor` | `chain:{raw,stages}`；`thresholds:[{at,label}]`；`from/to` |
+| 文本抽数字 / 时间线体检 | `extract_numbers` / `timeline_check` | `text`；`events:[{name,start,end}]` |
+| 影响面分析 | `impact` | `traceTarget`（不给则列可查量） |
+| 目标回溯（公式链/模型链） | `backtrace` | `{target:"这座窑一天烧多少煤", given:[...]}` → 链+缺参+可执行调用 |
+| 历史纪元 / 冲突 / 分支 | `history` / `conflict` / `diverge` | `history` 可给 `simulate:{actors,edges,steps,seed}` 一站式 |
+
+### topology：空间、编制、工程
+
+| 想做什么 | op | 关键参数 |
+|---|---|---|
+| 通用图 / 路径 / 视线 / 可达 | `topology` | `action:"model|route|sightline|reachable"` |
+| 编制拓扑（军队/政府） | `topology` | `action:"org"` + `units:[{id,level,headcount,parent}]` |
+| 地形 / 舱室 / 建筑 | `topology` | `action:"terrain|ship"` + 节点/舱室/通道 |
+| 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind:"building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge"`（规则表驱动） |
+| 实体类型 / 自创 / 校验 | `topology` | `action:"entities|define|validate"` |
+| 拓扑模型存取 | `topology` | `action:"save|load|list|export|import"` |
+| 后勤/信息时延（疆域上限） | `topology` | `action:"logistics"` + `{mode,distanceKm,maxRoundTripDays}` |
+
+### astro：天文与历法
+
+| 想做什么 | op | 关键参数 |
+|---|---|---|
+| 真实地球历表 | `astro` | `action:"rise-set|sun|moon"` + `date/lat/lon` |
+| 任意天体轨道 / 双星 / 行星系统 | `astro` | `action:"orbit|binary|system"` |
+| 引力与相对论 | `astro` | `action:"gravity|relativity"` + `massKg/radiusM` |
+| 历法推导 / 换算 / from-world | `astro` | `action:"calendar|calendar-convert|world-calendar"` |
+| 观测精度 → 科技 | `astro` | `action:"tech"` + `{device,precision}` |
+
+### manage：帮助与工作区
+
+| 想做什么 | op | 关键参数 |
+|---|---|---|
+| 能力目录 / 某节全文 / 按任务搜 | `help` | 不带参=目录；`helpTopic:"矩阵"`；`helpQuery:"..."` |
+| 工作区变量 / 切换世界 / 导出 | `workspace` | `action2:"set|list|export|import"` |
+| 自定义量（带量纲新常数） | `custom` | 名称+单位+量纲 |
+| 天体数据 / 依赖传导 | `bodies` / `dependency` | 行星恒星半径质量温度；`node` 查上下游 |
+| 量纲声明体检 | `quantities` | 给定量的量纲声明 |
+| 解析 PDF | `document` | `action:"extract|tables|numbers"` + `path`（不做 OCR） |
+
+**两处易错**：`workspace` 存的变量默认不参与计算（要 `useWorkspaceVariables:true`）；`constants` 改全局表（`preview:true` 只算不存）。
 
 ## 什么时候该调它
 
@@ -210,7 +205,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（49 节带简介）
+{operation:"help"}                        能力目录（55 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数 25 个字段带默认值
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）

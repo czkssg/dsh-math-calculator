@@ -85,7 +85,7 @@ console.log('-- 4. workspace / custom / formula-table --')
 console.log('-- 5. help --')
 {
   const catalog = await run({ operation: 'help' })
-  assert('★ 目录 56 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 49, String(catalog.value?.topics))
+  assert('★ 目录 55 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 55, String(catalog.value?.topics))
   assert('★ 目录分四段（算术 / 建模与推演 / 对账与设定 / 其余）', catalog.result.includes('一、算术') && catalog.result.includes('二、建模与推演') && catalog.result.includes('三、对账与设定') && catalog.result.includes('四、其余能力'), '')
   const world = await run({ operation: 'help', helpTopic: 'world' })
   assert('★ 单节正文', world.ok === true && world.result.includes('world') && world.result.length > 560, String(world.result.length))

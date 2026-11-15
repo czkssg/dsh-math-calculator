@@ -1001,5 +1001,91 @@
   ],
   "short": "帮助用法",
   "body": "【帮助怎么用】help 分三层\n  目录  {operation:\"help\"}                      节 key + 一句话用途\n  单节  {operation:\"help\", helpTopic:\"world\"}   该节全文（字段表 + 例 + 常见错误）\n  搜索  {operation:\"help\", helpQuery:\"账本对不上\"} 用任务描述找节（中文 2–4 字滑窗 + 别名加权）\n\n  ★ 搜索最高分 < 8 会明确标「弱匹配」——那通常意味着没有正好对应的能力，别拿第一条当答案。\n  ★ 目录四段：算术 / 建模与推演 / 对账与设定 / 其余。找不到时先搜，再回目录。\n  ★ 单节正文里 ★ 开头的是实测踩过的坑，比字段表更值得先读。"
+ },
+ {
+  "key": "astro",
+  "tier": "core",
+  "weight": 60,
+  "title": "天文 astro",
+  "summary": "真实地球历表 + 任意天体轨道 + 引力相对论 + 历法与观测科技。一个 astro 走完全部天文。",
+  "aliases": [
+   "天文",
+   "历法",
+   "轨道",
+   "黑洞",
+   "星历"
+  ],
+  "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope|sextant|clock|pendulum|shadow|calendar-drift\",precison}"
+ },
+ {
+  "key": "history",
+  "tier": "core",
+  "weight": 56,
+  "title": "历史推演 history",
+  "summary": "时间序列切纪元（局部极值），可先跑冲突模型生成序列，并标危机年。",
+  "aliases": [
+   "历史",
+   "纪元",
+   "王朝",
+   "危机"
+  ],
+  "body": "【history】两种用法：\n1) 直接给序列：series:[{year,value}] + events:[{year,label}]\n2) 一站式：simulate:{actors:[{id,wealth}], edges:[{from,to}], steps, seed} → 先跑冲突模型（最强势力份额序列）再切纪元\n参数：minEpochYears（默认10）、smoothing（平滑窗口，默认1）、historyThreshold（转折阈值，默认0.05）、crisisDrop（跌幅阈值，默认0.2）\n输出：纪元（startYear-endYear + rise/fall/flat + 事件）、转折年、危机年"
+ },
+ {
+  "key": "conflict",
+  "tier": "core",
+  "weight": 52,
+  "title": "冲突/贡赋 conflict",
+  "summary": "Axelrod 贡赋模型：财富即权力，付贡或开战，联盟按承诺度站队。同 seed 可复现。",
+  "aliases": [
+   "冲突",
+   "战争",
+   "贡赋",
+   "势力"
+  ],
+  "body": "【conflict】{actors:[{id,wealth}], edges:[{from,to}], steps:100, seed:7}\n每步：财富增长 → 随机选行动者 → 向最弱邻居索贡 → 付贡（2%）或开战（按承诺度站队比总财富，胜者收10%）\n输出：最终排序、战争/付贡次数、战果、最强/最弱\n同 seed 完全复现；叙事由 AI 写（工具只给结构数值）"
+ },
+ {
+  "key": "diverge",
+  "tier": "core",
+  "weight": 48,
+  "title": "分支推演 diverge",
+  "summary": "两条时间线对照：换 seed 或改结构，找分歧年与终局差异。",
+  "aliases": [
+   "分支",
+   "如果",
+   "平行历史",
+   "分歧"
+  ],
+  "body": "【diverge】{base:{actors,edges,steps,seed}, variant:{seed|edges|actors}, threshold:0.02}\n输出：分歧年（份额差首次超阈值）、最大差异年与数值、两线终局最强、战争数差\n用途：回答「如果那场战争没发生，历史会怎样」"
+ },
+ {
+  "key": "backtrace",
+  "tier": "core",
+  "weight": 44,
+  "title": "目标回溯 backtrace",
+  "summary": "给目标 → 先匹配模型链（跨 op），未命中回落公式链；给链/缺参/可执行调用。",
+  "aliases": [
+   "回溯",
+   "找公式",
+   "怎么算",
+   "目标"
+  ],
+  "body": "【backtrace】{target:\"这座窑一天烧多少煤\", given:[已知参数], maxDepth:2}\n命中模型链时输出：链（步骤+op）、需你给的参数、可执行调用序列\n否则回落公式链：命中公式、推荐链、缺参、可执行 formula 调用\n模型链在 src/data/model-chains.json（9 条：world→人口、人口→财政、军队→后勤、行星→历法、封闭系统、聚居、能源、文明→历史）"
+ },
+ {
+  "key": "facade",
+  "tier": "core",
+  "weight": 40,
+  "title": "三类门面 calc/derive/manage",
+  "summary": "56 个 op 收成 3 个入口：calc 数值公式、derive 推演对账、manage 帮助工作区。旧名仍可用。",
+  "aliases": [
+   "门面",
+   "入口",
+   "calc",
+   "derive",
+   "manage"
+  ],
+  "body": "【门面】{operation:\"calc\", op:\"solve\", expression:\"x^2-4=0\"}\n  calc    → evaluate/solve/derivative/integral/matrix/eigen/stats/dist/ode/formula/...\n  derive  → world/derivation/feasibility/hierarchy/chain/threshold/backtrace/...\n  manage  → help/workspace/catalog/explain\n缺 op 或 op 不合法时返回可用清单（不报错）；旧 op 名全部继续可用。"
  }
 ]
