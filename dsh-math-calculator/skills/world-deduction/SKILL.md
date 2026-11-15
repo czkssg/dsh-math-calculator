@@ -63,6 +63,9 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 地形 / 舱室 / 建筑 | `topology` | `action:"terrain|ship"` + 节点/舱室/通道 |
 | 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind`：`building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge|mechanism|fluid-power|gear-train`（规则表驱动） |
 | **液压/气动** | `topology` | `kind:"fluid-power"` + `{pressurePa,flowM3s,efficiency,boreMm,rodMm}` → 液压功率/输出功率/推力/回程力/缸速 |
+| **热工** | `topology` | `kind:"thermal"` + `{hotK,coldK,areaM2,uValueWm2K,inputW,outputW}` → 卡诺上限/实际效率/距上限百分比/换热功率 |
+| **电气** | `topology` | `kind:"electric"` + `{voltageV,currentA|powerW,lengthM,crossSectionMm2}` → 线阻/压降%/线损/电流密度 |
+| **流体** | `topology` | `kind:"fluid"` + `{diameterM,flowM3s,lengthM,densityKgM3,viscosityPaS,roughnessM}` → 流速/雷诺数/流态/沿程损失/水头 |
 | **多级传动链** | `topology` | `kind:"gear-train"` + `{powerW,rpm,stages:[{ratio,efficiency}]}` → 总传动比/总效率/末级转速与扭矩/逐级累计 |
 | 实体类型 / 自创 / 校验 | `topology` | `action:"entities|define|validate"` |
 | 拓扑模型存取 | `topology` | `action:"save|load|list|export|import"` |

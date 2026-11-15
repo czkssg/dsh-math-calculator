@@ -166,6 +166,44 @@
    },
    "calculator": "gear-train",
    "output": "engineering"
+  },
+  {
+   "id": "thermal",
+   "match": {
+    "action": "structure",
+    "kind": "thermal",
+    "requires": [
+     "hotK",
+     "coldK"
+    ]
+   },
+   "calculator": "thermal",
+   "output": "engineering"
+  },
+  {
+   "id": "electric",
+   "match": {
+    "action": "structure",
+    "kind": "electric",
+    "requires": [
+     "voltageV"
+    ]
+   },
+   "calculator": "electric",
+   "output": "engineering"
+  },
+  {
+   "id": "fluid",
+   "match": {
+    "action": "structure",
+    "kind": "fluid",
+    "requires": [
+     "diameterM",
+     "flowM3s"
+    ]
+   },
+   "calculator": "fluid",
+   "output": "engineering"
   }
  ]
 }
