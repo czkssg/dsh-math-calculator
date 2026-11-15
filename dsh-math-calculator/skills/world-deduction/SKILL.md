@@ -61,7 +61,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 通用图 / 路径 / 视线 / 可达 | `topology` | `action:"model|route|sightline|reachable"` |
 | 编制拓扑（军队/政府） | `topology` | `action:"org"` + `units:[{id,level,headcount,parent}]` |
 | 地形 / 舱室 / 建筑 | `topology` | `action:"terrain|ship"` + 节点/舱室/通道 |
-| 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind:"building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge"`（规则表驱动） |
+| 结构容量与**工程校核** | `topology` | `action:"structure|ship"` + `kind:"building|vehicle|space-vessel|space-habitat|enclosure|greenhouse|closed-loop|megastructure|sponge|mechanism"`（规则表驱动；mechanism 给 powerW/rpm → 扭矩/齿轮/轴承 L10/轴扭转/临界转速） |
 | 实体类型 / 自创 / 校验 | `topology` | `action:"entities|define|validate"` |
 | 拓扑模型存取 | `topology` | `action:"save|load|list|export|import"` |
 | 后勤/信息时延（疆域上限） | `topology` | `action:"logistics"` + `{mode,distanceKm,maxRoundTripDays}` |

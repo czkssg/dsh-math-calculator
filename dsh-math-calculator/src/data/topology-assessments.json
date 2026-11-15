@@ -127,6 +127,19 @@
    },
    "calculator": "sponge",
    "output": "engineering"
+  },
+  {
+   "id": "mechanism",
+   "match": {
+    "action": "structure",
+    "kind": "mechanism",
+    "requires": [
+     "powerW",
+     "rpm"
+    ]
+   },
+   "calculator": "mechanism",
+   "output": "engineering"
   }
  ]
 }
