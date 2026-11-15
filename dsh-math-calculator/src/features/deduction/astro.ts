@@ -19,8 +19,14 @@ import { CalcError } from '../../core/errors.js'
 
 /** 输入。 */
 export interface AstroInput {
-  /** sun / rise-set / moon / position。 */
+  /** sun / rise-set / moon / position / orbit / binary。 */
   action?: string
+  /** orbit：轨道根数 {a,e,i,omega,w,M0,centralMass,bodyMass}。 */
+  elements?: Record<string, unknown>
+  /** orbit：历元后时间（年）。 */
+  years?: number
+  /** binary：{massA,massB,semiMajorAu,e}。 */
+  binary?: Record<string, unknown>
   /** ISO 时间（缺省当前）。 */
   date?: string
   /** 纬度（度，北正）。 */
@@ -56,9 +62,47 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
 
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
-  const lines: string[] = ['═══ 天文历表（地球）═══', '']
+  /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
+  const isGeneric = action === 'orbit' || action === 'binary'
+  const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
+
+  /** 任意天体的开普勒轨道（把 astronomy-engine 的模型推广到非太阳系天体）。 */
+  if (action === 'orbit') {
+    const orbitMod = await import('./orbit.js')
+    const raw = input.elements ?? {}
+    const elements = {
+      a: Number(raw['a'] ?? 1),
+      e: Number(raw['e'] ?? 0),
+      i: Number(raw['i'] ?? 0),
+      omega: Number(raw['omega'] ?? 0),
+      w: Number(raw['w'] ?? 0),
+      M0: Number(raw['M0'] ?? 0),
+      centralMass: Number(raw['centralMass'] ?? 1),
+      bodyMass: Number(raw['bodyMass'] ?? 0),
+    }
+    const state = orbitMod.orbitState(elements, typeof input.years === 'number' ? input.years : 0)
+    lines.push('', '【轨道（开普勒）】')
+    lines.push('  半长轴 ' + elements.a.toFixed(3) + ' AU，偏心率 ' + elements.e.toFixed(4) + '，周期 ' + state.periodYears.toFixed(3) + ' 年')
+    lines.push('  平近点角 ' + state.meanAnomaly.toFixed(1) + '°，真近点角 ' + state.trueAnomaly.toFixed(1) + '°，距离 ' + state.radiusAu.toFixed(4) + ' AU')
+    lines.push('  位置 (' + state.positionAu.x.toFixed(3) + ', ' + state.positionAu.y.toFixed(3) + ', ' + state.positionAu.z.toFixed(3) + ') AU')
+    return { result: lines.join('\n'), value: { elements, state } }
+  }
+
+  if (action === 'binary') {
+    const orbitMod = await import('./orbit.js')
+    const raw = input.binary ?? {}
+    const system = { massA: Number(raw['massA'] ?? 1), massB: Number(raw['massB'] ?? 0.5), semiMajorAu: Number(raw['semiMajorAu'] ?? 1), e: Number(raw['e'] ?? 0) }
+    if (!(system.massA > 0) || !(system.massB > 0)) throw new CalcError('invalid_argument', 'binary 需要正质量 massA / massB', '')
+    const result = orbitMod.binaryOrbit(system)
+    lines.push('', '【双星互绕】')
+    lines.push('  主星 ' + system.massA + ' M☉ + 伴星 ' + system.massB + ' M☉，半长轴 ' + system.semiMajorAu + ' AU')
+    lines.push('  周期 ' + result.periodYears.toFixed(3) + ' 年')
+    lines.push('  质心距：主星 ' + result.aStarAu.toFixed(3) + ' AU，伴星 ' + result.aCompanionAu.toFixed(3) + ' AU（速度比 ' + result.velocityRatio.toFixed(2) + '）')
+    lines.push('  相对速度约 ' + result.relativeSpeedKms.toFixed(1) + ' km/s')
+    return { result: lines.join('\n'), value: { system, result } }
+  }
 
   if (action === 'sun' || action === 'position') {
     const eq = A.Equator(A.Body.Sun, date, observer, true, true)
