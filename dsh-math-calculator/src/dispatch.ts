@@ -180,9 +180,16 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const target = typeof args['target'] === 'string' ? (args['target'] as string) : ''
       if (target.trim() === '') throw new CalcError('missing_params', 'backtrace 需要 target（目标描述）', '例如 {operation:"backtrace", target:"这座窑一天烧多少煤"}。')
       const given = Array.isArray(args['given']) ? (args['given'] as unknown[]).map(String) : []
-      const result = backtrace(formulas as never, target, { maxDepth: typeof args['maxDepth'] === 'number' ? (args['maxDepth'] as number) : 2, given })
+      const chainFile = dataOf<{ chains?: unknown[] }>('modelChains', 'model-chains.json', { chains: [] })
+      const chains = Array.isArray(chainFile) ? chainFile : (chainFile.chains ?? [])
+      const result = backtrace(formulas as never, target, { maxDepth: typeof args['maxDepth'] === 'number' ? (args['maxDepth'] as number) : 2, given, modelChains: chains as never[] })
       const lines = ['═══ 目标回溯：' + target + ' ═══', '']
-      if (result.matches.length === 0) lines.push('  ' + result.notes[0])
+      if (result.modelChain !== undefined) {
+        lines.push('  ★ 模型链：' + result.modelChain.label)
+        lines.push('  ' + result.modelChain.steps.map((s, i) => (i + 1) + '. ' + s.label + '（' + s.op + (s.action !== undefined ? ':' + s.action : '') + (s.kind !== undefined ? ' kind=' + s.kind : '') + '）').join('\n  '))
+        lines.push('', '  需你给的参数：' + result.modelChain.needs.join('、'))
+        lines.push('', '  可执行：' + result.modelChain.calls.map((c) => JSON.stringify(c)).join(' → '))
+      } else if (result.matches.length === 0) lines.push('  ' + result.notes[0])
       else {
         lines.push('  命中公式：' + result.matches.map((m) => m.name).join('、'))
         lines.push('', '  推荐链：' + (result.chain.length > 0 ? result.chain.map((c) => c.name).join(' → ') : '（单公式）'))

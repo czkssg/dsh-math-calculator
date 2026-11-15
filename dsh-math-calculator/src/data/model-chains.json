@@ -1,0 +1,285 @@
+{
+ "version": 1,
+ "note": "模型链：跨 operation 的推演路径（数据驱动，新增只改这里）。backtrace 先匹配模型链，未命中回落公式链。",
+ "chains": [
+  {
+   "id": "world-population",
+   "label": "世界 → 人口承载力",
+   "keywords": [
+    "养活多少人",
+    "人口承载力",
+    "这个世界能养",
+    "能住多少人"
+   ],
+   "steps": [
+    {
+     "op": "world",
+     "label": "行星骨架与气候",
+     "provides": [
+      "gravity",
+      "temperature",
+      "dayHours"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "land_capacity",
+     "label": "土地承载力",
+     "needs": [
+      "area",
+      "yield"
+     ]
+    },
+    {
+     "op": "balance",
+     "label": "粮食收支",
+     "needs": [
+      "grain"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "population-fiscal",
+   "label": "人口 → 财政",
+   "keywords": [
+    "财政",
+    "税收",
+    "能不能养得起",
+    "国库"
+   ],
+   "steps": [
+    {
+     "op": "formula",
+     "formula": "logistic_growth",
+     "label": "人口增长",
+     "needs": [
+      "r",
+      "K",
+      "t"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "tax_revenue",
+     "label": "税收",
+     "needs": [
+      "population",
+      "tax_rate"
+     ]
+    },
+    {
+     "op": "balance",
+     "label": "收支平衡",
+     "needs": [
+      "fiscal"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "industry-output",
+   "label": "产能 → 产出 → 贸易",
+   "keywords": [
+    "产能",
+    "产量",
+    "能产多少",
+    "出口"
+   ],
+   "steps": [
+    {
+     "op": "formula",
+     "formula": "capacity_factor",
+     "label": "产能",
+     "needs": [
+      "rate",
+      "time"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "learning_curve",
+     "label": "学习曲线爬坡",
+     "needs": [
+      "cumulative"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "transport_cost",
+     "label": "运输成本",
+     "needs": [
+      "distance",
+      "mass"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "military-logistics",
+   "label": "军队 → 后勤",
+   "keywords": [
+    "军队补给",
+    "补给半径",
+    "能打多远",
+    "后勤"
+   ],
+   "steps": [
+    {
+     "op": "topology",
+     "action": "logistics",
+     "label": "命令/补给往返",
+     "needs": [
+      "mode",
+      "maxRoundTripDays"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "ration_per_soldier",
+     "label": "人均口粮",
+     "needs": [
+      "days"
+     ]
+    },
+    {
+     "op": "topology",
+     "action": "org",
+     "label": "编制层级",
+     "needs": [
+      "units"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "astronomy-calendar",
+   "label": "行星 → 历法",
+   "keywords": [
+    "历法",
+    "一年多少天",
+    "闰年",
+    "节气"
+   ],
+   "steps": [
+    {
+     "op": "astro",
+     "action": "world-calendar",
+     "label": "一年/历法",
+     "needs": [
+      "orbitAU",
+      "starMass"
+     ]
+    },
+    {
+     "op": "astro",
+     "action": "calendar-convert",
+     "label": "日期换算",
+     "needs": [
+      "year",
+      "dayOfYear"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "enclosure-selfsustain",
+   "label": "封闭系统 → 自持上限",
+   "keywords": [
+    "自持",
+    "封闭生态",
+    "温室",
+    "循环"
+   ],
+   "steps": [
+    {
+     "op": "topology",
+     "action": "structure",
+     "kind": "closed-loop",
+     "label": "闭环上限",
+     "needs": [
+      "people",
+      "cropAreaM2"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "crop_area_o2",
+     "label": "供氧面积",
+     "needs": [
+      "people"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "megastructure-capacity",
+   "label": "聚居规模 → 舱室/空腔",
+   "keywords": [
+    "千万",
+    "亿人",
+    "舱室",
+    "空腔",
+    "海绵"
+   ],
+   "steps": [
+    {
+     "op": "topology",
+     "action": "structure",
+     "kind": "sponge",
+     "label": "小空腔总量",
+     "needs": [
+      "targetPeople",
+      "cavityVolumeM3"
+     ]
+    },
+    {
+     "op": "topology",
+     "action": "structure",
+     "kind": "megastructure",
+     "label": "舱室网络",
+     "needs": [
+      "targetPeople"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "energy-chain",
+   "label": "能源 → 功率 → 成本",
+   "keywords": [
+    "能源",
+    "发电",
+    "功率够不够",
+    "电"
+   ],
+   "steps": [
+    {
+     "op": "formula",
+     "formula": "power",
+     "label": "功率",
+     "needs": [
+      "W",
+      "t"
+     ]
+    },
+    {
+     "op": "formula",
+     "formula": "carnot_efficiency",
+     "label": "卡诺上限",
+     "needs": [
+      "T_hot",
+      "T_cold"
+     ]
+    },
+    {
+     "op": "balance",
+     "label": "能源收支",
+     "needs": [
+      "energy"
+     ]
+    }
+   ]
+  }
+ ]
+}

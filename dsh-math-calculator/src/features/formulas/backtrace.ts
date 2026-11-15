@@ -17,6 +17,14 @@
  * @module dsh-math-calculator/features/formulas/backtrace
  */
 
+/** 模型链（data/model-chains.json）。 */
+export interface ModelChain {
+  id: string
+  label: string
+  keywords: string[]
+  steps: Array<{ op: string; action?: string; formula?: string; kind?: string; label: string; needs?: string[]; provides?: string[] }>
+}
+
 /** 公式条目（data/formulas.json 的运行时形状）。 */
 export interface FormulaEntry {
   id: string
@@ -33,6 +41,8 @@ export interface FormulaEntry {
 export interface BacktraceResult {
   target: string
   /** 命中的公式。 */
+  /** 命中的模型链（跨 operation）。 */
+  modelChain?: { id: string; label: string; steps: ModelChain['steps']; calls: Array<Record<string, unknown>>; needs: string[] }
   matches: Array<{ id: string; name: string; score: number }>
   /** 推荐链（从叶子到目标，公式 id 序列）。 */
   chain: Array<{ id: string; name: string; params: string[]; produces: string }>
@@ -66,8 +76,16 @@ function tokenize(text: string): string[] {
  * @param options - 深度与给定参数
  * @returns 回溯结果
  */
-export function backtrace(formulas: FormulaEntry[], target: string, options: { maxDepth?: number; given?: string[] } = {}): BacktraceResult {
+export function backtrace(formulas: FormulaEntry[], target: string, options: { maxDepth?: number; given?: string[]; modelChains?: ModelChain[] } = {}): BacktraceResult {
   const maxDepth = options.maxDepth ?? 2
+  /** 先匹配模型链（跨 operation），命中就不再回落公式链。 */
+  const chains = options.modelChains ?? []
+  const hitChain = chains.find((chain) => chain.keywords.some((word) => target.includes(word)))
+  if (hitChain !== undefined) {
+    const calls = hitChain.steps.map((step) => ({ operation: step.op, ...(step.action !== undefined ? { action: step.action } : {}), ...(step.formula !== undefined ? { formula: step.formula } : {}), ...(step.kind !== undefined ? { kind: step.kind } : {}) }))
+    const needs = [...new Set(hitChain.steps.flatMap((step) => step.needs ?? []))]
+    return { target, modelChain: { id: hitChain.id, label: hitChain.label, steps: hitChain.steps, calls, needs }, matches: [], chain: [], missing: [], calls, notes: ['命中模型链「' + hitChain.label + '」：' + hitChain.steps.map((s) => s.label).join(' → '), '按 calls 逐条执行；needs 是各步需要你补的参数名。'] }
+  }
   const tokens = tokenize(target)
   const scored: Array<{ entry: FormulaEntry; score: number }> = []
   for (const entry of formulas) {
