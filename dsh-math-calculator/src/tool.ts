@@ -202,6 +202,8 @@ const PARAMETER_SPEC = {
   bodyFactor: { type: 'number', description: '常数倍数' },
   quickFeasible: { type: 'object', additionalProperties: true, description: '一句话可行性 {claim,world?}' },
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
+  base: { type: 'json', description: 'diverge：基线 {actors,edges,steps,seed}' },
+  variant: { type: 'json', description: 'diverge：变体（可覆盖 seed/actors/edges）' },
   actors: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'conflict：行动者 [{id,wealth}]' },
   seed: { type: 'number', description: '确定性随机种子（conflict 等，同 seed 同结果）' },
   series: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'history：指标时间序列 [{year,value}]' },

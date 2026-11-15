@@ -57,6 +57,7 @@ import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
+import { runDiverge } from './features/deduction/diverge.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -176,6 +177,27 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'diverge': {
+      const base = (args['base'] ?? {}) as Record<string, unknown>
+      const variant = (args['variant'] ?? {}) as Record<string, unknown>
+      const toActors = (value: unknown): Array<{ id: string; wealth: number }> => Array.isArray(value) ? value.map((a) => ({ id: String((a as Record<string, unknown>)['id'] ?? ''), wealth: Number((a as Record<string, unknown>)['wealth'] ?? 0) })) : []
+      const toEdges = (value: unknown): Array<{ from: string; to: string }> => Array.isArray(value) ? value.map((e) => ({ from: String((e as Record<string, unknown>)['from'] ?? ''), to: String((e as Record<string, unknown>)['to'] ?? '') })) : []
+      const baseInput = { actors: toActors(base['actors']), edges: toEdges(base['edges']), steps: typeof base['steps'] === 'number' ? (base['steps'] as number) : undefined, seed: typeof base['seed'] === 'number' ? (base['seed'] as number) : undefined }
+      const variantInput: Record<string, unknown> = {}
+      if (Array.isArray(variant['actors'])) variantInput['actors'] = toActors(variant['actors'])
+      if (Array.isArray(variant['edges'])) variantInput['edges'] = toEdges(variant['edges'])
+      if (typeof variant['steps'] === 'number') variantInput['steps'] = variant['steps']
+      if (typeof variant['seed'] === 'number') variantInput['seed'] = variant['seed']
+      const result = runDiverge({ base: baseInput, variant: variantInput as never, threshold: typeof args['threshold'] === 'number' ? (args['threshold'] as number) : undefined })
+      const lines = ['═══ 分支推演（两条时间线）═══', '']
+      lines.push('  分歧年：' + (result.divergingYear === null ? '无（改动不足）' : '第 ' + result.divergingYear + ' 年'))
+      lines.push('  终局最强：base=' + result.baseLeader + ' / variant=' + result.variantLeader)
+      lines.push('  末日份额差 ' + result.finalShareGap.toFixed(3) + '，战争数差 ' + result.warGap)
+      if (result.maxGapYear !== null) lines.push('  最大差异：第 ' + result.maxGapYear + ' 年，份额差 ' + result.maxGap.toFixed(3))
+      for (const note of result.notes) lines.push('  ' + note)
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'conflict': {
       const actors = Array.isArray(args['actors']) ? (args['actors'] as Array<Record<string, unknown>>).map((a) => ({ id: String(a['id'] ?? ''), wealth: Number(a['wealth'] ?? 0) })) : []
@@ -815,6 +837,8 @@ export const MIGRATED_OPERATIONS = [
   'history',
   /** 冲突/贡赋（Axelrod 贡赋模型）。 */
   'conflict',
+  /** 分支推演（两条时间线对照）。 */
+  'diverge',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

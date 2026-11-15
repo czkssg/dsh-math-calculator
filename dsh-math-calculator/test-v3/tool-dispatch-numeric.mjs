@@ -95,7 +95,7 @@ console.log('-- 5. 对账图谱五件套 --')
   assert('★ consistency 检出 115 倍冲突', consistency.ok === true && consistency.result.includes('115'), consistency.result.slice(0, 80))
   const compare = await run({ operation: 'compare', compare: { rows: ['甲', '乙'], cols: ['成本'], data: [[10], [15]] } })
   assert('compare 表 + 胜者', compare.ok === true && compare.result.includes('甲'), compare.result.slice(0, 80))
-  const interval = await run({ operation: 'interval', interval: { expr: '20-52' } })
+  const interval = await run({ operation: 'interval', interval: { expr: '20-53' } })
   assert('interval 区间', interval.ok === true, interval.result.slice(0, 80))
   const dependency = await run({ operation: 'dependency', dependency: { edges: [{ from: 'G', to: 'g' }, { from: 'g', to: 'v' }] }, traceTarget: 'G' })
   assert('dependency 下游传导', dependency.ok === true, dependency.result.slice(0, 80))
@@ -103,7 +103,7 @@ console.log('-- 5. 对账图谱五件套 --')
 
 console.log('-- 6. 迁移清单 --')
 {
-  assert('★ 全部 52 个 operation 已迁移', dispatch.MIGRATED_OPERATIONS.length === 52, String(dispatch.MIGRATED_OPERATIONS.length))
+  assert('★ 全部 53 个 operation 已迁移', dispatch.MIGRATED_OPERATIONS.length === 53, String(dispatch.MIGRATED_OPERATIONS.length))
   const rest = ['constants', 'workspace', 'quantities', 'formula-table', 'custom', 'balance', 'help']
   for (const op of rest) {
     assert('收尾批 ' + op + ' 已在迁移清单', dispatch.MIGRATED_OPERATIONS.includes(op), '')
