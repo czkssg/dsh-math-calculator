@@ -29332,5 +29332,745 @@
    }
   ],
   "confidence": "scaling"
+ },
+ {
+  "id": "egress_width",
+  "cat": "engineering/building",
+  "name": "疏散出口总宽度",
+  "expr": "people * width_per_person",
+  "params": {
+   "people": {
+    "value": 500,
+    "desc": "疏散人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "width_per_person": {
+    "value": 0.005,
+    "desc": "每人所需宽度 m（0.5 cm/人）",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "m",
+  "keys": [
+   "疏散",
+   "出口宽度",
+   "建筑",
+   "egress"
+  ],
+  "desc": "B = N × b：疏散楼梯/出口总宽度。适用域：公共建筑，每人 0.5–1 cm（密集场所取 1 cm）；这是消防规范的量级依据。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "daylight_factor",
+  "cat": "engineering/building",
+  "name": "采光系数（窗地比）",
+  "expr": "window_area / floor_area * 100",
+  "params": {
+   "window_area": {
+    "value": 30,
+    "desc": "窗面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "floor_area": {
+    "value": 100,
+    "desc": "地面面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   }
+  },
+  "unit": "%",
+  "keys": [
+   "采光",
+   "窗地比",
+   "建筑"
+  ],
+  "desc": "窗地比 = 窗面积/地面面积：采光的粗略指标。适用域：住宅 1/7–1/5，教室 1/5；精确采光要算采光系数（天空分量）。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "elevator_count",
+  "cat": "engineering/building",
+  "name": "电梯数量估算",
+  "expr": "ceil(people / (capacity * trips_per_hour))",
+  "params": {
+   "people": {
+    "value": 1000,
+    "desc": "高峰人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "capacity": {
+    "value": 13,
+    "desc": "单梯容量（人）",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "trips_per_hour": {
+    "value": 6,
+    "desc": "每小时往返次数",
+    "quantity": "频率",
+    "dimension": {
+     "T": -1
+    }
+   }
+  },
+  "unit": "台",
+  "keys": [
+   "电梯",
+   "建筑",
+   "elevator"
+  ],
+  "desc": "N = 人数/(单梯容量×每小时往返)：粗略电梯数。适用域：办公楼高峰 12–15% 人数/5 分钟；精确要按客流模拟。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "floor_live_load",
+  "cat": "engineering/building",
+  "name": "楼面活荷载设计值",
+  "expr": "q_k * gamma_q",
+  "params": {
+   "q_k": {
+    "value": 2,
+    "desc": "标准活荷载 kN/m²",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "gamma_q": {
+    "value": 1.5,
+    "desc": "分项系数",
+    "quantity": "系数",
+    "dimension": {}
+   }
+  },
+  "unit": "kN/m²",
+  "keys": [
+   "楼面荷载",
+   "活荷载",
+   "建筑"
+  ],
+  "desc": "q = q_k × γ_q：设计活荷载。适用域：住宅 2.0、办公 2.5、商场 4.0 kN/m²；分项系数按规范。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "wind_pressure_height",
+  "cat": "engineering/building",
+  "name": "风压随高度",
+  "expr": "w0 * (h / 10)^(2 * alpha)",
+  "params": {
+   "w0": {
+    "value": 0.55,
+    "desc": "基本风压 kN/m²",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "h": {
+    "value": 100,
+    "desc": "高度 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "alpha": {
+    "value": 0.16,
+    "desc": "地面粗糙度指数",
+    "quantity": "系数",
+    "dimension": {}
+   }
+  },
+  "unit": "kN/m²",
+  "keys": [
+   "风压",
+   "高度",
+   "建筑"
+  ],
+  "desc": "w = w0(h/10)^(2α)：风压随高度增加。适用域：B 类地面 α≈0.16；高层建筑的侧向荷载主要来自这里。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "base_shear",
+  "cat": "engineering/building",
+  "name": "抗震底部剪力",
+  "expr": "alpha1 * geq * G",
+  "params": {
+   "alpha1": {
+    "value": 0.08,
+    "desc": "水平地震影响系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "geq": {
+    "value": 0.85,
+    "desc": "等效重力荷载系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "G": {
+    "value": 50000,
+    "desc": "结构总重力 kN",
+    "quantity": "力",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
+   }
+  },
+  "unit": "kN",
+  "keys": [
+   "抗震",
+   "底部剪力",
+   "建筑"
+  ],
+  "desc": "F_Ek = α₁·G_eq·G：底部剪力法。适用域：规则结构、高度 < 40 m；不规则/高层要用振型分解。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "displacement",
+  "cat": "engineering/naval",
+  "name": "排水量（浮力）",
+  "expr": "L * B * T * Cb * rho",
+  "params": {
+   "L": {
+    "value": 100,
+    "desc": "水线长 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "B": {
+    "value": 15,
+    "desc": "型宽 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "T": {
+    "value": 6,
+    "desc": "吃水 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "Cb": {
+    "value": 0.65,
+    "desc": "方形系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "rho": {
+    "value": 1025,
+    "desc": "海水密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   }
+  },
+  "unit": "kg",
+  "keys": [
+   "排水量",
+   "浮力",
+   "舰船",
+   "displacement"
+  ],
+  "desc": "Δ = L·B·T·Cb·ρ：排水量。适用域：船体主尺度已定；Cb 商船 0.6–0.85、军舰 0.45–0.6。排水量 = 船重（阿基米德）。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "admiralty_coefficient",
+  "cat": "engineering/naval",
+  "name": "海军系数",
+  "expr": "D^(2/3) * v^3 / P",
+  "params": {
+   "D": {
+    "value": 5000,
+    "desc": "排水量 t",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "v": {
+    "value": 20,
+    "desc": "航速 kn",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   },
+   "P": {
+    "value": 20000,
+    "desc": "功率 hp",
+    "quantity": "功率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "海军系数",
+   "舰船",
+   "动力",
+   "admiralty"
+  ],
+  "desc": "C = D^(2/3)v³/P：海军系数（越大越省功率）。适用域：同型船比较；C 通常 400–600（军舰高、货船低）。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "ittc_friction",
+  "cat": "engineering/naval",
+  "name": "ITTC 摩擦阻力系数",
+  "expr": "0.075 / (log10(Re) - 2)^2",
+  "params": {
+   "Re": {
+    "value": 1000000000,
+    "desc": "雷诺数（vL/ν）",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "摩擦阻力",
+   "ITTC",
+   "舰船"
+  ],
+  "desc": "Cf = 0.075/(log₁₀Re−2)²：ITTC-57 平板摩擦系数。适用域：光滑平板、湍流边界层；实船还要加粗糙度补贴。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "metacentric_height",
+  "cat": "engineering/naval",
+  "name": "初稳性高",
+  "expr": "KM - KG",
+  "params": {
+   "KM": {
+    "value": 7.5,
+    "desc": "横稳心高（距基线）m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "KG": {
+    "value": 6,
+    "desc": "重心高 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "m",
+  "keys": [
+   "稳性",
+   "GM",
+   "舰船",
+   "metacentric"
+  ],
+  "desc": "GM = KM − KG：初稳性高。适用域：GM > 0.15 m（客船）；GM 太大横摇剧烈、太小易倾覆——这是稳性与舒适性的取舍。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "roll_period",
+  "cat": "engineering/naval",
+  "name": "横摇周期",
+  "expr": "2 * pi * k / sqrt(g * GM)",
+  "params": {
+   "k": {
+    "value": 4,
+    "desc": "横摇惯性半径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "g": {
+    "value": 9.80665,
+    "desc": "重力加速度 m/s²",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
+   },
+   "GM": {
+    "value": 1.5,
+    "desc": "初稳性高 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "s",
+  "keys": [
+   "横摇",
+   "周期",
+   "舰船",
+   "roll"
+  ],
+  "desc": "T = 2πk/√(g·GM)：横摇固有周期。适用域：小角度（<10°）；周期与船长/√GM 成正比，是舒适性与共振风险的核心参数。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "fuel_endurance",
+  "cat": "engineering/naval",
+  "name": "续航（燃油）",
+  "expr": "fuel_mass / (sfc * P)",
+  "params": {
+   "fuel_mass": {
+    "value": 500000,
+    "desc": "燃油质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "sfc": {
+    "value": 2.1e-7,
+    "desc": "比油耗 kg/(W·s)",
+    "quantity": "比率",
+    "dimension": {}
+   },
+   "P": {
+    "value": 10000000,
+    "desc": "巡航功率 W",
+    "quantity": "功率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
+   }
+  },
+  "unit": "s",
+  "keys": [
+   "续航",
+   "燃油",
+   "舰船",
+   "endurance"
+  ],
+  "desc": "t = m_fuel/(sfc·P)：续航时间。适用域：巡航工况；实际还要扣 10–20% 储备。比油耗 2.1e-7 kg/(W·s) ≈ 180 g/kWh。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "deadweight_ratio",
+  "cat": "engineering/naval",
+  "name": "载重系数",
+  "expr": "deadweight / displacement",
+  "params": {
+   "deadweight": {
+    "value": 8000,
+    "desc": "载重量 t",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "displacement": {
+    "value": 12000,
+    "desc": "排水量 t",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "载重",
+   "舰船",
+   "deadweight"
+  ],
+  "desc": "DW/Δ：载重系数。适用域：货船 0.6–0.75、油轮 0.85、军舰 0.1–0.2。它直接决定「这条船能运多少」。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "hull_girder_stress",
+  "cat": "engineering/naval",
+  "name": "船体梁总纵弯曲应力",
+  "expr": "M * y / I",
+  "params": {
+   "M": {
+    "value": 2000000000,
+    "desc": "总纵弯矩 N·m",
+    "quantity": "力矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "y": {
+    "value": 5,
+    "desc": "距中和轴距离 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "I": {
+    "value": 400,
+    "desc": "船体梁惯性矩 m⁴",
+    "quantity": "惯性矩",
+    "dimension": {
+     "L": 4
+    }
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "总纵强度",
+   "船体梁",
+   "舰船"
+  ],
+  "desc": "σ = M·y/I：船体梁总纵弯曲应力。适用域：波浪中垂/中拱；与材料屈服强度比较，决定船体剖面尺寸。",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "材料力学",
+    "chapter": "弯曲应力",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "pump_affinity",
+  "cat": "engineering/fluid",
+  "name": "泵相似定律",
+  "expr": "Q1 / Q2",
+  "params": {
+   "Q1": {
+    "value": 100,
+    "desc": "转速 n1 时流量 m³/h",
+    "quantity": "体积流量",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
+   },
+   "Q2": {
+    "value": 150,
+    "desc": "转速 n2 时流量 m³/h",
+    "quantity": "体积流量",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
+   }
+  },
+  "unit": "无量纲",
+  "keys": [
+   "泵",
+   "相似定律",
+   "affinity"
+  ],
+  "desc": "Q∝n、H∝n²、P∝n³：泵/风机相似定律的流量比。适用域：同一台泵、几何相似；变转速调节是最高效的流量调节方式。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "tube_burst",
+  "cat": "engineering/materials",
+  "name": "薄壁管爆破压力",
+  "expr": "2 * s * t / D",
+  "params": {
+   "s": {
+    "value": 400000000,
+    "desc": "材料抗拉强度 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "t": {
+    "value": 0.005,
+    "desc": "壁厚 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "D": {
+    "value": 0.1,
+    "desc": "管径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "unit": "Pa",
+  "keys": [
+   "爆破压力",
+   "薄壁管",
+   "barlow"
+  ],
+  "desc": "P = 2·σ·t/D（Barlow 公式）：薄壁管爆破压力。适用域：t/D < 0.1；厚壁要用 Lame 公式。",
+  "sources": [
+   {
+    "type": "handbook",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "publisher": "CRC Press",
+    "chapter": "工程数据",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
  }
 ]
