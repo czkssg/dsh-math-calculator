@@ -29,6 +29,13 @@ export interface AstroInput {
   binary?: Record<string, unknown>
   /** system：{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons}]}。 */
   system?: Record<string, unknown>
+  /** tech：{device, precision, yearErrorDays}。 */
+  device?: string
+  /** tech 的精度参数（mm/角分/秒/天）。 */
+  precision?: number
+  /** tech calendar-drift：年长误差（天）。 */
+  yearErrorDays?: number
+
   /** calendar：{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}。 */
   rotationHours?: number
   /** 公转周期（地球日）。 */
@@ -88,7 +95,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar'].includes(action)
+  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar', 'tech'].includes(action)
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -142,6 +149,19 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
       for (const moon of planet.moons) lines.push('    ' + moon.name + '：a=' + moon.semiMajorAu.toFixed(5) + ' AU，周期 ' + moon.periodYears.toFixed(3) + ' 年' + (moon.insideRoche ? '（洛希内）' : moon.outsideHill ? '（希尔外）' : ''))
     }
     if (result.warnings.length > 0) { lines.push('', '【稳定性提示】'); for (const w of result.warnings) lines.push('  · ' + w) }
+    return { result: lines.join('\n'), value: result }
+  }
+
+  if (action === 'tech') {
+    const techMod = await import('./astrotech.js')
+    const result = techMod.deriveAstroTech({
+      device: typeof input.device === 'string' ? input.device : undefined,
+      precision: typeof input.precision === 'number' ? input.precision : undefined,
+      latitudeDeg: typeof input.lat === 'number' ? input.lat : undefined,
+      yearErrorDays: typeof input.yearErrorDays === 'number' ? input.yearErrorDays : undefined,
+    })
+    lines.push('', '【天文观测 → 科技】')
+    for (const note of result.notes) lines.push('  ' + note)
     return { result: lines.join('\n'), value: result }
   }
 
