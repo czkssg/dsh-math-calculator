@@ -103,6 +103,18 @@
    },
    "calculator": "closed-loop",
    "output": "engineering"
+  },
+  {
+   "id": "megastructure",
+   "match": {
+    "action": "structure",
+    "kind": "megastructure",
+    "requires": [
+     "targetPeople"
+    ]
+   },
+   "calculator": "megastructure",
+   "output": "engineering"
   }
  ]
 }
