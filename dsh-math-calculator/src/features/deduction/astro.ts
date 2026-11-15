@@ -29,6 +29,11 @@ export interface AstroInput {
   binary?: Record<string, unknown>
   /** system：{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons}]}。 */
   system?: Record<string, unknown>
+  /** world-calendar：{orbitAU, starMass, rotationHours, obliquityDeg, moonCount}。 */
+  orbitAU?: number
+  /** 恒星质量（太阳质量）。 */
+  starMass?: number
+
   /** tech：{device, precision, yearErrorDays}。 */
   device?: string
   /** tech 的精度参数（mm/角分/秒/天）。 */
@@ -95,7 +100,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar', 'tech'].includes(action)
+  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar', 'tech', 'world-calendar'].includes(action)
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -150,6 +155,23 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
     }
     if (result.warnings.length > 0) { lines.push('', '【稳定性提示】'); for (const w of result.warnings) lines.push('  · ' + w) }
     return { result: lines.join('\n'), value: result }
+  }
+
+  if (action === 'world-calendar') {
+    /** world 参数 → 轨道周期（开普勒）→ 历法。orbitDays = sqrt(a³/M) 年 × 365.25。 */
+    const calMod = await import('./calendar.js')
+    const a = typeof input.orbitAU === 'number' ? input.orbitAU : 1
+    const starMass = typeof input.starMass === 'number' ? input.starMass : 1
+    const rotation = typeof input.rotationHours === 'number' ? input.rotationHours : 23.9344696
+    const obliquity = typeof input.obliquityDeg === 'number' ? input.obliquityDeg : 23.44
+    const moonCount = typeof input.moonCount === 'number' ? input.moonCount : 1
+    if (!(a > 0) || !(starMass > 0)) throw new CalcError('invalid_argument', 'world-calendar 需要正轨道半径与恒星质量', '')
+    const yearDaysEarth = Math.sqrt((a ** 3) / starMass) * 365.25
+    const result = calMod.deriveCalendar({ rotationHours: rotation, orbitDays: yearDaysEarth, obliquityDeg: obliquity, moonCount, moonPeriodDays: 27.32 })
+    lines.push('', '【world → 历法】')
+    lines.push('  轨道 ' + a + ' AU / 恒星 ' + starMass + ' M☉ → 一年 ' + yearDaysEarth.toFixed(1) + ' 地球日')
+    for (const note of result.notes) lines.push('  ' + note)
+    return { result: lines.join('\n'), value: { ...result, orbitAU: a, starMass, yearDaysEarth } }
   }
 
   if (action === 'tech') {
