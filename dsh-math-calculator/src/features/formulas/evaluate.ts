@@ -23,6 +23,7 @@
 
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
+import { toUcum, validateUcumUnit } from '../../core/ucum.js'
 import { fmtNumber, FMT, trimDecimal } from '../../core/format.js'
 import type { FormulaEntry } from './query.js'
 
@@ -247,6 +248,27 @@ export function evaluateFormula(
     )
   }
 
+  /**
+   * 结果单位自检（反馈 §1 公式量纲类）。
+   *
+   * 参数已做量纲校验（unit_mismatch），这里补「结果单位是否规范」：
+   * 公式声明 unit 写错/拼错时，AI 会照着错单位继续推——先校验，再给 notice。
+   */
+  /**
+   * 公式库的单位写法有三种与 UCUM 不同的地方（都是写法差异，不是错）：
+   * - `m^3`（UCUM 是 `m3`）→ 折掉 `^`；
+   * - `kg·m/s`（UCUM 用点号 `.`）→ `·` 换 `.`；
+   * - 中文说明（`无量纲`、`W（总辐射功率）`）→ 不校验，视为「说明性单位」。
+   */
+  const unitText = entry.unit.replace(/（[^）]*）/g, '').replace(/·/g, '.').replace(/\^/g, '').trim()
+  /** 描述性单位（范围 `0—1`、行业标度 `HRC`、含变量指数的 `(mol/L)^(m+n)`）不校验——它们不是可换算单位。 */
+  const isDescriptiveUnit = unitText === '' || /[\u4e00-\u9fa5]/.test(unitText) || /[—‰]/.test(unitText) || /\([a-z+]+\)/i.test(unitText) || /^(HRC|HB|HV)$/.test(unitText)
+  /** 常见符号写法 → UCUM 码（Ω、°C、kn、bpm、D、kcal/day、mm/yr）。 */
+  const UCUM_ALIAS: Record<string, string> = { 'Ω': 'Ohm', '°C': 'Cel', '℃': 'Cel', 'kn': '[kn_i]', 'bpm': '/min', 'D': '[diop]', 'day': 'd', 'yr': 'a', 'ppm': '[ppm]', 'kWh': 'kW.h', 'Gyr': 'Ga', 'rpm': '/min' }
+  const normalizeForUcum = (unit: string): string => unit.replace(/℃/g, 'Cel').replace(/·/g, '.').split('/').map((part) => UCUM_ALIAS[part] ?? part).join('/')
+  const unitValidation = entry.unit !== '' && !isDescriptiveUnit ? validateUcumUnit(toUcum(normalizeForUcum(unitText))) : null
+  const unitValid = unitValidation === null ? true : unitValidation.valid
+
   /** 显示。 */
   const shown = Number.isInteger(numeric)
     ? String(numeric)
@@ -265,7 +287,7 @@ export function evaluateFormula(
   if (terse) {
     return {
       result: shown + (entry.unit !== '' ? ' ' + entry.unit : '') + (domain !== null ? '（适用域：' + domain + '）' : ''),
-      value: { id: entry.id, result: numeric, unit: entry.unit, ...(domain !== null ? { domain } : {}) },
+      value: { id: entry.id, result: numeric, unit: entry.unit, unitValid, ...(domain !== null ? { domain } : {}) },
     }
   }
 
@@ -287,6 +309,7 @@ export function evaluateFormula(
     lines.push('单位: ' + entry.unit)
   }
   lines.push('结果: ' + shown + (entry.unit !== '' ? ' ' + entry.unit : ''))
+  if (!unitValid) lines.push('  ⚠ 结果单位「' + entry.unit + '」UCUM 校验不通过：' + (unitValidation?.message ?? '') + '——引用时请核对量纲。')
   if (domain !== null) {
     lines.push('', '【适用域】' + domain)
   }
@@ -299,6 +322,8 @@ export function evaluateFormula(
       expr: entry.expr,
       result: numeric,
       unit: entry.unit,
+      unitValid,
+      ...(unitValidation !== null ? { unitMessage: unitValidation.message, unitUcum: unitValidation.ucum } : {}),
       appliedOverrides: applied,
       params: scope,
       ...(domain !== null ? { domain } : {}),
