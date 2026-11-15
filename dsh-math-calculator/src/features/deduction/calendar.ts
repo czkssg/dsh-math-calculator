@@ -35,6 +35,10 @@ export interface CalendarInput {
   moonCount?: number
   /** 卫星周期（地球日，取第一颗）。 */
   moonPeriodDays?: number
+  /** 卫星半长轴（AU）——给了就用开普勒算周期（与 system/orbit 耦合）。 */
+  moonSemiMajorAu?: number
+  /** 行星质量（地球质量，卫星轨道用）。 */
+  planetMassEarth?: number
   /** 历元（可选，ISO）。 */
   epoch?: string
 }
@@ -74,7 +78,13 @@ export function deriveCalendar(input: CalendarInput): CalendarResult {
   const orbitDays = input.orbitDays ?? 365.2422
   const obliquity = input.obliquityDeg ?? 23.44
   const moonCount = input.moonCount ?? 1
-  const moonPeriod = input.moonPeriodDays ?? 29.53
+  /** 卫星周期：给了半长轴就用开普勒算（地月 a=0.00257 AU → 27.3 天）。 */
+  let moonPeriod = input.moonPeriodDays ?? 29.53
+  if (typeof input.moonSemiMajorAu === 'number' && input.moonSemiMajorAu > 0) {
+    const planetMass = (input.planetMassEarth ?? 1) / 332946
+    const periodYears = Math.sqrt((input.moonSemiMajorAu ** 3) / planetMass)
+    moonPeriod = periodYears * 365.25
+  }
   if (!(rotationHours > 0)) throw new Error('自转周期必须为正')
   if (!(orbitDays > 0)) throw new Error('公转周期必须为正')
 

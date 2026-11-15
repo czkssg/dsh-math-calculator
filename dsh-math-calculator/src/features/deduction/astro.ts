@@ -51,6 +51,10 @@ export interface AstroInput {
   moonCount?: number
   /** 卫星周期（地球日）。 */
   moonPeriodDays?: number
+  /** 卫星半长轴（AU，给了就用开普勒算周期）。 */
+  moonSemiMajorAu?: number
+  /** 行星质量（地球质量）。 */
+  planetMassEarth?: number
 
   /** gravity/relativity：{massKg, radiusM, speedMps, separationM, bodies, point}。 */
   massKg?: number
@@ -195,6 +199,8 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
       obliquityDeg: typeof input.obliquityDeg === 'number' ? input.obliquityDeg : undefined,
       moonCount: typeof input.moonCount === 'number' ? input.moonCount : undefined,
       moonPeriodDays: typeof input.moonPeriodDays === 'number' ? input.moonPeriodDays : undefined,
+      moonSemiMajorAu: typeof input.moonSemiMajorAu === 'number' ? input.moonSemiMajorAu : undefined,
+      planetMassEarth: typeof input.planetMassEarth === 'number' ? input.planetMassEarth : undefined,
     })
     lines.push('', '【历法推导】')
     for (const note of result.notes) lines.push('  ' + note)
