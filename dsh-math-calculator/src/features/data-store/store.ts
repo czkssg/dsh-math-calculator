@@ -23,7 +23,7 @@
  * @module dsh-math-calculator/features/data-store/store
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { workspaceArtifactDir, workspaceDirectory } from '../../io/workspace-store.js'
 
@@ -222,7 +222,6 @@ export function readRecordsCached(): Map<string, DataRecord> {
     indexCache = { records: new Map(), mtimeMs: 0 }
     return indexCache.records
   }
-  const { statSync } = require('node:fs') as typeof import('node:fs')
   const mtime = statSync(file).mtimeMs
   if (indexCache !== null && indexCache.mtimeMs === mtime) return indexCache.records
   const records = readRecords()
