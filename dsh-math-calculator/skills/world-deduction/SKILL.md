@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 53 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 56 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -58,6 +58,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **world → 历法（耦合）** | `astro` | `action:"world-calendar"` + `{orbitAU, starMass, rotationHours, obliquityDeg, moonCount}`——用开普勒从轨道推一年，再推历法（一键从行星参数到历法） |
 | **分支推演（两条时间线）** | `diverge` | `{base:{actors,edges,steps,seed}, variant:{seed|edges|actors}, threshold}` → 分歧年、最大差异年、终局最强对照、战争数差（DIVERGE 阶段的可执行版） |
 | **冲突/贡赋模拟** | `conflict` | `{actors:[{id,wealth}], edges:[{from,to}], steps, seed}` → 谁崛起/战争几次/谁亡（Axelrod 贡赋模型；同 seed 可复现；只给结构数值，叙事由 AI 写） |
+| **三类门面（最省心）** | `calc` / `derive` / `manage` | `{operation:"calc", op:"solve"}`、`{operation:"derive", op:"world"}`、`{operation:"manage", op:"help"}`——不必记 53 个 op；旧 op 名仍可用 |
 | **历史纪元划分（可一站式模拟）** | `history` | 给 `series` 直接切纪元；或给 `simulate:{actors,edges,steps,seed}` **先跑冲突模型**（最强势力份额序列）再切纪元；`smoothing` 平滑、`historyThreshold` 控转折、`crisisDrop` 标危机年 | `series:[{year,value}]` + `events:[{year,label}]` → 按局部极值切纪元（rise/fall/flat）+ 事件归入 + 转折年；`minEpochYears`、`historyThreshold` 控噪 |
 | **目标回溯（公式链 + 模型链）** | `backtrace` | `{target, given, maxDepth}` → 先匹配**模型链**（world→人口→财政、军队→后勤、行星→历法…共 8 条，数据在 `src/data/model-chains.json`），未命中回落**公式链**；输出链、缺参、可执行调用序列 |
 | **历法换算（日期↔年日）** | `astro` | `action:"calendar-convert"` + `{year, dayOfYear}` 或 `{absoluteDay}` → 第几年第几天、闰年、太阳黄经、季节 |

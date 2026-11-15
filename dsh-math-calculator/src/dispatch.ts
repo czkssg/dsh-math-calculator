@@ -126,8 +126,34 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
  * @param args - 原始参数
  * @returns 结果；未迁移返回 null
  */
+/** 门面分组：把 53 个 operation 收成 3 个入口（旧名仍兼容）。 */
+const FACADE_GROUPS: Record<string, string[]> = {
+  calc: ['evaluate', 'solve', 'derivative', 'integral', 'simplify', 'expand', 'roots', 'matrix', 'eigen', 'system', 'stats', 'dist', 'regression', 'ode', 'recurrence', 'balance', 'compare', 'interval', 'ledger', 'consistency', 'sanity', 'formula', 'formulas'],
+  derive: ['world', 'derivation', 'bodies', 'feasibility', 'quick_feasible', 'hierarchy', 'world_state', 'chain', 'threshold', 'scaling', 'anchor', 'extract_numbers', 'units_audit', 'timeline_check', 'impact', 'alert'],
+  manage: ['workspace', 'help', 'catalog', 'explain', 'invariants', 'examples'],
+}
+
 export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
   const args = normalizeArgs(rawArgs)
+  /**
+   * 门面转发：`{operation:"calc", op:"solve"}` → 内部按 solve 走。
+   *
+   * 用户要求（2026-11-16）：子命令太多要不要合并。做法：**加门面、不删旧名**——
+   * 旧调用全部继续可用，新调用可以只记 3 个入口。
+   */
+  const group = FACADE_GROUPS[operation]
+  if (group !== undefined) {
+    const inner = typeof args['op'] === 'string' ? (args['op'] as string) : ''
+    if (inner === '') {
+      return { result: '门面「' + operation + '」需要 op（子命令）。可用：' + group.join(' / '), value: { facade: operation, operations: group } } as never
+    }
+    if (!group.includes(inner)) {
+      return { result: '门面「' + operation + '」不接受 op「' + inner + '」。可用：' + group.join(' / '), value: { facade: operation, operations: group } } as never
+    }
+    const rest = { ...args }
+    delete rest['op']
+    return dispatchNew(inner, rest)
+  }
   const worldDeps = {
     constants: constantsTable(),
     starClasses: dataOf<Array<Record<string, unknown>>>('stars', 'stars.json', []) as never,
@@ -791,6 +817,10 @@ export const MIGRATED_OPERATIONS = [
   'anchor',
   'extract_numbers',
   'units_audit',
+  /** 门面（把 53 个 op 收成 3 个入口）。 */
+  'calc',
+  'derive',
+  'manage',
   'timeline_check',
   // 数值计算（第 3 步）
   'evaluate',

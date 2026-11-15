@@ -145,8 +145,9 @@ const PARAMETER_SPEC = {
      * 与 dispatch 的 MIGRATED_OPERATIONS 同源，避免两处清单漂移。
      */
     enum: [...new Set([...MIGRATED_OPERATIONS, 'auto'])],
-    description: '默认 auto。简易算式 evaluate；数据 stats；改设定 world/derivation；不确定调 help',
+    description: '默认 auto。三类门面最省心：calc（数值/公式，配 op）、derive（推演/对账，配 op）、manage（help/workspace，配 op）；也可直接用具体 op 名',
   },
+  op: { type: 'string', description: '门面子命令：calc→evaluate/solve/…；derive→world/derivation/…；manage→help/workspace/…' },
   variable: { type: 'string', description: '求导/求根/积分的自变量，默认 x' },
   precision: { type: 'integer', description: '计算精度（默认 64，不要为好看调低）' },
   displayPrecision: { type: 'integer', description: '小数点后显示位数（默认 8）' },
