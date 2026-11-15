@@ -27,6 +27,8 @@ export interface AstroInput {
   years?: number
   /** binary：{massA,massB,semiMajorAu,e}。 */
   binary?: Record<string, unknown>
+  /** system：{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons}]}。 */
+  system?: Record<string, unknown>
   /** ISO 时间（缺省当前）。 */
   date?: string
   /** 纬度（度，北正）。 */
@@ -63,7 +65,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = action === 'orbit' || action === 'binary'
+  const isGeneric = action === 'orbit' || action === 'binary' || action === 'system'
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -102,6 +104,22 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
     lines.push('  质心距：主星 ' + result.aStarAu.toFixed(3) + ' AU，伴星 ' + result.aCompanionAu.toFixed(3) + ' AU（速度比 ' + result.velocityRatio.toFixed(2) + '）')
     lines.push('  相对速度约 ' + result.relativeSpeedKms.toFixed(1) + ' km/s')
     return { result: lines.join('\n'), value: { system, result } }
+  }
+
+  if (action === 'system') {
+    const sysMod = await import('./system.js')
+    const raw = input.system ?? {}
+    const planets = Array.isArray(raw['planets']) ? (raw['planets'] as Array<Record<string, unknown>>) : []
+    if (planets.length === 0) throw new CalcError('missing_params', 'astro system 需要 planets（至少一颗）', '例如 {action:"system", system:{starMass:1, planets:[{name:"地球", a:1, massEarth:1}]}}。')
+    const result = sysMod.buildPlanetarySystem({ starMass: Number(raw['starMass'] ?? 1), planets: planets.map((p) => ({ name: String(p['name'] ?? ''), a: Number(p['a'] ?? 1), e: Number(p['e'] ?? 0), i: Number(p['i'] ?? 0), massEarth: Number(p['massEarth'] ?? 1), radiusEarth: Number(p['radiusEarth'] ?? 1), moons: Array.isArray(p['moons']) ? (p['moons'] as Array<Record<string, unknown>>).map((m) => ({ name: String(m['name'] ?? ''), a: Number(m['a'] ?? 0) })) : [] })), years: typeof input.years === 'number' ? input.years : 0 })
+    lines.push('', '【行星系统】')
+    lines.push('  恒星 ' + result.starMass + ' M☉，行星 ' + result.planets.length + ' 颗')
+    for (const planet of result.planets) {
+      lines.push('  ' + planet.name + '：a=' + planet.semiMajorAu.toFixed(3) + ' AU，周期 ' + planet.periodYears.toFixed(3) + ' 年，希尔球 ' + planet.hillAu.toFixed(5) + ' AU，卫星 ' + planet.moons.length + ' 颗')
+      for (const moon of planet.moons) lines.push('    ' + moon.name + '：a=' + moon.semiMajorAu.toFixed(5) + ' AU，周期 ' + moon.periodYears.toFixed(3) + ' 年' + (moon.insideRoche ? '（洛希内）' : moon.outsideHill ? '（希尔外）' : ''))
+    }
+    if (result.warnings.length > 0) { lines.push('', '【稳定性提示】'); for (const w of result.warnings) lines.push('  · ' + w) }
+    return { result: lines.join('\n'), value: result }
   }
 
   if (action === 'sun' || action === 'position') {
