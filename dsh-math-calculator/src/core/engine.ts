@@ -223,6 +223,20 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
  */
 export function normalizeUnits(source: string): string {
   if (source === '') return source
+  /**
+   * 中文量级词 + 空格：`1.2 亿 km²`、`1 万 人`（反馈 R44 #5）。
+   *
+   * 先展开成数值再归一单位，否则 mathjs 会把「亿」「万」当未知标识符。
+   */
+  const MAGNITUDE: Record<string, number> = { 万亿: 1e12, 千万: 1e7, 百万: 1e6, 亿: 1e8, 万: 1e4, 千: 1e3, 百: 1e2 }
+  source = source.replace(/(-?\d+(?:\.\d+)?)\s*(万亿|千万|百万|亿|万|千|百)(?![\u4e00-\u9fa5])/g, (whole, num: string, mag: string) => {
+    const factor = MAGNITUDE[mag]
+    return factor !== undefined ? String(Number(num) * factor) : whole
+  })
+  /** 上标归一：`km²` → `km2`、`m³` → `m3`（反馈 R44 #5 的 `km²`）。 */
+  source = source.replace(/²/g, '2').replace(/³/g, '3')
+  /** 计数单位「人」：`1 万 人` 是 10000 人，mathjs 没有「人」这个单位 → 去掉后按纯数算。 */
+  source = source.replace(/\s*人(?!口)/g, '').replace(/\s+to\s*$/i, '')
   let out = ''
   let i = 0
   /** 按长度降序排一次，保证「最长匹配优先」。 */
