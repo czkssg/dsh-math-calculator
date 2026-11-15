@@ -55,6 +55,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **拓扑模型保存** | `topology` | `action:"save", modelKey:"北境军", nodes, edges`；`list`/`load`/`export`/`import` 都在工作区 |
 | **天文历表（真实地球）** | `astro` | `action:"rise-set"`（日出日落/日照时长）、`"sun"`（高度角/方位）、`"moon"`（月相/光照比例）——`date` + `lat` + `lon` |
 | **通用轨道（架空天体/双星）** | `astro` | `action:"orbit"`（给轨道根数 a/e/i/omega/w/M0 + centralMass → 周期/位置/速度）、`"binary"`（双星互绕：周期/质心距）——开普勒模型，任意质量 |
+| **历法推导** | `astro` | `action:"calendar"` + `{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}`——一年多少天/闰年规则/太阴月/阴阳历/季节/分至点 |
 | **引力与相对论（黑洞/中子星）** | `astro` | `action:"gravity"`（逃逸/圆轨道速度、潮汐、N 体加速度、引力区间）、`"relativity"`（史瓦西半径/光子球/ISCO/时间膨胀/红移）——`massKg` + `radiusM` |
 | **行星系统（多行星+卫星）** | `astro` | `action:"system"` + `{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons:[{name,a}]}]}`——逐行星周期/希尔球/卫星可行域（洛希内限、希尔/3 外限）+ 稳定性警告 |
 | **解析 PDF** | `document` | `action:"extract"`（文本）/ `"tables"`（表格）/ `"numbers"`（数字台账）——`path:"某.pdf"`；清洗 DeepSeek 打印版页眉页脚；**不做 OCR** |

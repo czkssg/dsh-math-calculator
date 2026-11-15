@@ -29,6 +29,17 @@ export interface AstroInput {
   binary?: Record<string, unknown>
   /** system：{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons}]}。 */
   system?: Record<string, unknown>
+  /** calendar：{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}。 */
+  rotationHours?: number
+  /** 公转周期（地球日）。 */
+  orbitDays?: number
+  /** 倾角（度）。 */
+  obliquityDeg?: number
+  /** 卫星数。 */
+  moonCount?: number
+  /** 卫星周期（地球日）。 */
+  moonPeriodDays?: number
+
   /** gravity/relativity：{massKg, radiusM, speedMps, separationM, bodies, point}。 */
   massKg?: number
   /** 半径（m）。 */
@@ -77,7 +88,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = action === 'orbit' || action === 'binary' || action === 'system' || action === 'gravity' || action === 'relativity'
+  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar'].includes(action)
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -131,6 +142,22 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
       for (const moon of planet.moons) lines.push('    ' + moon.name + '：a=' + moon.semiMajorAu.toFixed(5) + ' AU，周期 ' + moon.periodYears.toFixed(3) + ' 年' + (moon.insideRoche ? '（洛希内）' : moon.outsideHill ? '（希尔外）' : ''))
     }
     if (result.warnings.length > 0) { lines.push('', '【稳定性提示】'); for (const w of result.warnings) lines.push('  · ' + w) }
+    return { result: lines.join('\n'), value: result }
+  }
+
+  if (action === 'calendar') {
+    const calMod = await import('./calendar.js')
+    const result = calMod.deriveCalendar({
+      rotationHours: typeof input.rotationHours === 'number' ? input.rotationHours : undefined,
+      orbitDays: typeof input.orbitDays === 'number' ? input.orbitDays : undefined,
+      obliquityDeg: typeof input.obliquityDeg === 'number' ? input.obliquityDeg : undefined,
+      moonCount: typeof input.moonCount === 'number' ? input.moonCount : undefined,
+      moonPeriodDays: typeof input.moonPeriodDays === 'number' ? input.moonPeriodDays : undefined,
+    })
+    lines.push('', '【历法推导】')
+    for (const note of result.notes) lines.push('  ' + note)
+    lines.push('', '  分至点（本地日）：')
+    for (const s of result.solstices) lines.push('    ' + s.name + '：第 ' + s.dayOfYear.toFixed(1) + ' 日')
     return { result: lines.join('\n'), value: result }
   }
 
