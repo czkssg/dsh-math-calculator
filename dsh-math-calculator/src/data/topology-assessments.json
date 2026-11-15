@@ -65,6 +65,32 @@
    },
    "calculator": "space-habitat",
    "output": "engineering"
+  },
+  {
+   "id": "enclosure",
+   "match": {
+    "action": "structure",
+    "kind": "enclosure",
+    "requires": [
+     "people",
+     "volumeM3"
+    ]
+   },
+   "calculator": "enclosure",
+   "output": "engineering"
+  },
+  {
+   "id": "greenhouse",
+   "match": {
+    "action": "structure",
+    "kind": "greenhouse",
+    "requires": [
+     "people",
+     "volumeM3"
+    ]
+   },
+   "calculator": "enclosure",
+   "output": "engineering"
   }
  ]
 }

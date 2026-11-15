@@ -30778,5 +30778,551 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "crew_o2_consumption",
+  "cat": "engineering/enclosure",
+  "name": "人均耗氧量",
+  "expr": "people * 0.84",
+  "params": {
+   "people": {
+    "value": 6,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "unit": "kg/天",
+  "keys": [
+   "封闭",
+   "耗氧",
+   "eclss"
+  ],
+  "desc": "人均 O₂ 约 0.84 kg/天（NASA ECLSS 典型值）。适用域：静息到轻度活动；重体力可达 1.2–1.5。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "crew_co2_output",
+  "cat": "engineering/enclosure",
+  "name": "人均 CO₂ 产出",
+  "expr": "people * 1.0",
+  "params": {
+   "people": {
+    "value": 6,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "unit": "kg/天",
+  "keys": [
+   "封闭",
+   "CO2",
+   "eclss"
+  ],
+  "desc": "人均 CO₂ 约 1.0 kg/天（与耗氧 0.84 kg 的化学计量一致）。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "lioh_capacity",
+  "cat": "engineering/enclosure",
+  "name": "LiOH 吸收 CO₂ 量",
+  "expr": "mass * 0.88",
+  "params": {
+   "mass": {
+    "value": 10,
+    "desc": "LiOH 质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   }
+  },
+  "unit": "kg CO2",
+  "keys": [
+   "封闭",
+   "LiOH",
+   "CO2清除"
+  ],
+  "desc": "1 kg LiOH 约吸收 0.88 kg CO₂（化学计量）。适用域：一次性清除剂；再生系统（Sabatier）另算。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "enclosure_co2_rise",
+  "cat": "engineering/enclosure",
+  "name": "密闭空间 CO₂ 上升速率",
+  "expr": "co2_kg_per_day / volume_m3 * 1e6 / 1.98",
+  "params": {
+   "co2_kg_per_day": {
+    "value": 1,
+    "desc": "CO₂ 产出 kg/天",
+    "quantity": "质量流量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
+   },
+   "volume_m3": {
+    "value": 100,
+    "desc": "空间体积 m³",
+    "quantity": "体积",
+    "dimension": {
+     "L": 3
+    }
+   }
+  },
+  "unit": "ppm/天",
+  "keys": [
+   "封闭",
+   "CO2",
+   "浓度"
+  ],
+  "desc": "ΔCO₂ ≈ 产出/体积（1.98 kg/m³ 为 CO₂ 密度）。适用域：无清除时；1000 ppm 是长期暴露限值。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "crop_area_o2",
+  "cat": "engineering/enclosure",
+  "name": "作物供氧面积",
+  "expr": "people * 0.84 / yield_kg_m2_day",
+  "params": {
+   "people": {
+    "value": 6,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "yield_kg_m2_day": {
+    "value": 0.03,
+    "desc": "作物产氧 kg/(m²·天)",
+    "quantity": "通量",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
+   }
+  },
+  "unit": "m²",
+  "keys": [
+   "封闭",
+   "温室",
+   "作物",
+   "供氧"
+  ],
+  "desc": "A = 耗氧/单位面积产氧：作物供氧所需面积。适用域：小麦连续种植 20–30 m²/人（含光照效率损失）。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "Biosphere 2 / BIOS-3 封闭生态实验结果",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "crop_area_food",
+  "cat": "engineering/enclosure",
+  "name": "食物自给面积",
+  "expr": "people * 0.62 / yield_kg_m2_day",
+  "params": {
+   "people": {
+    "value": 6,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "yield_kg_m2_day": {
+    "value": 0.02,
+    "desc": "粮食产量 kg/(m²·天)（干重）",
+    "quantity": "通量",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
+   }
+  },
+  "unit": "m²",
+  "keys": [
+   "封闭",
+   "温室",
+   "食物"
+  ],
+  "desc": "A = 干重需求/产量：全食物自给所需面积。适用域：小麦 0.02 kg/(m²·天) → 约 200 m²/人，是封闭生态最难的一项。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "Biosphere 2 / BIOS-3 封闭生态实验结果",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "water_recovery_closure",
+  "cat": "engineering/enclosure",
+  "name": "水回收闭包率",
+  "expr": "recovered / total * 100",
+  "params": {
+   "recovered": {
+    "value": 26,
+    "desc": "回收水量 L/天",
+    "quantity": "体积流量",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
+   },
+   "total": {
+    "value": 30,
+    "desc": "总用水 L/天",
+    "quantity": "体积流量",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
+   }
+  },
+  "unit": "%",
+  "keys": [
+   "封闭",
+   "水回收",
+   "eclss"
+  ],
+  "desc": "闭包率 = 回收/总用：ISS 水回收约 93%。适用域：尿液处理 + 冷凝水回收；剩余 7% 靠补给。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "air_leak_rate",
+  "cat": "engineering/enclosure",
+  "name": "密闭舱空气泄漏",
+  "expr": "volume_m3 * leak_pct_day / 100 * 1.2",
+  "params": {
+   "volume_m3": {
+    "value": 400,
+    "desc": "舱体积 m³",
+    "quantity": "体积",
+    "dimension": {
+     "L": 3
+    }
+   },
+   "leak_pct_day": {
+    "value": 0.1,
+    "desc": "日泄漏率 %",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "unit": "kg/天",
+  "keys": [
+   "封闭",
+   "泄漏",
+   "eclss"
+  ],
+  "desc": "漏气 = 体积×日泄漏率×空气密度 1.2。适用域：ISS 约 0.05–0.2%/天；泄漏决定补给频率。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "buffer_days",
+  "cat": "engineering/enclosure",
+  "name": "缓冲库存天数",
+  "expr": "stock_kg / consumption_kg_day",
+  "params": {
+   "stock_kg": {
+    "value": 100,
+    "desc": "库存 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "consumption_kg_day": {
+    "value": 5,
+    "desc": "日消耗 kg/天",
+    "quantity": "质量流量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
+   }
+  },
+  "unit": "天",
+  "keys": [
+   "封闭",
+   "缓冲",
+   "储备"
+  ],
+  "desc": "库存天数 = 储备/日耗：封闭系统必须按「补给间隔 + 应急」定库存。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "enclosure_heat_load",
+  "cat": "engineering/enclosure",
+  "name": "封闭空间热负荷",
+  "expr": "people * 100 + equipment_w",
+  "params": {
+   "people": {
+    "value": 6,
+    "desc": "人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "equipment_w": {
+    "value": 3000,
+    "desc": "设备热 W",
+    "quantity": "功率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
+   }
+  },
+  "unit": "W",
+  "keys": [
+   "封闭",
+   "热负荷",
+   "温控"
+  ],
+  "desc": "人体静息产热约 100 W/人；封闭舱的热要靠散热器排掉——热沉（太空）是真空，只能辐射。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "enclosure_min_volume",
+  "cat": "engineering/enclosure",
+  "name": "避难所最小体积（CO₂ 限值）",
+  "expr": "co2_kg_day * days * 1e6 / (1.98 * 1000)",
+  "params": {
+   "co2_kg_day": {
+    "value": 1,
+    "desc": "CO₂ 产出 kg/天",
+    "quantity": "质量流量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
+   },
+   "days": {
+    "value": 3,
+    "desc": "无清除可撑天数",
+    "quantity": "时间",
+    "dimension": {
+     "T": 1
+    }
+   }
+  },
+  "unit": "m³",
+  "keys": [
+   "封闭",
+   "避难所",
+   "CO2"
+  ],
+  "desc": "体积 ≥ 产出×天数/(1.98 kg/m³ × 1000 ppm 限值)：避难所最小体积。适用域：5000 ppm 短时上限可放宽到 1/5。",
+  "sources": [
+   {
+    "type": "standard",
+    "title": "NASA ECLSS 设计数据（BVAD / NASA-STD-3001 量级值）",
+    "publisher": "NASA",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "algae_o2_yield",
+  "cat": "engineering/enclosure",
+  "name": "藻类产氧",
+  "expr": "volume_m3 * density_g_l * 1.3",
+  "params": {
+   "volume_m3": {
+    "value": 1,
+    "desc": "光生物反应器体积 m³",
+    "quantity": "体积",
+    "dimension": {
+     "L": 3
+    }
+   },
+   "density_g_l": {
+    "value": 1,
+    "desc": "藻液浓度 g/L",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   }
+  },
+  "unit": "kg O2/天",
+  "keys": [
+   "封闭",
+   "藻类",
+   "产氧"
+  ],
+  "desc": "螺旋藻约 1.3 kg O₂/(m³·天)（1 g/L 浓度）。适用域：高光照 + 补 CO₂；比高等植物快一个数量级，但只产氧不产主粮。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "Biosphere 2 / BIOS-3 封闭生态实验结果",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "greenhouse_light",
+  "cat": "engineering/enclosure",
+  "name": "温室补光功率",
+  "expr": "area_m2 * ppfd * hours_day / 1e3",
+  "params": {
+   "area_m2": {
+    "value": 100,
+    "desc": "种植面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "ppfd": {
+    "value": 300,
+    "desc": "目标 PPFD µmol/(m²·s)",
+    "quantity": "通量",
+    "dimension": {
+     "L": -2,
+     "T": -1
+    }
+   },
+   "hours_day": {
+    "value": 16,
+    "desc": "光照小时/天",
+    "quantity": "时间",
+    "dimension": {
+     "T": 1
+    }
+   }
+  },
+  "unit": "mol/天",
+  "keys": [
+   "封闭",
+   "温室",
+   "补光"
+  ],
+  "desc": "每日光量 = 面积×PPFD×小时（µmol→mol）。适用域：叶菜 200–400、果菜 400–600 µmol/(m²·s)；LED 光效约 2.5 µmol/J。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "Biosphere 2 / BIOS-3 封闭生态实验结果",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
+ },
+ {
+  "id": "closed_nitrogen_cycle",
+  "cat": "engineering/enclosure",
+  "name": "氮循环闭合（堆肥）",
+  "expr": "waste_kg_day * n_pct / 100 * recovery",
+  "params": {
+   "waste_kg_day": {
+    "value": 1.8,
+    "desc": "有机废弃物 kg/天",
+    "quantity": "质量流量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
+   },
+   "n_pct": {
+    "value": 3,
+    "desc": "含氮率 %",
+    "quantity": "比率",
+    "dimension": {}
+   },
+   "recovery": {
+    "value": 0.6,
+    "desc": "回收率",
+    "quantity": "系数",
+    "dimension": {}
+   }
+  },
+  "unit": "kg N/天",
+  "keys": [
+   "封闭",
+   "氮循环",
+   "堆肥"
+  ],
+  "desc": "氮回收 = 废弃物×含氮率×回收率：封闭系统必须闭合氮循环，否则作物会缺氮。",
+  "sources": [
+   {
+    "type": "paper",
+    "title": "Biosphere 2 / BIOS-3 封闭生态实验结果",
+    "accessed": "2026-11-16"
+   }
+  ],
+  "confidence": "scaling"
  }
 ]

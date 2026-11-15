@@ -444,6 +444,11 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   if (action === 'structure') {
     /** 扁平写法（反馈：kind/levels/area 或 massKg/speedKph/…）也能用。 */
     const flat = input as unknown as Record<string, unknown>
+    /** 封闭系统（避难所/温室）：没有结构几何，只做工程核算。 */
+    if (flat['kind'] === 'enclosure' || flat['kind'] === 'greenhouse') {
+      const merged = withAssessment('structure', flat, '═══ 封闭系统（' + String(flat['kind']) + '）═══', { kind: flat['kind'] })
+      return merged
+    }
     const building = input.building ?? (flat['kind'] === 'building' || flat['levels'] !== undefined || flat['area'] !== undefined
       ? { kind: 'building', floors: Number(flat['levels'] ?? flat['floors'] ?? 1), footprintM2: Number(flat['area'] ?? flat['footprintM2'] ?? 0), ...(flat['world'] !== undefined ? { world: flat['world'] } : {}) }
       : undefined)

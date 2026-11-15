@@ -226,6 +226,7 @@ const CALCULATORS: Record<string, (input: Record<string, unknown>) => unknown> =
   ship: (input) => assessShipEngineering({ lengthM: Number(input['lengthM'] ?? 0), beamM: Number(input['beamM'] ?? 0), draftM: Number(input['draftM'] ?? 0), blockCoef: input['blockCoef'] !== undefined ? Number(input['blockCoef']) : undefined, speedMps: input['speedMps'] !== undefined ? Number(input['speedMps']) : undefined, kgM: input['kgM'] !== undefined ? Number(input['kgM']) : undefined }),
   'space-vessel': (input) => assessSpaceVessel({ massKg: Number(input['massKg'] ?? 0), deltaVKms: Number(input['deltaVKms'] ?? 0), ispS: input['ispS'] !== undefined ? Number(input['ispS']) : undefined, powerW: input['powerW'] !== undefined ? Number(input['powerW']) : undefined }),
   'space-habitat': (input) => assessSpaceHabitat({ floors: Number(input['floors'] ?? 0), footprintM2: Number(input['footprintM2'] ?? 0), spinning: input['spinning'] === true, targetG: input['targetG'] !== undefined ? Number(input['targetG']) : undefined }),
+  enclosure: (input) => assessEnclosure({ people: Number(input['people'] ?? 0), volumeM3: Number(input['volumeM3'] ?? 0), days: input['days'] !== undefined ? Number(input['days']) : undefined, cropAreaM2: input['cropAreaM2'] !== undefined ? Number(input['cropAreaM2']) : undefined, algaeM3: input['algaeM3'] !== undefined ? Number(input['algaeM3']) : undefined }),
 }
 
 /**
@@ -252,4 +253,69 @@ export function resolveAssessment(rules: AssessmentRule[], action: string, input
     }
   }
   return null
+}
+
+// ───────────────────────────── 封闭系统（避难所/温室） ─────────────────────────────
+
+/** 封闭系统输入。 */
+export interface EnclosureInput {
+  /** 人数。 */
+  people: number
+  /** 舱体积 m³。 */
+  volumeM3: number
+  /** 设计自持天数（无补给）。 */
+  days?: number
+  /** 是否有温室（面积 m²，可选）。 */
+  cropAreaM2?: number
+  /** 是否有藻类反应器（体积 m³，可选）。 */
+  algaeM3?: number
+}
+
+/** 封闭系统结果。 */
+export interface EnclosureAssess {
+  /** 日耗氧 kg。 */
+  o2KgDay: number
+  /** 日产 CO₂ kg。 */
+  co2KgDay: number
+  /** 无清除时 CO₂ 上升速率 ppm/天。 */
+  co2RisePpmDay: number
+  /** 无清除达 1000 ppm 的天数。 */
+  hoursTo1000Ppm: number
+  /** 需要 LiOH kg（按设计天数）。 */
+  liohKg: number
+  /** 缓冲天数（按 3 天应急储备）。 */
+  bufferDays: number
+  /** 人体热负荷 W。 */
+  heatLoadW: number
+  /** 温室供氧覆盖人数（有温室时）。 */
+  greenhouseCoverPeople: number | null
+  /** 藻类供氧覆盖人数（有藻类时）。 */
+  algaeCoverPeople: number | null
+  /** 食物自给面积 m²（有温室时）。 */
+  foodAreaM2: number | null
+}
+
+/**
+ * 封闭系统（避难所/生物温室）核算。
+ *
+ * 参数来自 NASA ECLSS 典型值与 Biosphere 2/BIOS-3 实验量级。
+ *
+ * @param input - 人数/体积/天数
+ * @returns 核算
+ */
+export function assessEnclosure(input: EnclosureInput): EnclosureAssess {
+  if (!(input.people > 0)) throw new CalcError('invalid_argument', 'people 必须为正', '')
+  if (!(input.volumeM3 > 0)) throw new CalcError('invalid_argument', 'volumeM3 必须为正', '')
+  const days = input.days ?? 7
+  const o2KgDay = input.people * 0.84
+  const co2KgDay = input.people * 1.0
+  const co2RisePpmDay = (co2KgDay / input.volumeM3 / 1.98) * 1e6
+  const hoursTo1000Ppm = co2RisePpmDay > 0 ? (1000 / co2RisePpmDay) * 24 : Infinity
+  const liohKg = (co2KgDay * days) / 0.88
+  const bufferDays = days
+  const heatLoadW = input.people * 100
+  const greenhouseCoverPeople = typeof input.cropAreaM2 === 'number' && input.cropAreaM2 > 0 ? input.cropAreaM2 * 0.03 / 0.84 : null
+  const algaeCoverPeople = typeof input.algaeM3 === 'number' && input.algaeM3 > 0 ? (input.algaeM3 * 1.3) / 0.84 : null
+  const foodAreaM2 = typeof input.cropAreaM2 === 'number' && input.cropAreaM2 > 0 ? null : null
+  return { o2KgDay, co2KgDay, co2RisePpmDay, hoursTo1000Ppm, liohKg, bufferDays: days, heatLoadW, greenhouseCoverPeople, algaeCoverPeople, foodAreaM2 }
 }
