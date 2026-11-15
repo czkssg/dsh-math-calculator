@@ -59,6 +59,18 @@ console.log('-- 4. 统计与导入导出 --')
   assert('★ 导入新记录 → 1 条', store.importRecords(JSON.stringify(newRecords)) === 1, '')
 }
 
+console.log('-- 4b. 历史版本 / 缓存 / 压缩 --')
+{
+  const v1 = store.getRecordVersion('var:tempo', 1)
+  assert('★ 可取历史版本 v1（旧 payload）', v1 !== null && JSON.stringify(v1.payload) === '{"value":1.2}', JSON.stringify(v1?.payload))
+  const cached = store.queryRecordsCached({ kind: 'var' })
+  assert('★ 缓存查询可用', cached.length === 1, String(cached.length))
+  for (let i = 0; i < 20; i += 1) store.putRecord({ kind: 'note', name: 'n' + i, payload: { i } })
+  const c = store.compact(10)
+  assert('★ 超阈值触发压缩（.bak 保留）', c.compacted === true && c.after < c.before, JSON.stringify(c))
+  assert('压缩后数据不丢（var 仍在）', store.queryRecords({ kind: 'var' }).length === 1, '')
+}
+
 console.log('-- 5. 经 tool --')
 {
   const put = await run({ operation: 'data', dataAction: 'put', kind: 'world', name: '冰原', tags: ['世界'], payload: { gravity: 1.2 } })

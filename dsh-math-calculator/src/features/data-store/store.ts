@@ -201,3 +201,90 @@ export function importRecords(json: string): number {
   }
   return count
 }
+
+// ───────────────────────────── 借鉴 @seald-io/nedb（2026-11-16） ─────────────────────────────
+
+/**
+ * 内存索引缓存（借鉴 nedb 的 ensureIndex）。
+ *
+ * 原实现每次读全文件解析——记录一多就慢。加缓存：文件 mtime 不变则复用。
+ */
+let indexCache: { records: Map<string, DataRecord>; mtimeMs: number } | null = null
+
+/**
+ * 读记录（带缓存）。
+ *
+ * @returns 记录表
+ */
+export function readRecordsCached(): Map<string, DataRecord> {
+  const file = storeFile()
+  if (!existsSync(file)) {
+    indexCache = { records: new Map(), mtimeMs: 0 }
+    return indexCache.records
+  }
+  const { statSync } = require('node:fs') as typeof import('node:fs')
+  const mtime = statSync(file).mtimeMs
+  if (indexCache !== null && indexCache.mtimeMs === mtime) return indexCache.records
+  const records = readRecords()
+  indexCache = { records, mtimeMs: mtime }
+  return records
+}
+
+/**
+ * 压缩日志（借鉴 nedb 的 compaction）。
+ *
+ * JSONL 里每条记录有多版历史；超过阈值时只保留最新版，旧文件改名 .bak。
+ *
+ * @param threshold - 行数阈值（默认 500）
+ * @returns 压缩前后行数
+ */
+export function compact(threshold = 500): { before: number; after: number; compacted: boolean } {
+  const file = storeFile()
+  if (!existsSync(file)) return { before: 0, after: 0, compacted: false }
+  const lines = readFileSync(file, 'utf8').split('\n').filter((line) => line.trim() !== '')
+  if (lines.length <= threshold) return { before: lines.length, after: lines.length, compacted: false }
+  const latest = readRecords()
+  const body = [...latest.values()].map((record) => JSON.stringify(record)).join('\n') + '\n'
+  writeFileSync(file + '.bak', readFileSync(file, 'utf8'), 'utf8')
+  writeFileSync(file, body, 'utf8')
+  indexCache = null
+  return { before: lines.length, after: latest.size, compacted: true }
+}
+
+/**
+ * 取某条记录的指定历史版本（借鉴双时态数据库的「按版本回放」）。
+ *
+ * @param id - 记录 id
+ * @param version - 版本号（1 起）
+ * @returns 记录或 null
+ */
+export function getRecordVersion(id: string, version: number): DataRecord | null {
+  const file = storeFile()
+  if (!existsSync(file)) return null
+  let found: DataRecord | null = null
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    if (line.trim() === '') continue
+    try {
+      const record = JSON.parse(line) as DataRecord
+      if (record.id === id && record.version === version) found = record
+    } catch {
+      /* 跳过坏行 */
+    }
+  }
+  return found
+}
+/**
+ * 带缓存的查询（索引未变时复用解析结果）。
+ *
+ * @param filter - 过滤条件
+ * @returns 记录列表
+ */
+export function queryRecordsCached(filter: { kind?: string; tag?: string; nameContains?: string; refsTo?: string } = {}): DataRecord[] {
+  const all = [...readRecordsCached().values()]
+  return all
+    .filter((r) => filter.kind === undefined || r.kind === filter.kind)
+    .filter((r) => filter.tag === undefined || r.tags.includes(filter.tag))
+    .filter((r) => filter.nameContains === undefined || r.name.includes(filter.nameContains))
+    .filter((r) => filter.refsTo === undefined || r.refs.includes(filter.refsTo))
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+}

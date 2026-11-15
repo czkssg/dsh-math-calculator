@@ -58,7 +58,7 @@ import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runDiverge } from './features/deduction/diverge.js'
-import { putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords } from './features/data-store/store.js'
+import { queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -223,11 +223,12 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       }
       if (action === 'get') {
         const id = typeof args['id'] === 'string' ? (args['id'] as string) : typeof args['name'] === 'string' ? String(args['kind'] ?? 'note') + ':' + String(args['name']) : ''
-        const record = getRecord(id)
+        /** 带 dataVersion 时取历史版本（借鉴双时态库）。 */
+        const record = typeof args['dataVersion'] === 'number' ? getRecordVersion(id, args['dataVersion'] as number) : getRecord(id)
         return { result: record === null ? '没有这条记录：' + id : JSON.stringify(record, null, 1), value: { record } } as never
       }
       if (action === 'query') {
-        const rows = queryRecords({ kind: typeof args['kind'] === 'string' ? (args['kind'] as string) : undefined, tag: typeof args['tag'] === 'string' ? (args['tag'] as string) : undefined, nameContains: typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : undefined, refsTo: typeof args['refsTo'] === 'string' ? (args['refsTo'] as string) : undefined })
+        const rows = queryRecordsCached({ kind: typeof args['kind'] === 'string' ? (args['kind'] as string) : undefined, tag: typeof args['tag'] === 'string' ? (args['tag'] as string) : undefined, nameContains: typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : undefined, refsTo: typeof args['refsTo'] === 'string' ? (args['refsTo'] as string) : undefined })
         const lines = ['═══ 数据查询（' + rows.length + ' 条）═══']
         for (const row of rows.slice(0, 50)) lines.push('  ' + row.id + '  v' + row.version + '  [' + row.kind + ']  ' + (row.tags.length > 0 ? row.tags.join('/') : '-'))
         return { result: lines.join('\n'), value: { count: rows.length, records: rows.map((r) => ({ id: r.id, kind: r.kind, name: r.name, version: r.version, tags: r.tags, refs: r.refs })) } } as never
@@ -246,6 +247,10 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       if (action === 'import') {
         const count = importRecords(String(args['dataJson'] ?? '[]'))
         return { result: '导入 ' + count + ' 条', value: { imported: count } } as never
+      }
+      if (action === 'compact') {
+        const result = compact(typeof args['compactThreshold'] === 'number' ? (args['compactThreshold'] as number) : undefined)
+        return { result: result.compacted ? '已压缩：' + result.before + ' 行 → ' + result.after + ' 行（旧档 .bak）' : '未到阈值，未压缩（' + result.before + ' 行）', value: result } as never
       }
       const stats = storeStats()
       const lines = ['═══ 数据层统计 ═══', '  记录 ' + stats.total + ' 条，累计版本 ' + stats.versions]
