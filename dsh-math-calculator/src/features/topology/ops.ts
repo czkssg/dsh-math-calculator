@@ -34,6 +34,44 @@ import { loadWorkspaceFile, saveWorkspaceFile, workspaceArtifactDir } from '../.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+
+/** topology 全部 action 的可复制示例（反馈：107 次「不知道怎么传」）。 */
+const TOPOLOGY_EXAMPLES: Array<{ action: string; label: string; example: Record<string, unknown> }> = [
+  { action: 'model', label: '建图与摘要', example: { action: 'model', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }] } },
+  { action: 'route', label: '最短路径', example: { action: 'route', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', to: 'B', mode: 'road' } },
+  { action: 'sightline', label: '视线', example: { action: 'sightline', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', to: 'B' } },
+  { action: 'reachable', label: '可达预算', example: { action: 'reachable', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', maxKm: 200 } },
+  { action: 'structure', label: '建筑/载具（扁平写法）', example: { action: 'structure', kind: 'building', levels: 320, area: 1000 } },
+  { action: 'structure', label: '建筑/载具（嵌套写法）', example: { action: 'structure', building: { kind: 'building', floors: 100, footprintM2: 500 } } },
+  { action: 'rules', label: '七条结构规则', example: { action: 'rules', nodes: [{ id: 'A', lat: 0, lon: 0 }], edges: [] } },
+  { action: 'org', label: '军队/政府层级', example: { action: 'org', units: [{ id: '师', level: '师', headcount: 12000, parent: '军' }, { id: '军', level: '军', headcount: 30000 }] } },
+  { action: 'terrain', label: '地图地形', example: { action: 'terrain', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', to: 'B' } },
+  { action: 'ship', label: '建筑/舰船拓扑', example: { action: 'ship', entry: '舰桥', compartments: [{ id: '舰桥' }, { id: '机舱' }], passages: [{ from: '舰桥', to: '机舱', kind: 'passage' }] } },
+  { action: 'entities', label: '列出实体类型', example: { action: 'entities' } },
+  { action: 'define', label: '自创实体类型', example: { action: 'define', entityType: { name: 'clan', label: '氏族', category: 'conceptual', required: ['members', 'leader'], relations: ['alliance'] } } },
+  { action: 'validate', label: '实体图校验', example: { action: 'validate', entities: [{ id: '师', type: 'unit', level: '师', headcount: 1 }], relations: [] } },
+  { action: 'save', label: '保存模型', example: { action: 'save', modelKey: '北境军', nodes: [{ id: 'A' }], edges: [] } },
+  { action: 'load', label: '载入模型', example: { action: 'load', modelKey: '北境军' } },
+  { action: 'list', label: '模型清单', example: { action: 'list' } },
+  { action: 'export', label: '导出到工作区', example: { action: 'export', modelKey: '北境军', nodes: [{ id: 'A' }], edges: [] } },
+  { action: 'import', label: '从工作区导入', example: { action: 'import', file: '北境军.json' } },
+];
+
+/**
+ * 渲染 action 示例清单。
+ *
+ * @returns 文本与清单
+ */
+function renderExamples(): { result: string; value: unknown } {
+  const lines: string[] = ['═══ topology 动作清单与可复制示例 ═══', '']
+  for (const item of TOPOLOGY_EXAMPLES) {
+    lines.push('  ' + item.action.padEnd(12) + item.label)
+    lines.push('    ' + JSON.stringify({ operation: 'topology', topology: item.example }))
+  }
+  lines.push('', '★ 每个示例可直接整段粘贴调用；不带 action 时默认 model。')
+  return { result: lines.join('\n'), value: { actions: TOPOLOGY_EXAMPLES } }
+}
+
 /** 输入。 */
 export interface TopologyOpInput {
   action?: string
@@ -273,6 +311,9 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
+  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import'])
+  /** 示例清单：`action:"examples"`，或拼错动作时也给清单（反馈：107 次猜参数失败）。 */
+  if (action === 'examples' || action === 'help' || !KNOWN_ACTIONS.has(action)) return renderExamples()
   if (action === 'save') {
     const key = typeof input.modelKey === 'string' && input.modelKey.trim() !== '' ? input.modelKey.trim() : ''
     if (key === '') throw new CalcError('missing_params', 'save 需要 modelKey（模型名）', '例如 {topology:{action:"save", modelKey:"北境军", nodes:[…], edges:[…]}}。')

@@ -132,7 +132,8 @@ function validate(input: WorldOpInput): void {
 function f(value: number, digits = 2): string {
   if (!Number.isFinite(value)) return String(value)
   const abs = Math.abs(value)
-  if (abs >= 1e5 || (abs > 0 && abs < 1e-3)) return value.toExponential(2)
+  /** 小行星重力 0.0022 g 用 toFixed(2) 会显示成 0.00 —— 低于显示精度时改科学计数。 */
+  if (abs >= 1e5 || (abs > 0 && abs < Math.pow(10, -digits))) return value.toExponential(2)
   return value.toFixed(digits)
 }
 
