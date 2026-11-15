@@ -59,6 +59,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **天文观测 → 科技** | `astro` | `action:"tech"` + `{device:"telescope|sextant|clock|pendulum|shadow|calendar-drift", precision}`——口径→角分辨率、角分→定位误差、日误差→经度误差、秒摆长度、圭表→回归年分辨率、历法漂移→几年差 1 天 |
 | **历法推导** | `astro` | `action:"calendar"` + `{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}`——一年多少天/闰年规则/太阴月/阴阳历/季节/分至点 |
 | **引力与相对论（黑洞/中子星）** | `astro` | `action:"gravity"`（逃逸/圆轨道速度、潮汐、N 体加速度、引力区间）、`"relativity"`（史瓦西半径/光子球/ISCO/时间膨胀/红移）——`massKg` + `radiusM` |
+| **海绵状庇护所（小空腔）** | `topology` | `structure` + `kind:"sponge"`（`{targetPeople, cavityVolumeM3, volumePerPersonM3, maxSpanM, excavationRatio, mediumDensityKgM3}`）→ 空腔数/边长/跨度校验/支护面积/排土量——**双限制**：太大跨度失效、太小 S/V 暴增 |
 | **千万级聚居（舱室网络）** | `topology` | `structure` + `kind:"megastructure"`（`{targetPeople, compartmentAreaM2, compartmentVolumeM3, areaPerPerson, selfSufficient, cropAreaPerPersonM2}`）→ 居住舱/温室舱数、总容积、总泄漏、氧/食/水需求——支持 1 人到亿级 |
 | **封闭系统闭环/上限** | `topology` | `structure` + `kind:"closed-loop"`（`{people, cropAreaM2, algaeM3, waterRecycle, bufferO2Kg, volumeM3}`）→ 自持上限人数（木桶短板）、氧/食物缺口、**故障小时数**（CO₂ 失效/氧耗尽）；`kind:"enclosure"`/`"greenhouse"` 算日需求 |
 | **建筑/舰船/太空工程校核** | `topology` | `structure`（kind=building/space-habitat）与 `ship`（kind=ship/space-vessel）自动附【工程校核】；规则表在 `src/data/topology-assessments.json`，新增类型只改数据+注册 calculator |

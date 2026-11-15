@@ -115,6 +115,18 @@
    },
    "calculator": "megastructure",
    "output": "engineering"
+  },
+  {
+   "id": "sponge",
+   "match": {
+    "action": "structure",
+    "kind": "sponge",
+    "requires": [
+     "targetPeople"
+    ]
+   },
+   "calculator": "sponge",
+   "output": "engineering"
   }
  ]
 }
