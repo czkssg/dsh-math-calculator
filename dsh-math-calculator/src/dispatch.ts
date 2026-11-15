@@ -54,6 +54,7 @@ import { callFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
+import { backtrace } from './features/formulas/backtrace.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -173,6 +174,23 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'backtrace': {
+      const formulas = dataOf<Array<Record<string, unknown>>>('formulas', 'formulas.json', [])
+      const target = typeof args['target'] === 'string' ? (args['target'] as string) : ''
+      if (target.trim() === '') throw new CalcError('missing_params', 'backtrace 需要 target（目标描述）', '例如 {operation:"backtrace", target:"这座窑一天烧多少煤"}。')
+      const given = Array.isArray(args['given']) ? (args['given'] as unknown[]).map(String) : []
+      const result = backtrace(formulas as never, target, { maxDepth: typeof args['maxDepth'] === 'number' ? (args['maxDepth'] as number) : 2, given })
+      const lines = ['═══ 目标回溯：' + target + ' ═══', '']
+      if (result.matches.length === 0) lines.push('  ' + result.notes[0])
+      else {
+        lines.push('  命中公式：' + result.matches.map((m) => m.name).join('、'))
+        lines.push('', '  推荐链：' + (result.chain.length > 0 ? result.chain.map((c) => c.name).join(' → ') : '（单公式）'))
+        if (result.missing.length > 0) lines.push('', '  需你给的参数：' + result.missing.map((m) => m.formula + '.' + m.param + (m.desc !== '' ? '（' + m.desc + '）' : '')).join('、'))
+        lines.push('', '  可执行：' + result.calls.map((c) => JSON.stringify(c)).join(' → '))
+      }
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'astro':
       return runAstro((args['astro'] ?? args) as never) as never
@@ -745,6 +763,8 @@ export const MIGRATED_OPERATIONS = [
   'topology',
   /** 天文历表（astronomy-engine）。 */
   'astro',
+  /** 目标驱动回溯（给目标 → 公式链）。 */
+  'backtrace',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

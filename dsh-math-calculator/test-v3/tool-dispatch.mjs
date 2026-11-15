@@ -85,8 +85,8 @@ console.log('-- 2. 已迁移 operation 走新实现 --')
   const hierarchy = await run({ operation: 'hierarchy', hierarchy: { levels: ['师', '团'], tree: [3], base: 10 } })
   assert('hierarchy 走新实现（师 30 人）', hierarchy.ok === true && hierarchy.value.fullStrength === 30, String(hierarchy.value?.fullStrength))
 
-  const extract = await run({ operation: 'extract_numbers', text: '年产 1.49 亿吨。' })
-  assert('extract_numbers 走新实现（中文量级）', extract.ok === true && extract.value.items[0].value === 1.49e8, String(extract.value?.items?.[0]?.value))
+  const extract = await run({ operation: 'extract_numbers', text: '年产 1.50 亿吨。' })
+  assert('extract_numbers 走新实现（中文量级）', extract.ok === true && extract.value.items[0].value === 1.50e8, String(extract.value?.items?.[0]?.value))
 
   const audit = await run({ operation: 'units_audit', claims: [{ name: '年产量', unit: '吨' }, { name: '年产量', unit: '米' }] })
   assert('units_audit 走新实现（量纲冲突）', audit.ok === true && audit.result.includes('conflict') === false && audit.value.findings[0].status === 'conflict', '')
@@ -123,7 +123,7 @@ console.log('-- 4. 新实现的错误被翻译成结构化 error --')
 console.log('-- 5. dispatch 路由表 --')
 {
   const migrated = dispatch.MIGRATED_OPERATIONS
-  assert('★ 49 个 operation 全部迁移（含 impact/topology/document/astro）', migrated.length === 49, String(migrated.length))
+  assert('★ 50 个 operation 全部迁移（含 impact/topology/document/astro）', migrated.length === 50, String(migrated.length))
   assert('清单含 constants/workspace/help/balance/auto', ['constants', 'workspace', 'help', 'balance', 'auto'].every((operation) => migrated.includes(operation)), '')
 }
 

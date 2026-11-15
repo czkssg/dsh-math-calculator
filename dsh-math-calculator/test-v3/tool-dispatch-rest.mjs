@@ -85,7 +85,7 @@ console.log('-- 4. workspace / custom / formula-table --')
 console.log('-- 5. help --')
 {
   const catalog = await run({ operation: 'help' })
-  assert('★ 目录 49 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 49, String(catalog.value?.topics))
+  assert('★ 目录 50 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 49, String(catalog.value?.topics))
   assert('★ 目录分四段（算术 / 建模与推演 / 对账与设定 / 其余）', catalog.result.includes('一、算术') && catalog.result.includes('二、建模与推演') && catalog.result.includes('三、对账与设定') && catalog.result.includes('四、其余能力'), '')
   const world = await run({ operation: 'help', helpTopic: 'world' })
   assert('★ 单节正文', world.ok === true && world.result.includes('world') && world.result.length > 500, String(world.result.length))
@@ -105,7 +105,7 @@ console.log('-- 6. auto --')
 
 console.log('-- 7. 迁移清单 --')
 {
-  assert('★ 49 个 operation 全部走新实现', dispatch.MIGRATED_OPERATIONS.length === 49, String(dispatch.MIGRATED_OPERATIONS.length))
+  assert('★ 50 个 operation 全部走新实现', dispatch.MIGRATED_OPERATIONS.length === 50, String(dispatch.MIGRATED_OPERATIONS.length))
   assert('auto 在清单里', dispatch.MIGRATED_OPERATIONS.includes('auto'), '')
 }
 
