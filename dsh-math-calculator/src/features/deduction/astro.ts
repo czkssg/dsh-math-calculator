@@ -29,6 +29,18 @@ export interface AstroInput {
   binary?: Record<string, unknown>
   /** system：{starMass, planets:[{name,a,e,massEarth,radiusEarth,moons}]}。 */
   system?: Record<string, unknown>
+  /** gravity/relativity：{massKg, radiusM, speedMps, separationM, bodies, point}。 */
+  massKg?: number
+  /** 半径（m）。 */
+  radiusM?: number
+  /** 速度（m/s）。 */
+  speedMps?: number
+  /** 潮汐分离距离（m）。 */
+  separationM?: number
+  /** N 体引力源 [{massKg, positionM:[x,y,z]}]。 */
+  bodies?: Array<Record<string, unknown>>
+  /** N 体计算点 [x,y,z]（m）。 */
+  point?: number[]
   /** ISO 时间（缺省当前）。 */
   date?: string
   /** 纬度（度，北正）。 */
@@ -65,7 +77,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = action === 'orbit' || action === 'binary' || action === 'system'
+  const isGeneric = action === 'orbit' || action === 'binary' || action === 'system' || action === 'gravity' || action === 'relativity'
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -120,6 +132,49 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
     }
     if (result.warnings.length > 0) { lines.push('', '【稳定性提示】'); for (const w of result.warnings) lines.push('  · ' + w) }
     return { result: lines.join('\n'), value: result }
+  }
+
+  if (action === 'gravity') {
+    const g = await import('./gravity.js')
+    const extra: Record<string, unknown> = {}
+    const massKg = typeof input.massKg === 'number' ? input.massKg : 0
+    if (!(massKg > 0)) throw new CalcError('missing_params', 'astro gravity 需要 massKg（质量，kg）', '例如 {action:"gravity", massKg:5.9722e24, radiusM:6371000}。')
+    const radiusM = typeof input.radiusM === 'number' ? input.radiusM : 0
+    lines.push('', '【引力】')
+    lines.push('  质量 ' + massKg.toExponential(4) + ' kg' + (radiusM > 0 ? '，半径 ' + radiusM.toExponential(4) + ' m' : ''))
+    if (radiusM > 0) {
+      const ve = g.escapeVelocity(massKg, radiusM)
+      const vc = g.circularVelocity(massKg, radiusM)
+      lines.push('  逃逸速度 ' + (ve / 1000).toFixed(2) + ' km/s（' + (ve / g.C).toFixed(3) + ' c）')
+      lines.push('  圆轨道速度 ' + (vc / 1000).toFixed(2) + ' km/s')
+      const tid = typeof input.separationM === 'number' ? g.tidalAcceleration(massKg, radiusM, input.separationM) : null
+      if (tid !== null) lines.push('  潮汐加速度（分离 ' + input.separationM + ' m）' + tid.toExponential(3) + ' m/s²')
+      const regime = g.classifyRegime(massKg, radiusM)
+      lines.push('  引力区间：' + (regime.isBlackHole ? '黑洞' : regime.beta > 0.5 ? '致密天体（强相对论）' : regime.beta > 0.1 ? '致密天体（中）' : '常规天体（弱场）'))
+      extra['regime'] = regime
+    }
+    if (Array.isArray(input.bodies) && Array.isArray(input.point)) {
+      const bodies = input.bodies.map((b) => ({ massKg: Number(b['massKg'] ?? 0), positionM: (b['positionM'] as number[]).map(Number) as [number, number, number] }))
+      const acc = g.nBodyAcceleration(bodies, input.point as [number, number, number])
+      lines.push('  N 体加速度 (' + acc.map((a) => a.toExponential(3)).join(', ') + ') m/s²')
+    }
+    return { result: lines.join('\n'), value: { massKg, radiusM, ...extra } }
+  }
+
+  if (action === 'relativity') {
+    const g = await import('./gravity.js')
+    const massKg = typeof input.massKg === 'number' ? input.massKg : 0
+    if (!(massKg > 0)) throw new CalcError('missing_params', 'astro relativity 需要 massKg', '例如 {action:"relativity", massKg:1.98847e30}。')
+    const rs = g.schwarzschildRadius(massKg)
+    lines.push('', '【相对论（史瓦西）】')
+    lines.push('  史瓦西半径 ' + rs.toExponential(4) + ' m')
+    lines.push('  光子球 ' + g.photonSphere(massKg).toExponential(4) + ' m，ISCO ' + g.iscoRadius(massKg).toExponential(4) + ' m')
+    const radiusM = typeof input.radiusM === 'number' && input.radiusM > rs ? input.radiusM : rs * 2
+    const speed = typeof input.speedMps === 'number' ? input.speedMps : 0
+    const dtau = g.totalTimeDilation(massKg, radiusM, speed)
+    lines.push('  在 r=' + radiusM.toExponential(4) + ' m、v=' + (speed / 1000).toFixed(1) + ' km/s 处：dτ/dt = ' + dtau.toFixed(6))
+    lines.push('  引力红移 z = ' + g.gravitationalRedshift(massKg, radiusM).toFixed(6))
+    return { result: lines.join('\n'), value: { massKg, schwarzschildM: rs, photonSphereM: g.photonSphere(massKg), iscoM: g.iscoRadius(massKg), dtau, redshift: g.gravitationalRedshift(massKg, radiusM) } }
   }
 
   if (action === 'sun' || action === 'position') {
