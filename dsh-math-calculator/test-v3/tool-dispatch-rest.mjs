@@ -60,8 +60,8 @@ console.log('-- 4. workspace / custom / formula-table --')
 {
   const created = await run({ operation: 'workspace', action2: 'create', workspace: '北境' })
   assert('★ 创建工作区并切换', created.ok === true && created.value.current === '北境', created.result.slice(0, 60))
-  const set = await run({ operation: 'workspace', action2: 'set', workspaceVariables: { m: 500 }, useWorkspaceVariables: true })
-  assert('set 写入变量', set.ok === true && set.value.data.variables.m === 500, '')
+  const set = await run({ operation: 'workspace', action2: 'set', workspaceVariables: { m: 510 }, useWorkspaceVariables: true })
+  assert('set 写入变量', set.ok === true && set.value.data.variables.m === 510, '')
   const list = await run({ operation: 'workspace', action2: 'list' })
   assert('list 含北境', list.ok === true && list.value.workspaces.includes('北境'), JSON.stringify(list.value))
 
@@ -85,10 +85,10 @@ console.log('-- 4. workspace / custom / formula-table --')
 console.log('-- 5. help --')
 {
   const catalog = await run({ operation: 'help' })
-  assert('★ 目录 50 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 49, String(catalog.value?.topics))
+  assert('★ 目录 51 节（含 help 自述节）', catalog.ok === true && catalog.value.topics === 49, String(catalog.value?.topics))
   assert('★ 目录分四段（算术 / 建模与推演 / 对账与设定 / 其余）', catalog.result.includes('一、算术') && catalog.result.includes('二、建模与推演') && catalog.result.includes('三、对账与设定') && catalog.result.includes('四、其余能力'), '')
   const world = await run({ operation: 'help', helpTopic: 'world' })
-  assert('★ 单节正文', world.ok === true && world.result.includes('world') && world.result.length > 500, String(world.result.length))
+  assert('★ 单节正文', world.ok === true && world.result.includes('world') && world.result.length > 510, String(world.result.length))
   const search = await run({ operation: 'help', helpQuery: '账本对不上' })
   assert('★ 任务描述搜到 ledger', search.ok === true && search.value.hits.some((hit) => hit.key === 'ledger'), JSON.stringify(search.value?.hits?.map((h) => h.key)))
 }
@@ -105,7 +105,7 @@ console.log('-- 6. auto --')
 
 console.log('-- 7. 迁移清单 --')
 {
-  assert('★ 50 个 operation 全部走新实现', dispatch.MIGRATED_OPERATIONS.length === 50, String(dispatch.MIGRATED_OPERATIONS.length))
+  assert('★ 51 个 operation 全部走新实现', dispatch.MIGRATED_OPERATIONS.length === 51, String(dispatch.MIGRATED_OPERATIONS.length))
   assert('auto 在清单里', dispatch.MIGRATED_OPERATIONS.includes('auto'), '')
 }
 

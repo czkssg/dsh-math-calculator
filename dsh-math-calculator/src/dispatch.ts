@@ -55,6 +55,7 @@ import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
+import { buildEpochs } from './features/deduction/history.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -174,6 +175,17 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'history': {
+      const series = Array.isArray(args['series']) ? (args['series'] as Array<Record<string, unknown>>).map((p) => ({ year: Number(p['year'] ?? 0), value: Number(p['value'] ?? 0) })) : []
+      const events = Array.isArray(args['events']) ? (args['events'] as Array<Record<string, unknown>>).map((e) => ({ year: Number(e['year'] ?? 0), label: String(e['label'] ?? ''), ...(e['kind'] !== undefined ? { kind: String(e['kind']) } : {}) })) : []
+      const result = buildEpochs({ series, events, minEpochYears: typeof args['minEpochYears'] === 'number' ? (args['minEpochYears'] as number) : undefined, threshold: typeof args['historyThreshold'] === 'number' ? (args['historyThreshold'] as number) : undefined })
+      const lines = ['═══ 历史纪元划分 ═══', '']
+      for (const epoch of result.epochs) lines.push('  ' + epoch.startYear + ' — ' + epoch.endYear + ' 年：' + epoch.turn + '（' + epoch.events.map((e) => e.label).join('、') + '）')
+      lines.push('', '  转折年：' + (result.turningPoints.length > 0 ? result.turningPoints.join('、') : '无'))
+      for (const note of result.notes) lines.push('  ' + note)
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'backtrace': {
       const formulas = dataOf<Array<Record<string, unknown>>>('formulas', 'formulas.json', [])
@@ -772,6 +784,8 @@ export const MIGRATED_OPERATIONS = [
   'astro',
   /** 目标驱动回溯（给目标 → 公式链）。 */
   'backtrace',
+  /** 历史推演：时间序列 → 纪元划分。 */
+  'history',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',
