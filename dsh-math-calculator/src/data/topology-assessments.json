@@ -91,6 +91,18 @@
    },
    "calculator": "enclosure",
    "output": "engineering"
+  },
+  {
+   "id": "closed-loop",
+   "match": {
+    "action": "structure",
+    "kind": "closed-loop",
+    "requires": [
+     "people"
+    ]
+   },
+   "calculator": "closed-loop",
+   "output": "engineering"
   }
  ]
 }

@@ -12,6 +12,7 @@
  */
 
 import { CalcError } from '../../core/errors.js'
+import { solveClosure } from './closure.js'
 
 /** 建筑输入。 */
 export interface BuildingAssessInput {
@@ -227,6 +228,7 @@ const CALCULATORS: Record<string, (input: Record<string, unknown>) => unknown> =
   'space-vessel': (input) => assessSpaceVessel({ massKg: Number(input['massKg'] ?? 0), deltaVKms: Number(input['deltaVKms'] ?? 0), ispS: input['ispS'] !== undefined ? Number(input['ispS']) : undefined, powerW: input['powerW'] !== undefined ? Number(input['powerW']) : undefined }),
   'space-habitat': (input) => assessSpaceHabitat({ floors: Number(input['floors'] ?? 0), footprintM2: Number(input['footprintM2'] ?? 0), spinning: input['spinning'] === true, targetG: input['targetG'] !== undefined ? Number(input['targetG']) : undefined }),
   enclosure: (input) => assessEnclosure({ people: Number(input['people'] ?? 0), volumeM3: Number(input['volumeM3'] ?? 0), days: input['days'] !== undefined ? Number(input['days']) : undefined, cropAreaM2: input['cropAreaM2'] !== undefined ? Number(input['cropAreaM2']) : undefined, algaeM3: input['algaeM3'] !== undefined ? Number(input['algaeM3']) : undefined }),
+  'closed-loop': (input) => solveClosure({ people: Number(input['people'] ?? 0), cropAreaM2: input['cropAreaM2'] !== undefined ? Number(input['cropAreaM2']) : undefined, algaeM3: input['algaeM3'] !== undefined ? Number(input['algaeM3']) : undefined, waterRecycle: input['waterRecycle'] !== undefined ? Number(input['waterRecycle']) : undefined, bufferO2Kg: input['bufferO2Kg'] !== undefined ? Number(input['bufferO2Kg']) : undefined, volumeM3: input['volumeM3'] !== undefined ? Number(input['volumeM3']) : undefined }),
 }
 
 /**
