@@ -133,6 +133,15 @@ const FACADE_GROUPS: Record<string, string[]> = {
   manage: ['workspace', 'help', 'catalog', 'explain', 'invariants', 'examples'],
 }
 
+/**
+ * 分发入口（新实现）。
+ *
+ * 先处理门面（calc/derive/manage），其余按 operation 走 switch。
+ *
+ * @param operation - 操作名（含门面名）
+ * @param rawArgs - 原始参数
+ * @returns 结果；不认识返回 null（由调用方回落）
+ */
 export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
   const args = normalizeArgs(rawArgs)
   /**
