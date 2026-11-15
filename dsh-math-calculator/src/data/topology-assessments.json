@@ -1,0 +1,70 @@
+{
+ "version": 1,
+ "note": "耦合规则表：新增类型只改这里 + 加 calculator，不动 ops.ts。未来推倒时整表替换即可。",
+ "rules": [
+  {
+   "id": "building",
+   "match": {
+    "action": "structure",
+    "kind": "building",
+    "requires": [
+     "floors",
+     "footprintM2"
+    ]
+   },
+   "calculator": "building",
+   "output": "engineering"
+  },
+  {
+   "id": "vehicle",
+   "match": {
+    "action": "structure",
+    "kind": "vehicle",
+    "requires": [
+     "massKg"
+    ]
+   },
+   "calculator": "vehicle",
+   "output": "engineering"
+  },
+  {
+   "id": "ship",
+   "match": {
+    "action": "ship",
+    "requires": [
+     "lengthM",
+     "beamM",
+     "draftM"
+    ]
+   },
+   "calculator": "ship",
+   "output": "engineering"
+  },
+  {
+   "id": "space-vessel",
+   "match": {
+    "action": "ship",
+    "kind": "space-vessel",
+    "requires": [
+     "massKg",
+     "deltaVKms"
+    ]
+   },
+   "calculator": "space-vessel",
+   "output": "engineering"
+  },
+  {
+   "id": "space-habitat",
+   "match": {
+    "action": "structure",
+    "kind": "space-habitat",
+    "requires": [
+     "floors",
+     "footprintM2"
+    ]
+   },
+   "calculator": "space-habitat",
+   "output": "engineering"
+  }
+ ]
+}

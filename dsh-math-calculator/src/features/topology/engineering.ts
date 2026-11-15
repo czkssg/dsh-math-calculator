@@ -117,3 +117,139 @@ export function assessShipEngineering(input: ShipAssessInput): ShipAssess {
   const rollPeriodS = gm > 0 ? (2 * Math.PI * k) / Math.sqrt(9.80665 * gm) : Infinity
   return { displacementT, froude, metacentricHeightM: gm, rollPeriodS, speedKn: speed * 1.943844 }
 }
+
+// ───────────────────────────── 数据驱动耦合（2026-11-16） ─────────────────────────────
+
+/**
+ * 耦合规则（从 src/data/topology-assessments.json 注入）。
+ *
+ * 为什么改成规则表：用户明确「这种耦合必须有自由性，因为未来可能会推倒」（太空舰筑/太空舰船）。
+ * 硬编码 if (kind==='building') 会把新增类型绑死在 ops.ts；规则表让新增类型只改数据 + 加 calculator。
+ */
+export interface AssessmentRule {
+  id: string
+  match: { action: string; kind?: string; requires?: string[] }
+  calculator: string
+  output: string
+}
+
+/** 太空舰船输入。 */
+export interface SpaceVesselInput {
+  /** 干质量 kg。 */
+  massKg: number
+  /** 目标 Δv（km/s）。 */
+  deltaVKms: number
+  /** 比冲 s（默认 3000，核电推进量级）。 */
+  ispS?: number
+  /** 推进功率 W（可选，用于推重比）。 */
+  powerW?: number
+}
+
+/** 太空舰船结果。 */
+export interface SpaceVesselAssess {
+  /** 齐奥尔科夫斯基质量比。 */
+  massRatio: number
+  /** 推进剂质量 kg（m0−mf）。 */
+  propellantKg: number
+  /** 推重比（给推力时）。 */
+  thrustToWeight: number | null
+  /** 排气速度 m/s。 */
+  exhaustVelocity: number
+}
+
+/**
+ * 太空舰船：齐奥尔科夫斯基方程。
+ *
+ * Δv = Isp·g·ln(m0/mf)；推重比 = F/(m0·g)。
+ *
+ * @param input - 干质量/Δv/比冲
+ * @returns 校核
+ */
+export function assessSpaceVessel(input: SpaceVesselInput): SpaceVesselAssess {
+  if (!(input.massKg > 0)) throw new CalcError('invalid_argument', 'massKg 必须为正', '')
+  if (!(input.deltaVKms > 0)) throw new CalcError('invalid_argument', 'deltaVKms 必须为正', '')
+  const isp = input.ispS ?? 3000
+  const ve = isp * 9.80665
+  const dv = input.deltaVKms * 1000
+  const massRatio = Math.exp(dv / ve)
+  const m0 = input.massKg * massRatio
+  const propellantKg = m0 - input.massKg
+  const thrustToWeight = typeof input.powerW === 'number' && input.powerW > 0 ? (2 * input.powerW) / ve / (m0 * 9.80665) : null
+  return { massRatio, propellantKg, thrustToWeight, exhaustVelocity: ve }
+}
+
+/** 太空建筑输入。 */
+export interface SpaceHabitatInput {
+  /** 层数。 */
+  floors: number
+  /** 单层面积 m²。 */
+  footprintM2: number
+  /** 是否旋转造重力。 */
+  spinning?: boolean
+  /** 目标重力（g，旋转时用）。 */
+  targetG?: number
+}
+
+/** 太空建筑结果。 */
+export interface SpaceHabitatAssess {
+  /** 人数（10 m²/人）。 */
+  people: number
+  /** 总屏蔽质量 kg（5 t/m² 辐射屏蔽，按外表面积估算）。 */
+  shieldingKg: number
+  /** 旋转半径 m（造 1 g 所需，若 spinning）。 */
+  spinRadiusM: number | null
+  /** 自转速度 m/s（轮缘）。 */
+  rimSpeedMps: number | null
+}
+
+/**
+ * 太空建筑：辐射屏蔽质量 + 旋转重力半径。
+ *
+ * @param input - 层数/面积
+ * @returns 校核
+ */
+export function assessSpaceHabitat(input: SpaceHabitatInput): SpaceHabitatAssess {
+  if (!(input.floors > 0) || !(input.footprintM2 > 0)) throw new CalcError('invalid_argument', 'floors/footprintM2 必须为正', '')
+  const people = Math.round((input.floors * input.footprintM2) / 10)
+  const side = Math.sqrt(input.footprintM2)
+  const area = 2 * (input.floors * input.footprintM2) + 4 * side * input.floors * 3
+  const shieldingKg = area * 5000
+  const targetG = input.targetG ?? 1
+  const spinRadiusM = input.spinning === true ? (9.80665 * targetG) / ((2 * Math.PI) / 60) ** 2 : null
+  const rimSpeedMps = spinRadiusM !== null ? ((2 * Math.PI) / 60) * spinRadiusM : null
+  return { people, shieldingKg, spinRadiusM, rimSpeedMps }
+}
+
+/** calculator 注册表（新增类型只加一项）。 */
+const CALCULATORS: Record<string, (input: Record<string, unknown>) => unknown> = {
+  building: (input) => assessBuildingEngineering({ floors: Number(input['floors'] ?? 0), footprintM2: Number(input['footprintM2'] ?? 0) }),
+  ship: (input) => assessShipEngineering({ lengthM: Number(input['lengthM'] ?? 0), beamM: Number(input['beamM'] ?? 0), draftM: Number(input['draftM'] ?? 0), blockCoef: input['blockCoef'] !== undefined ? Number(input['blockCoef']) : undefined, speedMps: input['speedMps'] !== undefined ? Number(input['speedMps']) : undefined, kgM: input['kgM'] !== undefined ? Number(input['kgM']) : undefined }),
+  'space-vessel': (input) => assessSpaceVessel({ massKg: Number(input['massKg'] ?? 0), deltaVKms: Number(input['deltaVKms'] ?? 0), ispS: input['ispS'] !== undefined ? Number(input['ispS']) : undefined, powerW: input['powerW'] !== undefined ? Number(input['powerW']) : undefined }),
+  'space-habitat': (input) => assessSpaceHabitat({ floors: Number(input['floors'] ?? 0), footprintM2: Number(input['footprintM2'] ?? 0), spinning: input['spinning'] === true, targetG: input['targetG'] !== undefined ? Number(input['targetG']) : undefined }),
+}
+
+/**
+ * 按规则表解析工程校核（数据驱动，不在 ops.ts 里硬编码类型）。
+ *
+ * @param rules - 规则表
+ * @param action - topology 动作
+ * @param input - 扁平输入
+ * @returns 命中的 calculator 与结果；未命中返回 null（不瞎编）
+ */
+export function resolveAssessment(rules: AssessmentRule[], action: string, input: Record<string, unknown>): { rule: AssessmentRule; result: unknown } | null {
+  const kind = typeof input['kind'] === 'string' ? input['kind'] : undefined
+  for (const rule of rules) {
+    if (rule.match.action !== action) continue
+    if (rule.match.kind !== undefined && rule.match.kind !== kind) continue
+    const requires = rule.match.requires ?? []
+    if (!requires.every((key) => typeof input[key] === 'number' && Number(input[key]) > 0)) continue
+    const calculator = CALCULATORS[rule.calculator]
+    if (calculator === undefined) continue
+    try {
+      return { rule, result: calculator(input) }
+    } catch {
+      return null
+    }
+  }
+  return null
+}

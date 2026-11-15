@@ -48,7 +48,7 @@ console.log('-- 3. topology 输出附加工程校核 --')
   assert('value.engineering 存在', b.value.engineering !== null && b.value.engineering.people === 10000, JSON.stringify(b.value?.engineering).slice(0, 80))
   const s = await run({ operation: 'topology', topology: { action: 'ship', lengthM: 100, beamM: 15, draftM: 6, speedMps: 10, entry: '舰桥', compartments: [{ id: '舰桥' }, { id: '机舱' }], passages: [{ from: '舰桥', to: '机舱', kind: 'passage' }] } })
   assert('★ ship 结果含【工程校核】', s.ok === true && s.result.includes('【工程校核】'), s.result.slice(-120))
-  assert('含排水量与稳性', s.result.includes('排水量') && s.result.includes('初稳性高'), '')
+  assert('含排水量与稳性（规则表字段）', s.result.includes('displacementT') && s.result.includes('metacentricHeightM'), s.result.slice(-150))
 }
 
 console.log('-- 4. 无主尺度时不附校核 --')
