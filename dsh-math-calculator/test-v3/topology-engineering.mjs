@@ -43,11 +43,11 @@ console.log('-- 2. 舰船校核函数 --')
 console.log('-- 3. topology 输出附加工程校核 --')
 {
   const b = await run({ operation: 'topology', topology: { action: 'structure', kind: 'building', levels: 100, area: 1000 } })
-  assert('★ structure 结果含【工程校核】', b.ok === true && b.result.includes('【工程校核】'), b.result.slice(0, 80))
-  assert('含疏散宽度与抗震', b.result.includes('疏散出口总宽') && b.result.includes('抗震底部剪力'), '')
+  assert('★ structure 结果含【工程校核 · building】', b.ok === true && b.result.includes('【工程校核 · building】'), b.result.slice(-120))
+  assert('含疏散宽度与抗震字段', b.result.includes('egressWidthM') && b.result.includes('baseShearKn'), '')
   assert('value.engineering 存在', b.value.engineering !== null && b.value.engineering.people === 10000, JSON.stringify(b.value?.engineering).slice(0, 80))
   const s = await run({ operation: 'topology', topology: { action: 'ship', lengthM: 100, beamM: 15, draftM: 6, speedMps: 10, entry: '舰桥', compartments: [{ id: '舰桥' }, { id: '机舱' }], passages: [{ from: '舰桥', to: '机舱', kind: 'passage' }] } })
-  assert('★ ship 结果含【工程校核】', s.ok === true && s.result.includes('【工程校核】'), s.result.slice(-120))
+  assert('★ ship 结果含【工程校核 · ship】', s.ok === true && s.result.includes('【工程校核 · ship】'), s.result.slice(-120))
   assert('含排水量与稳性（规则表字段）', s.result.includes('displacementT') && s.result.includes('metacentricHeightM'), s.result.slice(-150))
 }
 
