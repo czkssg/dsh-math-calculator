@@ -41,6 +41,13 @@ export interface AstroInput {
   /** tech calendar-drift：年长误差（天）。 */
   yearErrorDays?: number
 
+  /** calendar-convert：{year, dayOfYear, absoluteDay}。 */
+  year?: number
+  /** 年内第几天（0 起）。 */
+  dayOfYear?: number
+  /** 绝对天数（从历元起）。 */
+  absoluteDay?: number
+
   /** calendar：{rotationHours, orbitDays, obliquityDeg, moonCount, moonPeriodDays}。 */
   rotationHours?: number
   /** 公转周期（地球日）。 */
@@ -104,7 +111,7 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   const A = await import('astronomy-engine')
   const observer = new A.Observer(lat, lon, elevation)
   /** orbit / binary 是通用二体模型（可架空），其余是真实地球历表。 */
-  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar', 'tech', 'world-calendar'].includes(action)
+  const isGeneric = ['orbit', 'binary', 'system', 'gravity', 'relativity', 'calendar', 'calendar-convert', 'tech', 'world-calendar'].includes(action)
   const lines: string[] = [isGeneric ? '═══ 天文（通用轨道模型）═══' : '═══ 天文历表（地球）═══', '']
   lines.push('  观测点 ' + lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°，海拔 ' + elevation + ' m')
   lines.push('  时刻 ' + date.toISOString())
@@ -176,6 +183,22 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
     lines.push('  轨道 ' + a + ' AU / 恒星 ' + starMass + ' M☉ → 一年 ' + yearDaysEarth.toFixed(1) + ' 地球日')
     for (const note of result.notes) lines.push('  ' + note)
     return { result: lines.join('\n'), value: { ...result, orbitAU: a, starMass, yearDaysEarth } }
+  }
+
+  if (action === 'calendar-convert') {
+    const calMod = await import('./calendar.js')
+    const result = calMod.convertCalendarDate({
+      rotationHours: typeof input.rotationHours === 'number' ? input.rotationHours : undefined,
+      orbitDays: typeof input.orbitDays === 'number' ? input.orbitDays : undefined,
+      obliquityDeg: typeof input.obliquityDeg === 'number' ? input.obliquityDeg : undefined,
+      year: typeof input.year === 'number' ? input.year : undefined,
+      dayOfYear: typeof input.dayOfYear === 'number' ? input.dayOfYear : undefined,
+      absoluteDay: typeof input.absoluteDay === 'number' ? input.absoluteDay : undefined,
+    })
+    lines.push('', '【历法换算】')
+    lines.push('  第 ' + result.resolvedYear + ' 年、第 ' + result.resolvedDayOfYear + ' 天（该年 ' + result.daysInYear + ' 天' + (result.leap ? '，闰年' : '') + '）')
+    lines.push('  绝对天数 ' + result.absoluteDay + '，太阳黄经 ' + result.solarLongitudeDeg.toFixed(1) + '°，季节 ' + result.season)
+    return { result: lines.join('\n'), value: result }
   }
 
   if (action === 'tech') {

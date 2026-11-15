@@ -24,6 +24,7 @@
 import Graph from 'graphology'
 import { connectedComponents } from 'graphology-components'
 import { CalcError } from '../../core/errors.js'
+import { analyzeLogistics } from './logistics.js'
 import { resolveAssessment, type AssessmentRule } from './engineering.js'
 import assessmentRules from '../../data/topology-assessments.json' with { type: 'json' }
 
@@ -337,7 +338,7 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
-  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import'])
+  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import', 'logistics'])
   /** 示例清单：`action:"examples"`，或拼错动作时也给清单（反馈：107 次猜参数失败）。 */
   if (action === 'examples' || action === 'help' || !KNOWN_ACTIONS.has(action)) return renderExamples()
   if (action === 'save') {
@@ -460,6 +461,11 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
     const flatIn = input as unknown as Record<string, unknown>
     const merged = withAssessment('structure', { ...flatIn, floors: building?.floors ?? flatIn['floors'], footprintM2: building?.footprintM2 ?? flatIn['footprintM2'], massKg: vehicle?.massKg ?? flatIn['massKg'] }, outcome.result, outcome.value)
     return { result: merged.result, value: merged.value, ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}) }
+  }
+  if (action === 'logistics') {
+    const flat = input as unknown as Record<string, unknown>
+    const result = analyzeLogistics({ mode: typeof flat['mode'] === 'string' ? flat['mode'] : undefined, distanceKm: flat['distanceKm'] !== undefined ? Number(flat['distanceKm']) : undefined, speedKph: flat['speedKph'] !== undefined ? Number(flat['speedKph']) : undefined, stationKm: flat['stationKm'] !== undefined ? Number(flat['stationKm']) : undefined, stationDelayHours: flat['stationDelayHours'] !== undefined ? Number(flat['stationDelayHours']) : undefined, maxRoundTripDays: flat['maxRoundTripDays'] !== undefined ? Number(flat['maxRoundTripDays']) : undefined })
+    return { result: '═══ 后勤/信息时延 ═══\n  ' + result.notes.join('\n  '), value: result }
   }
   if (action === 'rules') {
     const topology = buildTopology({ nodes: input.nodes ?? [], edges: input.edges ?? [], planetRadiusKm: input.planetRadiusKm })

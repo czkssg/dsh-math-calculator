@@ -134,3 +134,80 @@ export function deriveCalendar(input: CalendarInput): CalendarResult {
 
   return { dayHours: rotationHours, yearDays, yearDaysInteger, yearDaysFraction, leapRule, season, lunarMonthDays, calendarType, solstices, notes }
 }
+// ───────────────────────────── 历法换算（2026-11-16） ─────────────────────────────
+
+/** 历法换算输入。 */
+export interface CalendarConvertInput {
+  /** 自转小时。 */
+  rotationHours?: number
+  /** 公转地球日。 */
+  orbitDays?: number
+  /** 倾角。 */
+  obliquityDeg?: number
+  /** 目标年份（1 起）。 */
+  year?: number
+  /** 年内第几天（0 起，默认 0）。 */
+  dayOfYear?: number
+  /** 或：绝对天数（从历元起，优先于 year/dayOfYear）。 */
+  absoluteDay?: number
+  /** 闰年周期（年，默认按小数自动）。 */
+  leapEvery?: number
+}
+
+/** 历法换算结果。 */
+export interface CalendarConvertResult {
+  /** 该年天数（含闰）。 */
+  daysInYear: number
+  /** 该年是否闰年。 */
+  leap: boolean
+  /** 第 year 年、第 dayOfYear 天（0 起）对应的绝对天数。 */
+  absoluteDay: number
+  /** 反推：年 / 年内第几天。 */
+  resolvedYear: number
+  resolvedDayOfYear: number
+  /** 季节（按分至点均分）。 */
+  season: string
+  /** 太阳黄经（度，均分近似）。 */
+  solarLongitudeDeg: number
+}
+
+/**
+ * 历法 ↔ 日期换算（使用与 deriveCalendar 相同的年长规则）。
+ *
+ * @param input - 历法参数与目标日期
+ * @returns 换算结果
+ */
+export function convertCalendarDate(input: CalendarConvertInput): CalendarConvertResult {
+  const rotationHours = input.rotationHours ?? 24
+  const orbitDays = input.orbitDays ?? 365.2422
+  const obliquity = input.obliquityDeg ?? 23.44
+  if (!(rotationHours > 0) || !(orbitDays > 0)) throw new Error('自转/公转必须为正')
+  const yearDays = (orbitDays * 24) / rotationHours
+  const baseDays = Math.floor(yearDays)
+  const fraction = yearDays - baseDays
+  /** 闰年周期：默认按小数 4 年一闰（0.25 附近），否则按 1/fraction。 */
+  const leapEvery = input.leapEvery ?? (fraction > 0.24 && fraction < 0.26 ? 4 : Math.max(2, Math.round(1 / Math.max(fraction, 1e-9))))
+  const isLeap = (year: number): boolean => year > 0 && year % leapEvery === 0
+  const daysInYear = (year: number): number => baseDays + (isLeap(year) ? 1 : 0)
+  /** 绝对天数 → 年/年内日。 */
+  let absolute = 0
+  if (typeof input.absoluteDay === 'number' && input.absoluteDay >= 0) {
+    absolute = Math.floor(input.absoluteDay)
+  } else {
+    const year = Math.max(1, Math.floor(input.year ?? 1))
+    let sum = 0
+    for (let y = 1; y < year; y += 1) sum += daysInYear(y)
+    absolute = sum + Math.max(0, Math.floor(input.dayOfYear ?? 0))
+  }
+  let resolvedYear = 1
+  let remaining = absolute
+  while (remaining >= daysInYear(resolvedYear)) {
+    remaining -= daysInYear(resolvedYear)
+    resolvedYear += 1
+    if (resolvedYear > 1e6) break
+  }
+  const resolvedDayOfYear = remaining
+  const solarLongitudeDeg = (resolvedDayOfYear / daysInYear(resolvedYear)) * 360
+  const season = obliquity < 3 ? '无季节（倾角 < 3°）' : solarLongitudeDeg < 90 ? '春' : solarLongitudeDeg < 180 ? '夏' : solarLongitudeDeg < 270 ? '秋' : '冬'
+  return { daysInYear: daysInYear(resolvedYear), leap: isLeap(resolvedYear), absoluteDay: absolute, resolvedYear, resolvedDayOfYear, season, solarLongitudeDeg }
+}
