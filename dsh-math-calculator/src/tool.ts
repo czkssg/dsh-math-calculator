@@ -202,6 +202,8 @@ const PARAMETER_SPEC = {
   bodyFactor: { type: 'number', description: '常数倍数' },
   quickFeasible: { type: 'object', additionalProperties: true, description: '一句话可行性 {claim,world?}' },
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
+  actors: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'conflict：行动者 [{id,wealth}]' },
+  seed: { type: 'number', description: '确定性随机种子（conflict 等，同 seed 同结果）' },
   series: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'history：指标时间序列 [{year,value}]' },
   minEpochYears: { type: 'number', description: 'history：最小纪元长度（年，默认 10）' },
   historyThreshold: { type: 'number', description: 'history：转折重要性阈值（默认 0.05）' },

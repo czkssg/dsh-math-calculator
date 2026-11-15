@@ -56,6 +56,7 @@ import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs } from './features/deduction/history.js'
+import { runConflict } from './features/deduction/conflict.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -175,6 +176,20 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'conflict': {
+      const actors = Array.isArray(args['actors']) ? (args['actors'] as Array<Record<string, unknown>>).map((a) => ({ id: String(a['id'] ?? ''), wealth: Number(a['wealth'] ?? 0) })) : []
+      const edges = Array.isArray(args['edges']) ? (args['edges'] as Array<Record<string, unknown>>).map((e) => ({ from: String(e['from'] ?? ''), to: String(e['to'] ?? '') })) : []
+      const result = runConflict({ actors, edges, steps: typeof args['steps'] === 'number' ? (args['steps'] as number) : undefined, seed: typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined })
+      const lines = ['═══ 冲突/贡赋模拟 ═══', '']
+      lines.push('  最终排序：' + result.ranking.map((r, i) => (i + 1) + '. ' + r.id + '(' + r.wealth.toFixed(0) + ')').join('  '))
+      lines.push('  战争 ' + result.wars + ' 次，付贡 ' + result.tributes + ' 次')
+      lines.push('  最强：' + result.strongest + '，最弱：' + result.weakest)
+      const losers = Object.entries(result.records).filter(([, v]) => v.losses > 0).map(([k, v]) => k + '(-' + v.losses + ')').join('、')
+      if (losers !== '') lines.push('  战败方：' + losers)
+      for (const note of result.notes) lines.push('  ' + note)
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'history': {
       const series = Array.isArray(args['series']) ? (args['series'] as Array<Record<string, unknown>>).map((p) => ({ year: Number(p['year'] ?? 0), value: Number(p['value'] ?? 0) })) : []
@@ -786,6 +801,8 @@ export const MIGRATED_OPERATIONS = [
   'backtrace',
   /** 历史推演：时间序列 → 纪元划分。 */
   'history',
+  /** 冲突/贡赋（Axelrod 贡赋模型）。 */
+  'conflict',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

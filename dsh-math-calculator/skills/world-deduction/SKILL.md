@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 51 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 52 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -56,6 +56,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **天文历表（真实地球）** | `astro` | `action:"rise-set"`（日出日落/日照时长）、`"sun"`（高度角/方位）、`"moon"`（月相/光照比例）——`date` + `lat` + `lon` |
 | **通用轨道（架空天体/双星）** | `astro` | `action:"orbit"`（给轨道根数 a/e/i/omega/w/M0 + centralMass → 周期/位置/速度）、`"binary"`（双星互绕：周期/质心距）——开普勒模型，任意质量 |
 | **world → 历法（耦合）** | `astro` | `action:"world-calendar"` + `{orbitAU, starMass, rotationHours, obliquityDeg, moonCount}`——用开普勒从轨道推一年，再推历法（一键从行星参数到历法） |
+| **冲突/贡赋模拟** | `conflict` | `{actors:[{id,wealth}], edges:[{from,to}], steps, seed}` → 谁崛起/战争几次/谁亡（Axelrod 贡赋模型；同 seed 可复现；只给结构数值，叙事由 AI 写） |
 | **历史纪元划分** | `history` | `series:[{year,value}]` + `events:[{year,label}]` → 按局部极值切纪元（rise/fall/flat）+ 事件归入 + 转折年；`minEpochYears`、`historyThreshold` 控噪 |
 | **目标回溯（公式链 + 模型链）** | `backtrace` | `{target, given, maxDepth}` → 先匹配**模型链**（world→人口→财政、军队→后勤、行星→历法…共 8 条，数据在 `src/data/model-chains.json`），未命中回落**公式链**；输出链、缺参、可执行调用序列 |
 | **历法换算（日期↔年日）** | `astro` | `action:"calendar-convert"` + `{year, dayOfYear}` 或 `{absoluteDay}` → 第几年第几天、闰年、太阳黄经、季节 |
