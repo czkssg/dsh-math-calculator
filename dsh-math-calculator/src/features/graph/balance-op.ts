@@ -34,8 +34,11 @@ const ITEM_FAMILY: Record<string, 'mass' | 'volume' | 'energy' | 'area' | 'power
 
 /** 单位 → 族。 */
 function familyOf(unit: string): string | null {
-  /** 速率单位（kg/年、m³/日）按分子判族。 */
-  const normalized = unit.trim().replace(/^\//, '').split('/')[0]
+  /**
+   * 速率/复合单位归一（反馈 G3/H3/I1：`吨/年`、`m^3/年`、`kWh/年`）：
+   * 去掉 ^ 与上标、按分子判族（kg/年、m³/日 都只看分子）。
+   */
+  const normalized = unit.trim().replace(/^\//, '').replace(/\^/g, '').replace(/³/g, '3').replace(/²/g, '2').split('/')[0]
   if (UNIT_FAMILY[normalized] !== undefined) return UNIT_FAMILY[normalized]
   /** 带前缀：万斤、千吨之类取尾部。 */
   for (const [name, family] of Object.entries(UNIT_FAMILY)) {
@@ -118,14 +121,14 @@ export function runBalance(raw: unknown): BalanceOutcome {
       )
     }
   }
+  /**
+   * 跨量纲：不再硬拒（反馈 G3 的三项盘点：粮=质量、水=体积、能=能量）。
+   *
+   * 每一项各自算覆盖率；「最短板」按**覆盖率**（无量纲比率）比较，
+   * 不会拿 kg 与 kWh 直接比大小。
+   */
   const distinct = new Set(families.values())
-  if (distinct.size > 1) {
-    throw new CalcError(
-      'invalid_argument',
-      '收支盘点不能跨量纲比较：' + [...families.entries()].map(([key, family]) => key + '=' + family).join('、'),
-      '所有项必须同族（全用质量、或全用货币…）。不同量纲的项请分开盘点。',
-    )
-  }
+  const crossDimension = distinct.size > 1
 
   const report = checkBalance(inputs)
   const lines: string[] = ['══════ 收支盘点 ══════', '']
@@ -151,6 +154,10 @@ export function runBalance(raw: unknown): BalanceOutcome {
     lines.push('【没检查的项】')
     lines.push('  ' + report.unchecked.join('、'))
     lines.push('  这些项你没给数据，所以不在最短板里——整体结论只覆盖上面查过的项。', '')
+  }
+  if (crossDimension) {
+    lines.push('【跨量纲提示】')
+    lines.push('  ' + [...families.entries()].map(([key, family]) => key + '=' + family).join('、') + '：不同量纲的项各自盘点；最短板按覆盖率（比率）比较，不是拿绝对量直接比。', '')
   }
   lines.push('【与 feasibility 的分工】')
   lines.push('  · feasibility  判单项生理/工程上限（生物体型、建筑高度、城市人口上限）')
