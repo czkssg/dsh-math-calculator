@@ -2,6 +2,70 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.1.0] — 2026-11-16
+
+**「硬核推演」批次**：把天文、封闭系统、历史推演、工程校核、优化、系统动力学
+全部接成一条链，并把分散的数据存储收敛为统一数据层。operation 从 45 增到 61。
+
+### 新增
+
+- **天文（`astro`）**：真实地球历表（日出日落/太阳高度/月相）、任意天体开普勒轨道、
+  双星、行星系统（希尔球/洛希）、引力与相对论（史瓦西/ISCO/时间膨胀/红移）、
+  历法推导与换算、观测精度→科技（望远镜/六分仪/航海钟/圭表/历法漂移）。
+  依赖 `astronomy-engine`（MIT）。
+- **封闭系统**：避难所/生物温室日需求（`enclosure`）、闭环自持上限与故障小时数
+  （`closed-loop`）、多舱段连通与泄漏（`compartments`）、千万级舱室网络
+  （`megastructure`）、海绵状小空腔（`sponge`）。
+- **历史推演**：确定性 PRNG（LCG）、冲突/贡赋（`conflict`，Axelrod 模型）、
+  纪元划分与危机（`history`）、分支对照（`diverge`）。三者可一站式串联。
+- **工程校核规则表**（`topology` 的 `kind`）：建筑、载具、舰船、太空舰船、太空建筑、
+  避难所、温室、闭环、舱室网络、海绵、机械、液压/气动、多级传动、热工、电气、流体。
+  规则表在 `src/data/topology-assessments.json`，新增类型只改数据。
+- **优化（`optimize`）**：线性/整数规划（`javascript-lp-solver`，Unlicense）。
+- **系统动力学（`simulate`）**：存量/流量欧拉演化（人口-资源-捕捞），给时间序列与拐点。
+- **目标回溯（`backtrace`）**：先匹配模型链（9 条，world→人口→财政、文明→历史等），
+  未命中回落公式链；输出链、缺参、可执行调用序列。
+- **完整世界编排**：`world` 的 `profile:"full"`——骨架→可耕土地→承载力→百年人口→
+  粮食上限→疆域半径→舱室需求，并给出**瓶颈**。
+- **跨模块对账（`crosscheck`）**：5 项同一物理量两份实现比对（逃逸速度/一年天数/
+  排水量/耗氧/人口）。
+- **统一数据层（`data`）**：记录/版本/查询/全文检索/血缘/统计/导入导出/压缩/迁移；
+  任意 operation 可加 `saveAs` 自动入库。
+- **三类门面**：`calc`（数值公式）、`derive`（推演对账）、`manage`（帮助工作区）。
+- **历法换算**（日期↔年日）与**后勤时延**（疆域半径上限）。
+- **公式库 757 → 803**（建筑/舰船 16 条、机械 14 条、封闭系统 14 条、居住密度/生长能量等）。
+- **单位**：本地单位全维度注册进 UCUM（820 个）、古代/传统单位穷举 201 条（22 个文明）。
+
+### 变更
+
+- **功能合并**（旧名保留为单向别名）：`quick_feasible`→`feasibility(quick)`、
+  `world-build`→`world(profile:"full")`、`formula-table`→`formulas(query:"table")`、
+  `world_state`→`data` 的 `kind:"setting"`。
+- **数据层统一**：变量/常数/自定义公式/实体类型/设定库/推演归档/拓扑模型五处存储
+  收敛到 `<workspace>/.artifacts/datastore/`；旧文件首次读时自动导入。
+- **帮助与技能文本精修**：skill 速查表按门面重排（19,958→14,425 字符），
+  help 补 6 个章节（astro/history/conflict/diverge/backtrace/facade），49→55 节。
+
+### 修复
+
+- **错误结构化**：语法错从 `internal` 改为 `syntax`；未知 operation 从 THROW 改为
+  `invalid_argument`；8 类失败全部带 `{type,message,hint}`。
+- **world**：小行星 `planetMass` 下限放到 1e-6；小值重力显示改科学计数（0.00g→2.20e-3g）。
+- **balance**：跨量纲改为分项盘点（最短板按覆盖率比）；速率单位归一（吨/年、m^3/年）。
+- **公式**：结果单位 UCUM 自检（`unitValid/unitUcum`），描述性单位不误报。
+- **数据层**：修正重复 `datastore` 子目录；归档读取按版本升序（原来 compare 取错最新版）；
+  设定库列表改从数据层取。
+- **对账发现**：ship 排水量 t vs 公式 kg（差 99.9%）、一年天数 秒 vs 天（换算方向反了）——
+  两处口径冲突已修正并纳入 `crosscheck` 守护。
+
+### 测试
+
+**97 套 / 2,401 项全绿**；`doccheck` / `preflight` 通过。新增套件：`astro`、`orbit`、`system`、
+`gravity`、`calendar`、`astrotech`、`world-calendar`、`enclosure`、`closure`、`megastructure`、
+`sponge`、`mechanism`、`hydraulic-train`、`physical-systems`、`optimize`、`system-dynamics`、
+`backtrace`、`model-chains`、`history-prng`、`conflict`、`diverge`、`history-sim`、`data-store`、
+`data-store-advanced`、`crosscheck`、`world-build`、`dedupe`、`facade`、`error-structure`、
+`r44-fixes`、`run-log`、`topology-examples`、`topology-engineering`、`assessment-rules`。
 ## [3.0.0] — 2026-11-13
 
 **v3 重写（rewrite/v3 分支）**。这一版把实现按「数据 / 功能 / 入口」三层重排，
@@ -1166,46 +1230,3 @@ sys-queue          排队与产能  负载ρ→等待→库存（「这个作坊
 差的是几何泄漏与中子能谱」。**把偏差写出来，比假装精确更有用。**
 
 ### 一处必须合并的重复
-
-新增的 `stefan_boltzmann_power` / `wien_peak_wavelength` / `planck_spectral_radiance`
-与库里已有的 `stefan_boltzmann` / `wien_displacement` **表达式相同**，
-只是我的说明更详细。后果不是「多三条」——`impact.mjs` 按中文名查「黑体辐射」，
-name 模糊匹配到了新增项，取到错误公式，断言当场红。
-
-处理：把详细说明**并进旧条目**（顺带给 `stefan_boltzmann` 补上发射率 ε 参数），
-删掉新增副本。原则记下来：**表达式相同 = 同一个公式，只留一条。**
-
-### 与既有 UI 预算的三处调整（都写了理由）
-
-- help 目录上限 1400 → 1500（新增两节 short 标签，实到 1443）
-- core 档节数 22 → 24（新增的不是「拆细」，是两块学科的空白被补上）
-- `d-coldwar` 一节 9402 字符超出单节 9000 上限 → **拆成两节**：
-  `d-coldwar`（信息与调控，5198 字符）+ `d-modern-society`（物理与社科，4554 字符）。
-  拆的理由不是「长度」，而是**查询场景不重叠**：算排队的人不会翻量子。
-  单节上限没有因为是「内容重要」就放宽 —— 那个上限守的是「分节本身要有意义」。
-
-### 一处采样陷阱（值得记下来）
-
-`formulas-all.mjs` 用**参数描述里的关键词**给必填参数填样例值（如含「人口」填 1000）。
-我的 `span_of_control` 描述里写了「有效管理跨度 4~8」，命中 `desc.includes('跨度')` → 填 1，
-于是 `log(1)=0` 除零，整条公式在「全部公式可求值」里报 non_finite。
-
-改描述避开了（「管理幅度」而非「跨度」），但**根子在采样器**：
-它靠描述文本猜语义，任何新参数只要碰到某个词就可能被填成定义域外的值。
-这条已写进交接 —— 下次若再遇到「某条公式只有默认采样失败」，先查这里，
-不要以为是公式本身错了。
-
-### 状态
-
-| 指标 | 之前 | 之后 |
-|---|---|---|
-| 公式库 | 528 | **585** |
-| 体系 | 18 链 / 167 步 | **22 链 / 228 步** |
-| 接点 | 28 | **45** |
-| 测试 | 106 套 / 5227 项 | **108 套 / 5355 项** |
-
----
-
-## [2.3.12] — 2026-11-09
-
-把公式体系**完整呈现出来**：一张拓扑图 + 一份逐链明细文档，两者都由脚本从
