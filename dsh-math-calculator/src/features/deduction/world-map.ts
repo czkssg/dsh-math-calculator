@@ -25,6 +25,56 @@ import { createNoise2D } from 'simplex-noise'
 import { CalcError } from '../../core/errors.js'
 import { createPrng, roll, rollInt, seedFrom } from '../../core/prng.js'
 
+/** 世界拓扑。 */
+export type WorldTopology = 'sphere' | 'plane'
+
+/**
+ * 网格两点距离（球体用大圆、平面用欧氏）。
+ *
+ * ## 为什么必须有
+ *
+ * 球体世界观里，「地图左边缘」与「右边缘」是**同一条经线**。
+ * 若按平面欧氏算，AI 会以为要跨大半个地图，实际只有一步。
+ *
+ * @param input - 拓扑/网格/两点
+ * @returns 距离（km 与格数）
+ */
+export function gridDistance(input: {
+  topology?: WorldTopology
+  width: number
+  height: number
+  from: { x: number; y: number }
+  to: { x: number; y: number }
+  planetRadiusKm?: number
+}): { km: number; cells: number; note: string } {
+  const topology = input.topology ?? 'sphere'
+  const radius = input.planetRadiusKm ?? 6371
+  const width = input.width
+  const height = input.height
+  const dxRaw = input.to.x - input.from.x
+  const dy = input.to.y - input.from.y
+  if (topology === 'plane') {
+    /** 平面：格宽按赤道周长折算。 */
+    const cellKm = (2 * Math.PI * radius) / width
+    const cells = Math.sqrt(dxRaw * dxRaw + dy * dy)
+    return { km: cells * cellKm, cells, note: '平面（天圆地方）：欧氏距离，不环绕' }
+  }
+  /** 球体：x → 经度（环绕取最短），y → 纬度（两极收缩）。 */
+  const lon1 = (input.from.x / width) * 360
+  const lon2 = (input.to.x / width) * 360
+  const lat1 = 90 - (input.from.y / height) * 180
+  const lat2 = 90 - (input.to.y / height) * 180
+  const rad = Math.PI / 180
+  const dLat = (lat2 - lat1) * rad
+  const dLon = (lon2 - lon1) * rad
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2
+  const angle = 2 * Math.asin(Math.min(1, Math.sqrt(a)))
+  const km = angle * radius
+  /** 格数：按赤道格宽折算（高纬实际更短，这里给的是「等效格」）。 */
+  const cellKm = (2 * Math.PI * radius) / width
+  return { km, cells: km / cellKm, note: '球体：大圆距离，跨 180° 经线自动取最短（东西相邻）' }
+}
+
 /** 输入。 */
 export interface WorldMapInput {
   /** 网格宽（默认 180）。 */
@@ -47,6 +97,16 @@ export interface WorldMapInput {
   edits?: Array<{ x: number; y: number; height?: number; seaLevel?: number; nation?: number }>
   /** 是否输出 ASCII 缩略图（默认 true）。 */
   ascii?: boolean
+  /**
+   * 世界拓扑：
+   * - `sphere`（默认）：球体星球——x 是经度（环绕），跨 180° 经线**不跨远路**；
+   * - `plane`：天圆地方——平面网格，边界不环绕。
+   */
+  topology?: 'sphere' | 'plane'
+  /** 星球半径 km（球体距离用，默认 6371）。 */
+  planetRadiusKm?: number
+  /** 查询两点距离（网格坐标）。 */
+  distance?: { from: { x: number; y: number }; to: { x: number; y: number } }
 }
 
 /** 地形类型。 */
@@ -92,6 +152,10 @@ export interface WorldMapResult {
   }
   /** ASCII 缩略图（可选）。 */
   ascii?: string
+  /** 世界拓扑。 */
+  topology: 'sphere' | 'plane'
+  /** 两点距离（给了 distance 才有）。 */
+  distance?: { km: number; cells: number; note: string }
   notes: string[]
 }
 
@@ -118,6 +182,8 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
   const nationCount = Math.max(0, Math.floor(input.nationCount ?? 8))
   const mineralDensity = typeof input.mineralDensity === 'number' ? input.mineralDensity : 0.02
   if (!(landTarget > 0 && landTarget < 1)) throw new CalcError('invalid_argument', 'seaLevel（陆地目标占比）必须在 (0,1) 之间', '')
+  /** 拓扑：球体（经度环绕）或平面（天圆地方）。 */
+  const topology: WorldTopology = input.topology === 'plane' ? 'plane' : 'sphere'
   const prng = createPrng(seedFrom(seed, width, height))
 
   /** 多层 simplex 噪声（陆地高度场）。 */
@@ -151,9 +217,23 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     if (typeof edit.height === 'number') heights[edit.y][edit.x] = Math.max(0, Math.min(1, edit.height))
   }
   const effectiveLandTarget = input.edits?.reduce<number>((level, edit) => (typeof edit.seaLevel === 'number' ? edit.seaLevel : level), landTarget) ?? landTarget
-  /** 分位数阈值（用**归一化后**的高度）：高于 (1−陆地占比) 分位的是陆地。 */
-  const normalizedFlat = heights.flat().sort((a, b) => a - b)
-  const effectiveSea = normalizedFlat[Math.floor(normalizedFlat.length * (1 - effectiveLandTarget))] ?? 0.5
+  /**
+   * 分位阈值（用**归一化后**的高度）：高于 (1−陆地占比) 分位的是陆地。
+   * 球体时按**面积加权**分位（高纬格实际面积小），否则极地格会让陆地占比失真。
+   */
+  const weighted: Array<{ h: number; w: number }> = []
+  for (let y = 0; y < height; y += 1) {
+    const w = topology === 'sphere' ? Math.max(0.01, Math.cos(((y / height) - 0.5) * Math.PI)) : 1
+    for (let x = 0; x < width; x += 1) weighted.push({ h: heights[y][x], w })
+  }
+  weighted.sort((a, b) => a.h - b.h)
+  const targetArea = weighted.reduce((sum, item) => sum + item.w, 0) * (1 - effectiveLandTarget)
+  let cumulative = 0
+  let effectiveSea = 0.5
+  for (const item of weighted) {
+    cumulative += item.w
+    if (cumulative >= targetArea) { effectiveSea = item.h; break }
+  }
 
   /** 地形分类。 */
   const terrain: string[][] = []
@@ -207,9 +287,10 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
       if (!isLand(cx, cy)) break
       let best: { x: number; y: number; h: number } | null = null
       for (const [dx, dy] of dirs) {
-        const nx = cx + dx
+        /** 球体：经度环绕（东西相邻）；平面：越界丢弃。 */
+        const nx = topology === 'sphere' ? (cx + dx + width) % width : cx + dx
         const ny = cy + dy
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+        if (ny < 0 || ny >= height || (topology === 'plane' && (nx < 0 || nx >= width))) continue
         const nh = heights[ny][nx]
         if (best === null || nh < best.h) best = { x: nx, y: ny, h: nh }
       }
@@ -264,9 +345,12 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
           let bestIndex = 0
           let bestDist = Infinity
           for (let index = 0; index < seeds.length; index += 1) {
-            const dx = seeds[index].x - x
+            /** 球体：经度差取环绕最短，并按纬度收缩（cos lat）。 */
+            let dx = Math.abs(seeds[index].x - x)
+            if (topology === 'sphere') dx = Math.min(dx, width - dx)
             const dy = seeds[index].y - y
-            const dist = dx * dx + dy * dy
+            const latScale = topology === 'sphere' ? Math.cos(((y / height) - 0.5) * Math.PI) : 1
+            const dist = dx * dx * latScale * latScale + dy * dy
             if (dist < bestDist) { bestDist = dist; bestIndex = index }
           }
           nations[y][x] = bestIndex
@@ -282,26 +366,31 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
   }
 
   /** 统计。 */
+  /** 面积加权（球体：高纬格实际面积按 cos lat 收缩）。 */
   let land = 0
   let mountain = 0
   let plain = 0
+  let area = 0
   for (let y = 0; y < height; y += 1) {
+    const weight = topology === 'sphere' ? Math.max(0.01, Math.cos(((y / height) - 0.5) * Math.PI)) : 1
     for (let x = 0; x < width; x += 1) {
-      if (isLand(x, y)) land += 1
+      area += weight
+      if (isLand(x, y)) land += weight
       const kind = terrain[y][x]
-      if (kind === 'mountain') mountain += 1
-      if (kind === 'plain') plain += 1
+      if (kind === 'mountain') mountain += weight
+      if (kind === 'plain') plain += weight
     }
   }
   const stats = {
-    landRatio: land / (width * height),
-    mountainRatio: mountain / (width * height),
-    plainRatio: plain / (width * height),
+    landRatio: area > 0 ? land / area : 0,
+    mountainRatio: area > 0 ? mountain / area : 0,
+    plainRatio: area > 0 ? plain / area : 0,
     riverCells: riverCells.size,
     mineralCount: minerals.length,
     nationCount: seedsOfNations(nations),
   }
   const notes = [
+    '拓扑：' + (topology === 'sphere' ? '球体（经度环绕，跨 180° 不会绕远路）' : '平面（天圆地方，边界不环绕）'),
     '网格 ' + width + '×' + height + '（' + (width * height) + ' 格），seed=' + seed,
     '海平面 ' + effectiveSea.toFixed(2) + '，陆地占比 ' + (stats.landRatio * 100).toFixed(1) + '%',
     '山地 ' + (stats.mountainRatio * 100).toFixed(1) + '%、平原 ' + (stats.plainRatio * 100).toFixed(1) + '%',
@@ -316,9 +405,12 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
   const TERRAIN_CODE: Record<string, number> = { ocean: 0, coast: 1, plain: 2, hill: 3, mountain: 4, plateau: 5, valley: 6 }
   const terrainPacked = large ? Buffer.from(Uint8Array.from(terrain.flat(), (kind) => TERRAIN_CODE[kind] ?? 0)).toString('base64') : undefined
   const nationsPacked = large ? Buffer.from(new Int16Array(nations.flat()).buffer).toString('base64') : undefined
+  const distance = input.distance !== undefined ? gridDistance({ topology, width, height, from: input.distance.from, to: input.distance.to, planetRadiusKm: input.planetRadiusKm }) : undefined
   const result: WorldMapResult = {
     width,
     height,
+    topology,
+    ...(distance !== undefined ? { distance } : {}),
     heights: large ? [] : heights,
     ...(packed !== undefined ? { heightsPacked: packed } : {}),
     terrain: large ? [] : terrain,

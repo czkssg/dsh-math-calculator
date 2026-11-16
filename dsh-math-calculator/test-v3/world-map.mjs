@@ -63,6 +63,19 @@ console.log('-- 6. 经 tool --')
   assert('★ 大网格输出量化（heightsPacked）', typeof out.value.heightsPacked === 'string' && out.value.heights.length === 0, '')
   assert('value 含 heights/terrain/nations', Array.isArray(out.value.heights) && Array.isArray(out.value.nations), '')
 }
+console.log('-- 7. 平面 vs 球体拓扑 --')
+{
+  const near = wm.gridDistance({ width: 360, height: 180, topology: 'sphere', from: { x: 0, y: 90 }, to: { x: 359, y: 90 } })
+  const far = wm.gridDistance({ width: 360, height: 180, topology: 'plane', from: { x: 0, y: 90 }, to: { x: 359, y: 90 } })
+  assert('★ 球体：跨经线只差 1 格（不绕远路）', near.cells < 2, String(near.cells))
+  assert('★ 平面：同一对点要跨 359 格', Math.abs(far.cells - 359) < 1, String(far.cells))
+  assert('★ 球体距离约 111 km（1 格）', Math.abs(near.km - 111) < 5, String(near.km))
+  const s1 = wm.generateWorldMap({ width: 180, height: 90, seed: 7, topology: 'sphere', seaLevel: 0.29, ascii: false })
+  const p1 = wm.generateWorldMap({ width: 180, height: 90, seed: 7, topology: 'plane', seaLevel: 0.29, ascii: false })
+  assert('★ 球体陆地占比按面积加权仍≈29%', Math.abs(s1.stats.landRatio - 0.29) < 0.01, String(s1.stats.landRatio))
+  assert('平面陆地占比≈29%', Math.abs(p1.stats.landRatio - 0.29) < 0.01, String(p1.stats.landRatio))
+  assert('★ topology 字段如实返回', s1.topology === 'sphere' && p1.topology === 'plane', '')
+}
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

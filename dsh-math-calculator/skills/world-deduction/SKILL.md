@@ -89,7 +89,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 工作区变量 / 切换世界 / 导出 | `workspace` | `action2:"set|list|export|import"` |
 | **自动入库** | 任意 op | 加 `saveAs:"记录名"` → 成功结果自动写进统一数据层（失败不入库） |
 | **数据检索（全文）** | `data` | `dataAction:"search", query:"关键词"`（minisearch + 中文分词）；`dataAction:"migrate"` 把旧 workspace/归档导入统一库（幂等） |
-| **全球地图（地形/地质/国家）** | `world-map` | `{mapWidth,mapHeight,seed,seaLevel(陆地目标占比),mountainScale,riverCount,nationCount,mineralDensity,edits,ascii}` → 高度场/地形分类/河流/矿产/国家边界（Voronoi）+ ASCII 缩略图；`edits:[{x,y,height,seaLevel,nation}]` 可改地形到海陆分布、改国界 |
+| **全球地图（地形/地质/国家）** | `world-map` | ★`worldTopology:"sphere"`（球体，经度环绕——**跨 180° 经线不绕远路**）或 `"plane"`（天圆地方）；`mapDistance:{from,to}` 查两点实际距离（球体用大圆） | `{mapWidth,mapHeight,seed,seaLevel(陆地目标占比),mountainScale,riverCount,nationCount,mineralDensity,edits,ascii}` → 高度场/地形分类/河流/矿产/国家边界（Voronoi）+ ASCII 缩略图；`edits:[{x,y,height,seaLevel,nation}]` 可改地形到海陆分布、改国界 |
 | **完整世界编排** | `world-build` | `{planetMass, planetRadius, orbitAU, starMass, initialPopulation, muPerPerson}` → 一次跑完：世界骨架→可耕土地→承载力→百年人口→粮食上限→疆域半径→舱室需求，并给出**瓶颈**（哪一步先撞上限） |
 | **跨模块对账** | `crosscheck` | 5 项比对（逃逸/年长/排水量/耗氧/人口），两侧各算一遍看是否一致；`checkId` 只跑某项 |
 | **系统动力学（存量/流量）** | `simulate` | `{stocks:{name:{initial}}, flows:{name:{to,rate}}（rate 可用存量名与 t）, dt, simSteps}` → 各存量时间序列/峰值/拐点判定（长期动态：人口-资源-污染） |
