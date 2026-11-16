@@ -21,6 +21,7 @@
  */
 
 import { CalcError } from '../../core/errors.js'
+import { generateWorldMap } from './world-map.js'
 
 /** 输入。 */
 export interface WorldBuildInput {
@@ -40,6 +41,10 @@ export interface WorldBuildInput {
   initialPopulation?: number
   /** 人均耕地（亩，默认 15）。 */
   muPerPerson?: number
+  /** 用地形+气候反算可耕率（默认 false，用固定 10%）。 */
+  useMap?: boolean
+  /** 地图种子（useMap 时用）。 */
+  mapSeed?: number
 }
 
 /** 结果。 */
@@ -50,6 +55,8 @@ export interface WorldBuildResult {
   landKm2: number
   /** 可耕面积（km²）。 */
   arableKm2: number
+  /** 可耕率（useMap 时来自气候分区，否则 10%）。 */
+  arableRatio: number
   /** 人口上限（承载力）。 */
   carryingCapacity: number
   /** 百年后人口。 */
@@ -90,7 +97,17 @@ export function buildWorldProfile(input: WorldBuildInput): WorldBuildResult {
   const surfaceKm2 = 4 * Math.PI * radiusKm * radiusKm
   /** 陆地占比：按海陆比 0.71 海（可选调）。 */
   const landKm2 = surfaceKm2 * 0.29
-  const arableKm2 = landKm2 * 0.1
+  /** 可耕率：固定 10%，或用地形+气候反算（useMap）。 */
+  let arableRatio = 0.1
+  let climateNotes: string[] = []
+  if (input.useMap === true) {
+    const map = generateWorldMap({ width: 180, height: 90, seed: input.mapSeed ?? 1, topology: 'sphere', seaLevel: 0.29, climate: true, planetRadiusKm: 6371 * planetRadius, ascii: false })
+    if (map.climate !== undefined) {
+      arableRatio = map.climate.arableRatio
+      climateNotes = map.climate.notes
+    }
+  }
+  const arableKm2 = landKm2 * arableRatio
   /** 承载力：可耕面积 ÷ 人均耕地。 */
   const carryingCapacity = (arableKm2 * 1e6) / (muPerPerson * MU_M2)
   /** 人口百年：逻辑斯蒂（r=0.02，K=承载力）。 */
@@ -110,7 +127,8 @@ export function buildWorldProfile(input: WorldBuildInput): WorldBuildResult {
   ]
   limits.sort((a, b) => a.value - b.value)
   const notes: string[] = []
-  notes.push('地表 ' + (surfaceKm2 / 1e6).toFixed(2) + ' M km²，陆地 ' + (landKm2 / 1e6).toFixed(2) + ' M km²，可耕 ' + (arableKm2 / 1e6).toFixed(3) + ' M km²')
+  notes.push('地表 ' + (surfaceKm2 / 1e6).toFixed(2) + ' M km²，陆地 ' + (landKm2 / 1e6).toFixed(2) + ' M km²，可耕 ' + (arableKm2 / 1e6).toFixed(3) + ' M km²（可耕率 ' + (arableRatio * 100).toFixed(1) + '%）')
+  for (const line of climateNotes) notes.push('气候：' + line)
   notes.push('人口承载力约 ' + carryingCapacity.toFixed(0) + ' 人（人均 ' + muPerPerson + ' 亩）')
   notes.push('百年后人口约 ' + populationAfter100y.toFixed(0) + '（逻辑斯蒂逼近承载力）')
   notes.push('粮食上限约 ' + maxGrainT.toFixed(0) + ' 吨/年')
@@ -120,6 +138,7 @@ export function buildWorldProfile(input: WorldBuildInput): WorldBuildResult {
     world: { planetMass, planetRadius, orbitAU, starMass, rotationHours, obliquityDeg: obliquity, surfaceKm2, landKm2 },
     landKm2,
     arableKm2,
+    arableRatio,
     carryingCapacity,
     populationAfter100y,
     maxGrainT,

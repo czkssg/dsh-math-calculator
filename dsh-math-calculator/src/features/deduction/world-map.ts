@@ -24,6 +24,7 @@ import { Delaunay } from 'd3-delaunay'
 import { createNoise2D } from 'simplex-noise'
 import { CalcError } from '../../core/errors.js'
 import { createPrng, roll, rollInt, seedFrom } from '../../core/prng.js'
+import { computeGridClimate } from './grid-climate.js'
 
 /** 世界拓扑。 */
 export type WorldTopology = 'sphere' | 'plane'
@@ -107,6 +108,12 @@ export interface WorldMapInput {
   planetRadiusKm?: number
   /** 查询两点距离（网格坐标）。 */
   distance?: { from: { x: number; y: number }; to: { x: number; y: number } }
+  /** 是否叠加气候层（默认 false）。 */
+  climate?: boolean
+  /** 气候用：全球平均温度 K（默认 288）。 */
+  globalMeanK?: number
+  /** 气候用：温室增量 K（默认 33）。 */
+  greenhouseK?: number
 }
 
 /** 地形类型。 */
@@ -156,6 +163,8 @@ export interface WorldMapResult {
   topology: 'sphere' | 'plane'
   /** 两点距离（给了 distance 才有）。 */
   distance?: { km: number; cells: number; note: string }
+  /** 气候摘要（climate:true 才有）。 */
+  climate?: { zoneShare: Record<string, number>; arableRatio: number; arableKm2: number; notes: string[] }
   notes: string[]
 }
 
@@ -406,10 +415,19 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
   const terrainPacked = large ? Buffer.from(Uint8Array.from(terrain.flat(), (kind) => TERRAIN_CODE[kind] ?? 0)).toString('base64') : undefined
   const nationsPacked = large ? Buffer.from(new Int16Array(nations.flat()).buffer).toString('base64') : undefined
   const distance = input.distance !== undefined ? gridDistance({ topology, width, height, from: input.distance.from, to: input.distance.to, planetRadiusKm: input.planetRadiusKm }) : undefined
+  /** 气候层（可选）：复用 grid-climate 的温度模型 + 降水。 */
+  const landGrid = heights.map((row, y) => row.map((_value, x) => isLand(x, y)))
+  let climateSummary: WorldMapResult['climate']
+  if (input.climate === true) {
+    const climateResult = computeGridClimate({ heights, land: landGrid, globalMeanK: input.globalMeanK, greenhouseK: input.greenhouseK, seaLevel: effectiveSea })
+    const landAreaKm2 = (4 * Math.PI * (input.planetRadiusKm ?? 6371) ** 2 * (1 - effectiveLandTarget) * 0.9) / 1e0
+    climateSummary = { zoneShare: climateResult.zoneShare, arableRatio: climateResult.arableRatio, arableKm2: landAreaKm2 * climateResult.arableRatio, notes: climateResult.notes }
+  }
   const result: WorldMapResult = {
     width,
     height,
     topology,
+    ...(climateSummary !== undefined ? { climate: climateSummary } : {}),
     ...(distance !== undefined ? { distance } : {}),
     heights: large ? [] : heights,
     ...(packed !== undefined ? { heightsPacked: packed } : {}),
