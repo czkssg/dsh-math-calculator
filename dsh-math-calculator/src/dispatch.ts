@@ -58,6 +58,7 @@ import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runDiverge } from './features/deduction/diverge.js'
+import { optimize } from './features/math/optimize.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -213,6 +214,13 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'optimize': {
+      const result = optimize({ objective: typeof args['objective'] === 'string' ? (args['objective'] as string) : undefined, opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
+      const lines = ['═══ 线性规划（' + (result.feasible ? '有解' : '无解') + '）═══']
+      for (const note of result.notes) lines.push('  ' + note)
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'data': {
       /** 统一数据层：put/get/query/lineage/stats/export/import。 */
@@ -936,6 +944,8 @@ export const MIGRATED_OPERATIONS = [
   'diverge',
   /** 统一数据层（记录/血缘/统计/导入导出）。 */
   'data',
+  /** 线性/整数规划（资源最优配比）。 */
+  'optimize',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

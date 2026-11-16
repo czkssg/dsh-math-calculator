@@ -59,6 +59,7 @@
     "graphology-components": "^1.5.4",
     "graphology-dag": "^0.4.1",
     "graphology-shortest-path": "^2.1.0",
+    "javascript-lp-solver": "^1.0.3",
     "jstat": "^1.9.6",
     "mathjs": "^15.2.0",
     "minisearch": "^7.2.0",
