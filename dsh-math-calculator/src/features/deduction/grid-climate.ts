@@ -114,8 +114,7 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
       /** 海拔：把「海平面以上」的相对高度映射到 0–maxElev（否则 0–1 噪声当海拔会全冻结）。 */
       const rel = Math.max(0, (heights[y][x] - seaLevel) / Math.max(0.01, 1 - seaLevel))
       const elevation = rel * maxElev
-      const tempC = annualMean - 273.15 - (elevation / 1000) * lapse - (isLand ? 0 : 1.5)
-      temperatureC[y].push(tempC)
+      let tempC = annualMean - 273.15 - (elevation / 1000) * lapse - (isLand ? 0 : 1.5)
       let distanceToSea = 0
       if (isLand) {
         let nearest = Infinity
@@ -135,8 +134,15 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
       const polarFront = Math.max(0, 1 - Math.abs(absLat - 60) / 20)
       const basePrecip = 300 + itcz * 2200 + polarFront * 900 - subtropics * 500 + (isLand ? 0 : 400)
       const distancePenalty = isLand ? Math.min(600, distanceToSea * 60) : 0
-      const precip = Math.max(0, (basePrecip - distancePenalty) * wind + orographic)
+      const basePrecipValue = Math.max(0, (basePrecip - distancePenalty) * wind + orographic)
+      /** 极宏观三机制：季风、洋流、云。 */
+      const circulation = coarseCirculation(lat, basePrecipValue, isLand, input.landRatio ?? 0.29)
+      const precip = Math.max(0, basePrecipValue * circulation.monsoonFactor)
       precipitationMm[y].push(precip)
+      /** 洋流与云修正温度（叠加在基础温度上）。 */
+      const circulationTempK = circulation.currentTempK + circulation.cloudTempK
+      tempC += circulationTempK
+      temperatureC[y].push(tempC)
       /** 分区：温度类来自 climateZone；再按降水修正干旱（沙漠/草原）。 */
       const thermalZone = climateZone(lat, tempC, true, Math.abs(tempC) * 0.4 + 6)
       const arid = precip < 200 ? '干旱（沙漠）' : precip < 450 ? '半干旱（草原）' : thermalZone
@@ -165,4 +171,34 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
     '可耕率 ' + (arableRatio * 100).toFixed(1) + '%（温带 60%、热带 40%、草原 35%、沙漠 1%、苔原 2%）',
   ]
   return { temperatureC, precipitationMm, zone, zoneShare, arableRatio, notes }
+}
+/**
+ * 极宏观大气/海洋/云（粗到只剩几个常数）。
+ *
+ * 三个机制各用一个式子，不做流体求解：
+ * - **季风**：海陆热力差 → 夏季 / 冬季降水增减；
+ * - **洋流**：风带驱动的纬向输送 + 大陆阻挡 → 沿岸温度 ±2 K；
+ * - **云**：云量 = f(降水) → 昼遮阳/夜保温，温度 ∓1–2 K。
+ *
+ * @param lat - 纬度（度）
+ * @param precipMm - 基础降水
+ * @param isLand - 是否陆地
+ * @param landRatio - 陆地占比
+ * @returns 三项修正
+ */
+export function coarseCirculation(lat: number, precipMm: number, isLand: boolean, landRatio: number): { monsoonFactor: number; currentTempK: number; cloudTempK: number; cloudCover: number } {
+  const absLat = Math.abs(lat)
+  /** 季风：低纬 + 大块陆地 → 强；海陆比越大越强。 */
+  const latWeight = Math.max(0, 1 - Math.abs(absLat - 20) / 35)
+  const monsoonStrength = latWeight * landRatio * 2
+  /** 夏季风（海→陆）加雨、冬季风（陆→海）减雨；这里给**全年净值**（弱正）。 */
+  const monsoonFactor = isLand ? 1 + monsoonStrength * 0.25 : 1 - monsoonStrength * 0.05
+  /** 洋流：西风带（30–60°）向东输送暖流；信风带（0–30°）向西输送。 */
+  const band = absLat < 30 ? -1 : absLat < 60 ? 1 : 0
+  /** 沿岸（海陆交界附近）受洋流影响最大；这里按「陆地 + 低纬」近似暖流。 */
+  const currentTempK = isLand ? band * (absLat < 45 ? 1.5 : 0.8) : band * 0.5
+  /** 云：降水越多云越厚（0–0.9），厚云昼遮阳 → 净降温 1–2 K。 */
+  const cloudCover = Math.min(0.9, precipMm / 2500)
+  const cloudTempK = -cloudCover * 2.2 + (1 - cloudCover) * 0.3
+  return { monsoonFactor, currentTempK, cloudTempK, cloudCover }
 }

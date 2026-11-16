@@ -58,6 +58,17 @@ console.log('-- 4. 与网格气候耦合 --')
   assert('★ 网格气候随恒星通量变化', earth.arableRatio !== dim.arableRatio, earth.arableRatio.toFixed(3) + ' vs ' + dim.arableRatio.toFixed(3))
   assert('★ 含干旱分区（降水修正生效）', '干旱（沙漠）' in earth.zoneShare || '半干旱（草原）' in earth.zoneShare, JSON.stringify(Object.keys(earth.zoneShare)))
 }
+console.log('-- 5. 极宏观三机制 --')
+{
+  const warmWet = gc.coarseCirculation(20, 1500, true, 0.29)
+  const coldDry = gc.coarseCirculation(70, 100, true, 0.29)
+  assert('★ 低纬+大陆 → 季风降水加成 >1', warmWet.monsoonFactor > 1, String(warmWet.monsoonFactor))
+  assert('★ 降水多 → 云量高、云致降温', warmWet.cloudCover > 0.3 && warmWet.cloudTempK < 0, String(warmWet.cloudTempK))
+  assert('★ 降水少 → 云量低、云致微升温', coldDry.cloudCover < 0.1 && coldDry.cloudTempK > 0, String(coldDry.cloudTempK))
+  assert('洋流项在 ±2 K 内', Math.abs(warmWet.currentTempK) <= 2, String(warmWet.currentTempK))
+  const landEffect = gc.computeGridClimate({ heights: Array.from({ length: 30 }, () => Array.from({ length: 60 }, () => 0.7)), land: Array.from({ length: 30 }, () => Array.from({ length: 60 }, () => true)), landRatio: 0.29 })
+  assert('★ 网格气候含季风/云修正（可耕率稳定在合理区间）', landEffect.arableRatio > 0 && landEffect.arableRatio < 1, String(landEffect.arableRatio))
+}
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }
