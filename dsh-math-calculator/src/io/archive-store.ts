@@ -43,7 +43,15 @@ export function archiveFilePath(workspace: string, dir: string = archiveDirector
 export function loadArchiveFile<T>(workspace: string, dir: string = archiveDirectory()): { versions: T[] } {
   const rows = queryRecords({ kind: ARCHIVE_KIND })
   if (rows.length > 0) {
-    const versions = rows.map((row) => row.payload as T).filter((item) => item !== null && typeof item === 'object')
+    /** 数据层按 updatedAt 降序返回；归档语义要求**升序**（v1→v2），否则 compare 会把最早当最新。 */
+    const versions = rows
+      .map((row) => row.payload as T)
+      .filter((item) => item !== null && typeof item === 'object')
+      .sort((a, b) => {
+        const av = String((a as Record<string, unknown>)['version'] ?? '')
+        const bv = String((b as Record<string, unknown>)['version'] ?? '')
+        return av.localeCompare(bv, undefined, { numeric: true })
+      })
     return { versions }
   }
   /** 兼容：数据层为空时读旧文件并导入一次。 */
