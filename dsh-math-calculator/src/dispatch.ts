@@ -62,6 +62,7 @@ import { optimize } from './features/math/optimize.js'
 import { simulateSystemDynamics } from './features/deduction/system-dynamics.js'
 import { runCrosschecks, type CrosscheckItem } from './features/graph/crosscheck.js'
 import { buildWorldProfile } from './features/deduction/world-build.js'
+import { generateWorldMap } from './features/deduction/world-map.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -234,6 +235,14 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'world-map': {
+      const result = generateWorldMap({ width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}) })) : undefined, ascii: args['ascii'] !== false })
+      const lines = ['═══ 全球地图（中等精度）═══', '']
+      for (const note of result.notes) lines.push('  ' + note)
+      if (result.ascii !== undefined) lines.push('', result.ascii)
+      return { result: lines.join('\n'), value: { ...result, ascii: undefined } } as never
+    }
 
     case 'world-build': {
       const result = buildWorldProfile({ planetMass: typeof args['planetMass'] === 'number' ? (args['planetMass'] as number) : undefined, planetRadius: typeof args['planetRadius'] === 'number' ? (args['planetRadius'] as number) : undefined, orbitAU: typeof args['orbitAU'] === 'number' ? (args['orbitAU'] as number) : undefined, starMass: typeof args['starMass'] === 'number' ? (args['starMass'] as number) : undefined, rotationHours: typeof args['rotationHours'] === 'number' ? (args['rotationHours'] as number) : undefined, obliquityDeg: typeof args['obliquityDeg'] === 'number' ? (args['obliquityDeg'] as number) : undefined, initialPopulation: typeof args['initialPopulation'] === 'number' ? (args['initialPopulation'] as number) : undefined, muPerPerson: typeof args['muPerPerson'] === 'number' ? (args['muPerPerson'] as number) : undefined })
@@ -1020,6 +1029,8 @@ export const MIGRATED_OPERATIONS = [
   'crosscheck',
   /** 完整世界编排（多模块串联）。 */
   'world-build',
+  /** 全球地图模拟（地形/河流/矿产/国家，可编辑）。 */
+  'world-map',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

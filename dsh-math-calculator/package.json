@@ -55,6 +55,7 @@
     "@lhncbc/ucum-lhc": "^8.0.1",
     "algebrite": "^1.4.0",
     "astronomy-engine": "^2.1.19",
+    "d3-delaunay": "^6.0.6",
     "graphology": "^0.26.0",
     "graphology-components": "^1.5.4",
     "graphology-dag": "^0.4.1",
@@ -70,6 +71,7 @@
     "pino": "^10.4.0",
     "rotating-file-stream": "^4.0.0",
     "segmentit": "^2.0.3",
+    "simplex-noise": "^4.0.3",
     "suncalc": "^2.1.4"
   },
   "peerDependencies": {
@@ -79,6 +81,7 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",
     "@deepseek-ai/dsh-tools": "^0.1.7-rc.2",
+    "@types/d3-delaunay": "^6.0.4",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2"
   },
