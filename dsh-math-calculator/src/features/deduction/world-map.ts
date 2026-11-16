@@ -65,8 +65,14 @@ export interface MineralDeposit {
 export interface WorldMapResult {
   width: number
   height: number
-  /** 高度网格（0–1）。 */
+  /** 高度网格（0–1）。格数 > 30 万时改给 heightsPacked（省体积）。 */
   heights: number[][]
+  /** 量化高度（0–255 的 base64，行优先；小网格不给）。 */
+  heightsPacked?: string
+  /** 量化地形（每格 1 字节：0 海洋 1 海岸 2 平原 3 丘陵 4 山地 5 高原 6 河谷）。 */
+  terrainPacked?: string
+  /** 量化国家归属（int16 → base64，−1 为无主）。 */
+  nationsPacked?: string
   /** 地形分类网格。 */
   terrain: string[][]
   /** 国家归属网格（-1 = 无主）。 */
@@ -97,8 +103,9 @@ export interface WorldMapResult {
  * @throws {CalcError} 参数非法
  */
 export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
-  const width = Math.max(30, Math.min(360, Math.floor(input.width ?? 180)))
-  const height = Math.max(15, Math.min(180, Math.floor(input.height ?? 90)))
+  /** 默认 720×360（0.5° 约 55 km/格）；上限 2880×1440（0.125° 约 14 km/格）。 */
+  const width = Math.max(36, Math.min(1440, Math.floor(input.width ?? 720)))
+  const height = Math.max(18, Math.min(1440, Math.floor(input.height ?? 360)))
   const seed = input.seed ?? 1
   /**
    * seaLevel 语义：**陆地目标占比**（0–1），默认 0.29（地球量级）。
@@ -106,7 +113,8 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
    */
   const landTarget = typeof input.seaLevel === 'number' ? input.seaLevel : 0.29
   const mountainScale = typeof input.mountainScale === 'number' ? input.mountainScale : 1
-  const riverCount = Math.max(0, Math.floor(input.riverCount ?? 24))
+  /** 河流默认随面积增长（每约 6000 格一条，封顶 120）。 */
+  const riverCount = Math.max(0, Math.floor(input.riverCount ?? Math.min(120, Math.max(12, Math.round((width * height) / 6000)))))
   const nationCount = Math.max(0, Math.floor(input.nationCount ?? 8))
   const mineralDensity = typeof input.mineralDensity === 'number' ? input.mineralDensity : 0.02
   if (!(landTarget > 0 && landTarget < 1)) throw new CalcError('invalid_argument', 'seaLevel（陆地目标占比）必须在 (0,1) 之间', '')
@@ -301,7 +309,27 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     '国家 ' + stats.nationCount + ' 个（Voronoi 分区；河流/山脉可作自然边界）',
     '编辑：edits 可改 height/seaLevel/nation（改地形到海陆分布）',
   ]
-  const result: WorldMapResult = { width, height, heights, terrain, nations, rivers, minerals, stats, notes }
+  /** 大网格：高度网格量化为 0–255 + base64（1440×720 原始 JSON 约 2 MB，量化后约 700 KB）。 */
+  /** 超过 10 万格就量化（否则 JSON 上 MB；量化后高度/地形/国家都是紧凑串）。 */
+  const large = width * height > 100000
+  const packed = large ? Buffer.from(Uint8Array.from(heights.flat(), (value) => Math.round(value * 255))).toString('base64') : undefined
+  const TERRAIN_CODE: Record<string, number> = { ocean: 0, coast: 1, plain: 2, hill: 3, mountain: 4, plateau: 5, valley: 6 }
+  const terrainPacked = large ? Buffer.from(Uint8Array.from(terrain.flat(), (kind) => TERRAIN_CODE[kind] ?? 0)).toString('base64') : undefined
+  const nationsPacked = large ? Buffer.from(new Int16Array(nations.flat()).buffer).toString('base64') : undefined
+  const result: WorldMapResult = {
+    width,
+    height,
+    heights: large ? [] : heights,
+    ...(packed !== undefined ? { heightsPacked: packed } : {}),
+    terrain: large ? [] : terrain,
+    nations: large ? [] : nations,
+    ...(terrainPacked !== undefined ? { terrainPacked } : {}),
+    ...(nationsPacked !== undefined ? { nationsPacked } : {}),
+    rivers,
+    minerals,
+    stats,
+    notes,
+  }
   if (input.ascii !== false) {
     /** 缩略图：宽 80 列、按地形取字符。 */
     const stepX = Math.max(1, Math.floor(width / 80))

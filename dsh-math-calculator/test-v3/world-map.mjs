@@ -29,7 +29,7 @@ console.log('-- 1. 海陆比可控 --')
 }
 console.log('-- 2. 地形分类 --')
 {
-  const r = wm.generateWorldMap({ seed: 7, ascii: false })
+  const r = wm.generateWorldMap({ seed: 7, width: 180, height: 90, ascii: false })
   const kinds = new Set(r.terrain.flat())
   assert('★ 有海/陆/山地/平原多类', kinds.has('ocean') && kinds.has('mountain') && kinds.has('plain'), Array.from(kinds).join(','))
   assert('山地占比合理（0–30%）', r.stats.mountainRatio > 0 && r.stats.mountainRatio < 0.3, String(r.stats.mountainRatio))
@@ -44,7 +44,7 @@ console.log('-- 3. 河流与矿产 --')
 }
 console.log('-- 4. 国家分区 --')
 {
-  const r = wm.generateWorldMap({ seed: 7, nationCount: 6, ascii: false })
+  const r = wm.generateWorldMap({ seed: 7, width: 180, height: 90, nationCount: 6, ascii: false })
   assert('★ 国家数 = 6', r.stats.nationCount === 6, String(r.stats.nationCount))
   assert('陆地格有国家归属', r.nations.some((row) => row.some((cell) => cell >= 0)), '')
 }
@@ -59,6 +59,8 @@ console.log('-- 6. 经 tool --')
 {
   const out = await run({ operation: 'world-map', seed: 7, nationCount: 6, riverCount: 12, ascii: false })
   assert('★ world-map 经 tool', out.ok === true && out.result.includes('全球地图'), out.result.slice(0, 60))
+  assert('★ 默认 720×360（高精度）', out.value.width === 720 && out.value.height === 360, JSON.stringify({ w: out.value.width, h: out.value.height }))
+  assert('★ 大网格输出量化（heightsPacked）', typeof out.value.heightsPacked === 'string' && out.value.heights.length === 0, '')
   assert('value 含 heights/terrain/nations', Array.isArray(out.value.heights) && Array.isArray(out.value.nations), '')
 }
 console.log('')
