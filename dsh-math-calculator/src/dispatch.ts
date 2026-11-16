@@ -566,6 +566,22 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return toOutcome(eigenValues(buildEngine(), args['matrix']))
 
     case 'system':
+      /**
+       * 两种写法：
+       * - `matrix` + `vector`：矩阵形式（原始用法）；
+       * - `equations`（字符串数组）：直接写方程，转给 solve（R49 实测：以前会被静默忽略→崩）。
+       */
+      if (Array.isArray(args['equations']) && args['matrix'] === undefined) {
+        const equations = (args['equations'] as unknown[]).map(String).join(',')
+        return dispatchNew('solve', { expression: equations }) as never
+      }
+      if (args['matrix'] === undefined) {
+        throw new CalcError(
+          'missing_params',
+          'system 需要 matrix + vector（矩阵形式）或 equations（方程数组）',
+          '例如 {system:{matrix:[[1,1],[1,-1]], vector:[3,1]}} 或 {system:{equations:["x+y=3","x-y=1"]}}。',
+        )
+      }
       return toOutcome(solveLinearSystem(buildEngine(), args['matrix'], args['vector']))
 
     case 'stats':
@@ -882,9 +898,20 @@ function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
   /** ode / recurrence：initial 允许数字、数组、y0。 */
   if (args['initial'] !== undefined && typeof args['initial'] !== 'object') {
     const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
-    /** 从 dy/dt = … 里取状态名；取不到就用 y / P。 */
+    /**
+     * 从 dy/dt = … 里取状态名；取不到就用 y / P。
+     *
+     * recurrence 还要再从递推式里找（R49 实测：`recurrence:'a*2', initial:1`
+     * 以前硬编码成 P，于是表达式里的 a 没定义 → unknown_symbol）。
+     */
     const stateMatch = /d\s*([A-Za-z_][A-Za-z0-9_]*)\s*\/\s*dt/.exec(expression)
-    const stateName = stateMatch !== null ? stateMatch[1] : (args['recurrence'] !== undefined ? 'P' : 'y')
+    const recurrenceText = typeof args['recurrence'] === 'string' ? (args['recurrence'] as string) : ''
+    const recurrenceSymbol = /[A-Za-z_][A-Za-z0-9_]*/.exec(recurrenceText.replace(/[0-9]+(?:\.[0-9]+)?/g, ''))?.[0]
+    const stateName = stateMatch !== null
+      ? stateMatch[1]
+      : recurrenceText !== ''
+        ? (recurrenceSymbol ?? 'P')
+        : 'y'
     args['initial'] = Array.isArray(args['initial']) ? { [stateName]: Number((args['initial'] as unknown[])[0]) } : { [stateName]: Number(args['initial']) }
   }
   if (args['initial'] === undefined && args['y0'] !== undefined) {

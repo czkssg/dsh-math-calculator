@@ -394,26 +394,56 @@ export function eigenValues(engine: Engine, matrix: unknown): LinalgOutcome {
    * （n 次多项式的精确求根），n 大时爆炸。
    */
   let parsed: number | number[][] | null = null
+  /**
+   * ## 分流（2026-11-16 修 R49）
+   *
+   * 实测：algebrite 的 `eigenval` **只支持对称矩阵**——
+   *
+   * ```
+   * eigenval([[1,2],[3,4]])  → "Stop: eigen: matrix is not symmetrical"
+   * eigenval([[2,0],[0,3]])  → 正常
+   * ```
+   *
+   * 所以旧实现「≤5 阶走 algebrite」对**任何非对称矩阵都会失败**（R48/R49 都报这个）。
+   * 现在：先试 algebrite（对称矩阵给精确值），失败则回落 mathjs 的 eigs（数值解，支持非对称）。
+   */
+  let symbolicFailed = false
   if (rows.length <= SYMBOLIC_DET_LIMIT) {
-    parsed = parseValue(runAlgebrite('eigenval(' + toMatrixLiteral(rows) + ')'))
-  } else {
+    try {
+      const symbolic = runAlgebrite('eigenval(' + toMatrixLiteral(rows) + ')')
+      /** algebrite 失败时返回 "Stop: …" 字符串，parseValue 会给 null。 */
+      parsed = parseValue(symbolic)
+      if (parsed === null) symbolicFailed = true
+    } catch {
+      symbolicFailed = true
+    }
+  }
+  if (parsed === null || symbolicFailed) {
     /**
-     * 大矩阵走 mathjs 的 `eigs`，它返回 DenseMatrix + Decimal ——
-     * 需要拆包（见下方）。
+     * 数值路径：mathjs 的 `eigs`（非对称也支持，可能给复数）。
+     *
+     * 复数特征值转成「实部 ± 虚部 i」的文本形式，value 里给 {re, im}。
      */
     const raw = engine.evaluate('eigs(' + JSON.stringify(rows) + ')') as { values?: unknown }
     const rawValues = raw.values
     const arr = Array.isArray(rawValues)
       ? rawValues
-      : (rawValues as { toArray?: () => unknown[] })?.toArray?.() ?? []
-    /** 转成对角矩阵形态（与 algebrite 的输出结构一致，便于下游统一处理）。 */
-    const list = (Array.isArray(arr) ? arr : []).map((v) => {
-      const anyV = v as { isBigNumber?: boolean; toString?: () => string }
-      return anyV?.isBigNumber === true ? Number(anyV.toString?.() ?? '0') : Number(v)
+      : ((rawValues as { toArray?: () => unknown[] })?.toArray?.() ?? [])
+    const values = (Array.isArray(arr) ? arr : []).map((v) => {
+      const anyV = v as { isBigNumber?: boolean; toString?: () => string; re?: number; im?: number; isComplex?: boolean }
+      if (anyV?.isComplex === true) return { re: Number(anyV.re ?? 0), im: Number(anyV.im ?? 0) }
+      const numeric = anyV?.isBigNumber === true ? Number(anyV.toString?.() ?? '0') : Number(v)
+      return { re: Number.isFinite(numeric) ? numeric : 0, im: 0 }
     })
-    parsed = list.map((v, i) => list.map((_, j) => (i === j ? v : 0)))
+    if (values.length === 0) throw new CalcError('invalid_argument', '未能算出特征值', '矩阵可能是病态的；试试先做数值缩放，或用 matrix 看奇异值。')
+    const text = values.map((v) => {
+      const real = Math.abs(v.re) < 1e-12 ? 0 : Number(v.re.toFixed(10))
+      const imag = Math.abs(v.im) < 1e-12 ? 0 : Number(v.im.toFixed(10))
+      if (imag === 0) return String(real)
+      return real === 0 ? imag + 'i' : real + (imag > 0 ? '+' : '') + imag + 'i'
+    })
+    return { result: '特征值：' + text.join(', '), value: values }
   }
-
   /**
    * algebrite 的 `eigenval` 返回**对角矩阵**（[[2.0,0.0],[0.0,3.0]]），
    * 特征值就是对角元。

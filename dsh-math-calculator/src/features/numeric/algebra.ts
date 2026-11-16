@@ -192,6 +192,27 @@ export function solveEquation(engine: Engine, equation: string): AlgebraOutcome 
     )
   }
 
+  /**
+   * 多未知数检测（R49）：`x+y=3` 只解出一个变量是没意义的——
+   * 它是「两个未知数一个方程」，**解不唯一**，不是「没有实数解」。
+   *
+   * 以前只取 symbols[0] 当变量、把 y 当常数，于是 algebrite 找不到根，
+   * 报「没有找到实数解」——**这个诊断是错的**。
+   */
+  const freeSymbols = new Set<string>()
+  for (const match of equation.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
+    const name = match[0]
+    if (['pi', 'e', 'i', 'PI', 'E', 'tau', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh', 'log', 'log10', 'log2', 'exp', 'sqrt', 'cbrt', 'abs', 'sign', 'floor', 'ceil', 'round', 'max', 'min', 'pow', 'mod'].includes(name)) continue
+    if (/\./.test(name)) continue
+    freeSymbols.add(name)
+  }
+  if (freeSymbols.size > 1) {
+    throw new CalcError(
+      'singular',
+      '这是 ' + freeSymbols.size + ' 个未知数、1 个方程：「' + equation + '」有多组解',
+      '未知数：' + [...freeSymbols].join('、') + '。要定下来需补足方程（用逗号分隔多式），或用 system 解线性方程组。',
+    )
+  }
   const variable = classified.variable
   const source = toAlgebrite(classified.residual)
 
