@@ -26,6 +26,7 @@ import { connectedComponents } from 'graphology-components'
 import { CalcError } from '../../core/errors.js'
 import { analyzeLogistics } from './logistics.js'
 import { resolveAssessment, type AssessmentRule } from './engineering.js'
+import { getRecord, putRecord, queryRecords } from '../data-store/store.js'
 import assessmentRules from '../../data/topology-assessments.json' with { type: 'json' }
 
 /** 耦合规则表（数据驱动；新增类型只改 JSON + 注册 calculator）。 */
@@ -346,9 +347,8 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
     if (key === '') throw new CalcError('missing_params', 'save 需要 modelKey（模型名）', '例如 {topology:{action:"save", modelKey:"北境军", nodes:[…], edges:[…]}}。')
     if (!Array.isArray(input.nodes) || input.nodes.length === 0) throw new CalcError('missing_params', 'save 需要 nodes（要保存的拓扑）', '')
     const workspace = currentWorkspace()
-    const data = loadWorkspaceFile(workspace)
-    const models = { ...(data.topologyModels as Record<string, unknown>), [key]: { nodes: input.nodes, edges: input.edges ?? [], savedAt: new Date().toISOString() } }
-    saveWorkspaceFile({ ...data, topologyModels: models })
+    /** 统一存数据层（kind=model）——第五处存储收敛。 */
+    putRecord({ kind: 'model', name: key, tags: ['拓扑', workspace], payload: { nodes: input.nodes, edges: input.edges ?? [], savedAt: new Date().toISOString() } })
     return { result: '✓ 已保存拓扑模型「' + key + '」到工作区「' + workspace + '」（' + input.nodes.length + ' 节点，' + (input.edges?.length ?? 0) + ' 边）\n  之后可 action:"load" 取回、action:"export" 导出到工作区文件。', value: { modelKey: key, workspace, nodes: input.nodes.length } }
   }
 
@@ -356,19 +356,25 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
     const key = typeof input.modelKey === 'string' ? input.modelKey.trim() : ''
     if (key === '') throw new CalcError('missing_params', 'load 需要 modelKey', '用 action:"list" 看已保存的模型名。')
     const workspace = currentWorkspace()
-    const models = loadWorkspaceFile(workspace).topologyModels as Record<string, { nodes?: unknown; edges?: unknown; savedAt?: string }>
-    const model = models[key]
-    if (model === undefined) throw new CalcError('unknown_symbol', '工作区「' + workspace + '」里没有模型「' + key + '」', '已有：' + (Object.keys(models).join('、') || '（无）'))
+    const record = getRecord('model:' + key)
+    const model = (record?.payload ?? undefined) as { nodes?: unknown; edges?: unknown; savedAt?: string } | undefined
+    if (model === undefined) {
+      const known = queryRecords({ kind: 'model' }).map((row) => row.name)
+      throw new CalcError('unknown_symbol', '工作区「' + workspace + '」里没有模型「' + key + '」', '已有：' + (known.join('、') || '（无）'))
+    }
     return { result: '✓ 已载入拓扑模型「' + key + '」（' + ((model.nodes as unknown[])?.length ?? 0) + ' 节点，' + ((model.edges as unknown[])?.length ?? 0) + ' 边，保存于 ' + (model.savedAt ?? '未知') + '）', value: { modelKey: key, nodes: model.nodes, edges: model.edges, workspace } }
   }
 
   if (action === 'list') {
     const workspace = currentWorkspace()
-    const models = loadWorkspaceFile(workspace).topologyModels as Record<string, { nodes?: unknown[]; edges?: unknown[]; savedAt?: string }>
-    const keys = Object.keys(models)
-    const lines = ['═══ 已保存的拓扑模型（工作区 ' + workspace + '）═══', '']
+    const rows = queryRecords({ kind: 'model' })
+    const keys = rows.map((row) => row.name)
+    const lines = ['═══ 已保存的拓扑模型（工作区 ' + workspace + '，来自统一数据层）═══', '']
     if (keys.length === 0) lines.push('  （还没有模型；用 action:"save" 建一个）')
-    for (const key of keys) lines.push('  ' + key.padEnd(20) + ((models[key].nodes as unknown[])?.length ?? 0) + ' 节点 / ' + ((models[key].edges as unknown[])?.length ?? 0) + ' 边  ' + (models[key].savedAt ?? ''))
+    for (const row of rows) {
+      const model = row.payload as { nodes?: unknown[]; edges?: unknown[]; savedAt?: string }
+      lines.push('  ' + row.name.padEnd(20) + (model.nodes?.length ?? 0) + ' 节点 / ' + (model.edges?.length ?? 0) + ' 边  ' + (model.savedAt ?? ''))
+    }
     return { result: lines.join('\n'), value: { workspace, models: keys } }
   }
 
