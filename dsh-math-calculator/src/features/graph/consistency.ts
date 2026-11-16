@@ -123,8 +123,11 @@ const MAGNITUDE: Record<string, number> = {
  */
 function extractClaims(section: ConsistencySection): Claim[] {
   const claims: Claim[] = []
+  /** 被丢弃的指代型主体数（供上层统计，避免「静默通过」）。 */
+  const dropped: string[] = []
   const text = section.text
-  const sectionName = String(section.number)
+  /** 没给编号时留空（`String(undefined)` 会产出字符串 "undefined"，显示成「第undefined段」）。 */
+  const sectionName = section.number !== undefined && section.number !== null ? String(section.number) : ''
 
   /**
    * 模式：中文主体（2–6 字）+ 可选空格/冒号 + 可选程度词 + 数字 + 可选量级词。
@@ -178,6 +181,12 @@ function extractClaims(section: ConsistencySection): Claim[] {
      * 主体不能以程度词结尾（防 `帝国总人口约` 这类残留）。
      */
     if (/[约达到为是有]$/.test(subject)) continue
+    /**
+     * 主体不能以指代词开头（R48：「这支军队有八百人」抽出主体「这支军队」，
+     * 「另一处写着二千人」抽出「另一处写着」——都不是同一个量，会误报/漏报）。
+     * 指代型主体一律丢弃：它们指向语境，不是可比较的量名。
+     */
+    if (/^(这|那|该|此|其|另一|另|本|该处|上述|其中|其余|剩下|其他)/.test(subject)) { dropped.push(subject); continue }
 
     const magnitude = magnitudeWord !== undefined ? (MAGNITUDE[magnitudeWord] ?? 1) : 1
     claims.push({
@@ -188,7 +197,20 @@ function extractClaims(section: ConsistencySection): Claim[] {
     })
   }
 
+  /** 把丢弃记录挂到数组上（不改接口，靠属性传给上层）。 */
+  Object.defineProperty(claims, 'droppedSubjects', { value: dropped, enumerable: false })
   return claims
+}
+
+
+/**
+ * 片段标签：有编号写「第 N 段」，没编号就不写（避免「第段」「第undefined段」）。
+ *
+ * @param section - 片段编号（可能为空）
+ * @returns 展示用标签
+ */
+function labelOf(section: string): string {
+  return section === '' ? '原文' : '第' + section + '段'
 }
 
 /**
@@ -208,6 +230,8 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
 
   /** 抽全部主张。 */
   const allClaims: Claim[] = []
+  /** 因「主体是代词」被丢弃的条目（要报给调用方，否则等于静默通过）。 */
+  const droppedSubjects: string[] = []
   for (const section of input.sections) {
     if (typeof section?.text !== 'string') {
       throw new CalcError(
@@ -216,7 +240,10 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
         '每个片段要有 number（编号）与 text（正文）。',
       )
     }
-    allClaims.push(...extractClaims(section))
+    const extracted = extractClaims(section)
+    const droppedOfSection = (extracted as unknown as { droppedSubjects?: string[] }).droppedSubjects ?? []
+    droppedSubjects.push(...droppedOfSection)
+    allClaims.push(...extracted)
   }
 
   /** 按主体分组。 */
@@ -275,6 +302,12 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
 
   if (conflicts.length === 0) {
     lines.push('✓ 没有发现同一量出现多个不同值（差异 ≥10% 或 ≥2 倍的才算冲突）。')
+    if (droppedSubjects.length > 0) {
+      lines.push('')
+      lines.push('⚠ 另有 ' + droppedSubjects.length + ' 条**因主体是指代词**（这/那/该/另一…）被丢弃，未参与比对：')
+      lines.push('    ' + [...new Set(droppedSubjects)].slice(0, 8).join('、'))
+      lines.push('    若要参与比对，请把主体写实（如「北境军兵力 800」而不是「这支军队有 800 人」）。')
+    }
   } else {
     lines.push('  发现 ' + conflicts.length + ' 处：')
     lines.push('')
@@ -285,7 +318,7 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
       lines.push('   ✗ [口径冲突] 「' + conflict.subject + '」有 ' +
         [...new Set(conflict.claims.map((c) => c.value))].length + ' 处不同口径，' + ratioText + '：')
       for (const claim of conflict.claims) {
-        lines.push('       第' + claim.section + '段　' +
+        lines.push('       ' + labelOf(claim.section) + '　' +
           fmtNumber(claim.value, FMT.general) + '　（原文「' + claim.raw + '」）')
       }
     }
@@ -295,7 +328,7 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
   lines.push('')
   lines.push('  抽到的数值主张（供核对）：')
   for (const [subject, claims] of bySubject) {
-    const list = claims.map((c) => '第' + c.section + '段=' + fmtNumber(c.value, FMT.general)).join('、')
+    const list = claims.map((c) => labelOf(c.section) + '=' + fmtNumber(c.value, FMT.general)).join('、')
     lines.push('    ' + subject + '：' + list)
   }
 
@@ -316,6 +349,8 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
         claims: c.claims.map((claim) => ({ value: claim.value, section: claim.section, raw: claim.raw })),
       })),
       allClaims,
+      /** 指代型主体被丢弃（这些量没参与比对）。 */
+      droppedSubjects,
     },
     notice: conflicts.length > 0
       ? '发现 ' + conflicts.length + ' 处口径冲突 —— 但不判断哪个值是对的。'
