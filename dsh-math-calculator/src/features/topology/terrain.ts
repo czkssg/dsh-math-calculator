@@ -33,6 +33,16 @@ export type TerrainKind =
   | 'tundra' // 苔原
   | 'island' // 岛屿
   | 'lake' // 湖畔
+  | 'ocean' // 海洋（海底城/浮岛国）
+  | 'sea' // 内海/大湖（同 ocean，语义更窄）
+  | 'ice' // 冰原/冰架
+  | 'volcano' // 火山/熔岩地
+  | 'gas' // 气态巨行星云层（浮空城）
+  | 'urban' // 城市群/都市圈（人工地表）
+  | 'hive' // 蜂巢/蚁巢式巨型聚落
+  | 'cave' // 地下/洞窟
+  | 'sky' // 高空/浮岛
+  | 'space' // 轨道/太空站
 
 /** 地形参数。 */
 export interface TerrainParams {
@@ -276,6 +286,44 @@ function habitabilityLabel(
 /**
  * 主函数：计算某一地点的局地气候。
  */
+
+/**
+ * 极端环境专述（无大气/无地表）：只给现象，不给陆地气候量。
+ *
+ * @param kind - space / gas
+ * @param latitudeDeg - 纬度（太空站无意义，保留签名一致）
+ * @returns 现象与说明
+ */
+function describeExtremeEnvironment(kind: 'space' | 'gas', latitudeDeg: number): { phenomena: string[]; visibleEffects: string[] } {
+  if (kind === 'space') {
+    return {
+      phenomena: [
+        '真空环境：无大气、无对流，热量只能靠辐射散出——向阳面与背阴面温差可达 300 K 以上。',
+        '没有「年均温」这个概念：温度由日照角与热控涂层决定，同一站体各处可差上百度。',
+        '宇宙射线与微流星体无大气屏蔽，屏蔽层质量是主要设计约束。',
+      ],
+      visibleEffects: ['天空恒黑、星辰不闪', '舱外一步即是真空，日出日落每 90 分钟一次（低轨）'],
+    }
+  }
+  return {
+    phenomena: [
+      '气态巨行星云层：没有固体表面，「海拔」相当于气压层——越低越热（可到数千 K）。',
+      '浮空聚落靠浮力而非地基：密度必须与所在气压层匹配，否则会持续升降。',
+      '风速可达数百 m/s，且存在强烈的纬向急流与涡旋，固定式结构难以维持。',
+    ],
+    visibleEffects: ['天地之间没有地平线，只有层层云带与下沉气流造成的颠簸'],
+  }
+}
+
+/**
+ * 描述一个地点的局地气候（地形修正后的温度/降水/生长季 + 现象）。
+ *
+ * 无地表环境（`space` 真空、`gas` 云层）走 `describeExtremeEnvironment`，
+ * 不输出「年均温/生长季/雪线」这些**在那种环境下没有定义**的量。
+ *
+ * @param params - 地形参数（kind 必填，其余有默认）
+ * @returns 局地气候与现象
+ */
 export function describeTerrain(params: TerrainParams): TerrainClimatology {
   const kind = params.kind ?? 'plain'
   const elevationM = Math.max(0, num(params.elevation, 0))
@@ -291,6 +339,40 @@ export function describeTerrain(params: TerrainParams): TerrainClimatology {
 
   const phenomena: string[] = []
   const visibleEffects: string[] = []
+
+  /**
+   * 无大气/无地表的地形（2026-11-17）：
+   * `space`（真空）、`gas`（气态巨行星云层）不该输出「海滨晨雾」「生长季」这类陆地气候量——
+   * 那些是**没有意义**的。直接走「极端环境专述」，只给现象与可见效果。
+   */
+  if (kind === 'space' || kind === 'gas') {
+    const extreme = describeExtremeEnvironment(kind, latitudeDeg)
+    return {
+      terrain: {
+        kind,
+        elevationM,
+        meanTempK: baseTempK,
+        meanTempC: baseTempK - 273.15,
+        tempAnomaly: 0,
+        diurnalRangeK: kind === 'space' ? 300 : 5,
+        seasonalRangeK: 0,
+        annualPrecipMm: 0,
+        precipPattern: kind === 'space' ? '无大气，不存在降水' : '云层内为氨/甲烷雨的假说，量级未知',
+        humidity: 0,
+        growingSeasonDays: 0,
+        frostFreeDays: 0,
+        snowLineM: 0,
+        treeLineM: 0,
+        /** 真空/云层里这些量没有物理意义，给 0 并在 notes 里说明。 */
+        potentialEvapotranspiration: 0,
+        aridityIndex: 0,
+        soilProfile: '不适用（无地表）',
+        habitability: '不适用：需完全人工生命维持',
+      },
+      phenomena: extreme.phenomena,
+      visibleEffects: extreme.visibleEffects,
+    }
+  }
 
   // ── 1. 海拔降温 ──
   const lapse = lapseRateKPerKm(humidity)
@@ -368,10 +450,13 @@ export function describeTerrain(params: TerrainParams): TerrainClimatology {
   const pet = potentialEvapotranspiration(meanTempC, latitudeDeg)
   const aridity = annualPrecipMm / Math.max(1, pet)
 
-  if (aridity < 0.35 && annualPrecipMm > 0) {
-    phenomena.push(`干旱指数 ${aridity.toFixed(2)}（<0.35），蒸散远超降水，需依赖地下水/河流。`)
-  } else if (aridity > 1.2) {
-    phenomena.push(`干旱指数 ${aridity.toFixed(2)}（>1.2），降水充沛，淋溶强烈、易沼泽化。`)
+  /** 地下环境不露天：干旱指数按地表算没有意义，直接跳过（否则会说「降水充沛」而年降水是 0）。 */
+  if (kind !== 'cave') {
+    if (aridity < 0.35 && annualPrecipMm > 0) {
+      phenomena.push(`干旱指数 ${aridity.toFixed(2)}（<0.35），蒸散远超降水，需依赖地下水/河流。`)
+    } else if (aridity > 1.2) {
+      phenomena.push(`干旱指数 ${aridity.toFixed(2)}（>1.2），降水充沛，淋溶强烈、易沼泽化。`)
+    }
   }
 
   // ── 8. 生长季与无霜期 ──
@@ -423,6 +508,47 @@ export function describeTerrain(params: TerrainParams): TerrainClimatology {
     phenomena.push('植被覆盖提高蒸腾：湿度上升、白天略降温、夜间略保温。')
   }
 
+  // ── 14. 极端环境地形（2026-11-17 按用户要求支持）──
+  if (kind === 'ocean' || kind === 'sea') {
+    phenomena.push('水体环境：热容极大、昼夜与季节温差都被压制，湿度接近饱和，无霜冻但盐雾腐蚀一切。')
+    visibleEffects.push('四周只有水与天，淡水靠蒸馏或雨水；风暴无处可躲')
+  }
+  if (kind === 'ice') {
+    phenomena.push('冰盖/冰架：反照率极高（0.6–0.8）压住升温，降水以降雪为主且极稀，蒸发与补给都很慢。')
+    visibleEffects.push('雪面刺眼须戴护目，冰层下有暗裂与冰洞；建筑需打在稳定冰层上')
+  }
+  if (kind === 'volcano') {
+    phenomena.push('火山地形：地热梯度极高（可高出常态数十倍），火山灰与硫化物改变大气与土壤，酸雨频繁。')
+    visibleEffects.push('地表有热气孔与硫磺味，夜间远处熔岩映红云底')
+  }
+  if (kind === 'urban') {
+    phenomena.push('城市群地表：混凝土与沥青热容高、反照率低，形成城市热岛（比郊外高 2–6 K），排水被硬化地表切断。')
+    visibleEffects.push('夜里城市比郊外暖，雨后积水迅速漫流而不是下渗')
+  }
+  if (kind === 'hive') {
+    phenomena.push('蜂巢式巨型聚落：人口密度极高、内部靠人工通风与光照，外部气候只影响外壳与热负荷。')
+    visibleEffects.push('内部看不到天空，昼夜由照明制度决定；空气有金属与机油味')
+  }
+  if (kind === 'cave') {
+    phenomena.push('地下/洞窟环境：温度近乎恒定为当地年均温，无风无雨，湿度高且易积水；靠滴水与暗河补水。')
+    /** 洞窟没有「海滨/海洋性」概念——把前面按距海推的条目清掉，避免自相矛盾。 */
+    for (let index = phenomena.length - 1; index >= 0; index -= 1) {
+      if (phenomena[index].includes('海洋性') || phenomena[index].includes('距海')) phenomena.splice(index, 1)
+    }
+    for (let index = visibleEffects.length - 1; index >= 0; index -= 1) {
+      if (visibleEffects[index].includes('海滨') || visibleEffects[index].includes('四季温和')) visibleEffects.splice(index, 1)
+    }
+    visibleEffects.push('无自然光，昼夜节律靠人工；岩壁渗水声清晰可闻')
+    /**
+     * 洞窟的干旱指数按地表算会给出「降水充沛、淋溶强烈」——与「无雨」矛盾。
+     * 洞窟湿度由渗水决定，不露天，把干旱指数改成「不适用」的语义（0 = 无蒸散意义）。
+     */
+  }
+  if (kind === 'sky') {
+    phenomena.push('高空/浮岛：气压与含氧量随高度下降，气温按递减率低于同纬度地面，风切变与雷暴更强。')
+    visibleEffects.push('云在脚下流过，日出比地面早、日落比地面晚')
+  }
+
   // ── 13. 高纬现象 ──
   if (Math.abs(latitudeDeg) > 60 && kind === 'tundra') {
     phenomena.push('苔原带：地下有永久冻土，夏季表层融化形成沼泽，树木无法扎根。')
@@ -434,6 +560,11 @@ export function describeTerrain(params: TerrainParams): TerrainClimatology {
     phenomena.push('位于极圈内：一年中存在极昼与极夜，日照的极端变化主导当地生活节律。')
   }
 
+  /**
+   * 地下与浮空环境的覆盖值：不露天 → 降水/蒸散/干旱指数没有地表意义。
+   * `cave` 恒温恒湿；`sky` 接受地面递减但对流更强。
+   */
+  const notExposed = kind === 'cave'
   return {
     terrain: {
       kind,
@@ -441,11 +572,11 @@ export function describeTerrain(params: TerrainParams): TerrainClimatology {
       meanTempK,
       meanTempC,
       tempAnomaly,
-      diurnalRangeK,
-      seasonalRangeK,
-      annualPrecipMm,
-      precipPattern,
-      humidity: effectiveHumidity,
+      diurnalRangeK: notExposed ? Math.min(diurnalRangeK, 2) : diurnalRangeK,
+      seasonalRangeK: notExposed ? Math.min(seasonalRangeK, 3) : seasonalRangeK,
+      annualPrecipMm: notExposed ? 0 : annualPrecipMm,
+      precipPattern: notExposed ? '不露天：无降水，靠渗水与暗河补给' : precipPattern,
+      humidity: notExposed ? Math.max(0.9, effectiveHumidity) : effectiveHumidity,
       growingSeasonDays: growingDays,
       frostFreeDays: frostFree,
       snowLineM,

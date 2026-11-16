@@ -79,6 +79,16 @@ export const TERRAIN_FACTOR: Record<string, number> = {
   mountain: 2.5,
   tundra: 1.8,
   island: 1.2,
+  ocean: 1.3,
+  sea: 1.3,
+  ice: 1.7,
+  volcano: 2.2,
+  gas: 3.0,
+  urban: 1.0,
+  hive: 1.2,
+  cave: 1.9,
+  sky: 2.4,
+  space: 3.0,
 }
 
 /** 距离结果。 */

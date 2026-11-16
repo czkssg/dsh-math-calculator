@@ -63,6 +63,7 @@ import { simulateSystemDynamics } from './features/deduction/system-dynamics.js'
 import { runCrosschecks, type CrosscheckItem } from './features/graph/crosscheck.js'
 import { buildWorldProfile } from './features/deduction/world-build.js'
 import { generateWorldMap } from './features/deduction/world-map.js'
+import { describeTerrain } from './features/topology/terrain.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -203,7 +204,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const terrainInput = asRecord(args['terrain'])
       const kind = terrainInput?.['kind']
       if (kind !== undefined) {
-        const KINDS = ['coastal', 'plain', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake']
+        const KINDS = ['coastal', 'plain', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake', 'ocean', 'sea', 'ice', 'volcano', 'gas', 'urban', 'hive', 'cave', 'sky', 'space']
         if (typeof kind !== 'string' || !KINDS.includes(kind)) {
           throw new CalcError(
             'invalid_argument',
@@ -223,9 +224,50 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const customized = WORLD_KEYS.some((key) => args[key] !== undefined)
       const earthNotice = customized ? undefined : '地球标定：本次未改任何星球参数，结果即地球默认值；要推演别的世界请改 planetMass / starTemp 等。'
       const merged = [outcome.notice, earthNotice].filter((item): item is string => typeof item === 'string' && item !== '')
+      /**
+       * 局地地形气候（2026-11-17 接入）。
+       *
+       * 以前 world 只校验 terrain.kind 是否拼错，**算完就丢**——
+       * describeTerrain 写好了却没人调用，是死代码。
+       * 现在给了 terrain 就附一节局地气候，让 ocean/volcano/gas 真的产生后果。
+       */
+      let localSection = ''
+      let localValue: unknown
+      if (terrainInput !== undefined && typeof terrainInput['kind'] === 'string') {
+        try {
+          const local = describeTerrain({
+            kind: terrainInput['kind'] as never,
+            ...(typeof terrainInput['elevation'] === 'number' ? { elevation: terrainInput['elevation'] as number } : {}),
+            ...(typeof terrainInput['distanceToSea'] === 'number' ? { distanceToSea: terrainInput['distanceToSea'] as number } : {}),
+            ...(typeof terrainInput['latitudeDeg'] === 'number' ? { latitudeDeg: terrainInput['latitudeDeg'] as number } : {}),
+            ...(typeof terrainInput['windward'] === 'number' ? { windward: terrainInput['windward'] as number } : {}),
+            ...(typeof terrainInput['reliefHeight'] === 'number' ? { reliefHeight: terrainInput['reliefHeight'] as number } : {}),
+            ...(typeof terrainInput['humidity'] === 'number' ? { humidity: terrainInput['humidity'] as number } : {}),
+            ...(typeof terrainInput['annualPrecipMm'] === 'number' ? { annualPrecipMm: terrainInput['annualPrecipMm'] as number } : {}),
+          })
+          const kindOfTerrain = String(terrainInput['kind'])
+          /** 真空/气态巨行星没有「年均温/生长季」这些量，别印出来自相矛盾的数字。 */
+          const noSurface = kindOfTerrain === 'space' || kindOfTerrain === 'gas'
+          const localLines = ['', '═══ 局地地形气候（' + kindOfTerrain + '）═══']
+          if (noSurface) {
+            localLines.push('  ' + local.terrain.habitability)
+            localLines.push('  ' + local.terrain.precipPattern)
+          } else {
+            localLines.push('  年均温 ' + local.terrain.meanTempC.toFixed(1) + '°C（偏离基准 ' + (local.terrain.tempAnomaly >= 0 ? '+' : '') + local.terrain.tempAnomaly.toFixed(1) + ' K）')
+            localLines.push('  年降水 ' + local.terrain.annualPrecipMm.toFixed(0) + ' mm，' + local.terrain.precipPattern)
+            localLines.push('  生长季 ' + local.terrain.growingSeasonDays.toFixed(0) + ' 天，无霜期 ' + local.terrain.frostFreeDays.toFixed(0) + ' 天')
+          }
+          for (const item of (local.phenomena ?? []).slice(0, 4)) localLines.push('  · ' + item)
+          for (const item of (local.visibleEffects ?? []).slice(0, 3)) localLines.push('  ▸ ' + item)
+          localSection = localLines.join('\n')
+          localValue = local
+        } catch {
+          /** 局地气候算不出不影响主结果（kind 已校验合法）。 */
+        }
+      }
       return {
-        result: outcome.result,
-        value: outcome.value,
+        result: outcome.result + localSection,
+        value: localValue !== undefined ? { ...(outcome.value as Record<string, unknown>), localClimate: localValue } : outcome.value,
         ...(merged.length > 0 ? { notice: merged.join('\n') } : {}),
       }
     }
