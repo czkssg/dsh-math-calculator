@@ -11,6 +11,7 @@
 
 import { annualMeanTemperature, climateZone } from './climate.js'
 import { fitPlanetClimate } from './climate-model.js'
+import { computeCirculation } from './circulation.js'
 
 /** 输入。 */
 export interface GridClimateInput {
@@ -92,6 +93,8 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
   const wind = input.windStrength ?? 1
   /** 通用气候拟合（地球标定）：给纬度温度/降水基线，地形只做局部修正。 */
   const fit = fitPlanetClimate({ stellarFlux: input.stellarFlux, obliquityDeg: input.obliquityDeg, rotationHours: input.rotationHours, greenhouseK: input.greenhouseK, pressureAtm: input.pressureAtm, landRatio: input.landRatio })
+  /** 简化环流（热成风 + 三圈环流）：决定迎风方向与内陆水汽衰减。 */
+  const windField = computeCirculation({ latTemps: fit.curve.map((point) => point.meanTempC), rotationHours: input.rotationHours, width: cols, height: rows, land })
   const latitudeTemp = (lat: number): number => {
     const abs = Math.abs(lat)
     const lower = fit.curve[Math.min(6, Math.floor(abs / 15))]
@@ -123,8 +126,9 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
         }
         distanceToSea = Number.isFinite(nearest) ? Math.min(10, nearest / stepX) : 6
       }
-      const band = absLat < 20 ? 'trade' : absLat < 60 ? 'west' : 'polar'
-      const dir = band === 'west' ? -1 : 1
+      /** 迎风方向取自环流：西风（u>0）从西来 → dir=-1；东风（u<0）从东来 → dir=+1。 */
+      const zonalAt = windField.zonal[Math.min(windField.zonal.length - 1, Math.round(absLat / 15))] ?? 0
+      const dir = zonalAt > 0 ? -1 : 1
       const prevX = (x + dir + cols) % cols
       const prevElev = Math.max(0, heights[y][prevX]) * maxElev
       const uphill = elevation - prevElev
@@ -133,7 +137,9 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
       const subtropics = Math.max(0, 1 - Math.abs(absLat - 30) / 15)
       const polarFront = Math.max(0, 1 - Math.abs(absLat - 60) / 20)
       const basePrecip = 300 + itcz * 2200 + polarFront * 900 - subtropics * 500 + (isLand ? 0 : 400)
-      const distancePenalty = isLand ? Math.min(600, distanceToSea * 60) : 0
+      /** 内陆水汽衰减：半衰距离来自环流（西风带大陆宽度 × 0.25）。 */
+      const halfDistance = windField.moistureHalfDistanceCells ?? 8
+      const distancePenalty = isLand ? Math.min(600, (distanceToSea / Math.max(1, halfDistance)) * 300) : 0
       const basePrecipValue = Math.max(0, (basePrecip - distancePenalty) * wind + orographic)
       /** 极宏观三机制：季风、洋流、云。 */
       const circulation = coarseCirculation(lat, basePrecipValue, isLand, input.landRatio ?? 0.29)
@@ -167,6 +173,7 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
   const notes = [
     '温度：复用 climate.ts 的 annualMeanTemperature（纬度+温室+气压），海拔递减 ' + lapse + ' K/km',
     '降水：ITCZ/副高/极锋 + 距海衰减 + 迎风坡地形雨 - 背风坡雨影',
+    ...windField.notes.slice(0, 3).map((line) => '环流：' + line),
     '分区：' + Object.entries(zoneShare).map(([key, value]) => key + ' ' + (value * 100).toFixed(1) + '%').join('、'),
     '可耕率 ' + (arableRatio * 100).toFixed(1) + '%（温带 60%、热带 40%、草原 35%、沙漠 1%、苔原 2%）',
   ]
