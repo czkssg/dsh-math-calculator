@@ -41,6 +41,15 @@ console.log('-- 3. formulas query:table 与 formula-table 等价 --')
   assert('★ 两条路径都可读表（不递归）', t1.ok === true && t2.ok === true, JSON.stringify({ a: t1.error?.type, b: t2.error?.type }))
   assert('公式总数一致', t1.result.includes('803') && t2.result.includes('803'), t1.result.slice(0, 60))
 }
+console.log('-- 4. 设定库已并入数据层 --')
+{
+  const set = await run({ operation: 'world_state', world_state: { action: 'set', entry: { id: 'gravity', title: '重力', body: '1.2g', status: 'active', tags: ['物理'] } } })
+  assert('★ 设定库写入成功', set.ok === true, set.result.slice(0, 40))
+  const data = await run({ operation: 'data', dataAction: 'query', kind: 'setting' })
+  assert('★ 数据层能查到 setting 记录（单一数据源）', data.ok === true && data.result.includes('setting:gravity'), data.result.slice(0, 80))
+  const list = await run({ operation: 'world_state', world_state: { action: 'list' } })
+  assert('设定库 list 仍可用', list.ok === true && list.result.includes('gravity'), '') 
+}
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

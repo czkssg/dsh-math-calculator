@@ -19,7 +19,17 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CalcError } from '../core/errors.js'
-import { emptyBook, type StateBook } from '../features/deduction/world-state.js'
+import { emptyBook, type StateBook, type StateEntry } from '../features/deduction/world-state.js'
+import { putRecord, queryRecords } from '../features/data-store/store.js'
+
+/**
+ * 设定库统一存进数据层（kind="setting"）。
+ *
+ * 用户要求（2026-11-16）：功能重复的合并。设定库与通用数据层本是同一件事，
+ * 只是入口不同。现在读写都走 data-store —— 单一数据源。
+ * 旧文件（<workspace>.state.json）保留兼容：首次读时若数据层为空则导入一次。
+ */
+const SETTING_KIND = 'setting'
 
 /** 状态目录（可用环境变量覆盖，测试用临时目录）。 */
 export function stateDirectory(): string {
@@ -42,14 +52,19 @@ export function stateFilePath(workspace: string, dir: string = stateDirectory())
  * @throws {CalcError} 文件存在但解析失败 → invalid_argument（不当空库）
  */
 export function loadStateBook(workspace: string, dir: string = stateDirectory()): StateBook {
+  const rows = queryRecords({ kind: SETTING_KIND })
+  if (rows.length > 0) {
+    const entries = rows.map((row) => row.payload as StateEntry).filter((entry) => entry !== null && typeof entry === 'object')
+    return { version: 1, entries }
+  }
+  /** 兼容：数据层为空时读旧文件并导入一次。 */
   const path = stateFilePath(workspace, dir)
   if (!existsSync(path)) return emptyBook()
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<StateBook>
-    return {
-      version: typeof parsed.version === 'number' ? parsed.version : 1,
-      entries: Array.isArray(parsed.entries) ? (parsed.entries as StateBook['entries']) : [],
-    }
+    const entries = Array.isArray(parsed.entries) ? (parsed.entries as StateBook['entries']) : []
+    for (const entry of entries) putRecord({ kind: SETTING_KIND, name: entry.id, tags: (entry as StateEntry).tags ?? [], payload: entry })
+    return { version: typeof parsed.version === 'number' ? parsed.version : 1, entries }
   } catch (error) {
     throw new CalcError(
       'invalid_argument',
@@ -68,8 +83,13 @@ export function loadStateBook(workspace: string, dir: string = stateDirectory())
  * @param dir - 目录（缺省 `stateDirectory()`）
  */
 export function saveStateBook(workspace: string, book: StateBook, dir: string = stateDirectory()): void {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(stateFilePath(workspace, dir), JSON.stringify(book, null, 2), 'utf8')
+  /** 统一写数据层；不再写独立 state 文件（旧文件保留不动，迁移后也不会被覆盖）。 */
+  for (const entry of book.entries) {
+    putRecord({ kind: SETTING_KIND, name: (entry as StateEntry).id, tags: (entry as StateEntry).tags ?? [], payload: entry })
+  }
+  void dir
+  void mkdirSync
+  void writeFileSync
 }
 
 /** 列出已有设定库的工作区名。 */
