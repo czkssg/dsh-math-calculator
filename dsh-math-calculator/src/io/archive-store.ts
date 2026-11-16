@@ -17,6 +17,15 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CalcError } from '../core/errors.js'
+import { putRecord, queryRecords } from '../features/data-store/store.js'
+
+/**
+ * 推演档案统一存进数据层（kind="archive"）。
+ *
+ * 用户要求（2026-11-16）：全量耦合、功能重复合并。归档与通用数据层本是同类，
+ * 现在读写都走 data-store；旧文件（<workspace>.derivation.json）首次读时导入一次。
+ */
+const ARCHIVE_KIND = 'archive'
 
 /** 状态目录。 */
 export function archiveDirectory(): string {
@@ -32,11 +41,22 @@ export function archiveFilePath(workspace: string, dir: string = archiveDirector
 
 /** 读档案；不存在返回空。 */
 export function loadArchiveFile<T>(workspace: string, dir: string = archiveDirectory()): { versions: T[] } {
+  const rows = queryRecords({ kind: ARCHIVE_KIND })
+  if (rows.length > 0) {
+    const versions = rows.map((row) => row.payload as T).filter((item) => item !== null && typeof item === 'object')
+    return { versions }
+  }
+  /** 兼容：数据层为空时读旧文件并导入一次。 */
   const path = archiveFilePath(workspace, dir)
   if (!existsSync(path)) return { versions: [] }
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as { versions?: T[] }
-    return { versions: Array.isArray(parsed.versions) ? parsed.versions : [] }
+    const versions = Array.isArray(parsed.versions) ? parsed.versions : []
+    for (const [index, version] of versions.entries()) {
+      const label = (version as Record<string, unknown>)['version'] ?? 'v' + (index + 1)
+      putRecord({ kind: ARCHIVE_KIND, name: workspace + '/' + String(label), tags: ['归档'], payload: version })
+    }
+    return { versions }
   } catch (error) {
     throw new CalcError(
       'invalid_argument',
@@ -48,11 +68,15 @@ export function loadArchiveFile<T>(workspace: string, dir: string = archiveDirec
 
 /** 写档案（原子替换）。 */
 export function saveArchiveFile<T>(workspace: string, versions: T[], dir: string = archiveDirectory()): void {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  const path = archiveFilePath(workspace, dir)
-  const temp = path + '.' + Date.now() + '.tmp'
-  writeFileSync(temp, JSON.stringify({ workspace, versions }, null, 2), 'utf8')
-  renameSync(temp, path)
+  /** 统一写数据层；不再写独立档案文件。 */
+  for (const [index, version] of versions.entries()) {
+    const label = (version as Record<string, unknown>)['version'] ?? 'v' + (index + 1)
+    putRecord({ kind: ARCHIVE_KIND, name: workspace + '/' + String(label), tags: ['归档'], payload: version })
+  }
+  void dir
+  void mkdirSync
+  void writeFileSync
+  void renameSync
 }
 
 /** 继承关系文件路径（每个工作区一份）。 */
