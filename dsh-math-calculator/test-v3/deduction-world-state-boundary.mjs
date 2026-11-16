@@ -77,7 +77,7 @@ console.log('-- 5. 文件层：读坏不当空库 --')
 
   /** 设定库已并入数据层：坏文件场景要先清空数据层，才会回落到读文件。 */
   const datastore = join(process.env.DSH_MATH_CALC_HOME, 'workspaces', '.artifacts', 'datastore')
-  rmSync(datastore, { recursive: true, force: true })
+  rmSync(join(datastore, 'records.jsonl'), { force: true })
   writeFileSync(io.stateFilePath('broken', dir), '{ 这不是 JSON', 'utf8')
   const broken = throwsOf(() => io.loadStateBook('broken', dir))
   assert('★ 读坏文件 → invalid_argument（不当空库）', broken?.type === 'invalid_argument', broken?.type)
