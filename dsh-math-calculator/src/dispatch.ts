@@ -150,6 +150,14 @@ const FACADE_GROUPS: Record<string, string[]> = {
 export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
   const args = normalizeArgs(rawArgs)
   /**
+   * 合并别名（2026-11-16）：功能重复的入口收进主 op，旧名仍可用。
+   * - quick_feasible → feasibility(quick:true)
+   * - world-build    → world(profile:"full")
+   * - formula-table  → formulas(query:"table")
+   */
+  if (operation === 'quick_feasible') return dispatchNew('feasibility', { ...args, quick: true })
+  if (operation === 'world-build') return dispatchNew('world', { ...args, profile: 'full' })
+  /**
    * 门面转发：`{operation:"calc", op:"solve"}` → 内部按 solve 走。
    *
    * 用户要求（2026-11-16）：子命令太多要不要合并。做法：**加门面、不删旧名**——
@@ -175,6 +183,15 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
   switch (operation) {
     case 'world': {
+      /** 合并：profile:"full" 追加完整世界编排（原 world-build）。 */
+      if (args['profile'] === 'full') {
+        const built = buildWorldProfile({ planetMass: typeof args['planetMass'] === 'number' ? (args['planetMass'] as number) : undefined, planetRadius: typeof args['planetRadius'] === 'number' ? (args['planetRadius'] as number) : undefined, orbitAU: typeof args['orbitAU'] === 'number' ? (args['orbitAU'] as number) : undefined, starMass: typeof args['starMass'] === 'number' ? (args['starMass'] as number) : undefined, rotationHours: typeof args['rotationHours'] === 'number' ? (args['rotationHours'] as number) : undefined, obliquityDeg: typeof args['obliquityDeg'] === 'number' ? (args['obliquityDeg'] as number) : undefined, initialPopulation: typeof args['initialPopulation'] === 'number' ? (args['initialPopulation'] as number) : undefined, muPerPerson: typeof args['muPerPerson'] === 'number' ? (args['muPerPerson'] as number) : undefined })
+        const base = dispatchNew('world', { ...args, profile: undefined }) as { result?: string; value?: unknown } | null
+        const lines = [String(base?.result ?? ''), '', '═══ 完整世界画像（profile:full）═══', '']
+        for (const note of built.notes) lines.push('  ' + note)
+        lines.push('', '  ★ 瓶颈：' + built.bottleneck)
+        return { result: lines.join('\n'), value: { ...(base?.value as Record<string, unknown>), build: built } } as never
+      }
       /**
        * terrain.kind 拼错必须报错（T3-13）。
        *
@@ -425,6 +442,11 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'feasibility':
+      /** 合并：quick:true 走快速判定（原 quick_feasible）。 */
+      if (args['quick'] === true) {
+        const input = asRecord(args['quickFeasible'] ?? args['feasibility']) ?? {}
+        return runQuickFeasible({ ...input, world: asRecord(args['world']) })
+      }
       return runFeasibility(args as never)
 
     case 'quick_feasible': {
@@ -596,6 +618,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     // ── 公式库（features/formulas）──
     case 'formulas': {
+      /** 合并：query:"table" 走公式参数表（原 formula-table）。 */
+      if (args['query'] === 'table') return dispatchNew('formula-table', args)
       const entries = formulaEntries()
       /**
        * 批量公式：逐条调用（一条失败不影响其它条）。
