@@ -313,6 +313,67 @@ const PARAMETER_SPEC = {
   flipClaim: { type: 'string', description: '翻转判据 id' },
   flipEpsilon: { type: 'number', description: '扰动幅度' },
   flipBase: { type: 'number', description: '扰动基线' },
+  /**
+   * 以下为补齐项（2026-11-16 实测记录 R45/R46）：
+   * 这些键在 dispatch / WorldParams 里被读取，但 schema 缺失 → 校验阶段被丢弃，
+   * 表现为「参数静默忽略」（starType、orbitAU、ledger 全是这个原因）。
+   * 守护测试 `schema-coverage.mjs` 会检查「使用键 ⊆ schema 键」。
+   */
+  starMass: { type: 'number', description: 'world：恒星质量（太阳=1）' },
+  starRadius: { type: 'number', description: 'world：恒星半径（太阳=1）' },
+  starTemp: { type: 'number', description: 'world：恒星表面温度 K（换恒星类型的唯一入口，5778=太阳；4500=K 型）' },
+  starClass: { type: 'string', description: 'world：光谱型（如 G2V/K5V；主序星）' },
+  orbitAU: { type: 'number', description: 'world：轨道半长轴 AU' },
+  eccentricity: { type: 'number', description: 'world：轨道偏心率（0–0.95）' },
+  albedo: { type: 'number', description: 'world：反照率（地球 0.3）' },
+  pressure: { type: 'number', description: 'world：地表气压 atm' },
+  molarMass: { type: 'number', description: 'world：大气平均摩尔质量 g/mol' },
+  gamma: { type: 'number', description: 'world：绝热指数（双原子 1.4）' },
+  greenhouse: { type: 'number', description: 'world：温室增量 K（地球 33）' },
+  materialStrength: { type: 'number', description: 'world：地壳材料强度 Pa（影响最大山高）' },
+  materialDensity: { type: 'number', description: 'world：地壳材料密度 kg/m³' },
+  hasLiquid: { type: 'boolean', description: 'world：有无液态溶剂（影响生命闸门）' },
+  moonCount: { type: 'number', description: 'world：卫星数量' },
+  moonMass: { type: 'number', description: 'world：卫星质量（月球=1）' },
+  moonDistance: { type: 'number', description: 'world：卫星轨道距离（km）' },
+  moons: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'world：多卫星 [{name,massEarth,distanceKm}]' },
+  lightPollution: { type: 'number', description: 'world：光污染等级（影响观星）' },
+  galaxyBand: { type: 'string', description: 'world：银河带方向' },
+  dayDefinition: { type: 'string', description: 'world：一天的定义（恒星日/太阳日）' },
+  /** 通用别名与子命令。 */
+  action: { type: 'string', description: '子动作（topology/data/astro 的 action）' },
+  action2: { type: 'string', description: 'workspace 的子动作 set/list/switch/export/import' },
+  direction: { type: 'string', description: 'inverse/forward（依赖方向）' },
+  node: { type: 'string', description: 'dependency：节点名' },
+  edges: { type: 'array', items: { type: 'object', additionalProperties: true }, description: '拓扑/图：边 [{from,to,kind}]' },
+  name: { type: 'string', description: '名称（data/workspace 记录名）' },
+  nameContains: { type: 'string', description: 'data query：名称子串' },
+  refsTo: { type: 'string', description: 'data query：谁引用了这条记录' },
+  start: { type: 'number', description: '区间起点/起始年' },
+  ascii: { type: 'boolean', description: 'world-map：输出 ASCII 缩略图（默认 true）' },
+  helpQuery: { type: 'string', description: 'help：按任务搜索' },
+  preview: { type: 'boolean', description: 'constants：只算不存' },
+  /** 复合子对象（各自带完整内部结构）。 */
+  ledger: { type: 'json', description: 'ledger：{parts:[{name,value}], total} 或占比简写 {士:1,农:85}' },
+  balance: { type: 'json', description: 'balance：{items/production, demand, unit} 收支闭合' },
+  consistency: { type: 'json', description: 'consistency：{claims:[{name,value,unit}]} 同一量多处冲突' },
+  interval: { type: 'json', description: 'interval：{value, low, high, note} 区间估算' },
+  compare: { type: 'json', description: 'compare：多方案对比 {options:[…], criteria:[…]}' },
+  feasibility: { type: 'json', description: 'feasibility：{claim, constraints} 可行性' },
+  dependency: { type: 'json', description: 'dependency：{node, levels, tree} 依赖传导' },
+  formulaId: { type: 'string', description: 'formula-table：公式 id' },
+  tableAction: { type: 'string', description: 'formula-table：add/update/remove/enable/disable' },
+  newExpression: { type: 'string', description: 'formula-table：新表达式' },
+  newParams: { type: 'json', description: 'formula-table：新参数定义' },
+  /** 工作区与自定义量。 */
+  constantName: { type: 'string', description: 'constants：要改的常数名' },
+  customAction: { type: 'string', description: 'custom：add/remove/list' },
+  customConstant: { type: 'json', description: 'custom：自定义常数定义' },
+  customConstantName: { type: 'string', description: 'custom：自定义常数名' },
+  customFormula: { type: 'json', description: 'custom：自定义公式定义' },
+  expectedDimension: { type: 'json', description: 'custom：期望量纲（校验用）' },
+  useWorkspaceVariables: { type: 'boolean', description: 'workspace：让变量参与计算（默认不参与，保确定性）' },
+  workspaceVariables: { type: 'json', description: 'workspace：变量表 {name:value}' },
 } as const
 
 /** 插件名。 */
@@ -473,6 +534,18 @@ export const mathExecuteTool = {
         precision: 64,
         error: { type: 'invalid_argument', message, hint: '参数名或类型不对；operation 必须是已迁移的值（用 help 查），参数类型见工具 schema。' },
       }
+    }
+    /**
+     * 未知参数提示（实测记录 R45/R46：`starType`/`starLuminosity` 等被静默丢弃，
+     * 调用方以为生效了）。schema 已声明全部使用键，所以这里能安全地列出「认不出来的」。
+     * 只提示不报错：拼错的参数仍可能是别的 op 的合法键。
+     */
+    const rawArgsUnknown = (args ?? {}) as Record<string, unknown>
+    const knownKeys = new Set(Object.keys(PARAMETER_SPEC))
+    const ignoredKeys = Object.keys(rawArgsUnknown).filter((key) => !knownKeys.has(key) && rawArgsUnknown[key] !== undefined)
+    if (ignoredKeys.length > 0) {
+      const ignoredText = '这些参数名认不出来，已被忽略：' + ignoredKeys.join(', ') + '。可用参数见工具 schema，或 `{operation:"help"}` 查用法。'
+      result = { ...result, notice: result.notice !== undefined && result.notice !== '' ? ignoredText + '\n' + result.notice : ignoredText }
     }
     /** 自动入库：给 saveAs 就把结果写进统一数据层（失败不影响返回）。 */
     const rawSaveArgs = (args ?? {}) as Record<string, unknown>

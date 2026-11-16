@@ -900,6 +900,29 @@ function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
     else if (typeof args['node'] === 'string') args['traceTarget'] = args['node']
   }
 
+  /**
+   * 恒星参数别名（实测记录 R46.2：starType/spectralType/stellarTemp/中文「恒星类型」全部被静默忽略）。
+   * 归一到真实字段，避免「猜的写法」变成静默失败。
+   */
+  if (args['starTemp'] === undefined && args['starClass'] === undefined) {
+    const tempAliases = ['stellarTemp', 'star_temp', 'starTemperature', '恒星温度']
+    for (const key of tempAliases) {
+      const value = args[key]
+      if (typeof value === 'number') { args['starTemp'] = value; break }
+      if (typeof value === 'string' && /^[0-9]+$/.test(value)) { args['starTemp'] = Number(value); break }
+    }
+    const classAliases = ['starType', 'spectralType', 'starClassType', '恒星类型', '光谱型']
+    for (const key of classAliases) {
+      const value = args[key]
+      if (typeof value !== 'string' || value.trim() === '') continue
+      const trimmed = value.trim()
+      /** 纯数字当温度；否则当光谱型（K型 → K5V 由 closestStarClass 兜底）。 */
+      if (/^[0-9]+$/.test(trimmed)) args['starTemp'] = Number(trimmed)
+      else args['starClass'] = trimmed.replace(/型$/, '').replace(/星$/, '').toUpperCase()
+      break
+    }
+  }
+
   return args
 }
 
