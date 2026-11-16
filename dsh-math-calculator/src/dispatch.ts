@@ -63,7 +63,6 @@ import { simulateSystemDynamics } from './features/deduction/system-dynamics.js'
 import { runCrosschecks, type CrosscheckItem } from './features/graph/crosscheck.js'
 import { buildWorldProfile } from './features/deduction/world-build.js'
 import { generateWorldMap } from './features/deduction/world-map.js'
-import { computeTrade } from './features/deduction/trade.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -236,21 +235,6 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
-
-    case 'trade': {
-      const result = computeTrade({ regions: (args['regions'] ?? []) as never, routes: (args['routes'] ?? []) as never, beta: typeof args['beta'] === 'number' ? (args['beta'] as number) : undefined })
-      const lines = ['═══ 贸易网络 ═══', '']
-      for (const note of result.notes) lines.push('  ' + note)
-      if (result.flows.length > 0) {
-        lines.push('', '  流向：')
-        for (const flow of result.flows.slice(0, 12)) lines.push('    ' + flow.good + ' ' + flow.from + ' → ' + flow.to + '：' + flow.quantity.toFixed(0) + '（到岸 +' + flow.landedCostPerTon.toFixed(1) + '/吨）')
-      }
-      if (result.fragility.length > 0) {
-        lines.push('', '  断供风险：')
-        for (const item of result.fragility.slice(0, 5)) lines.push('    ' + item.route + ' 断 → ' + item.worstRegion + ' 缺口 ' + (item.shortfallRatio * 100).toFixed(0) + '%')
-      }
-      return { result: lines.join('\n'), value: result } as never
-    }
 
     case 'world-map': {
       const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false })
@@ -1047,8 +1031,6 @@ export const MIGRATED_OPERATIONS = [
   'world-build',
   /** 全球地图模拟（地形/河流/矿产/国家，可编辑）。 */
   'world-map',
-  /** 贸易网络（引力模型 + 断供风险）。 */
-  'trade',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',

@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 63 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 62 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -94,7 +94,6 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **极宏观三机制** | `world-map` + `climate:true` | 季风（海陆热力差 → 降水 ±14%）、洋流（沿岸温度 ±1.5 K）、云（云量=f(降水) → 温度 ∓1–2 K）；粗到只剩几个常数，不是环流模型 |
 | **通用气候拟合** | `world-map` + `climate:true` | 地球标定的解析模型：`T(φ)=T_eq−ΔT·(1−cos^p φ)`（p 由地球 7 点最小二乘定标，残差 0.2 K）；换行星参数（`stellarFlux`/`greenhouseK`/`pressureAtm`/`rotationHours`/`obliquityDeg`/`landRatio`）自动缩放 |
 | **气候层** | `world-map` + `climate:true` | 温度（纬度+海拔递减）、降水（ITCZ/副高/极锋 + 距海 + 迎风坡−雨影）、分区（K 类）、可耕率；`world-build` 加 `useMap:true` 用气候可耕率反算承载力（10% → 46–53%，承载力 14.8 亿 → 68–78 亿） |
-| **贸易网络** | `trade` | `{regions:[{id,supply,demand}], routes:[{from,to,distanceKm,freightPerTonKm,tariff}], beta}` → 流向（比较优势 + 引力模型）、总运费、自给率、**断供风险**（断哪条路线谁先崩） |
 | **完整世界编排** | `world-build` | `{planetMass, planetRadius, orbitAU, starMass, initialPopulation, muPerPerson}` → 一次跑完：世界骨架→可耕土地→承载力→百年人口→粮食上限→疆域半径→舱室需求，并给出**瓶颈**（哪一步先撞上限） |
 | **跨模块对账** | `crosscheck` | 5 项比对（逃逸/年长/排水量/耗氧/人口），两侧各算一遍看是否一致；`checkId` 只跑某项 |
 | **系统动力学（存量/流量）** | `simulate` | `{stocks:{name:{initial}}, flows:{name:{to,rate}}（rate 可用存量名与 t）, dt, simSteps}` → 各存量时间序列/峰值/拐点判定（长期动态：人口-资源-污染） |
