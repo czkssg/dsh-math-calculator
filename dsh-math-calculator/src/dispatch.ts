@@ -59,6 +59,7 @@ import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runDiverge } from './features/deduction/diverge.js'
 import { optimize } from './features/math/optimize.js'
+import { simulateSystemDynamics } from './features/deduction/system-dynamics.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -214,6 +215,18 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'simulate': {
+      const result = simulateSystemDynamics({ stocks: (args['stocks'] ?? {}) as never, flows: (args['flows'] ?? {}) as never, dt: typeof args['dt'] === 'number' ? (args['dt'] as number) : undefined, steps: typeof args['simSteps'] === 'number' ? (args['simSteps'] as number) : undefined })
+      const lines = ['═══ 系统动力学（存量/流量）═══', '']
+      for (const [name, points] of Object.entries(result.series)) {
+        const peak = result.peaks[name]
+        const last = points[points.length - 1]
+        lines.push('  ' + name + '：初 ' + points[0].value.toFixed(1) + ' → 末 ' + last.value.toFixed(1) + '（峰值 ' + peak.value.toFixed(1) + ' @ t=' + peak.t + '）')
+      }
+      for (const note of result.notes) lines.push('  ' + note)
+      return { result: lines.join('\n'), value: result } as never
+    }
 
     case 'optimize': {
       const result = optimize({ objective: typeof args['objective'] === 'string' ? (args['objective'] as string) : undefined, opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
@@ -946,6 +959,8 @@ export const MIGRATED_OPERATIONS = [
   'data',
   /** 线性/整数规划（资源最优配比）。 */
   'optimize',
+  /** 系统动力学（存量/流量演化）。 */
+  'simulate',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',
