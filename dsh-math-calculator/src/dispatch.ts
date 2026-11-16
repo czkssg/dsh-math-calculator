@@ -58,7 +58,7 @@ import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
 import { runConflict, runConflictSeries } from './features/deduction/conflict.js'
 import { runDiverge } from './features/deduction/diverge.js'
-import { queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion } from './features/data-store/store.js'
+import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -227,6 +227,13 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         const record = typeof args['dataVersion'] === 'number' ? getRecordVersion(id, args['dataVersion'] as number) : getRecord(id)
         return { result: record === null ? '没有这条记录：' + id : JSON.stringify(record, null, 1), value: { record } } as never
       }
+      if (action === 'search') {
+        const keyword = typeof args['query'] === 'string' ? (args['query'] as string) : ''
+        const hits = searchRecords(keyword, typeof args['limit'] === 'number' ? (args['limit'] as number) : 10)
+        const lines = ['═══ 数据检索「' + keyword + '」（' + hits.length + ' 条）═══']
+        for (const hit of hits) lines.push('  ' + hit.record.id + '  [' + hit.record.kind + ']  分数 ' + hit.score.toFixed(2))
+        return { result: lines.join('\n'), value: { keyword, hits: hits.map((h) => ({ id: h.record.id, score: h.score })) } } as never
+      }
       if (action === 'query') {
         const rows = queryRecordsCached({ kind: typeof args['kind'] === 'string' ? (args['kind'] as string) : undefined, tag: typeof args['tag'] === 'string' ? (args['tag'] as string) : undefined, nameContains: typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : undefined, refsTo: typeof args['refsTo'] === 'string' ? (args['refsTo'] as string) : undefined })
         const lines = ['═══ 数据查询（' + rows.length + ' 条）═══']
@@ -247,6 +254,10 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       if (action === 'import') {
         const count = importRecords(String(args['dataJson'] ?? '[]'))
         return { result: '导入 ' + count + ' 条', value: { imported: count } } as never
+      }
+      if (action === 'migrate') {
+        const result = migrateLegacy()
+        return { result: '迁移完成：workspace ' + result['workspace'] + ' 条，归档 ' + result['archive'] + ' 条，跳过 ' + result['skipped'] + ' 条（已存在）', value: result } as never
       }
       if (action === 'compact') {
         const result = compact(typeof args['compactThreshold'] === 'number' ? (args['compactThreshold'] as number) : undefined)

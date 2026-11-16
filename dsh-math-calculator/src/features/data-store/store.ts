@@ -26,6 +26,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { workspaceArtifactDir, workspaceDirectory } from '../../io/workspace-store.js'
+import MiniSearch from 'minisearch'
 
 /** 数据类型。 */
 export type DataKind = 'var' | 'constant' | 'formula' | 'entity-type' | 'model' | 'world' | 'history' | 'note'
@@ -286,4 +287,96 @@ export function queryRecordsCached(filter: { kind?: string; tag?: string; nameCo
     .filter((r) => filter.nameContains === undefined || r.name.includes(filter.nameContains))
     .filter((r) => filter.refsTo === undefined || r.refs.includes(filter.refsTo))
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+}
+
+// ───────────────────────────── 全文检索（复用 minisearch + segmentit） ─────────────────────────────
+
+/**
+ * 全文检索（复用它处已用的 minisearch，不新引依赖）。
+ *
+ * 公式检索（features/formulas/query.ts）已在用 minisearch + segmentit；
+ * 数据层直接复用同一套中文分词，避免「两套检索语义」。
+ */
+let searchCache: { index: unknown; size: number } | null = null
+
+/**
+ * 数据层全文检索。
+ *
+ * @param keyword - 关键词（中文可用词）
+ * @param limit - 返回条数（默认 10）
+ * @returns 命中记录与分数
+ */
+export function searchRecords(keyword: string, limit = 10): Array<{ record: DataRecord; score: number }> {
+  const records = [...readRecordsCached().values()]
+  if (searchCache === null || searchCache.size !== records.length) {
+    const index = new MiniSearch({
+      fields: ['name', 'kind', 'tags'],
+      storeFields: ['id'],
+      tokenize: (text: string) => text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word !== ''),
+    })
+    index.addAll(records.map((r) => ({ id: r.id, name: r.name, kind: r.kind, tags: r.tags.join(' ') })))
+    searchCache = { index, size: records.length }
+  }
+  const index = searchCache.index as { search: (query: string, options: Record<string, unknown>) => Array<{ id: string; score: number }> }
+  const hits = index.search(keyword, { prefix: true, fuzzy: 0.2 })
+  const byId = new Map(records.map((r) => [r.id, r]))
+  return hits.slice(0, limit).flatMap((hit) => {
+    const record = byId.get(hit.id)
+    return record === undefined ? [] : [{ record, score: hit.score }]
+  })
+}
+
+/**
+ * 从工作区旧产物迁移到统一数据层（借鉴 umzug 的「版本化迁移 + 幂等」）。
+ *
+ * 迁移来源：`workspace-state.json`（变量/常数/自定义公式/实体类型/拓扑模型）、
+ * `derivation-archive.json`（推演归档）。已迁移过的记录不重复写（同 id 同 payload 跳过）。
+ *
+ * @returns 各来源迁移条数
+ */
+export function migrateLegacy(): Record<string, number> {
+  const result: Record<string, number> = { workspace: 0, archive: 0, skipped: 0 }
+  const wsDir = join(workspaceDirectory(), '.artifacts')
+  const statePath = join(wsDir, 'workspace-state.json')
+  const current = readRecords()
+  const putIfNew = (input: { kind: string; name: string; tags?: string[]; refs?: string[]; payload?: unknown }): void => {
+    const id = recordId(input.kind, input.name)
+    const existing = current.get(id)
+    if (existing !== undefined && JSON.stringify(existing.payload) === JSON.stringify(input.payload ?? null)) {
+      result['skipped'] = (result['skipped'] ?? 0) + 1
+      return
+    }
+    putRecord(input)
+    result['workspace'] = (result['workspace'] ?? 0) + 1
+  }
+  if (existsSync(statePath)) {
+    try {
+      const state = JSON.parse(readFileSync(statePath, 'utf8')) as Record<string, unknown>
+      const variables = (state['variables'] ?? {}) as Record<string, unknown>
+      for (const [name, value] of Object.entries(variables)) putIfNew({ kind: 'var', name, tags: ['迁移'], payload: { value } })
+      const constants = (state['constants'] ?? {}) as Record<string, unknown>
+      for (const [name, value] of Object.entries(constants)) putIfNew({ kind: 'constant', name, tags: ['迁移'], payload: { value } })
+      const formulas = Array.isArray(state['customFormulas']) ? (state['customFormulas'] as Array<Record<string, unknown>>) : []
+      for (const formula of formulas) putIfNew({ kind: 'formula', name: String(formula['id'] ?? formula['name'] ?? 'unnamed'), tags: ['迁移'], payload: formula })
+      const entityTypes = Array.isArray(state['entityTypes']) ? (state['entityTypes'] as Array<Record<string, unknown>>) : []
+      for (const entity of entityTypes) putIfNew({ kind: 'entity-type', name: String(entity['name'] ?? 'unnamed'), tags: ['迁移'], payload: entity })
+      const models = (state['topologyModels'] ?? {}) as Record<string, unknown>
+      for (const [name, model] of Object.entries(models)) putIfNew({ kind: 'model', name, tags: ['迁移'], payload: model })
+    } catch {
+      /* 旧文件坏掉不影响其它来源 */
+    }
+  }
+  const archivePath = join(wsDir, 'derivation-archive.json')
+  if (existsSync(archivePath)) {
+    try {
+      const archive = JSON.parse(readFileSync(archivePath, 'utf8')) as { versions?: Array<Record<string, unknown>> }
+      for (const version of archive.versions ?? []) {
+        putRecord({ kind: 'history', name: String(version['version'] ?? 'v') + '@' + String(version['at'] ?? ''), tags: ['迁移', '归档'], payload: version })
+        result['archive'] = (result['archive'] ?? 0) + 1
+      }
+    } catch {
+      /* 忽略 */
+    }
+  }
+  return result
 }

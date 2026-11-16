@@ -21,6 +21,7 @@ import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { entryFromResult, writeRunLog } from './core/run-log.js'
+import { putRecord } from './features/data-store/store.js'
 
 /** JSON 值（与老入口的 MathResult.value 同构）。 */
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
@@ -205,7 +206,7 @@ const PARAMETER_SPEC = {
   hierarchy: { type: 'object', additionalProperties: true, description: '编制树 {levels,tree,base|total} 或 {nodes}' },
   base: { type: 'json', description: 'diverge：基线 {actors,edges,steps,seed}' },
   variant: { type: 'json', description: 'diverge：变体（可覆盖 seed/actors/edges）' },
-  dataAction: { type: 'string', enum: ['put', 'get', 'query', 'lineage', 'stats', 'export', 'import', 'compact'], description: 'data：put/get/query/lineage/stats/export/import/compact' },
+  dataAction: { type: 'string', enum: ['put', 'get', 'query', 'search', 'lineage', 'stats', 'export', 'import', 'compact', 'migrate'], description: 'data：put/get/query/lineage/stats/export/import/compact' },
   dataVersion: { type: 'integer', description: 'data get：取历史版本（1 起）' },
   compactThreshold: { type: 'number', description: 'data compact：行数阈值（默认 500）' },
   id: { type: 'string', description: 'data：记录 id（如 model:北境军）' },
@@ -222,6 +223,7 @@ const PARAMETER_SPEC = {
   crisisDrop: { type: 'number', description: 'history：危机阈值（跌幅比例，默认 0.2）' },
   simulate: { type: 'json', description: 'history：一站式模拟 {actors,edges,steps,seed}（先跑冲突模型再切纪元）' },
   historyThreshold: { type: 'number', description: 'history：转折重要性阈值（默认 0.05）' },
+  saveAs: { type: 'string', description: '把本次结果自动写进统一数据层（记录名）' },
   target: { type: 'string', description: 'backtrace：目标描述，如「这座窑一天烧多少煤」' },
   given: { type: 'array', items: { type: 'string' }, description: 'backtrace：已知参数名（不再展开）' },
   maxDepth: { type: 'number', description: 'backtrace：展开深度（默认 2）' },
@@ -440,6 +442,17 @@ export const mathExecuteTool = {
         result: '错误[invalid_argument]: ' + message,
         precision: 64,
         error: { type: 'invalid_argument', message, hint: '参数名或类型不对；operation 必须是已迁移的值（用 help 查），参数类型见工具 schema。' },
+      }
+    }
+    /** 自动入库：给 saveAs 就把结果写进统一数据层（失败不影响返回）。 */
+    const rawSaveArgs = (args ?? {}) as Record<string, unknown>
+    if (typeof rawSaveArgs['saveAs'] === 'string' && (rawSaveArgs['saveAs'] as string).trim() !== '' && result.ok === true) {
+      try {
+        const operation = String(result.operation ?? 'note')
+        const kind = ['world', 'history', 'conflict', 'diverge', 'astro'].includes(operation) ? operation : 'note'
+        putRecord({ kind, name: (rawSaveArgs['saveAs'] as string).trim(), tags: ['自动'], payload: result.value ?? null })
+      } catch {
+        /* 入库失败不影响返回 */
       }
     }
     /** 运行日志：成功与失败都记一条（旁路，失败不影响返回）。 */

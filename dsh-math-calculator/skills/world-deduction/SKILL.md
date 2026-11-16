@@ -87,6 +87,8 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 |---|---|---|
 | 能力目录 / 某节全文 / 按任务搜 | `help` | 不带参=目录；`helpTopic:"矩阵"`；`helpQuery:"..."` |
 | 工作区变量 / 切换世界 / 导出 | `workspace` | `action2:"set|list|export|import"` |
+| **自动入库** | 任意 op | 加 `saveAs:"记录名"` → 成功结果自动写进统一数据层（失败不入库） |
+| **数据检索（全文）** | `data` | `dataAction:"search", query:"关键词"`（minisearch + 中文分词）；`dataAction:"migrate"` 把旧 workspace/归档导入统一库（幂等） |
 | **统一数据层（记录/血缘）** | `data` | `dataAction:"put|get|query|lineage|stats|export|import|compact"`；`dataVersion:N` 取历史版本；`compactThreshold` 压缩日志；记录 `{kind,name,tags,refs,payload}`，同名再写即新版本；血缘查「依赖谁/被谁用」 |
 | 自定义量（带量纲新常数） | `custom` | 名称+单位+量纲 |
 | 天体数据 / 依赖传导 | `bodies` / `dependency` | 行星恒星半径质量温度；`node` 查上下游 |
