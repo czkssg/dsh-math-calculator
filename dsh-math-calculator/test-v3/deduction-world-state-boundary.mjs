@@ -2,7 +2,7 @@
  * world_state 边界测试：非法输入、未知动作、文件层读坏不当空库。
  */
 process.env.DSH_MATH_CALC_LOG = 'off'
-import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -71,7 +71,9 @@ console.log('-- 5. 文件层：读坏不当空库 --')
   io.saveStateBook('ws1', book, dir)
   const loaded = io.loadStateBook('ws1', dir)
   assert('写后读回 1 条', loaded.entries.length === 1, String(loaded.entries.length))
-  assert('工作区列表含 ws1', io.listStateWorkspaces(dir).includes('ws1'), JSON.stringify(io.listStateWorkspaces(dir)))
+  /** 统一后：写入落到数据层（不再写独立 state 文件）。 */
+  const { queryRecords } = await import(pathToFileURL(join(root, 'lib/features/data-store/store.js')).href)
+  assert('★ 写入已落到数据层（kind=setting）', queryRecords({ kind: 'setting' }).length === 1, String(queryRecords({ kind: 'setting' }).length))
 
   /** 设定库已并入数据层：坏文件场景要先清空数据层，才会回落到读文件。 */
   const datastore = join(process.env.DSH_MATH_CALC_HOME, 'workspaces', '.artifacts', 'datastore')
