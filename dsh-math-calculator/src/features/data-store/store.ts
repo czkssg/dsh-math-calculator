@@ -46,8 +46,8 @@ export interface DataRecord {
 
 /** 目录。 */
 function storeDir(): string {
-  /** 与其它产物同根：<workspace>.artifacts/datastore/。 */
-  const dir = join(workspaceArtifactDir('datastore', workspaceDirectory()), 'datastore')
+  /** 与其它产物同根：<workspace>/.artifacts/datastore/。 */
+  const dir = join(workspaceDirectory(), '.artifacts', 'datastore')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
