@@ -50,7 +50,7 @@ console.log('-- 4. 国家分区 --')
 }
 console.log('-- 5. 可编辑 --')
 {
-  const edited = wm.generateWorldMap({ seed: 7, ascii: false, edits: [{ x: 5, y: 5, height: 1 }, { x: 6, y: 5, nation: 42 }, { x: 7, y: 5, seaLevel: 0.5 }] })
+  const edited = wm.generateWorldMap({ seed: 7, width: 180, height: 90, ascii: false, edits: [{ x: 5, y: 5, height: 1 }, { x: 6, y: 5, nation: 42 }, { x: 7, y: 5, seaLevel: 0.5 }] })
   assert('★ 改高度生效（该格 1.0 → 陆地）', edited.heights[5][5] === 1, String(edited.heights[5][5]))
   assert('★ 改国家归属生效', edited.nations[5][6] === 42, String(edited.nations[5][6]))
   assert('★ 改海陆（seaLevel 0.5）→ 陆地比上升', edited.stats.landRatio > 0.4, String(edited.stats.landRatio))
