@@ -97,19 +97,27 @@ export function fitPlanetClimate(params: PlanetClimateParams = {}): ClimateFit {
   const pressure = params.pressureAtm ?? 1
   const landRatio = params.landRatio ?? 0.29
   /** 定标常数（从地球 0/30/60/90 四点解出）。 */
-  const earthEquator = 27
-  const earthPole = -25
-  /** 辐射平移：通量 ×1.2 → 约 +10 K（四次方根近似）。 */
-  const fluxShift = (Math.pow(flux, 0.25) - 1) * 40
-  /** 温室增减：每 10 K 温室 ≈ +6 K 地表。 */
-  const greenhouseShift = (greenhouse - 33) * 0.6
+  /**
+   * 辐射基准：**按四次方根直接缩放温度**（不是线性平移）。
+   * 地球赤道 300 K = 27°C；泰坦 flux 0.011 → 300×0.323 ≈ 97 K（实测 94 K）。
+   * 第一版用平移 `(flux^0.25−1)×40`，给泰坦 273 K —— 错了一个量级。
+   */
+  const earthEquatorK = 300
+  const earthEquator = earthEquatorK * Math.pow(flux, 0.25) - 273.15
+  const earthPole = earthEquator - 52
+  /**
+   * 温室增减：每 10 K 温室 ≈ +6 K 地表（地球定标）；
+   * 加饱和项：辐照极弱时温室效应大打折扣（泰坦验证：flux 0.011 时不能给 +30 K）。
+   */
+  const fluxAvailability = Math.min(1, Math.sqrt(Math.max(0, flux) / 0.2))
+  const greenhouseShift = (greenhouse - 33) * 0.6 * fluxAvailability
   /** 气压：越高，纬向输运越强，温差越小。 */
   const transport = Math.min(1.4, 0.35 + 0.65 * Math.min(1.5, pressure))
   /** 自转：快转输运强。 */
   const rotationTransport = Math.min(1.3, Math.max(0.7, 24 / rotation))
   /** 赤道—极地梯度。 */
   const gradient = Math.max(5, (earthEquator - earthPole) / transport / rotationTransport)
-  const equator = earthEquator + fluxShift + greenhouseShift
+  const equator = earthEquator + greenhouseShift
   /** 倾角影响季幅：倾角大 → 极地夏季更暖（年均略升）。 */
   const obliquityBonus = Math.abs(obliquity - 23.44) * 0.12
   const pole = equator - gradient + obliquityBonus
