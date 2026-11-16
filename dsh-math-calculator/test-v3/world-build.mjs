@@ -52,7 +52,7 @@ console.log('-- 5. 经 tool --')
   const out = await run({ operation: 'world-build', planetMass: 1.2, planetRadius: 1.05 })
   assert('★ world-build 经 tool', out.ok === true && out.result.includes('完整世界画像'), out.result.slice(0, 60))
   assert('输出含瓶颈', out.result.includes('瓶颈'), '')
-  assert('value 含承载/人口/粮食/疆域', typeof out.value.carryingCapacity === 'number' && typeof out.value.realmRadiusKm === 'number', '')
+  assert('value 含承载/人口/粮食/疆域', typeof out.value.build.carryingCapacity === 'number' && typeof out.value.build.realmRadiusKm === 'number', '')
 }
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
