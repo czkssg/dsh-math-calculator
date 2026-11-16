@@ -514,6 +514,31 @@ const baseTool = defineTool({
  * 不包的话，`operation` 不在 enum 里时宿主收到的是 **THROW**，
  * 反馈报告里「73% 错误不可解析」有一类就是这种。
  */
+
+/**
+ * 递归删除值为 undefined 的键（数组里的 undefined 转 null）。
+ *
+ * 宿主校验要求「无损 JSON」：undefined 不是 JSON 值，会让整个输出被判非法。
+ *
+ * @param value - 任意值
+ * @returns 清理后的副本
+ */
+function stripUndefined(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => (item === undefined ? null : stripUndefined(item)))
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (item === undefined) continue
+      out[key] = stripUndefined(item)
+    }
+    return out
+  }
+  return value
+}
+
+/**
+ * 对外的工具定义（在 baseTool 外包一层：出口清理、未知参数提示、自动入库、运行日志）。
+ */
 export const mathExecuteTool = {
   ...baseTool,
   execute: async (args: unknown, ctx?: unknown): Promise<MathResult> => {
@@ -534,6 +559,17 @@ export const mathExecuteTool = {
         precision: 64,
         error: { type: 'invalid_argument', message, hint: '参数名或类型不对；operation 必须是已迁移的值（用 help 查），参数类型见工具 schema。' },
       }
+    }
+    /**
+     * 出口清理：把 value 里值为 undefined 的键彻底删掉。
+     *
+     * 宿主用 snapshotJsonValue 校验输出，遇到 undefined 属性会抛
+     * 「value is not lossless JSON」——表现为「整个工具崩了、错误还读不出」。
+     * 实测 R48 的 ledger 致命错误就是这个（parts[i].note 缺省时被赋 undefined）。
+     * 在出口统一清理，比在 60 多个 op 里各修一次可靠。
+     */
+    if (result.value !== undefined) {
+      result = { ...result, value: stripUndefined(result.value) as never }
     }
     /**
      * 未知参数提示（实测记录 R45/R46：`starType`/`starLuminosity` 等被静默丢弃，

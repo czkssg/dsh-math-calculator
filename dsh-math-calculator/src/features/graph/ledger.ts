@@ -108,7 +108,8 @@ export function checkLedger(rawInput: LedgerInput | Record<string, unknown>): Le
         '',
       )
     }
-    parts.push({ name: part.name, value, note: part.note })
+    /** note 缺省时不写这个键（undefined 会让宿主判「value is not lossless JSON」）。 */
+    parts.push(part.note !== undefined ? { name: part.name, value, note: part.note } : { name: part.name, value })
   }
 
   const sum = parts.reduce((s, p) => s + p.value, 0)

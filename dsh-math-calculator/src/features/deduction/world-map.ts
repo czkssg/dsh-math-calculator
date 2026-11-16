@@ -157,7 +157,7 @@ export interface WorldMapResult {
     mineralCount: number
     nationCount: number
   }
-  /** ASCII 缩略图（可选）。 */
+  /** ASCII 缩略图（可选：不给这个键，而不是给 undefined）。 */
   ascii?: string
   /** 世界拓扑。 */
   topology: 'sphere' | 'plane'
@@ -453,7 +453,8 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
       }
       lines.push(line)
     }
-    result.ascii = lines.join('\n')
+    /** 只在生成时才加这个键（undefined 会让宿主判「value is not lossless JSON」）。 */
+    return { ...result, ascii: lines.join('\n') }
   }
   return result
 }

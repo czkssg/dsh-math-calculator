@@ -241,7 +241,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const lines = ['═══ 全球地图（中等精度）═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       if (result.ascii !== undefined) lines.push('', result.ascii)
-      return { result: lines.join('\n'), value: { ...result, ascii: undefined } } as never
+      /** 去掉 ascii 字段（用解构丢弃，不能赋 undefined——宿主会判「value is not lossless JSON」）。 */
+      const { ascii: _ascii, ...mapValue } = result
+      return { result: lines.join('\n'), value: mapValue } as never
     }
 
     case 'world-build': {
