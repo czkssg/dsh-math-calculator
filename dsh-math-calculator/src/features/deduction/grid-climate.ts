@@ -10,6 +10,7 @@
  */
 
 import { annualMeanTemperature, climateZone } from './climate.js'
+import { fitPlanetClimate } from './climate-model.js'
 
 /** 输入。 */
 export interface GridClimateInput {
@@ -31,6 +32,14 @@ export interface GridClimateInput {
   lapseRateKPerKm?: number
   /** 风带强度（默认 1）。 */
   windStrength?: number
+  /** 恒星辐射（地球=1）。 */
+  stellarFlux?: number
+  /** 倾角（度，默认 23.44）。 */
+  obliquityDeg?: number
+  /** 自转（小时，默认 23.93）。 */
+  rotationHours?: number
+  /** 陆地占比（默认 0.29）。 */
+  landRatio?: number
 }
 
 /** 结果。 */
@@ -48,13 +57,15 @@ function arableOf(zoneName: string): number {
   if (zoneName.includes('热带雨林')) return 0.35
   if (zoneName.includes('热带')) return 0.4
   if (zoneName.includes('亚热带')) return 0.45
+  if (zoneName.includes('温带寒')) return 0.3
   if (zoneName.includes('温带大陆性')) return 0.35
   if (zoneName.includes('温带')) return 0.6
   if (zoneName.includes('针叶林')) return 0.15
   if (zoneName.includes('冻土')) return 0.05
   if (zoneName.includes('苔原')) return 0.02
   if (zoneName.includes('冰原')) return 0.001
-  if (zoneName.includes('干旱')) return 0.01
+  if (zoneName.includes('干旱（沙漠）')) return 0.01
+  if (zoneName.includes('半干旱')) return 0.18
   return 0.2
 }
 
@@ -79,6 +90,13 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
   const seaLevel = input.seaLevel ?? 0.61
   const lapse = input.lapseRateKPerKm ?? 6.5
   const wind = input.windStrength ?? 1
+  /** 通用气候拟合（地球标定）：给纬度温度/降水基线，地形只做局部修正。 */
+  const fit = fitPlanetClimate({ stellarFlux: input.stellarFlux, obliquityDeg: input.obliquityDeg, rotationHours: input.rotationHours, greenhouseK: input.greenhouseK, pressureAtm: input.pressureAtm, landRatio: input.landRatio })
+  const latitudeTemp = (lat: number): number => {
+    const abs = Math.abs(lat)
+    const lower = fit.curve[Math.min(6, Math.floor(abs / 15))]
+    return lower.meanTempC
+  }
   const temperatureC: number[][] = []
   const precipitationMm: number[][] = []
   const zone: string[][] = []
@@ -86,7 +104,8 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
   for (let y = 0; y < rows; y += 1) {
     const lat = (y / rows - 0.5) * 180
     const absLat = Math.abs(lat)
-    const annualMean = annualMeanTemperature(lat, globalMeanK, greenhouseK, pressureAtm)
+    /** 拟合基线（地球标定），若给了非地球 flux 也已折算。 */
+    const annualMean = latitudeTemp(lat) + 273.15
     temperatureC.push([])
     precipitationMm.push([])
     zone.push([])
@@ -118,7 +137,10 @@ export function computeGridClimate(input: GridClimateInput): GridClimateResult {
       const distancePenalty = isLand ? Math.min(600, distanceToSea * 60) : 0
       const precip = Math.max(0, (basePrecip - distancePenalty) * wind + orographic)
       precipitationMm[y].push(precip)
-      zone[y].push(climateZone(lat, tempC, true, Math.abs(tempC) * 0.4 + 6))
+      /** 分区：温度类来自 climateZone；再按降水修正干旱（沙漠/草原）。 */
+      const thermalZone = climateZone(lat, tempC, true, Math.abs(tempC) * 0.4 + 6)
+      const arid = precip < 200 ? '干旱（沙漠）' : precip < 450 ? '半干旱（草原）' : thermalZone
+      zone[y].push(arid)
     }
   }
   const zoneShare: Record<string, number> = {}

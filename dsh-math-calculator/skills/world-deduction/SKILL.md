@@ -90,6 +90,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **自动入库** | 任意 op | 加 `saveAs:"记录名"` → 成功结果自动写进统一数据层（失败不入库） |
 | **数据检索（全文）** | `data` | `dataAction:"search", query:"关键词"`（minisearch + 中文分词）；`dataAction:"migrate"` 把旧 workspace/归档导入统一库（幂等） |
 | **全球地图（地形/地质/国家）** | `world-map` | ★`worldTopology:"sphere"`（球体，经度环绕——**跨 180° 经线不绕远路**）或 `"plane"`（天圆地方）；`mapDistance:{from,to}` 查两点实际距离（球体用大圆） | `{mapWidth,mapHeight,seed,seaLevel(陆地目标占比),mountainScale,riverCount,nationCount,mineralDensity,edits,ascii}` → 高度场/地形分类/河流/矿产/国家边界（Voronoi）+ ASCII 缩略图；`edits:[{x,y,height,seaLevel,nation}]` 可改地形到海陆分布、改国界 |
+| **通用气候拟合** | `world-map` + `climate:true` | 地球标定的解析模型：`T(φ)=T_eq−ΔT·(1−cos^p φ)`（p 由地球 7 点最小二乘定标，残差 0.2 K）；换行星参数（`stellarFlux`/`greenhouseK`/`pressureAtm`/`rotationHours`/`obliquityDeg`/`landRatio`）自动缩放 |
 | **气候层** | `world-map` + `climate:true` | 温度（纬度+海拔递减）、降水（ITCZ/副高/极锋 + 距海 + 迎风坡−雨影）、分区（K 类）、可耕率；`world-build` 加 `useMap:true` 用气候可耕率反算承载力（10% → 46–53%，承载力 14.8 亿 → 68–78 亿） |
 | **完整世界编排** | `world-build` | `{planetMass, planetRadius, orbitAU, starMass, initialPopulation, muPerPerson}` → 一次跑完：世界骨架→可耕土地→承载力→百年人口→粮食上限→疆域半径→舱室需求，并给出**瓶颈**（哪一步先撞上限） |
 | **跨模块对账** | `crosscheck` | 5 项比对（逃逸/年长/排水量/耗氧/人口），两侧各算一遍看是否一致；`checkId` 只跑某项 |
