@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 59 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 61 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -89,6 +89,8 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 工作区变量 / 切换世界 / 导出 | `workspace` | `action2:"set|list|export|import"` |
 | **自动入库** | 任意 op | 加 `saveAs:"记录名"` → 成功结果自动写进统一数据层（失败不入库） |
 | **数据检索（全文）** | `data` | `dataAction:"search", query:"关键词"`（minisearch + 中文分词）；`dataAction:"migrate"` 把旧 workspace/归档导入统一库（幂等） |
+| **完整世界编排** | `world-build` | `{planetMass, planetRadius, orbitAU, starMass, initialPopulation, muPerPerson}` → 一次跑完：世界骨架→可耕土地→承载力→百年人口→粮食上限→疆域半径→舱室需求，并给出**瓶颈**（哪一步先撞上限） |
+| **跨模块对账** | `crosscheck` | 5 项比对（逃逸/年长/排水量/耗氧/人口），两侧各算一遍看是否一致；`checkId` 只跑某项 |
 | **系统动力学（存量/流量）** | `simulate` | `{stocks:{name:{initial}}, flows:{name:{to,rate}}（rate 可用存量名与 t）, dt, simSteps}` → 各存量时间序列/峰值/拐点判定（长期动态：人口-资源-污染） |
 | **线性/整数规划（最优配比）** | `optimize` | `{objective, opType:"max|min", constraints:{资源:{max,min}}, lpVariables:{x:{资源:消耗, 目标:贡献}}, integers:[...]}` → 最优值/变量取值/无解或无界 |
 | **统一数据层（记录/血缘）** | `data` | `dataAction:"put|get|query|lineage|stats|export|import|compact"`；`dataVersion:N` 取历史版本；`compactThreshold` 压缩日志；记录 `{kind,name,tags,refs,payload}`，同名再写即新版本；血缘查「依赖谁/被谁用」 |

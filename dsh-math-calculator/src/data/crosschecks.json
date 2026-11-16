@@ -1,0 +1,162 @@
+{
+ "version": 1,
+ "note": "跨模块对账；只比同步模块（astro 是 async，暂不纳入）。scaleA/scaleB 处理单位口径差。",
+ "checks": [
+  {
+   "id": "escape",
+   "label": "逃逸速度（world vs formula）",
+   "a": {
+    "op": "world",
+    "params": {
+     "planetMass": 1.5,
+     "planetRadius": 1.2
+    }
+   },
+   "b": {
+    "op": "formula",
+    "params": {
+     "formula": "escape_velocity",
+     "params": {
+      "M": 8.958e+24,
+      "r": 7645200
+     }
+    }
+   },
+   "extractA": "planet.escapeVelocity",
+   "extractB": "result",
+   "tolerance": 0.05
+  },
+  {
+   "id": "year",
+   "label": "一年天数（world vs formula 轨道周期：秒→年）",
+   "a": {
+    "op": "world",
+    "params": {
+     "orbitAU": 1.2,
+     "starMass": 1.1
+    }
+   },
+   "b": {
+    "op": "formula",
+    "params": {
+     "formula": "orbital_period",
+     "params": {
+      "G": 6.6743e-11,
+      "M": 2.1873170000000002e+30,
+      "r": 179517444840
+     }
+    }
+   },
+   "extractA": "orbit.yearDays",
+   "extractB": "result",
+   "scaleB": 0.000011574074074074073,
+   "tolerance": 0.02
+  },
+  {
+   "id": "displacement",
+   "label": "排水量（ship 吨 vs formula kg）",
+   "a": {
+    "op": "topology",
+    "params": {
+     "topology": {
+      "action": "ship",
+      "lengthM": 100,
+      "beamM": 15,
+      "draftM": 6,
+      "compartments": [
+       {
+        "id": "A"
+       }
+      ],
+      "entry": "A",
+      "passages": []
+     }
+    }
+   },
+   "b": {
+    "op": "formula",
+    "params": {
+     "formula": "displacement",
+     "params": {
+      "L": 100,
+      "B": 15,
+      "T": 6,
+      "Cb": 0.65,
+      "rho": 1025
+     }
+    }
+   },
+   "extractA": "engineering.displacementT",
+   "extractB": "result",
+   "scaleA": 1000,
+   "tolerance": 0.02
+  },
+  {
+   "id": "o2",
+   "label": "封闭系统耗氧（enclosure vs formula）",
+   "a": {
+    "op": "topology",
+    "params": {
+     "topology": {
+      "action": "structure",
+      "kind": "enclosure",
+      "people": 6,
+      "volumeM3": 400
+     }
+    }
+   },
+   "b": {
+    "op": "formula",
+    "params": {
+     "formula": "crew_o2_consumption",
+     "params": {
+      "people": 6
+     }
+    }
+   },
+   "extractA": "engineering.o2KgDay",
+   "extractB": "result",
+   "tolerance": 0.01
+  },
+  {
+   "id": "population",
+   "label": "人口终值（simulate vs formula）",
+   "a": {
+    "op": "simulate",
+    "params": {
+     "stocks": {
+      "population": {
+       "initial": 100
+      }
+     },
+     "flows": {
+      "births": {
+       "to": "population",
+       "rate": "0.03*population"
+      },
+      "deaths": {
+       "to": "population",
+       "rate": "-0.01*population"
+      }
+     },
+     "simSteps": 50
+    }
+   },
+   "b": {
+    "op": "formula",
+    "params": {
+     "formula": "exponential_growth",
+     "params": {
+      "N0": 100,
+      "r": 0.02,
+      "t": 50
+     }
+    }
+   },
+   "extractA": "series.population",
+   "extractB": "result",
+   "tolerance": 0.02,
+   "extractLast": true
+  }
+ ]
+}

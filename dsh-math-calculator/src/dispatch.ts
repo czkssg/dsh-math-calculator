@@ -60,6 +60,8 @@ import { runConflict, runConflictSeries } from './features/deduction/conflict.js
 import { runDiverge } from './features/deduction/diverge.js'
 import { optimize } from './features/math/optimize.js'
 import { simulateSystemDynamics } from './features/deduction/system-dynamics.js'
+import { runCrosschecks, type CrosscheckItem } from './features/graph/crosscheck.js'
+import { buildWorldProfile } from './features/deduction/world-build.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
@@ -215,6 +217,35 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'topology':
       return runTopology((args['topology'] ?? args) as never)
+
+    case 'world-build': {
+      const result = buildWorldProfile({ planetMass: typeof args['planetMass'] === 'number' ? (args['planetMass'] as number) : undefined, planetRadius: typeof args['planetRadius'] === 'number' ? (args['planetRadius'] as number) : undefined, orbitAU: typeof args['orbitAU'] === 'number' ? (args['orbitAU'] as number) : undefined, starMass: typeof args['starMass'] === 'number' ? (args['starMass'] as number) : undefined, rotationHours: typeof args['rotationHours'] === 'number' ? (args['rotationHours'] as number) : undefined, obliquityDeg: typeof args['obliquityDeg'] === 'number' ? (args['obliquityDeg'] as number) : undefined, initialPopulation: typeof args['initialPopulation'] === 'number' ? (args['initialPopulation'] as number) : undefined, muPerPerson: typeof args['muPerPerson'] === 'number' ? (args['muPerPerson'] as number) : undefined })
+      const lines = ['═══ 完整世界画像 ═══', '']
+      for (const note of result.notes) lines.push('  ' + note)
+      lines.push('', '  ★ 瓶颈：' + result.bottleneck)
+      return { result: lines.join('\n'), value: result } as never
+    }
+
+    case 'crosscheck': {
+      /** 跨模块对账：按 crosschecks.json 跑两侧并比对。 */
+      const file = dataOf<{ checks?: CrosscheckItem[] }>('crosschecks', 'crosschecks.json', { checks: [] })
+      const items = Array.isArray(file) ? (file as unknown as CrosscheckItem[]) : (file.checks ?? [])
+      const only = typeof args['checkId'] === 'string' ? (args['checkId'] as string) : ''
+      const selected = only === '' ? items : items.filter((item) => item.id === only)
+      const results = runCrosschecks(selected, (op, params) => {
+        const outcome = dispatchNew(op, params as Record<string, unknown>)
+        return outcome === null ? null : (outcome as { value?: unknown }).value ?? null
+      })
+      const lines = ['═══ 跨模块对账（' + results.length + ' 项）═══', '']
+      for (const item of results) {
+        const mark = item.verdict === 'match' ? '✓' : item.verdict === 'drift' ? '✗ 不一致' : '⚠ 取不到值'
+        lines.push('  ' + mark + '  ' + item.label + '：a=' + (item.a === null ? '-' : item.a.toPrecision(6)) + ' / b=' + (item.b === null ? '-' : item.b.toPrecision(6)) + '  ' + item.note)
+      }
+      const drifted = results.filter((item) => item.verdict === 'drift').length
+      const errors = results.filter((item) => item.verdict === 'error').length
+      lines.push('', '  汇总：一致 ' + (results.length - drifted - errors) + ' / 不一致 ' + drifted + ' / 取不到 ' + errors)
+      return { result: lines.join('\n'), value: { results, drifted, errors } } as never
+    }
 
     case 'simulate': {
       const result = simulateSystemDynamics({ stocks: (args['stocks'] ?? {}) as never, flows: (args['flows'] ?? {}) as never, dt: typeof args['dt'] === 'number' ? (args['dt'] as number) : undefined, steps: typeof args['simSteps'] === 'number' ? (args['simSteps'] as number) : undefined })
@@ -961,6 +992,10 @@ export const MIGRATED_OPERATIONS = [
   'optimize',
   /** 系统动力学（存量/流量演化）。 */
   'simulate',
+  /** 跨模块对账（同一量两处实现比对）。 */
+  'crosscheck',
+  /** 完整世界编排（多模块串联）。 */
+  'world-build',
   /** PDF/文档解析（来自实践文档 _tools 的整合）。 */
   'document',
   'auto',
