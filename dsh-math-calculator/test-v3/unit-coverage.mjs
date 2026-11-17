@@ -125,6 +125,22 @@ console.log('-- 4. 已知例外确实有替代路径 --')
   const ohm = await run({ operation: 'units', unitValue: 1, unitFrom: 'ohm', unitTo: 'kohm' })
   assert('★ 电阻用 ohm 可换算', ohm.ok === true, String(ohm.error?.type))
 }
+console.log('-- 5. 非 ASCII 符号单位（°C/Ω/变音符号）也能换算 --')
+{
+  /** 全量扫描抓出的 28 个：°C/°F/Ω/kΩ/braça/sążeń/łokieć/deg² … */
+  const cases = [
+    ['°C', 'K'], ['°F', 'degC'], ['°R', 'K'], ['°Ré', 'K'],
+    ['Ω', 'ohm'], ['kΩ', 'ohm'], ['MΩ', 'ohm'],
+    ['braça', 'm'], ['sążeń', 'm'], ['łokieć', 'm'],
+    ['deg²', 'sr'],
+  ]
+  const bad = []
+  for (const [from, to] of cases) {
+    const r = await run({ operation: 'units', unitValue: 1, unitFrom: from, unitTo: to })
+    if (r.ok !== true) bad.push(from + '→' + to)
+  }
+  assert('★ 非 ASCII 符号单位全部可换算', bad.length === 0, bad.join(', '))
+}
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

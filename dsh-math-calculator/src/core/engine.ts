@@ -323,7 +323,12 @@ function registerDataUnits(math: MathJsInstance): void {
  * @returns 清洗后的名字（空串表示不能注册）
  */
 function sanitizeUnitName(name: string): string {
-  const stripped = name.replace(/_/g, '')
+  /** 下划线去掉；变音符号折成 ASCII（`sążeń` → `sazen`）。 */
+  const stripped = name
+    .replace(/_/g, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ł/g, 'l').replace(/Ł/g, 'L')
   return /^[A-Za-z][A-Za-z0-9]*$/.test(stripped) ? stripped : ''
 }
 
@@ -455,6 +460,29 @@ export function normalizeUnits(source: string): string {
    * ```
    */
   source = source.replace(/µ/g, 'u').replace(/μ/g, 'u').replace(/Å/g, 'angstrom')
+  /**
+   * 符号形式的单位归一（2026-11-17 全量扫描抓出来的 11 个）。
+   *
+   * `°C`/`Ω`/`deg²` 这些符号 mathjs 直接解析不了，但 `units.json` 里
+   * **有它们的定义**（factor/dimension 齐全）。归一到已注册的等价名即可。
+   *
+   * ```
+   *   °C  → degC      °F → degF      °R → degR     °Ré → degRe
+   *   Ω   → ohm       kΩ → kohm      MΩ → Mohm
+   *   deg² → deg2     （上标已在前面折成 2，这条兜底）
+   * ```
+   */
+  const SYMBOL_UNITS: Array<[RegExp, string]> = [
+    [/°/g, 'deg'],
+    [/Ω/g, 'ohm'],
+    [/²/g, '2'],
+    [/³/g, '3'],
+  ]
+  for (const [pattern, replacement] of SYMBOL_UNITS) source = source.replace(pattern, replacement)
+  /** `degRe`：`°Ré` 折成 `degRé` → `degRe`（`é` mathjs 不认）。 */
+  source = source.replace(/degR[ée]/g, 'degRe')
+  /** 变音符号单位（`braça`/`sążeń`/`łokieć`）：strip 成 ASCII 后再试。 */
+  source = source.replace(/ç/g, 'c').replace(/ą/g, 'a').replace(/ż/g, 'z').replace(/ń/g, 'n').replace(/ł/g, 'l').replace(/ó/g, 'o').replace(/ć/g, 'c').replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ę/g, 'e')
   /** 计数单位「人」：`1 万 人` 是 10000 人，mathjs 没有「人」这个单位 → 去掉后按纯数算。 */
   source = source.replace(/\s*人(?!口)/g, '').replace(/\s+to\s*$/i, '')
   let out = ''
@@ -933,6 +961,10 @@ export function buildEngine(): Engine {
     ['mbar', '100 Pa'],
     ['mmHg', '133.322387415 Pa'],
     ['at', '101325 Pa'],
+    /** 温度标度（`°Ré`/`°C` 等符号已归一成这些名）。 */
+    ['degRe', '1.25 K'],
+    /** 平方度（立体角）：1 deg² = (π/180)² sr。 */
+    ['deg2', '0.00030461741978670857 sr'],
   ] as Array<[string, string]>) {
     try {
       math.createUnit(name, definition)
