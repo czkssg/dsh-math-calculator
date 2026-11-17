@@ -124,9 +124,9 @@ export interface BacktraceResult {
  * @returns 关键词列表
  */
 /** 疑问词/量词：它们不指向领域量，留着会把「多少」当成关键词（R60）。 */
-const STOP_WORDS = new Set(['这座', '那个', '这个', '这些', '那些', '一天', '多少', '怎么', '如何', '什么', '请问', '大概', '大约', '一些', '可以', '需要'])
+const STOP_WORDS = new Set(['这座', '那个', '这个', '这些', '那些', '一天', '多少', '怎么', '如何', '什么', '请问', '大概', '大约', '一些', '可以', '需要', '目标', '完全', '不存在', '有没有', '是不是'])
 
-function tokenize(text: string, vocabulary?: Set<string>): string[] {
+function tokenize(text: string, vocabulary?: Set<string>, pairs?: Set<string>): string[] {
   const tokens = new Set<string>()
   for (const word of text.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
     if (word === '') continue
@@ -134,7 +134,10 @@ function tokenize(text: string, vocabulary?: Set<string>): string[] {
     if (/[\u4e00-\u9fa5]/.test(word)) {
       for (let i = 0; i + 2 <= word.length; i += 1) {
         const pair = word.slice(i, i + 2)
-        if (!STOP_WORDS.has(pair)) tokens.add(pair)
+        if (STOP_WORDS.has(pair)) continue
+        /** 2 字滑窗也必须在「公式双字词表」里，否则长句会切出「全不/不存/在的」这种伪词。 */
+        if (pairs !== undefined && !pairs.has(pair)) continue
+        tokens.add(pair)
       }
       if (!STOP_WORDS.has(word)) tokens.add(word)
       if (vocabulary !== undefined) {
@@ -176,26 +179,53 @@ export function backtrace(formulas: FormulaEntry[], target: string, options: { m
       for (const char of String(word)) if (/[\u4e00-\u9fa5]/.test(char)) vocabulary.add(char)
     }
   }
-  const tokens = tokenize(target, vocabulary)
-  const scored: Array<{ entry: FormulaEntry; score: number }> = []
+  /** 双字词表：name/keys 的全部 2 字片段（用于过滤长句切出的伪词）。 */
+  const pairs = new Set<string>()
+  for (const entry of formulas) {
+    for (const word of [entry.name, ...(entry.keys ?? [])]) {
+      const text = String(word)
+      for (let index = 0; index + 2 <= text.length; index += 1) pairs.add(text.slice(index, index + 2))
+    }
+  }
+  const tokens = tokenize(target, vocabulary, pairs)
+  const scored: Array<{ entry: FormulaEntry; score: number; strong: boolean }> = []
   for (const entry of formulas) {
     const haystack = (entry.name + ' ' + (entry.keys ?? []).join(' ') + ' ' + (entry.desc ?? '') + ' ' + entry.expr).toLowerCase()
-    /** keys（人写的别名）权重高于 desc/expr：它才是「用户会怎么问」的索引。 */
+    /** keys（人写的别名）与 name 才是指向性索引；desc/expr 只给弱加权。 */
     const keysText = (entry.keys ?? []).map((key) => String(key).toLowerCase()).join(' ')
+    const nameText = entry.name.toLowerCase()
     let score = 0
+    /** 强匹配：至少一个 2 字词命中 keys/name，或 **≥2 个领域单字**命中 keys。 */
+    let strong = false
+    let singles = 0
     for (const token of tokens) {
-      /**
-       * 单字只看 keys：desc/expr 是长文本，「一 / 天 / 多 / 少」这类字处处都有，
-       * 放进 haystack 会让无关公式靠噪音胜出（R60 实测：炉膛热效率 12 分 > 窑炉热平衡 11 分）。
-       */
-      if (token.length >= 2 && haystack.includes(token)) score += 2
-      if (keysText.includes(token)) score += token.length >= 2 ? 3 : 2
+      /** 单字只认 keys：name 里常有修辞（「一克铀等于多少煤」的「煤」不是索引）。 */
+      const inIndex = token.length >= 2 ? (keysText.includes(token) || nameText.includes(token)) : keysText.includes(token)
+      if (inIndex) {
+        if (token.length >= 2) {
+          score += 3
+          strong = true
+        } else {
+          score += 2
+          singles += 1
+        }
+      } else if (token.length >= 2 && haystack.includes(token)) {
+        /** desc/expr 命中只给 1 分：长文本里「一 / 天 / 多」这类字处处都有。 */
+        score += 1
+      }
     }
-    if (score > 0) scored.push({ entry, score })
+    if (singles >= 2) strong = true
+    scored.push({ entry, score, strong })
+    if (score <= 0) scored.pop()
   }
   scored.sort((a, b) => b.score - a.score)
   const matches = scored.slice(0, 8).map((item) => ({ id: item.entry.id, name: item.entry.name, score: item.score }))
-  if (scored.length === 0) {
+  /**
+   * 分数太低说明只是命中了「目标/存在」这类通用词——明确说没找到，
+   * 比硬塞一条“动能 → 能养活多少人”更诚实（R61 实测的误导向就是这个）。
+   */
+  const MIN_MATCH_SCORE = 3
+  if (scored.length === 0 || scored[0].score < MIN_MATCH_SCORE || scored[0].strong !== true) {
     return { target, matches: [], chain: [], missing: [], calls: [], notes: ['没找到匹配公式。换个说法（用公式里的关键词，如「煤耗」「功率」「产量」），或先用 formula 查。'] }
   }
   const targetEntry = scored[0].entry

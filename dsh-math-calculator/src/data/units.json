@@ -1753,7 +1753,9 @@
   {
    "name": "tce",
    "aliases": [
-    "吨煤当量"
+    "吨煤当量",
+    "吨标准煤",
+    "标准煤"
    ],
    "dimension": "energy",
    "factor": 29307600000,
@@ -4375,6 +4377,17 @@
     "兰氏度",
     "Rankine"
    ]
+  },
+  {
+   "name": "equivalent",
+   "aliases": [
+    "当量",
+    "equivalent"
+   ],
+   "dimension": "amount_of_substance",
+   "factor": 1,
+   "category": "science",
+   "note": "化学当量：对单价离子 1 当量 = 1 mol；多价离子按电荷数折算"
   }
  ],
  "ANGLE_UNITS": [

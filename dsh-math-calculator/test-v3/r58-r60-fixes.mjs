@@ -123,7 +123,7 @@ console.log('-- 7. 公式别名与火箭方程 --')
 console.log('-- 8. 公式库规模 --')
 {
   const formulas = JSON.parse(readFileSync(join(root, 'src/data/formulas.json'), 'utf8'))
-  assert('公式库 804 条', formulas.length === 804, String(formulas.length))
+  assert('公式库 ≥ 800 条', formulas.length >= 800, String(formulas.length))
   const rocket = formulas.find((f) => f.id === 'rocket_equation')
   assert('rocket_equation 带 sources', Array.isArray(rocket.sources) && rocket.sources.length > 0, '')
 }

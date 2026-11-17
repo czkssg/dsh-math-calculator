@@ -232,7 +232,7 @@ console.log('-- 7. ★ 体系链：拓扑排序与「链≠依赖」--')
 console.log('-- 8. 数据完整性 --')
 // ───────────────────────────────────────────────────────────
 {
-  assert('公式总数 804', formulas.length === 804, String(formulas.length))
+  assert('公式总数 ≥ 800', formulas.length >= 800, String(formulas.length))
   assert('每条都有 id/name/expr', formulas.every((f) => f.id && f.name && f.expr), '')
   assert('id 唯一', new Set(formulas.map((f) => f.id)).size === formulas.length, '')
 

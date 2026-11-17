@@ -1,7 +1,7 @@
 /**
  * 功能合并：旧名转发到主入口（单向，不递归）。
  */
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -39,7 +39,8 @@ console.log('-- 3. formulas query:table 与 formula-table 等价 --')
   const t1 = await run({ operation: 'formulas', query: 'table' })
   const t2 = await run({ operation: 'formula-table' })
   assert('★ 两条路径都可读表（不递归）', t1.ok === true && t2.ok === true, JSON.stringify({ a: t1.error?.type, b: t2.error?.type }))
-  assert('公式总数一致', t1.result.includes('804') && t2.result.includes('804'), t1.result.slice(0, 60))
+  const formulaCount = String(JSON.parse(readFileSync(join(root, 'src/data/formulas.json'), 'utf8')).length)
+  assert('公式总数一致', t1.result.includes(formulaCount) && t2.result.includes(formulaCount), t1.result.slice(0, 60))
 }
 console.log('-- 4. 设定库已并入数据层 --')
 {

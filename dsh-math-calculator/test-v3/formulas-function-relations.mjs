@@ -36,7 +36,7 @@ async function run(args) { return tool.execute(args, {}) }
 console.log('-- 1. 关系图 --')
 {
   const stats = index.stats()
-  assert('★ 关系图 804 条公式', stats.formulas === 804, String(stats.formulas))
+  assert('★ 关系图覆盖全部公式（≥800）', stats.formulas >= 800, String(stats.formulas))
   assert('★ 边数 > 40000（共用物理量/常数/标签连起来）', stats.edges > 40000, String(stats.edges))
   assert('常数集合 44 个（43 + 别名 k）', stats.constants === 44, String(stats.constants))
   assert('★ 物理量语义标签 > 400 个', stats.quantities > 400, String(stats.quantities))

@@ -21,6 +21,7 @@
  */
 
 import { CalcError } from '../../core/errors.js'
+import { buildEngine, type Engine } from '../../core/engine.js'
 import { fmtNumber, FMT } from '../../core/format.js'
 
 /** 输入的一个片段。 */
@@ -38,10 +39,62 @@ export interface ConsistencyInput {
   subjects?: string[]
 }
 
+/** mathjs 量纲位序与 SI 基准（与 function.ts 保持一致）。 */
+const DIM_ORDER = ['M', 'L', 'T', 'I', 'Theta', 'J', 'N'] as const
+const DIM_BASE: Record<string, string> = { M: 'kg', L: 'm', T: 's', I: 'A', Theta: 'K', J: 'cd', N: 'mol' }
+
+/** 惰性引擎：只有出现「带单位的数字」时才构建。 */
+let engineCache: Engine | null = null
+function getEngine(): Engine {
+  if (engineCache === null) engineCache = buildEngine()
+  return engineCache
+}
+
+/**
+ * 把单位串换算成 SI 基准的倍数与量纲签名。
+ *
+ * ## 为什么需要（R61）
+ *
+ * `1 km` 与 `1000 m` 是同一个量，但抽取只拿数字 → 1000 倍误报。
+ * 比较前把两边都换成 SI，再比数值。
+ *
+ * @param unit - 单位串（如 `km`、`MJ/kg`）
+ * @returns 倍数与量纲签名；不可解析返回 null
+ */
+function unitInfo(unit: string): { factor: number; signature: string } | null {
+  try {
+    const parsed = getEngine().evaluate('1 ' + unit) as {
+      isUnit?: boolean
+      dimensions?: number[]
+      to?: (target: string) => { toNumber(): number }
+    }
+    if (parsed?.isUnit !== true) return null
+    const dims = parsed.dimensions ?? []
+    const parts: string[] = []
+    const signature: string[] = []
+    for (let index = 0; index < Math.min(DIM_ORDER.length, dims.length); index += 1) {
+      if (dims[index] === 0) continue
+      parts.push(DIM_BASE[DIM_ORDER[index]] + (dims[index] === 1 ? '' : '^' + dims[index]))
+      signature.push(DIM_ORDER[index] + dims[index])
+    }
+    if (parts.length === 0) return { factor: 1, signature: '' }
+    const factor = Number(parsed.to!(parts.join('*')).toNumber())
+    return Number.isFinite(factor) ? { factor, signature: signature.join('·') } : null
+  } catch {
+    return null
+  }
+}
+
 /** 抽到的一条数值主张。 */
 interface Claim {
   subject: string
   value: number
+  /** 区间上界（R61）：`50-60` 抽成 [50,60]，此时 value 是下界。 */
+  upper?: number
+  /** 数字后的单位串（ASCII；用于 `1 km` 与 `1000 m` 归一）。 */
+  unit?: string
+  /** 形态：百分比（50% = 0.5）/ 倍（2 倍 = 2）。 */
+  form?: 'percent' | 'multiple'
   /** 原文片段（显示用）。 */
   raw: string
   section: string
@@ -184,7 +237,9 @@ function extractClaims(section: ConsistencySection): Claim[] {
    * 单位后缀（kJ/mol）不参与匹配，不会阻断抽取。
    */
   const pattern = new RegExp(
-    '(' + SUBJECT + ')\\s*[:：]?\\s*(约|达到|大约|约为|为|是|有)?\\s*(负\\s*|[-−－]\\s*|\\+\\s*)?(?:([0-9]+(?:\\.[0-9]+)?)|([' + CN_DIGITS + ']+))\\s*(万亿|亿|万|千|百|萬億|萬|億)?',
+    '(' + SUBJECT + ')\\s*[:：]?\\s*(约|达到|大约|约为|为|是|有)?\\s*(负\\s*|[-−－]\\s*|\\+\\s*)?' +
+      '(?:([0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?\\d+)?)|([' + CN_DIGITS + ']+))\\s*(万亿|亿|万|千|百|萬億|萬|億)?\\s*(%|％|倍)?' +
+      '\\s*([A-Za-zµ°Ω][A-Za-z0-9µ°Ω^*/·.()\\-]*)?(?:\\s*(?:-|~|—|–|至|到)\\s*([-]?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?\\d+)?))?',
     'g',
   )
 
@@ -203,6 +258,13 @@ function extractClaims(section: ConsistencySection): Claim[] {
     const base = match[4] !== undefined ? Number(match[4]) : parseChineseNumber(match[5])
     const magnitudeWord = match[6]
     if (!Number.isFinite(base)) continue
+    /** 形态（R61）：50% → 0.5；2 倍 → 2。 */
+    const formWord = match[7]
+    const form = formWord === '%' || formWord === '％' ? 'percent' : formWord === '倍' ? 'multiple' : undefined
+    /** 单位串去掉尾随标点（`km.` → `km`）。 */
+    const unit = match[8] !== undefined ? match[8].replace(/[.,;:]+$/, '') : undefined
+    /** 区间上界（`50-60` / `-10~-5`）。 */
+    const upper = match[9] !== undefined ? Number(match[9]) : undefined
 
     /**
      * ## 过滤明显的非数量词
@@ -227,6 +289,9 @@ function extractClaims(section: ConsistencySection): Claim[] {
     claims.push({
       subject,
       value: (negative ? -base : base) * magnitude,
+      ...(upper !== undefined ? { upper } : {}),
+      ...(unit !== undefined ? { unit } : {}),
+      ...(form !== undefined ? { form } : {}),
       raw: match[0].trim(),
       section: sectionName,
     })
@@ -281,6 +346,14 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
     allClaims.push(...extracted)
   }
 
+  /** 显示：区间写成 `50–60`，其余走通用格式。 */
+  const claimDisplay = (claim: Claim): string => {
+    if (claim.upper === undefined) return fmtNumber(claim.value, FMT.general)
+    const low = Math.min(claim.value, claim.upper)
+    const high = Math.max(claim.value, claim.upper)
+    return fmtNumber(low, FMT.general) + '–' + fmtNumber(high, FMT.general)
+  }
+
   /** 按主体分组。 */
   const bySubject = new Map<string, Claim[]>()
   for (const claim of allClaims) {
@@ -297,8 +370,41 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
   }> = []
 
   for (const [subject, claims] of bySubject) {
-    /** 去重（同一值在多处出现不算冲突）。 */
-    const uniqueValues = [...new Set(claims.map((c) => c.value))]
+    /** 归一：百分比 ÷100；带单位只在所有条目同量纲时换算到 SI（R61）。 */
+    const infos = claims.map((claim) => (claim.unit !== undefined ? unitInfo(claim.unit) : null))
+    const signatures = infos.filter((info) => info !== null).map((info) => info.signature)
+    const comparable = signatures.every((signature) => signature === signatures[0])
+    const normalized = claims.map((claim, index) => {
+      let value = claim.value
+      if (claim.form === 'percent') value /= 100
+      const info = infos[index]
+      if (comparable && info !== null) value *= info.factor
+      return value
+    })
+    const uppers = claims.map((claim, index) => {
+      if (claim.upper === undefined) return undefined
+      let upper = claim.upper
+      const info = infos[index]
+      if (comparable && info !== null) upper *= info.factor
+      return upper
+    })
+    /**
+     * 区间相容（R61）：`50-60` 与 `55` 是同一口径；区间重叠也不算冲突。
+     * 只有「有点落在所有区间外」或「区间互不重叠」才报。
+     */
+    const ranges: Array<[number, number]> = []
+    for (let index = 0; index < claims.length; index += 1) {
+      const upper = uppers[index]
+      if (upper !== undefined) ranges.push([Math.min(normalized[index], upper), Math.max(normalized[index], upper)])
+    }
+    if (ranges.length > 0) {
+      const points = normalized.filter((_, index) => uppers[index] === undefined)
+      const inAnyRange = (point: number): boolean => ranges.some(([low, high]) => point >= low && point <= high)
+      const rangesOverlap = ranges.every(([low, high]) => ranges.some(([low2, high2]) => low <= high2 && low2 <= high))
+      if (points.every(inAnyRange) && rangesOverlap) continue
+    }
+    /** 去重（同一值在多处出现不算冲突）；区间端点也参与。 */
+    const uniqueValues = [...new Set([...normalized, ...uppers.filter((upper): upper is number => upper !== undefined)])]
     if (uniqueValues.length < 2) continue
 
     /**
@@ -358,10 +464,10 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
         ? '差 ' + (conflict.ratio >= 100 ? conflict.ratio.toFixed(0) : conflict.ratio.toFixed(1)) + ' 倍'
         : '（含 0，倍数为无穷）'
       lines.push('   ✗ [口径冲突] 「' + conflict.subject + '」有 ' +
-        [...new Set(conflict.claims.map((c) => c.value))].length + ' 处不同口径，' + ratioText + '：')
+        [...new Set(conflict.claims.map((claim) => claimDisplay(claim)))].length + ' 处不同口径，' + ratioText + '：')
       for (const claim of conflict.claims) {
         lines.push('       ' + labelOf(claim.section) + '　' +
-          fmtNumber(claim.value, FMT.general) + '　（原文「' + claim.raw + '」）')
+          claimDisplay(claim) + '　（原文「' + claim.raw + '」）')
       }
     }
   }
@@ -370,7 +476,7 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
   lines.push('')
   lines.push('  抽到的数值主张（供核对）：')
   for (const [subject, claims] of bySubject) {
-    const list = claims.map((c) => labelOf(c.section) + '=' + fmtNumber(c.value, FMT.general)).join('、')
+    const list = claims.map((c) => labelOf(c.section) + '=' + claimDisplay(c)).join('、')
     lines.push('    ' + subject + '：' + list)
   }
 

@@ -2,6 +2,35 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.4.0] — 2026-11-18
+
+**R61/R62 增量测试与官方自检落地**：7 条真缺陷全部收口，新增 5 套 156 项守护。
+
+### 新增
+
+- **help 第 56 节「拓扑与工程校核」**：`helpTopic:"拓扑"` 走**别名精确命中**返回全文（原先甩弱匹配搜索）。
+- **`equivalent`（当量）**：1 当量 = 1 mol；`吨标准煤` 补进 tce 别名与引擎手动表。
+- **公式库 805 条**：新增 `solar_luminosity`（太阳光度 3.828e26 W，带 sources）。
+- **反向守护**：`solar_luminosity` / `thermal_radiation` / `potential_gravity` 均可按名命中（别名机制）。
+
+### 变更
+
+- **多步链**：批量 `expressions` 共享作用域，`u=5 → u*3 = 15`（help 早已承诺，实现缺失）。
+- **`consistency` 形态归一**：科学计数（1e12）、百分比（÷100）、倍、单位换算（km/m、MJ/kg）、区间（50-60）与负区间；
+  判定用归一值 + 区间相容；正负号相反仍直接算冲突。
+- **`backtrace`**：keys/name 为强索引（单字只看 keys），双字词表过滤长句伪词；低分或无强匹配时明确说「没找到」。
+
+### 修复
+
+- `helpTopic` 只认 key → 支持别名整词（`拓扑`/`单位` 等中文名可取全文）。
+- `equivalent` 的短别名 `equiv` 会把 `equivalent` 拆成 `equivalentalent`（短别名拆长词坑），已移除。
+- 公式条数从 7 个测试文件的硬编码改为「≥800 + 结构自洽」，加公式不再连锁改测试。
+
+### 测试
+
+**117 套 / 2,850 项全绿**；新增 `r62-declaration` 27、`r62-consistency-forms` 27、
+`r62-units-unregistered` 23、`r62-formula-matrix` 64、`r62-quality` 15。
+复现与缺口详见 `docs/R61-R62测试自检.md`。
 ## [3.3.0] — 2026-11-18
 
 **R58–R60 模拟推演 + 144 类问题表复现**：9 个根因、50 条数据修正、36 项新守护。

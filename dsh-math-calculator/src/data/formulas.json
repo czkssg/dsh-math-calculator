@@ -31633,5 +31633,34 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "solar_luminosity",
+  "cat": "astronomy/star",
+  "name": "太阳光度",
+  "expr": "3.828e26",
+  "params": {},
+  "unit": "W（太阳的光度，约 3.828×10²⁶ W）",
+  "desc": "太阳每秒辐射的总能量；恒星光度决定宜居带距离与行星平衡温度。K 型约 0.1–0.5 L☉，M 型约 0.001–0.01 L☉。",
+  "keys": [
+   "solar_luminosity",
+   "太阳光度",
+   "luminosity",
+   "L☉",
+   "光度"
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Astrophysics in a Nutshell (2nd ed.)",
+    "authors": "Dan Maoz",
+    "publisher": "Princeton University Press",
+    "chapter": "第 2 章（恒星：光度与温度）",
+    "url": "https://press.princeton.edu/books/hardcover/9780691164793/astrophysics-in-a-nutshell",
+    "license": "参考引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "exact"
  }
 ]

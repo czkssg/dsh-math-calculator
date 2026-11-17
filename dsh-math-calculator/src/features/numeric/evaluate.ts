@@ -515,6 +515,11 @@ export function evaluateBatch(
   /** 上限 100 条 —— 再多该走数据引用，不是堆表达式撑上下文。 */
   const MAX_BATCH = 100
   const items = expressions.slice(0, MAX_BATCH)
+  /**
+   * 批量内**共享作用域**：help 承诺「前一条的赋值对后一条可见」（R56/R61）。
+   * 原先每条传 undefined，engine 内部 `scope ?? {}` 每次都新建 → `u=5` 写不回去。
+   */
+  const sharedScope: Record<string, unknown> = scope ?? {}
 
   interface ItemResult {
     index: number
@@ -535,7 +540,7 @@ export function evaluateBatch(
     const expr = typeof item === 'string' ? item : item.expr
     const label = typeof item === 'string' ? '' : (item.label ?? '')
     try {
-      const one = evaluateOne(engine, expr, options, scope)
+      const one = evaluateOne(engine, expr, options, sharedScope)
       /** 锚点：help 承诺「只在批量 expressions 里生效」，此前实现缺失（R58）。 */
       const rule = typeof item === 'string' ? undefined : item.sanity
       const sanity = rule !== undefined && rule !== null ? checkSanity(one.value, rule) : null

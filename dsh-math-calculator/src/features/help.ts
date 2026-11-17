@@ -230,7 +230,15 @@ export function runHelp(topics: HelpTopic[], topic?: string, query?: string): He
     return { result: renderCatalog(topics), value: { topics: topics.length } }
   }
   const wanted = topic.trim()
-  const found = topics.find((item) => item.key === wanted) ?? topics.find((item) => item.key.toLowerCase() === wanted.toLowerCase())
+  const wantedLower = wanted.toLowerCase()
+  /**
+   * 匹配顺序：key 精确 → key 小写 → **别名精确**（R61：`helpTopic:"拓扑"` 应给 topology 全文，
+   * 而不是甩一条弱匹配搜索）。别名只做整词相等，不做子串，避免「单位」命中一堆。
+   */
+  const found =
+    topics.find((item) => item.key === wanted) ??
+    topics.find((item) => item.key.toLowerCase() === wantedLower) ??
+    topics.find((item) => (item.aliases ?? []).some((alias) => String(alias).trim().toLowerCase() === wantedLower))
   if (found !== undefined) {
     return { result: '═══ ' + found.title + ' ═══\n\n' + (found.body ?? found.summary), value: { topic: found.key, title: found.title } }
   }

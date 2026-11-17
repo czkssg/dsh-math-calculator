@@ -150,7 +150,7 @@ world           星球参数 → 体感画像（重力/昼夜/气候/天空/生�
   ↓ brief:true 时只给 296 字符摘要（省 93%）
 derivation      接着往下推：敏感度/结论翻转/逆推校准/相图
   ↓ 29 个子命令
-formula         要具体数值时调公式（804 条，params/overrides 改参数；solveFor 可反解）
+formula         要具体数值时调公式（805 条，params/overrides 改参数；solveFor 可反解）
   ↓ query:"sys" 可看 22 条推演链怎么连
 ```
 
@@ -231,7 +231,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（55 节带简介）
+{operation:"help"}                        能力目录（56 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数 25 个字段带默认值
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）
