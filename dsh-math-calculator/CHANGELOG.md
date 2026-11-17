@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.2.0] — 2026-11-18
+
+**批量调用（calls）**：一次工具调用可提交多条，不再让 AI 逐条发工具调用。
+
+### 新增
+
+- **`calls` 批量**：`{calls:[{operation,...},...]}` 顺序执行、逐条独立报错、一条失败不中断；
+  单次上限 50 条；条目禁止嵌套 `calls`；外层 `precision`/`displayPrecision` 继承、条目可覆盖；
+  `saveAs` 只在条目内生效。结果同时给分段文本与 `value.results[]`（含每条的 ok/operation/result/error）。
+- **选型文档**：`docs/批量调用选型.md`（MCP 2025-06-18 / 2025-11-25 两版 schema 无 batch 的实测，
+  JSON-RPC 2.0 batch 语义，以及为什么放在参数层而不是新增 operation）。
+
+### 变更
+
+- `evaluate.expressions[]` / `formulas.formulas[]` 保留为**专用批量**（每条更短、带领域字段），
+  `calls` 作为跨 operation 的通用入口。
+- 工具描述与 skill 增「多组结果一次交」；工具描述里 help 节数说明从 12 修正为实际的 55。
+
+### 测试
+
+**111 套 / 2,655 项全绿**；新增 `tool-batch` 39 项（与单条逐字等价、部分失败、未知 op、
+嵌套、空/超限、参数继承、部分失败渲染、world notice 保留）。
 ## [3.1.1] — 2026-11-18
 
 **「单位覆盖」批次**：中文写法 78 → 488（96.4%）→ 641 条，非 ASCII 符号单位全部可换算；

@@ -100,6 +100,17 @@ const OUTPUT_SCHEMA = {
 /** 渲染。 */
 function renderResult(value: unknown): Array<{ type: 'text'; text: string }> {
   const payload = (value ?? {}) as MathResult
+  /**
+   * 批量结果：逐条错误已写进 result 分段，不能走「ok=false 只渲染 error」那条路
+   * （否则 AI 只看到一行汇总错误，看不到每条的结果）。
+   */
+  const batchValue = payload.value
+  const isBatch = batchValue !== null && typeof batchValue === 'object' && !Array.isArray(batchValue) && Array.isArray((batchValue as { results?: unknown }).results)
+  if (isBatch) {
+    const text = typeof payload.result === 'string' ? payload.result : ''
+    const notice = typeof payload.notice === 'string' && payload.notice !== '' ? payload.notice : ''
+    return [{ type: 'text', text: notice ? text + '\n\n（' + notice + '）' : text }]
+  }
   if (payload.ok === false) {
     const type = payload.error?.type ?? 'error'
     const message = payload.error?.message ?? '未知错误'
@@ -374,6 +385,17 @@ const PARAMETER_SPEC = {
   expectedDimension: { type: 'json', description: 'custom：期望量纲（校验用）' },
   useWorkspaceVariables: { type: 'boolean', description: 'workspace：让变量参与计算（默认不参与，保确定性）' },
   workspaceVariables: { type: 'json', description: 'workspace：变量表 {name:value}' },
+  /**
+   * 批量入口（2026-11-18 用户要求「别让 AI 一个一个调用功能」）。
+   *
+   * 一次工具调用提交多条，按序执行、逐条独立报错。
+   * 不新增 operation：MCP 规范没有 batch，而每加一个 op 都要付 enum/help/门面三处成本。
+   */
+  calls: {
+    type: 'array',
+    items: { type: 'json', description: '{operation,...参数}；也可只写 {expression}' },
+    description: '批量：一次提交多条调用（顺序执行、逐条独立报错、互不中断）。单次上限 50 条。别再逐条发工具调用。条目内不能再写 calls。',
+  },
 } as const
 
 /** 插件名。 */
@@ -536,6 +558,177 @@ function stripUndefined(value: unknown): unknown {
   return value
 }
 
+/** 批量调用上限：再多请客户端拆批（一次结果直接进上下文）。 */
+const BATCH_LIMIT = 50
+
+/** 批量条目可继承的外层参数：只继承「显示/计算」默认值，避免 expression 之类污染每条。 */
+const BATCH_INHERITED_KEYS = ['precision', 'displayPrecision'] as const
+
+/**
+ * 执行一次 `calls` 批量。
+ *
+ * ## 为什么在工具参数层做，而不是新增 operation
+ *
+ * MCP 规范（2025-06-18 / 2025-11-25 的 schema）**没有 batch** —— 协议层只能逐次调用；
+ * 模型逐条发工具调用，每条都要付一次完整 schema 与一次往返。批量放在参数层：
+ * 不新增 operation（enum / help / 门面三处都不用动），一次调用即可跑完一组。
+ *
+ * 语义对齐 JSON-RPC 2.0 的 batch：**按数组顺序执行、逐条独立响应、一条失败不影响其它**。
+ *
+ * ## 三个约束
+ *
+ * 1. 条目不能再含 `calls`（否则无限套娃）；
+ * 2. 上限 {@link BATCH_LIMIT} 条（再多请拆批，别把上下文撑爆）；
+ * 3. 外层只继承 precision / displayPrecision；`saveAs` 只在条目内生效。
+ *
+ * @param outer - 含 calls 的原始参数
+ * @param ctx - 工具上下文
+ * @param self - 单条执行函数（外层包装后的 execute，复用出口清理与运行日志）
+ * @returns 汇总结果：result 为分段文本，value.results 为逐条结构化结果
+ */
+async function runBatchCalls(
+  outer: Record<string, unknown>,
+  ctx: unknown,
+  self: (args: unknown, c?: unknown) => Promise<MathResult>,
+): Promise<MathResult> {
+  const calls = outer['calls']
+  const reject = (message: string, hint: string): MathResult => ({
+    ok: false,
+    operation: 'batch',
+    input: '',
+    result: '错误[invalid_argument]: ' + message,
+    precision: 64,
+    error: { type: 'invalid_argument', message, hint },
+  })
+  if (!Array.isArray(calls)) {
+    return reject('calls 必须是数组', '形如 calls:[{operation:"units", unitFrom:"摄氏度", unitTo:"degF"}]')
+  }
+  if (calls.length === 0) {
+    return reject('calls 为空', '至少给一条；单条调用请直接写参数，不要用 calls')
+  }
+  if (calls.length > BATCH_LIMIT) {
+    return reject(
+      'calls 一次最多 ' + BATCH_LIMIT + ' 条（收到 ' + calls.length + ' 条）',
+      '拆成两批，或改用 expressions / formulas 这类专用批量参数',
+    )
+  }
+
+  const inherited: Record<string, unknown> = {}
+  for (const key of BATCH_INHERITED_KEYS) {
+    if (outer[key] !== undefined) inherited[key] = outer[key]
+  }
+
+  const records: Array<Record<string, unknown>> = []
+  let succeeded = 0
+  let failed = 0
+  for (let index = 0; index < calls.length; index += 1) {
+    const raw = calls[index]
+    const item = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null
+    /**
+     * 两类条目在本地直接判失败，不进入执行：
+     * 非对象（无法解读），嵌套 calls（无限套娃，且外层汇总会失真）。
+     */
+    if (item === null || item['calls'] !== undefined) {
+      const message = item === null ? '第 ' + (index + 1) + ' 条不是对象' : '第 ' + (index + 1) + ' 条不能再嵌套 calls'
+      failed += 1
+      records.push({
+        index: index + 1,
+        operation: 'invalid',
+        ok: false,
+        input: '',
+        result: '错误[invalid_argument]: ' + message,
+        precision: 64,
+        error: { type: 'invalid_argument', message },
+      })
+      continue
+    }
+    /**
+     * operation 合法性在这里先查：条目参数不走宿主 schema 校验，
+     * 不查的话未知 op 会落进老入口翻译成 internal（看起来像工具 bug）。
+     */
+    const declared = typeof item['operation'] === 'string' ? (item['operation'] as string).trim() : ''
+    if (declared !== '' && !(MIGRATED_OPERATIONS as readonly string[]).includes(declared)) {
+      const message = '不认识第 ' + (index + 1) + ' 条的 operation「' + declared + '」'
+      failed += 1
+      records.push({
+        index: index + 1,
+        operation: declared,
+        ok: false,
+        input: '',
+        result: '错误[invalid_argument]: ' + message,
+        precision: 64,
+        error: { type: 'invalid_argument', message, hint: 'operation 见工具 schema 的 enum，或先调 {operation:"help"}' },
+      })
+      continue
+    }
+    const merged = { ...inherited, ...item }
+    let one: MathResult
+    try {
+      one = await self(merged, ctx)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      one = {
+        ok: false,
+        operation: declared !== '' ? declared : 'unknown',
+        input: typeof item['expression'] === 'string' ? (item['expression'] as string) : '',
+        result: '错误[internal]: ' + message,
+        precision: 64,
+        error: { type: 'internal', message },
+      }
+    }
+    if (one.ok === true) succeeded += 1
+    else failed += 1
+    records.push({
+      index: index + 1,
+      operation: one.operation,
+      ok: one.ok,
+      input: one.input,
+      result: one.result,
+      precision: one.precision,
+      ...(one.value !== undefined ? { value: one.value } : {}),
+      ...(one.notice !== undefined ? { notice: one.notice } : {}),
+      ...(one.error !== undefined ? { error: one.error } : {}),
+    })
+  }
+
+  const lines: string[] = ['═══ 批量调用（' + calls.length + ' 条）：成功 ' + succeeded + '，失败 ' + failed + ' ═══']
+  for (const record of records) {
+    const okEntry = record['ok'] === true
+    const error = record['error'] as { type?: string; message?: string; hint?: string } | undefined
+    lines.push('')
+    lines.push('── [' + String(record['index']) + '] ' + String(record['operation']) + (okEntry ? '' : ' ✗ ' + (error?.type ?? 'error')) + ' ──')
+    lines.push(
+      okEntry
+        ? String(record['result'])
+        : '错误[' + (error?.type ?? 'error') + ']: ' + (error?.message ?? '未知错误') + (error?.hint !== undefined ? '\n提示: ' + error.hint : ''),
+    )
+    /** 条目自己的 notice 跟结果一起给（与单条渲染同格式），否则「地球标定」这类限定会丢。 */
+    const entryNotice = record['notice']
+    if (okEntry && typeof entryNotice === 'string' && entryNotice !== '') lines.push('（' + entryNotice + '）')
+  }
+
+  const noticeParts: string[] = []
+  if (failed > 0) {
+    noticeParts.push('批量：' + succeeded + ' 条成功、' + failed + ' 条失败；失败条目已逐条标注，未中断后续。')
+  }
+  if (typeof outer['saveAs'] === 'string' && (outer['saveAs'] as string).trim() !== '') {
+    noticeParts.push('外层 saveAs 已忽略：批量请把 saveAs 写进具体条目。')
+  }
+
+  return {
+    ok: failed === 0,
+    operation: 'batch',
+    input: 'calls[' + calls.length + ']',
+    result: lines.join('\n'),
+    precision: typeof outer['precision'] === 'number' ? (outer['precision'] as number) : 64,
+    value: { results: records } as JsonValue,
+    ...(failed > 0 ? { partial: true } : {}),
+    failed,
+    succeeded,
+    ...(noticeParts.length > 0 ? { notice: noticeParts.join('\n') } : {}),
+  }
+}
+
 /**
  * 对外的工具定义（在 baseTool 外包一层：出口清理、未知参数提示、自动入库、运行日志）。
  */
@@ -545,7 +738,13 @@ export const mathExecuteTool = {
     const startedAt = Date.now()
     let result: MathResult
     try {
-      result = (await (baseTool as { execute: (a: unknown, c?: unknown) => Promise<MathResult> }).execute(args, ctx)) as MathResult
+      const rawForBatch = (args ?? {}) as Record<string, unknown>
+      if (Array.isArray(rawForBatch['calls'])) {
+        /** 每条递归走本函数：复用出口清理、未知参数提示、条目级 saveAs 与运行日志。 */
+        result = await runBatchCalls(rawForBatch, ctx, (item, subCtx) => mathExecuteTool.execute(item, subCtx))
+      } else {
+        result = (await (baseTool as { execute: (a: unknown, c?: unknown) => Promise<MathResult> }).execute(args, ctx)) as MathResult
+      }
     } catch (error) {
       const name = error !== null && typeof error === 'object' ? (error as { name?: string }).name : ''
       const code = error !== null && typeof error === 'object' ? (error as { code?: string }).code : ''
@@ -585,7 +784,12 @@ export const mathExecuteTool = {
     }
     /** 自动入库：给 saveAs 就把结果写进统一数据层（失败不影响返回）。 */
     const rawSaveArgs = (args ?? {}) as Record<string, unknown>
-    if (typeof rawSaveArgs['saveAs'] === 'string' && (rawSaveArgs['saveAs'] as string).trim() !== '' && result.ok === true) {
+    if (
+      typeof rawSaveArgs['saveAs'] === 'string' &&
+      (rawSaveArgs['saveAs'] as string).trim() !== '' &&
+      result.ok === true &&
+      !Array.isArray(rawSaveArgs['calls'])
+    ) {
       try {
         const operation = String(result.operation ?? 'note')
         const kind = ['world', 'history', 'conflict', 'diverge', 'astro'].includes(operation) ? operation : 'note'

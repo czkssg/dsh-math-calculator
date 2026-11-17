@@ -24,6 +24,12 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 `{operation:"calc", op:"solve", expression:"x^2-4=0"}` 等价于 `{operation:"solve", ...}`。
 旧 op 名全部继续可用；下面按用途分组。
 
+**多组结果一次交（批量）**：用 `calls:[{operation,...},...]` 一次提交多条——
+按序执行、逐条独立报错（一条失败不中断）、单次上限 50 条。
+外层 `precision`/`displayPrecision` 会继承，条目显式值覆盖；`saveAs` 写在条目里。
+`{calls:[{operation:"units",unitFrom:"担",unitTo:"kg"},{operation:"evaluate",expression:"1/3"}]}`
+**不要逐条发工具调用**；批量结果在 `value.results[]`（含每条的 ok/operation/result/error）。
+
 ### calc：算数、线代、公式
 
 | 想做什么 | op | 关键参数 |
