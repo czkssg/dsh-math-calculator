@@ -124,7 +124,7 @@ export const LENGTH_UNITS: UnitDef[] = [
   { name: 'barleycorn', aliases: ['大麦粒'], dimension: 'length', factor: 0.0084667, note: '1 大麦粒 = 1/3 英寸，鞋码来源' },
 
   // ── 航海与天文 ──
-  { name: 'nmi', aliases: ['海里', '浬'], dimension: 'length', factor: 1852, note: '1 海里 = 1852 m（1 分纬度）' },
+  { name: 'nmi', aliases: ['海里', '浬', 'nautical mile', 'nautical miles'], dimension: 'length', factor: 1852, note: '1 海里 = 1852 m（1 分纬度）' },
   { name: 'AU', aliases: ['天文单位'], dimension: 'length', factor: 1.495978707e11, note: '日地平均距离' },
   { name: 'ly', aliases: ['光年', 'lightyear'], dimension: 'length', factor: 9.4607304725808e15 },
   { name: 'pc', aliases: ['秒差距', 'parsec'], dimension: 'length', factor: 3.0856775814913673e16, note: '1 pc ≈ 3.26 ly' },

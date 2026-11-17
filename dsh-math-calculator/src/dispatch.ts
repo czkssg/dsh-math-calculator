@@ -50,7 +50,7 @@ import { convertUnits, describeUnit } from './features/numeric/units.js'
 import { evaluateFormula } from './features/formulas/evaluate.js'
 import { solveFor } from './features/formulas/solve-for.js'
 import { buildRelationIndex, relationReason, type RelationIndex } from './features/formulas/relations.js'
-import { callFormula } from './features/formulas/function.js'
+import { callFormula, findFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runTopology } from './features/topology/ops.js'
@@ -813,9 +813,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           ),
         )
       }
-      const entry = formulaEntries().find((item) => item.id === id || item.name === id)
+      const entry = findFormula(formulaEntries(), id)
       if (entry === undefined) {
-        throw new CalcError('unknown_formula', '没有 id 或名称为 "' + id + '" 的公式', '用 formulas query 查可用的公式 id。')
+        throw new CalcError('unknown_formula', '没有 id、名称或别名为 "' + id + '" 的公式', '用 formulas query 查可用的公式 id。')
       }
       /**
        * 走「公式即函数」：参数契约 + 相邻公式。

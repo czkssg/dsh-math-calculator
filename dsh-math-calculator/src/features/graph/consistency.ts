@@ -178,8 +178,13 @@ function extractClaims(section: ConsistencySection): Claim[] {
    * 噪音由下方的 SKIP_SUBJECTS 与指代词过滤兜住）。
    */
   const SUBJECT = '(?:(?![' + CN_DIGITS + '])[\\u4e00-\\u9fa5]){1,6}?'
+  /**
+   * 负号必须与数字一起匹配（R58）：「反应焓变 -876 kJ/mol」原先整条不匹配，
+   * 两段负数抽出 0 条、判「无冲突」。支持半角 -、全角 −/－ 与「负」字；
+   * 单位后缀（kJ/mol）不参与匹配，不会阻断抽取。
+   */
   const pattern = new RegExp(
-    '(' + SUBJECT + ')\\s*[:：]?\\s*(约|达到|大约|约为|为|是|有)?\\s*(?:([0-9]+(?:\\.[0-9]+)?)|([' + CN_DIGITS + ']+))\\s*(万亿|亿|万|千|百|萬億|萬|億)?',
+    '(' + SUBJECT + ')\\s*[:：]?\\s*(约|达到|大约|约为|为|是|有)?\\s*(负\\s*|[-−－]\\s*|\\+\\s*)?(?:([0-9]+(?:\\.[0-9]+)?)|([' + CN_DIGITS + ']+))\\s*(万亿|亿|万|千|百|萬億|萬|億)?',
     'g',
   )
 
@@ -192,9 +197,11 @@ function extractClaims(section: ConsistencySection): Claim[] {
       总成本: '成本', 总预算: '预算', 总支出: '支出', 总收入: '收入',
     }
     const subject = SUBJECT_ALIASES[match[1]] ?? match[1]
+    /** 符号组：`-`/`−`/`－`/`负` 为负；`+` 或未给为正。 */
+    const negative = match[3] !== undefined && /负|[-−－]/.test(match[3])
     /** 阿拉伯数字或中文数字（八百 / 二千）。 */
-    const base = match[3] !== undefined ? Number(match[3]) : parseChineseNumber(match[4])
-    const magnitudeWord = match[5]
+    const base = match[4] !== undefined ? Number(match[4]) : parseChineseNumber(match[5])
+    const magnitudeWord = match[6]
     if (!Number.isFinite(base)) continue
 
     /**
@@ -219,7 +226,7 @@ function extractClaims(section: ConsistencySection): Claim[] {
     const magnitude = magnitudeWord !== undefined ? (MAGNITUDE[magnitudeWord] ?? 1) : 1
     claims.push({
       subject,
-      value: base * magnitude,
+      value: (negative ? -base : base) * magnitude,
       raw: match[0].trim(),
       section: sectionName,
     })
@@ -302,8 +309,15 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
      *
      * 阈值取 2 而不是 1.1，是为了避免把「四舍五入的两种写法」当冲突。
      */
-    const min = Math.min(...uniqueValues)
-    const max = Math.max(...uniqueValues)
+    /**
+     * 负数用绝对值算倍数（R58）：-876 与 -324 的比例是 2.7；
+     * 而把带符号的 min/max 相除会得到负的相对差 → 被判「精度差异」漏报。
+     * 正负号相反本身是硬伤（+876 vs -876），直接算冲突。
+     */
+    const absValues = uniqueValues.map((value) => Math.abs(value))
+    const signFlip = uniqueValues.some((value) => value > 0) && uniqueValues.some((value) => value < 0)
+    const min = Math.min(...absValues)
+    const max = Math.max(...absValues)
     const ratio = min === 0 ? Infinity : max / min
     /**
      * 判据（反馈报告 §3 修复路径）：**相对差 ≥10% 或 ≥2 倍**都算冲突。
@@ -312,7 +326,7 @@ export function checkConsistency(input: ConsistencyInput): ConsistencyOutcome {
      * 14% 在设定里往往是改了一位数（700→800），不是精度。
      */
     const relative = min === 0 ? Infinity : (max - min) / min
-    if (relative < 0.1 && ratio < 2) continue
+    if (!signFlip && relative < 0.1 && ratio < 2) continue
 
     conflicts.push({ subject, claims, ratio })
   }

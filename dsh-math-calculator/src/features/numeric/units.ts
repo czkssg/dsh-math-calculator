@@ -29,6 +29,39 @@ import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { fmtNumber, FMT, trimDecimal, restoreCjkUnitNames, restoreCustomUnitNames } from '../../core/format.js'
 
+/** mathjs 的量纲位序（M,L,T,I,Theta,J,N）与 SI 基准单位。 */
+const DIM_ORDER = ['M', 'L', 'T', 'I', 'Theta', 'J', 'N'] as const
+const DIM_BASE: Record<string, string> = { M: 'kg', L: 'm', T: 's', I: 'A', Theta: 'K', J: 'cd', N: 'mol' }
+
+/**
+ * 把 mathjs 的单位值改写成 SI 基准组合。
+ *
+ * ## 为什么需要
+ *
+ * 代入过程原先直接 `String(unitValue)`，mathjs 会挑一个**同量纲的已注册单位**显示：
+ * `1 MJ/kg` 被显示成 `1e+8 raddose`（吸收剂量单位）——数值没错，但读者看到的是内部代号。
+ * 改成按量纲拼 SI 基准（kg·m²/s²）就没有歧义。
+ *
+ * @param unitValue - mathjs Unit
+ * @returns 形如 `1e+8 kg*m^2/s^2`；拼不出时退回原字符串
+ */
+function toSiText(unitValue: unknown): string {
+  const value = unitValue as { dimensions?: number[]; to?: (target: string) => { toString(): string } }
+  const dims = value.dimensions ?? []
+  const parts: string[] = []
+  for (let index = 0; index < Math.min(DIM_ORDER.length, dims.length); index += 1) {
+    const power = dims[index]
+    if (power === 0) continue
+    parts.push(DIM_BASE[DIM_ORDER[index]] + (power === 1 ? '' : '^' + power))
+  }
+  if (parts.length === 0 || typeof value.to !== 'function') return String(unitValue)
+  try {
+    return String(value.to(parts.join('*')))
+  } catch {
+    return String(unitValue)
+  }
+}
+
 /** 换算结果。 */
 export interface UnitsOutcome {
   result: string
@@ -126,8 +159,8 @@ export function convertUnits(
   try {
     const fromBase = engine.evaluate('1 ' + from)
     const toBase = engine.evaluate('1 ' + to)
-    steps.push('1 ' + from + ' = ' + restoreCjkUnitNames(String(fromBase)))
-    steps.push('1 ' + to + ' = ' + restoreCjkUnitNames(String(toBase)))
+    steps.push('1 ' + from + ' = ' + restoreCjkUnitNames(toSiText(fromBase)))
+    steps.push('1 ' + to + ' = ' + restoreCjkUnitNames(toSiText(toBase)))
     steps.push('故结果 = ' + text)
   } catch {
     /** 拿不到基准关系时不硬编过程，只给结论。 */

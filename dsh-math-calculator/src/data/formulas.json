@@ -332,10 +332,10 @@
    "g": {
     "value": 9.80665,
     "desc": "重力加速度 m/s^2",
-    "quantity": "速度",
+    "quantity": "加速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -351,7 +351,10 @@
   "desc": "Ep = mgh。 适用域：近地表均匀重力场（g 视为常数）；大尺度要用 GMm/r 形式的引力势。",
   "keys": [
    "potential",
-   "势能"
+   "势能",
+   "potential_gravity",
+   "gravitational_potential",
+   "引力势能"
   ]
  },
  {
@@ -1338,8 +1341,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": null,
@@ -1570,7 +1579,10 @@
    "散热",
    "Stefan",
    "热辐射",
-   "保温"
+   "保温",
+   "thermal_radiation",
+   "辐射换热",
+   "radiative_cooling"
   ],
   "frequency": "high",
   "layer": "fundamental",
@@ -5281,8 +5293,13 @@
    "k": {
     "value": null,
     "desc": "导热系数 W/(m·K)",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "导热系数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": null,
@@ -5479,8 +5496,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    }
   },
   "unit": "m/s",
@@ -5515,8 +5538,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    }
   },
   "unit": "m/s",
@@ -6598,8 +6627,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    }
   },
   "unit": "1/s",
@@ -6747,8 +6782,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "F": {
     "value": 96485.33212,
@@ -7099,7 +7140,7 @@
   "id": "oxygen_depletion",
   "cat": "military/combat",
   "name": "密闭空间耗氧时间",
-  "expr": "V * 0.21 / (n * consumption)",
+  "expr": "V * 0.21 / (n * consumption) / 60",
   "params": {
    "V": {
     "value": null,
@@ -7111,14 +7152,18 @@
    },
    "n": {
     "value": null,
-    "desc": "人数",
+    "desc": "人数（无量纲）",
     "quantity": "数量",
     "dimension": {}
    },
    "consumption": {
     "value": 0.0003,
     "desc": "人均耗氧 m³/min",
-    "quantity": "人均耗氧"
+    "quantity": "人均耗氧",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
    }
   },
   "unit": "min",
@@ -7889,8 +7934,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": null,
@@ -8018,8 +8069,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": null,
@@ -9604,8 +9661,13 @@
    "k": {
     "value": null,
     "desc": "导热系数 W/(m·K)",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "导热系数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": null,
@@ -11906,7 +11968,7 @@
   "id": "admin_radius_from_info",
   "cat": "power/information",
   "name": "可有效统治的半径",
-  "expr": "speed_km_per_day * max_days / 2",
+  "expr": "speed_km_per_day * max_days / 2 / 1000",
   "params": {
    "speed_km_per_day": {
     "value": 200,
@@ -11920,7 +11982,10 @@
    "max_days": {
     "value": 20,
     "desc": "可容忍的单程延迟（天）",
-    "quantity": "可容忍的单程延迟"
+    "quantity": "可容忍的单程延迟",
+    "dimension": {
+     "T": 1
+    }
    }
   },
   "unit": "km",
@@ -13567,7 +13632,7 @@
   "id": "hardness_yield_generic",
   "cat": "materials/structures",
   "name": "硬度估屈服强度（普适版，可换重力）",
-  "expr": "k * hardness * g",
+  "expr": "k * hardness * g / 1e6",
   "params": {
    "k": {
     "value": 3,
@@ -13578,7 +13643,12 @@
    "hardness": {
     "value": null,
     "desc": "布氏/维氏硬度（kgf/mm²）",
-    "quantity": "布氏/维氏硬度"
+    "quantity": "布氏/维氏硬度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "g": {
     "value": 9.80665,
@@ -13712,8 +13782,14 @@
    "R": {
     "value": 8.31446261815324,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T0": {
     "value": 373.15,
@@ -15064,9 +15140,9 @@
    "b": {
     "value": null,
     "desc": "截面宽 m",
-    "quantity": "活度",
+    "quantity": "长度",
     "dimension": {
-     "T": -1
+     "L": 1
     }
    },
    "h": {
@@ -15107,9 +15183,9 @@
    "b": {
     "value": null,
     "desc": "截面宽 m",
-    "quantity": "活度",
+    "quantity": "长度",
     "dimension": {
-     "T": -1
+     "L": 1
     }
    },
    "h": {
@@ -15163,9 +15239,9 @@
    "b": {
     "value": null,
     "desc": "截面宽 m",
-    "quantity": "活度",
+    "quantity": "长度",
     "dimension": {
-     "T": -1
+     "L": 1
     }
    },
    "h": {
@@ -15263,9 +15339,9 @@
    "b": {
     "value": null,
     "desc": "截面宽 m",
-    "quantity": "活度",
+    "quantity": "长度",
     "dimension": {
-     "T": -1
+     "L": 1
     }
    },
    "h": {
@@ -15558,8 +15634,13 @@
    "k": {
     "value": 0.04,
     "desc": "导热系数 W/(m·K)（岩棉 0.04，砖 0.7，钢 45，铜 400）",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "导热系数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": null,
@@ -17180,8 +17261,11 @@
    "diffusion_coeff": {
     "value": null,
     "desc": "扩散系数 D m²/s（O₂ 在水中 2e-9、在空气中 2e-5）",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "扩散系数",
+    "dimension": {
+     "L": 2,
+     "T": -1
+    }
    },
    "area": {
     "value": null,
@@ -17242,8 +17326,11 @@
    "diffusion_coeff": {
     "value": null,
     "desc": "扩散系数 D m²/s（蛋白在水中约 1e-10）",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "扩散系数",
+    "dimension": {
+     "L": 2,
+     "T": -1
+    }
    }
   },
   "unit": "s（扩散跨越该距离所需时间）",
@@ -17287,8 +17374,11 @@
    "diffusion_coeff": {
     "value": null,
     "desc": "扩散系数 D m²/s",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "扩散系数",
+    "dimension": {
+     "L": 2,
+     "T": -1
+    }
    }
   },
   "unit": "无量纲（Pe ≪ 1 扩散主导；Pe ≫ 1 必须对流）",
@@ -17577,8 +17667,13 @@
    },
    "ware_specific_heat": {
     "value": 0.9,
-    "desc": "坯体比热 kJ/(kg·K)（陶 0.8~1.1、瓷 0.9~1.3）",
-    "quantity": "坯体比热"
+    "desc": "坯体比热 J/(kg·K)（陶 800~1100、瓷 900~1300）",
+    "quantity": "比热容",
+    "dimension": {
+     "L": 2,
+     "T": -2,
+     "Theta": -1
+    }
    },
    "delta_T": {
     "value": null,
@@ -17591,7 +17686,7 @@
     "quantity": "窑体蓄热+散热相对坯体之比"
    }
   },
-  "unit": "MJ（估算的一次烧成总耗热）",
+  "unit": "kJ（估算的一次烧成总耗热）",
   "desc": "「单窑耗煤 Xkg」这类经验数可以靠这条验算：Q = m·c·ΔT·(1+损比)。★ 这是全库第一缺口 —— 有了它，耗煤量、窑衬寿命、窑型升级幅度全部可算。★ 实测对照：100kg 坯 20→1100℃ 本身只需 97MJ，而实际耗煤往往对应 8~15 倍，  差的那部分正是窑体蓄热、窑壁散热、烟气带走。★ 省燃料的关键在 shell_loss_ratio：间歇窑 12 是常态，  改连续窑/余热回收能压到 3~6 —— 这就是「窑型升级 +40%~+300%」的来源。⚠ 只算一次烧成的显热，不含保温维持与不完全燃烧。",
   "keys": [
    "窑炉",
@@ -17612,20 +17707,23 @@
   "id": "kiln_firing_time",
   "cat": "engineering/process",
   "name": "烧成时间（升温速率受热应力限制）",
-  "expr": "delta_T / heating_rate",
+  "expr": "delta_T / heating_rate / 3600",
   "params": {
    "delta_T": {
     "value": null,
     "desc": "升温幅度 K",
-    "quantity": "升温幅度"
+    "quantity": "升温幅度",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "heating_rate": {
     "value": 200,
     "desc": "安全升温速率 K/h（薄壁 150~300、厚壁 60~120）",
-    "quantity": "速度",
+    "quantity": "升温速率",
     "dimension": {
-     "L": 1,
-     "T": -1
+     "T": -1,
+     "Theta": 1
     }
    }
   },
@@ -17740,8 +17838,11 @@
    "D0": {
     "value": 0.00002,
     "desc": "扩散常数 D₀ m²/s（碳在奥氏体铁中约 2e-5）",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "扩散系数",
+    "dimension": {
+     "L": 2,
+     "T": -1
+    }
    },
    "activation_energy": {
     "value": 150000,
@@ -17751,8 +17852,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "temperature": {
     "value": null,
@@ -17839,16 +17946,19 @@
   "id": "gear_geometry",
   "cat": "engineering/process",
   "name": "齿轮几何（分度圆与传动比）",
-  "expr": "gear_module * teeth",
+  "expr": "gear_module * teeth * 1000",
   "params": {
    "gear_module": {
     "value": null,
     "desc": "模数 m mm",
-    "quantity": "模数"
+    "quantity": "模数",
+    "dimension": {
+     "L": 1
+    }
    },
    "teeth": {
     "value": null,
-    "desc": "齿数 z",
+    "desc": "齿数 z（无量纲）",
     "quantity": "齿数"
    }
   },
@@ -18199,8 +18309,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "temperature": {
     "value": null,
@@ -20047,8 +20163,14 @@
    "gas_constant": {
     "value": 8.314,
     "desc": "气体常数 R（J/(mol·K)）",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    }
   },
   "unit": "J/(mol·K)（摩尔热容；此为低温近似 T≪Θ_D）",
@@ -22244,7 +22366,7 @@
   "id": "reactor_residence_time",
   "cat": "chemistry/reactor",
   "name": "停留时间（反应器要多大）",
-  "expr": "volume / volumetric_flow",
+  "expr": "volume / volumetric_flow / 3600",
   "params": {
    "volume": {
     "value": null,
@@ -22501,7 +22623,7 @@
   "id": "adsorption_breakthrough",
   "cat": "chemistry/separation",
   "name": "吸附床穿透时间（滤芯多久失效）",
-  "expr": "bed_volume * bed_density * capacity / (flow_rate * inlet_concentration)",
+  "expr": "bed_volume * bed_density * capacity / (flow_rate * inlet_concentration) / 3600",
   "params": {
    "bed_volume": {
     "value": null,
@@ -22522,7 +22644,7 @@
    },
    "capacity": {
     "value": null,
-    "desc": "平衡吸附容量（kg 吸附质/kg 吸附剂；活性炭对有机物 0.1~0.3）",
+    "desc": "平衡吸附容量 kg/kg（无量纲）",
     "quantity": "平衡吸附容量"
    },
    "flow_rate": {
@@ -25815,8 +25937,13 @@
    "k": {
     "value": 0.6,
     "desc": "导热系数 W/(m·K)（水约 0.6）",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "导热系数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": 1,
@@ -26055,8 +26182,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": 298.15,
@@ -26594,8 +26727,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": 298.15,
@@ -27267,8 +27406,14 @@
    "R": {
     "value": 0.082057,
     "desc": "气体常数 L·atm/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": 298.15,
@@ -27325,8 +27470,13 @@
    "k": {
     "value": 0.6,
     "desc": "导热系数 W/(m·K)",
-    "quantity": "比率",
-    "dimension": {}
+    "quantity": "导热系数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": 1,
@@ -28290,8 +28440,14 @@
    "R": {
     "value": 8.314462618,
     "desc": "气体常数 J/(mol·K)",
-    "quantity": "常数",
-    "dimension": {}
+    "quantity": "气体常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1,
+     "N": -1
+    }
    },
    "T": {
     "value": 1000,
@@ -30176,11 +30332,11 @@
   "id": "gear_contact_stress",
   "cat": "engineering/mechanical",
   "name": "齿轮接触应力（赫兹）",
-  "expr": "Ze * sqrt(Ft / (b * d1) * (u + 1) / u)",
+  "expr": "Ze * sqrt(Ft / (b * d1) / 1e6 * (u + 1) / u)",
   "params": {
    "Ze": {
     "value": 189.8,
-    "desc": "弹性系数 √MPa",
+    "desc": "弹性系数 √MPa（保持无量纲：√MPa 无法用基量表示）",
     "quantity": "系数",
     "dimension": {}
    },
@@ -30212,7 +30368,7 @@
    },
    "u": {
     "value": 2,
-    "desc": "齿数比",
+    "desc": "齿数比（无量纲）",
     "quantity": "系数",
     "dimension": {}
    }
@@ -31411,5 +31567,71 @@
    }
   ],
   "confidence": "scaling"
+ },
+ {
+  "id": "rocket_equation",
+  "cat": "engineering/space",
+  "name": "齐奥尔科夫斯基火箭方程",
+  "expr": "Isp * g0 * log(m0 / m1)",
+  "params": {
+   "Isp": {
+    "value": null,
+    "desc": "比冲 s（真空：液氧液氢约 450、液氧煤油约 311）",
+    "quantity": "比冲",
+    "dimension": {
+     "T": 1
+    }
+   },
+   "g0": {
+    "value": 9.80665,
+    "desc": "标准重力加速度 m/s^2",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
+   },
+   "m0": {
+    "value": null,
+    "desc": "初始质量 kg（含推进剂）",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "m1": {
+    "value": null,
+    "desc": "末质量 kg（推进剂耗尽后）",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   }
+  },
+  "unit": "m/s（理想速度增量 Δv）",
+  "desc": "火箭速度增量由比冲与质量比决定；ln(m0/m1) 是结构效率的对数回报——质量比越大，Δv 增长越慢。",
+  "keys": [
+   "rocket_equation",
+   "火箭方程",
+   "齐奥尔科夫斯基",
+   "delta-v",
+   "Δv",
+   "比冲",
+   "质量比",
+   "Tsiolkovsky"
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Rocket Propulsion Elements (9th ed.)",
+    "authors": "George P. Sutton, Oscar Biblarz",
+    "publisher": "Wiley",
+    "chapter": "第 4 章（飞行性能）",
+    "url": "https://www.wiley.com/en-us/Rocket+Propulsion+Elements%2C+9th+Edition-p-9781118753651",
+    "license": "参考引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "exact"
  }
 ]

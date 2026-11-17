@@ -295,7 +295,9 @@
    "name": "nmi",
    "aliases": [
     "海里",
-    "浬"
+    "浬",
+    "nautical mile",
+    "nautical miles"
    ],
    "dimension": "length",
    "factor": 1852,

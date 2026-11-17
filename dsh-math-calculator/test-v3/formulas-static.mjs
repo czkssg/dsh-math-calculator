@@ -38,7 +38,7 @@ function assert(name, cond, detail) {
 
 console.log('-- 1. 结构完整性（665 条）--')
 {
-  assert('公式总数 803', formulas.length === 803, String(formulas.length))
+  assert('公式总数 804', formulas.length === 804, String(formulas.length))
   const missing = formulas.filter((f) => !f.id || !f.name || !f.expr || !f.desc || !Array.isArray(f.keys) || f.keys.length === 0)
   assert('★ id/name/expr/desc/keys 全都不缺', missing.length === 0, missing.slice(0, 5).map((f) => f.id).join(','))
   const noUnit = formulas.filter((f) => !f.unit || !String(f.unit).trim())
@@ -63,7 +63,7 @@ console.log('-- 1. 结构完整性（665 条）--')
 console.log('-- 2. 可执行式：parse + 符号声明 --')
 {
   const executable = formulas.filter((f) => f.executable !== false)
-  assert('可执行式 769 条', executable.length === 799, String(executable.length))
+  assert('可执行式 800 条', executable.length === 800, String(executable.length))
   const unparsable = []
   const unknown = new Map()
   for (const formula of executable) {

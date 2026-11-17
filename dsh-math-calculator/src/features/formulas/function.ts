@@ -262,6 +262,27 @@ export function compileAll(
 }
 
 /**
+ * 按 id → 中文名 → keys 别名查找公式。
+ *
+ * ## 为什么要有别名查找（R60）
+ *
+ * 用户会直接写 `thermal_radiation` / `potential_gravity`，而库里等价公式的 id 是
+ * `stefan_boltzmann` / `potential_energy`。别名放进 keys，这里做**整词相等**匹配
+ * （不做子串：`辐射` 不能命中一堆公式）。dispatch 与 callFormula 共用这一份，避免两处漂移。
+ *
+ * @param formulas - 公式库
+ * @param idOrName - id / 名称 / 别名
+ * @returns 命中的公式；找不到返回 undefined
+ */
+export function findFormula(formulas: FormulaEntry[], idOrName: string): FormulaEntry | undefined {
+  const key = idOrName.trim().toLowerCase()
+  return (
+    formulas.find((formula) => formula.id === idOrName || formula.name === idOrName) ??
+    formulas.find((formula) => (formula.keys ?? []).some((alias) => String(alias).trim().toLowerCase() === key))
+  )
+}
+
+/**
  * 调用一条公式（按 id 或名称查找）。
  *
  * @param formulas - 公式库
@@ -281,9 +302,9 @@ export function callFormula(
   index?: RelationIndex,
   options: { displayPrecision?: number; terse?: boolean } = {},
 ): FormulaCallResult {
-  const entry = formulas.find((formula) => formula.id === idOrName || formula.name === idOrName)
+  const entry = findFormula(formulas, idOrName)
   if (entry === undefined) {
-    throw new CalcError('unknown_formula', '没有 id 为 "' + idOrName + '" 的公式', '用 formulas query 查可用的公式 id。')
+    throw new CalcError('unknown_formula', '没有 id、名称或别名为 "' + idOrName + '" 的公式', '用 formulas query 查可用的公式 id；别名可用 help 或 formula 检索看到。')
   }
   return compileFormula(entry, engine, index).call(values, options)
 }

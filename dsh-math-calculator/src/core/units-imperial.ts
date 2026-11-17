@@ -73,7 +73,7 @@ export const IMPERIAL_LENGTH: UnitEntry[] = [
   { name: 'chain', aliases: ['链'], dimension: 'length', factor: 20.1168, note: '1 chain = 66 ft = 22 yd = 20.1168 m（Gunter 链，铁路与土地测量）', system: 'imperial' },
   { name: 'furlong', aliases: ['弗隆'], dimension: 'length', factor: 201.168, note: '1 furlong = 40 rod = 1/8 mile（「一犁之地」长边）', system: 'imperial' },
   { name: 'cable', aliases: ['cable_length', '链长'], dimension: 'length', factor: 185.2, note: '1 cable = 1/10 海里 = 185.2 m（航海）', system: 'imperial' },
-  { name: 'nautical_mile', aliases: ['nmi', '海里'], dimension: 'length', factor: 1852, note: '1 海里 = 1852 m（1 分纬度）；与 statute mile 不同', system: 'imperial' },
+  { name: 'nautical_mile', aliases: ['nmi', '海里', 'nautical mile', 'nautical miles'], dimension: 'length', factor: 1852, note: '1 海里 = 1852 m（1 分纬度）；与 statute mile 不同', system: 'imperial' },
   { name: 'league_marine', aliases: ['海里格'], dimension: 'length', factor: 5556, note: '1 海里格 = 3 海里 = 5556 m', system: 'imperial' },
 ]
 

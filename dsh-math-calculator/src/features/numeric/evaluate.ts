@@ -44,6 +44,7 @@ import { tryUcumExpression } from '../../core/ucum.js'
 import { toModernExpression } from '../../core/unit-bridge.js'
 import { tryUnitPipeline } from '../../core/unit-pipeline.js'
 import {
+  FMT,
   fmtNumber,
   trimDecimal,
   magnitudeOf,
@@ -414,6 +415,84 @@ export function evaluateOne(
   }
 }
 
+/** 锚点判据（与 help「通用手法」一致：max/min 是数值，expect 是数量级）。 */
+export interface SanityRule {
+  /** 上限（数值）。 */
+  max?: number
+  /** 下限（数值）。 */
+  min?: number
+  /** 期望数量级：expect:3 表示 10³。 */
+  expect?: number
+  /** 判据依据（只回显，不参与计算）。 */
+  note?: string
+}
+
+/** 数值提取：只比对有限数值；带单位/非数值结果不报（量纲不可比）。 */
+function numericOfValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (value !== null && typeof value === 'object' && typeof (value as { value?: unknown }).value === 'number') {
+    const inner = (value as { value: number }).value
+    return Number.isFinite(inner) ? inner : null
+  }
+  return null
+}
+
+/**
+ * 锚点数值显示：10 的整数幂写成 1eN（与 help 示例一致），其余走通用格式。
+ *
+ * @param value - 数值
+ * @returns 显示文本
+ */
+function showAmount(value: number): string {
+  if (Number.isFinite(value) && value !== 0) {
+    const exponent = Math.log10(Math.abs(value))
+    if (Math.abs(exponent - Math.round(exponent)) < 1e-9 && Math.abs(exponent) >= 3) {
+      return (value < 0 ? '-1e' : '1e') + Math.round(exponent)
+    }
+  }
+  return fmtNumber(value, FMT.general)
+}
+
+/**
+ * 比对一条锚点。
+ *
+ * @param value - 求值结果
+ * @param rule - 判据
+ * @returns 状态与说明
+ */
+function checkSanity(value: unknown, rule: SanityRule): { status: 'passed' | 'violated' | 'unknown'; detail: string } {
+  const numeric = numericOfValue(value)
+  if (numeric === null) return { status: 'unknown', detail: '结果不是数值，锚点未比对' }
+  if (typeof rule.max === 'number' && numeric > rule.max) {
+    const times = rule.max === 0 ? Infinity : numeric / rule.max
+    return {
+      status: 'violated',
+      detail: '⚠ 超出锚点上限 ' + showAmount(rule.max) + (rule.note !== undefined ? '（' + rule.note + '）' : '') +
+        (Number.isFinite(times) ? ' 达 ' + showAmount(times) + ' 倍' : ''),
+    }
+  }
+  if (typeof rule.min === 'number' && numeric < rule.min) {
+    const times = numeric === 0 ? Infinity : rule.min / numeric
+    return {
+      status: 'violated',
+      detail: '⚠ 低于锚点下限 ' + showAmount(rule.min) + (rule.note !== undefined ? '（' + rule.note + '）' : '') +
+        (Number.isFinite(times) ? ' 达 ' + showAmount(times) + ' 倍' : ''),
+    }
+  }
+  if (typeof rule.expect === 'number') {
+    /** expect 是数量级：与 10^expect 差 ≥1 个数级才报。 */
+    const magnitude = numeric === 0 ? -Infinity : Math.log10(Math.abs(numeric))
+    if (Number.isFinite(magnitude) && Math.abs(magnitude - rule.expect) >= 1) {
+      return {
+        status: 'violated',
+        detail: '⚠ 与锚点量级 10^' + rule.expect + ' 相差 ' + Math.abs(magnitude - rule.expect).toFixed(1) + ' 个数级' +
+          (rule.note !== undefined ? '（' + rule.note + '）' : ''),
+      }
+    }
+  }
+  return { status: 'passed', detail: '' }
+}
+
 /**
  * 批量求值。
  *
@@ -428,7 +507,7 @@ export function evaluateOne(
  */
 export function evaluateBatch(
   engine: Engine,
-  expressions: Array<string | { label?: string; expr: string }>,
+  expressions: Array<string | { label?: string; expr: string; sanity?: SanityRule }>,
   options: EvaluateOptions,
   /** 变量作用域（variables 注入）。 */
   scope?: Record<string, unknown>,
@@ -445,6 +524,9 @@ export function evaluateBatch(
     text: string
     value: unknown
     error?: string
+    /** 锚点结果（只有条目带 sanity 时存在）。 */
+    sanityStatus?: 'passed' | 'violated' | 'unknown'
+    sanityNote?: string
   }
   const results: ItemResult[] = []
 
@@ -454,6 +536,9 @@ export function evaluateBatch(
     const label = typeof item === 'string' ? '' : (item.label ?? '')
     try {
       const one = evaluateOne(engine, expr, options, scope)
+      /** 锚点：help 承诺「只在批量 expressions 里生效」，此前实现缺失（R58）。 */
+      const rule = typeof item === 'string' ? undefined : item.sanity
+      const sanity = rule !== undefined && rule !== null ? checkSanity(one.value, rule) : null
       results.push({
         index: i + 1,
         label,
@@ -461,6 +546,7 @@ export function evaluateBatch(
         ok: true,
         text: one.result,
         value: one.value,
+        ...(sanity !== null ? { sanityStatus: sanity.status, sanityNote: sanity.detail } : {}),
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -501,8 +587,11 @@ export function evaluateBatch(
   for (const item of results) {
     const head = item.label !== '' ? item.label + '（' + item.expression + '）' : item.expression
     lines.push('  ' + head + ' = ' + item.text)
+    if (item.sanityNote !== undefined && item.sanityNote !== '') lines.push('     ' + item.sanityNote)
   }
   lines.push('')
+  const violated = results.filter((item) => item.sanityStatus === 'violated').length
+  if (violated > 0) lines.push('锚点：' + violated + ' 条越界（判据由你给，工具只比对不猜）')
   lines.push('成功 ' + succeeded + '，失败 ' + failed.length)
   /**
    * 全成功时用分级语义，避免「成功」被读成「结论正确」。
@@ -524,7 +613,10 @@ export function evaluateBatch(
         ok: r.ok,
         value: r.value,
         error: r.error,
+        ...(r.sanityStatus !== undefined ? { sanityStatus: r.sanityStatus } : {}),
+        ...(r.sanityNote !== undefined ? { sanityNote: r.sanityNote } : {}),
       })),
+      sanityViolations: results.filter((item) => item.sanityStatus === 'violated').length,
       succeeded,
       failed: failed.length,
       /** 错误类型汇总 —— 让程序化调用方能一眼看出失败性质。 */

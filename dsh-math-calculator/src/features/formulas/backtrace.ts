@@ -107,15 +107,39 @@ export interface BacktraceResult {
   notes: string[]
 }
 
-/** 中文关键词切分（2 字滑窗 + 英文词）。 */
-function tokenize(text: string): string[] {
+/**
+ * 中文关键词切分（2 字滑窗 + 英文词 + 领域单字）。
+ *
+ * ## 为什么要有单字（R60）
+ *
+ * 目标「这座窑一天烧多少煤」的 2 字滑窗是「座窑 / 天烧 / 少煤」——
+ * 公式 keys 里写的是「窑炉 / 耗煤 / 烧成」，两头**一个都对不上**，于是推荐链被
+ * 「能养活多少人·日」（命中「多少」）抢走。
+ *
+ * 修法：单字只从**领域词表**（全部公式 keys/name 里出现过的汉字）里收，
+ * 这样「窑 / 煤 / 烧」能进，而「天 / 人 / 一」这类万能字不会到处命中。
+ *
+ * @param text - 目标描述
+ * @param vocabulary - 领域单字词表（可选）
+ * @returns 关键词列表
+ */
+/** 疑问词/量词：它们不指向领域量，留着会把「多少」当成关键词（R60）。 */
+const STOP_WORDS = new Set(['这座', '那个', '这个', '这些', '那些', '一天', '多少', '怎么', '如何', '什么', '请问', '大概', '大约', '一些', '可以', '需要'])
+
+function tokenize(text: string, vocabulary?: Set<string>): string[] {
   const tokens = new Set<string>()
   for (const word of text.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
     if (word === '') continue
     if (/[a-z0-9]/.test(word)) tokens.add(word)
     if (/[\u4e00-\u9fa5]/.test(word)) {
-      for (let i = 0; i + 2 <= word.length; i += 1) tokens.add(word.slice(i, i + 2))
-      tokens.add(word)
+      for (let i = 0; i + 2 <= word.length; i += 1) {
+        const pair = word.slice(i, i + 2)
+        if (!STOP_WORDS.has(pair)) tokens.add(pair)
+      }
+      if (!STOP_WORDS.has(word)) tokens.add(word)
+      if (vocabulary !== undefined) {
+        for (const char of word) if (vocabulary.has(char)) tokens.add(char)
+      }
     }
   }
   return [...tokens]
@@ -145,13 +169,27 @@ export function backtrace(formulas: FormulaEntry[], target: string, options: { m
     if (ordered.unresolved.length > 0) notes.push('这些依赖由你提供：' + ordered.unresolved.join('、'))
     return { target, modelChain: { id: hitChain.id, label: hitChain.label, steps, calls, needs }, matches: [], chain: [], missing: [], calls, notes }
   }
-  const tokens = tokenize(target)
+  /** 领域单字词表：只收全部公式 name/keys 里出现过的汉字（见 tokenize 注释）。 */
+  const vocabulary = new Set<string>()
+  for (const entry of formulas) {
+    for (const word of [entry.name, ...(entry.keys ?? [])]) {
+      for (const char of String(word)) if (/[\u4e00-\u9fa5]/.test(char)) vocabulary.add(char)
+    }
+  }
+  const tokens = tokenize(target, vocabulary)
   const scored: Array<{ entry: FormulaEntry; score: number }> = []
   for (const entry of formulas) {
     const haystack = (entry.name + ' ' + (entry.keys ?? []).join(' ') + ' ' + (entry.desc ?? '') + ' ' + entry.expr).toLowerCase()
+    /** keys（人写的别名）权重高于 desc/expr：它才是「用户会怎么问」的索引。 */
+    const keysText = (entry.keys ?? []).map((key) => String(key).toLowerCase()).join(' ')
     let score = 0
     for (const token of tokens) {
-      if (haystack.includes(token)) score += token.length >= 2 ? 2 : 1
+      /**
+       * 单字只看 keys：desc/expr 是长文本，「一 / 天 / 多 / 少」这类字处处都有，
+       * 放进 haystack 会让无关公式靠噪音胜出（R60 实测：炉膛热效率 12 分 > 窑炉热平衡 11 分）。
+       */
+      if (token.length >= 2 && haystack.includes(token)) score += 2
+      if (keysText.includes(token)) score += token.length >= 2 ? 3 : 2
     }
     if (score > 0) scored.push({ entry, score })
   }

@@ -2,6 +2,38 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.3.0] — 2026-11-18
+
+**R58–R60 模拟推演 + 144 类问题表复现**：9 个根因、50 条数据修正、36 项新守护。
+
+### 新增
+
+- **公式别名检索**：`formula` 支持按 keys 整词命中（`thermal_radiation` → `stefan_boltzmann`、
+  `potential_gravity` → `potential_energy`）；dispatch 与 callFormula 共用 `findFormula`，不再两处漂移。
+- **公式库 804 条**：新增 `rocket_equation`（齐奥尔科夫斯基方程，带 sources 与 confidence）。
+- **批量锚点 `sanity`**：`expressions` 条目支持 `{max,min,expect,note}`；逐条比对并给
+  `⚠ 超出锚点上限 1e10（…） 达 100 倍`，`value.items[].sanityStatus` 为 passed/violated/unknown。
+- **两词英文单位别名**：`nautical mile` / `nautical miles`（`nmi`/`海里` 原有）。
+
+### 变更
+
+- `consistency`：支持 `-`/`−`/`－`/`负`/`+` 前缀；判冲突改用绝对值算倍数，正负号相反直接算冲突。
+- `units` 代入过程按量纲改写成 SI 基准（`1 MJ/kg = 1e+6 m^2 / s^2`），不再暴露 `raddose` 内部代号。
+- `backtrace`：领域单字 + 停用词 + keys 加权；「这座窑一天烧多少煤」第一命中改为窑炉热平衡。
+
+### 修复
+
+- **公式参数量纲/量名 33 条**：气体常数 15、比热容 8、导热系数 5、截面宽 4、扩散系数 4、升温速率 1。
+- **输出单位换算 8 条 expr**：kiln_firing_time（7.2 h）、reactor_residence_time（2 h）、
+  adsorption_breakthrough、oxygen_depletion（10.5 min）、gear_geometry（40 mm）、
+  admin_radius_from_info（100 km）、hardness_yield_generic、gear_contact_stress（219 MPa）。
+- `kiln_heat_balance.unit` MJ → **kJ**；`ware_specific_heat` 描述改 J/(kg·K)。
+- `potential_energy.g` 量纲从速度改为加速度（desc 写的是 m/s²）。
+
+### 测试
+
+**112 套 / 2,694 项全绿**；新增 `r58-r60-fixes` 36 项；`test-v3/test-report.json` 已刷新。
+复现与根因详见 `docs/R58-R60复现结论.md`。
 ## [3.2.0] — 2026-11-18
 
 **批量调用（calls）**：一次工具调用可提交多条，不再让 AI 逐条发工具调用。

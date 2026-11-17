@@ -430,7 +430,11 @@ function autoCjkAliases(): Array<[string, string]> {
          * 中文按字匹配没问题（汉字不会嵌在英文单词里），英文要求 ≥5 字符，
          * 且不能是另一个别名的前缀。
          */
-        const isLongEn = /^[A-Za-z][A-Za-z0-9_]{4,}$/.test(alias) && alias !== target
+        /**
+         * 英文别名：单词 ≥5 字符，或**两词全称**（`nautical mile`，R60 反馈）。
+         * 两词别名必须整词匹配，替代逻辑按字符扫描，空格不会造成子串误伤。
+         */
+        const isLongEn = (/^[A-Za-z][A-Za-z0-9_]{4,}$/.test(alias) || /^[A-Za-z][A-Za-z0-9_]{2,} [A-Za-z][A-Za-z0-9_]{2,}$/.test(alias)) && alias !== target
         if (!isCjkAlias && !isLongEn) continue
         if (alias === target) continue
         /**

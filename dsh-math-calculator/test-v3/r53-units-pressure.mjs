@@ -59,8 +59,11 @@ console.log('-- 4. 公式缺参要给「缺哪个」（不是 [object Object]）
   const r = await run({ operation: 'formula', formula: 'kinetic_energy' })
   assert('★ 缺参 → missing_params', r.ok === false && r.error.type === 'missing_params', String(r.error?.type))
   assert('★ 说清缺 m 与 v', String(r.error.message).includes('m') && String(r.error.message).includes('v'), String(r.error?.message).slice(0, 60))
-  const nf = await run({ operation: 'formula', formula: 'thermal_radiation', params: { T: 300 } })
+  const nf = await run({ operation: 'formula', formula: 'no_such_formula' })
   assert('★ 公式名不存在 → unknown_formula', nf.ok === false && nf.error.type === 'unknown_formula', String(nf.error?.type))
+  /** R58 起 thermal_radiation 是 stefan_boltzmann 的别名（keys 整词命中），不再是 unknown。 */
+  const alias = await run({ operation: 'formula', formula: 'thermal_radiation', params: { T: 300 } })
+  assert('★ 别名 thermal_radiation → stefan_boltzmann（缺 A）', alias.ok === false && alias.error.type === 'missing_params' && String(alias.error.message).includes('stefan_boltzmann'), String(alias.error?.message).slice(0, 70))
 }
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
