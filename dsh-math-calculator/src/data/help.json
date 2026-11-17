@@ -86,7 +86,9 @@
    "检索",
    "overrides",
    "覆盖参数",
-   "formula-table"
+   "formula-table",
+   "formulas",
+   "公式集"
   ],
   "body": "【公式库】共 805 条自然科学公式\n  formula      调一条公式：formula=\"escape_velocity\", overrides={M,r}\n               ★ overrides 可覆盖任意参数 —— 这是架空世界改造的关键\n               例：把重力改成 1.5 倍地球 {\"g\": 14.71}；光速 {\"c\": 1e8}\n               ★ 错拼的 key 会点名上报，不会静默忽略\n\n  【体系】公式不是散着的 —— 22 条推演链按「一条链算一遍」组织：\n    formulas query=\"sys\"                  → 列出全部体系（材料/结构/能源/产能/食物/生物/\n                                             时间/财政/增长/建筑/气候/交通/军事/信息/水利/\n                                             金融/天文/生理/信息控制/决策/量子/排队）\n    formulas query=\"sys:sys-energy\"       → 看能源链的逐步（每步公式、输出单位、需自备参数）\n    formulas query=\"sys:formula:材料\"      → 看某条公式属于哪几条链（体系间的接点）\n    formulas query=\"sys:compound\"           → 看 7 条**复合路径**（跨 4 条链的现成路线）\n    formulas query=\"sys:compound:mine-to-empire\" → 从矿石到帝国：每一跳的接点公式\n    ★ 每步都标「← 上一步的谁作为本步的哪个参数」，照着填即可\n    ★ 体系之间靠共用公式连接（如 metallurgy_yield 同时属于材料链与产能链）\n    ★ 不必追求全部串成一条 —— 按推演目的取一条链，参数才不会拖家带口\n  【参数带单位】两种写法等价，都能让单位真的参与计算：\n    1) 逐参数带单位：overrides={V:\"324375 L\", n:20}   ← 更精确，可各给不同单位\n    2) 整批声明：unitFrom=\"L\", overrides={V:324375, n:20}   ← 更省事\n       目标单位默认用该参数自己声明的（V 声明 m³，故 324375 L → 324.375 m³）\n       ★ 无量纲参数（人数、个数、份额）**不参与换算** —— 只有声明了单位的才换\n       ★ 量纲不符会报错，不会静默按原数字算\n\n  【terse】只回一行，省 token：\n    terse:true → kleiber = 164316767.25 W，并注明覆盖了哪些参数\n    ★ 砍掉的是标题与参数表，**风险提示不砍**：经验式的【适用域】仍然保留\n\n  ★ 调低 precision 导致结果被截时会提示（如 10^20+1 在 precision=8 下末位失真）\n  ★ 新补充的领域（写世界观常用）：\n    engineering/structures  梁柱应力/挠度/惯性矩/螺栓焊缝（7 条）\n    engineering/thermal     卡诺效率/蒸汽功率/煤耗/换热/导热（5 条）\n    engineering/fluid,energy 管流/水头损失/泵/孔口/风电/水电（6 条）\n    biology/ecology         载畜量/出栏/料肉比/NPP/营养级（5 条）\n    econ/macro              劳力/总产出/储蓄/资本产出比/货币供应/通胀（6 条）\n\n  formulas     检索与分类：\n               query=\"关键词\"        按名称/关键词（如 \"重力\"、\"人口\"）\n               query=\"layer:derived\" 按规则层级\n                 fundamental 基本规则 / mathematical 数学基础（与基本同级）\n                 derived 派生 / phenomenological 唯象\n                 engineering 工程 / conventional 惯例\n               query=\"domain:物理\"   按学科领域（多标签）\n               query=\"freq:high\"     按主角感知频率（high/medium/low）\n               query=\"symbol:m\"      按符号含义\n               query=\"*\" 或留空      列出全部分类\n  formula-table 两级扩展：工作区临时公式（覆盖/自定义/停用）+ 全局公式包\n               tableAction: global-list / global-add / global-remove\n               字段与校验规则见 docs/formula-authoring.md\n\n【分项】有的公式真正要算的是中间项（如哈迪-温伯格：总和恒为 1，用户要的是 2pq）：\n  {operation:\"formula\", formula:\"hardy_weinberg\", params:{p:0.9,q:0.1}}\n  → 结果后附「分项：p²=0.81、2pq=0.18、q²=0.01」，value.parts 也有三项。"
  },
@@ -598,7 +600,9 @@
    "概率",
    "分布",
    "回归",
-   "方差"
+   "方差",
+   "dist",
+   "regression"
   ],
   "body": "【统计与概率】\n\n  stats        描述统计，一次给全套：\n               均值 / 中位数 / 众数 / 方差 / 标准差 / 分位数 / 偏度 / 峰度\n               例：{operation:\"stats\", data:[1,2,3,4]}\n               ★ 均值与中位数差得远，说明数据偏斜（少数极值拉动了均值）——\n                 这是判断「平均数能不能用」的第一眼信号。\n\n  dist         概率分布。三个参数：distribution 选型 / params 给参数 / x 给求值点\n\n               normal      params:[均值, 标准差]     正态分布\n               binomial    params:[n, p]              二项分布（n 次试验成功 p 次）\n               poisson     params:[lambda]            泊松分布（单位时间事件数）\n               exponential params:[lambda]            指数分布（等待时间）\n               chisquare   params:[df]                χ² 分布\n               t           params:[df]                t 分布（小样本）\n               normalinv   x=分位数 → 给出对应的值（正态反查）\n               quantile    x=分位数 → 给出分位数值\n\n               ★ 给出的是 CDF 或 PDF，取决于分布定义——看输出里写的是哪个，\n                 别凭分布名猜。\n\n  regression   线性与多项式回归\n               degree 指定次数（默认 1 = 线性）\n               返回系数与 **R²**\n               ★ R² 接近 1 不代表因果成立，只说明拟合贴合——\n                 这是最常见的误读，尤其在「用拟合曲线论证规律」时。\n\n  ★ 概率类常用场景：\n    两年一遇的洪水 → 求超越概率 0.5 对应的重现期\n    「这个数字落在正常区间的概率」→ normal + CDF\n    A/B 结果差异是不是巧合 → t 分布"
  },
@@ -742,7 +746,9 @@
    "识别数字",
    "表格化",
    "结构化",
-   "数字抽取"
+   "数字抽取",
+   "extract_numbers",
+   "抽取数字"
   ],
   "body": "【数字台账】extract_numbers 从文本抽结构化数字\n\n  先取文本（PDF 用宿主工具），再送进来：\n    read_pdf / async_parse_pdf → 拿到正文\n    {operation:\"extract_numbers\", text:\"…正文…\"} → 台账\n\n  每条给：原文、数值（中文量级已折算）、单位、上下文、行号。\n  区间的给上下界；噪音（页码/时间戳/思考耗时/轮次）默认滤掉。\n\n  ★ 中文量级会折算：1.49 亿 → 149000000，2.66 亿吨 → 266000000。\n  ★ 每个数字带**上下文**（所在那半句）—— 否则抽出来也不知道是什么。\n  ★ keepNoise:true 可保留噪音（会标出原因）；limit 控制上限（默认 2000）。\n\n  ⚠ 这是**台账**不是验算。要对账请把成组的数送进 ledger 或 evaluate。"
  },
@@ -909,7 +915,9 @@
    "白皮书",
    "相图",
    "敏感度",
-   "算力"
+   "算力",
+   "impact",
+   "影响面"
   ],
   "body": "【推演栈】derivation 子命令（共 29 个）\n  入口：{operation:\"derivation\", derivation:\"stack\"}（不给 derivation 会列出全部）\n\n  【推演流程】\n    stack        推演栈总览（八层结构）\n    cards        接口卡\n    pipeline     正向推演链路 world → P1—P5 逐层判定\n    checklist    检查表\n  【判定与兜底】\n    dead         死寂态：判定 + 结语 + 挽救方向\n    chaos        混沌拦截（误差超 100% 时明确说不可预测）\n    flip         结论翻转判定：数值变了 ≠ 结论翻了\n    observer     观测者物理过滤（人择选择效应）\n  【反推与探查】\n    anchors      逆推校准（七张表持久化 + 版本对比）\n    backSolve    逆向求解\n    sensitivity  敏感度，参数 base + exponent\n    phase        相图\n    heatmap      热力图（没有解的区域会明说）\n    graph        依赖图，graphDepths 控制深度\n    timeline     时间轴，参数 from / to / steps\n    compare      A-B 对比\n    diff         版本差异\n  【档案】\n    archive      档案\n    history      历史\n    tables       数据表\n    whitepaper   白皮书导出，whitepaperMode\n    trace        溯源，traceTarget 指定目标\n  【算力】\n    cost         算力预算：costKind / costX / costY / costIterations / costCombos\n                costWithPipeline 可把推演链一起估\n  【叠加层】\n    fantasy      幻想层（叠加能力，只提醒不反驳）\n                fantasyAbility / fantasyDemand / fantasyPhysical / fantasyBodyArea\n    civilization 文明极限（能量/材料/交通/技术树）\n    dimensionless 无量纲分析\n    inherit      继承：inheritBase / inheritDerived / inheritSync\n    units        单位陷阱检查\n    impact       影响评估"
  },
@@ -1064,7 +1072,10 @@
    "历法",
    "轨道",
    "黑洞",
-   "星历"
+   "星历",
+   "bodies",
+   "天体数据",
+   "天体查询"
   ],
   "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope\"（或 sextant/clock/pendulum/shadow/calendar-drift）,precision}\n  ★ 太阳光度是常数 3.828e26 W（不是公式）；需要时用 evaluate 直接算，或看 solar_flux_at_1au 由光度推辐照度。"
  },
@@ -1240,7 +1251,9 @@
    "模拟",
    "系统动力学",
    "对账",
-   "自创量"
+   "自创量",
+   "quantities",
+   "量纲声明"
   ],
   "body": "【优化 / 模拟 / 对账 / 自创量】\n  optimize   {objective:\"profit\", opType:\"max\", constraints:{资源:{max:100}}, lpVariables:{x:{资源:1,profit:3}}, integers:[\"x\"]}\n  simulate   {stocks:{人口:{initial:100}}, flows:{出生:{to:\"人口\",rate:\"人口*0.02\"}}, dt:1, simSteps:100}\n  crosscheck {checkId:\"escapeVelocity\"}（5 项：逃逸速度/一年天数/排水量/耗氧/人口）\n  custom     {customAction:\"add\", name:\"灵力\", unit:\"J\", expectedDimension:{M:1,L:2,T:-2}}\n  ★ crosscheck 只报差异，不替你选哪边对。"
  }
