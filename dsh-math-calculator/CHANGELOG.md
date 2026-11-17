@@ -2,6 +2,57 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.1.1] — 2026-11-18
+
+**「单位覆盖」批次**：中文写法 78 → 488（96.4%）→ 641 条，非 ASCII 符号单位全部可换算；
+同时修掉 R49 / R51 / R52 / R53 轮测试暴露的边界缺陷与 52 个被静默忽略的 schema 键。
+
+### 新增
+
+- **单位中文写法**：从 `units.json` 自动生成别名表（`autoCjkAliases` + `registerDataUnits`），
+  中文名注册成 `cz<hash>` 合成名并保留 factor（`担` = 50 kg，不再被算成 1 kg）。
+  非例外单位覆盖率 78 → 488（96.4%）；随后合入 GNU units / pint 筛出的 92 条英文别名、
+  中文词典核实的 8 条、搜索收录并逐词核实的 22 条，最终 **641 条中文写法**。
+- **非 ASCII 符号单位**（°C / °F / °R / °Ré / Ω / kΩ / MΩ / braça / sążeń / łokieć / deg² 等 28 个）：
+  符号归一 + 变音符号折叠。
+- **温度中文名**：`degC` / `degF` / `degR` 承载「摄氏度 / 华氏度 / 兰氏度」——
+  `100 摄氏度 → degF` 由 −279 修为 **212**。
+- **常用符号**：`kn` / `kcal` / `cal` / `kWh` / `GJ` 等 18 个补齐，并加 `unit-symbols` 守护
+  （提示词里承诺的例子必须有测试）。
+- **地形十种**：ocean / sea / ice / volcano / gas / urban / hive / cave / sky / space；
+  `world` 接入局地气候（`describeTerrain` 原为死代码），真空与气态不输出无意义的陆地气候量。
+- **schema 补键**：52 个被静默忽略的键（starMass / starTemp / orbitAU / ledger 等）补齐；
+  恒星别名归一，未知参数给出提示。
+
+### 变更
+
+- **单位策略转向**：提示词要求优先国际符号（`kn` / `degC` / `kcal` / `GJ`），中文别名降为兜底
+  （见 `docs/单位策略-优先国际符号.md`）。
+- **撤销 3.2 贸易网络**：用户判定方向不成立。
+
+### 修复
+
+- **单位别名**：补 7 条中文别名（石 / 节 / 牛顿 / 摩尔 / 吨标煤 / 摄氏 / 平方英尺）；
+  `createUnit` 逐条 try（原一条失败吞掉后面，`tce` 静默消失）；别名后边界判汉字
+  （修「石炭」被拆成 `1 cndan炭`）；修 `knot → kn` 子串误伤、`ohm/Ω` 循环、`degC` 误挂 `K`；
+  pressure 单位标注改回 `Pa`。
+- **R49**：`eigen` 对非对称矩阵回落 `eigs`；`system` 支持 `equations` 写法；
+  `recurrence` 状态名从表达式推断；`solve` 多未知数改报「多组解」。
+- **R51**：空表达式不再假成功（`missing_params`）；栈溢出改判「表达式太复杂」并截断原文；
+  `sensitivity` 用默认模型时明说；区间反序不再静默交换。
+- **R52**：拓扑反向重复边按无向去重（原崩 internal）；无坐标时提示总长不可信；
+  经纬度越界校验（原会算出 15,127 km）。
+- **输出**：出口统一清理 `undefined`（修 R48 的 ledger 致命错误与 `[object Object]` 次生现象），
+  并加无损性守护。
+- **对账**：`consistency` 支持中文大写数字（壹仟贰佰 → 1200）；主体字符集排除数字汉字；
+  指代型主体丢弃并明确告知；段号不再输出 `undefined`；成本与售价不再误判为同一量。
+
+### 测试
+
+**110 套 / 2,616 项全绿**；`doccheck` / `preflight` 通过。新增 10 套：
+`unit-coverage`、`unit-symbols`、`terrain-kinds`、`schema-coverage`、`output-lossless`、
+`r49-fixes`、`r51-boundaries`、`r52-topology-dirty`、`r53-units-pressure`、`consistency-cn`。
+
 ## [3.1.0] — 2026-11-16
 
 **「硬核推演」批次**：把天文、封闭系统、历史推演、工程校核、优化、系统动力学
