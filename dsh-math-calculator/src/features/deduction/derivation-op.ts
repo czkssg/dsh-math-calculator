@@ -315,6 +315,15 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     const exponent = typeof input['sensitivityExponent'] === 'number' ? input['sensitivityExponent'] : 3
     const report = sensitivity((x: number) => x ** exponent, base)
     lines.push('═══ 敏感性分析 ═══', '')
+    /**
+     * 静默默认会让调用方以为「分析了我给的模型」（R51 B 类）。
+     * 没有显式给 base/exponent 时，明说用的是内置默认模型。
+     */
+    if (input['sensitivityBase'] === undefined && input['sensitivityExponent'] === undefined) {
+      lines.push('  ⚠ 未给 sensitivityBase / sensitivityExponent —— 下面用的是**内置默认模型**「结果 = 输入^3，基线 9.8066」。')
+      lines.push('    要分析你自己的模型，请传 sensitivityBase（基线值）与 sensitivityExponent（指数）。')
+      lines.push('')
+    }
     lines.push('  模型：结果 = 输入^' + exponent + '，基线 ' + f(base))
     for (const item of report.items) {
       lines.push('  ' + item.parameter.padEnd(10) + ' 结果=' + f(item.perturbed) + '  相对变化=' + (item.relativeChange * 100).toFixed(2) + '%  ' + item.verdict)

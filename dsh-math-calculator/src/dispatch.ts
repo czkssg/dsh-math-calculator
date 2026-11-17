@@ -569,6 +569,13 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return toOutcome({ ...batch, ...(precisionNotice !== undefined ? { notice: precisionNotice } : {}) })
       }
       const expression = typeof args['expression'] === 'string' ? args['expression'] : ''
+      /**
+       * 空表达式必须报错（R51）：以前返回 ok:true + result:"undefined"，
+       * 调用方 `if (r.ok)` 会把假成功当成功。
+       */
+      if (expression.trim() === '') {
+        throw new CalcError('missing_params', '表达式为空', '要算什么就写出来，例如 {expression:"1/3"}；批量用 expressions:[…]。')
+      }
       let single
       try {
         single = evaluateOne(buildEngine(), expression, options, scope as never)

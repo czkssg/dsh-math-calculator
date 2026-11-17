@@ -113,7 +113,24 @@ export function normalizeError(error: unknown, source?: string): CalcError {
   if (error instanceof CalcError) return error
 
   const raw = error instanceof Error ? error.message : String(error)
-  const where = source !== undefined && source !== '' ? `（表达式：${source}）` : ''
+  /**
+   * 超长表达式不能把整段塞进错误消息（R51）：500 层括号 / 5000 项加法会把
+   * 几 KB 原文灌进 message，既没法读也占满上下文。只留头尾。
+   */
+  const shortSource = source !== undefined && source.length > 60 ? source.slice(0, 40) + '…（共 ' + source.length + ' 字符）' : source
+  const where = shortSource !== undefined && shortSource !== '' ? `（表达式：${shortSource}）` : ''
+
+  /**
+   * 栈溢出 = 表达式太深/太长，不是工具 bug（R51）。
+   * 报 internal 会让调用方去查工具实现，实际该做的是缩短表达式。
+   */
+  if (/Maximum call stack size exceeded|out of memory/i.test(raw)) {
+    return new CalcError(
+      'invalid_argument',
+      '表达式太复杂，解析时栈溢出' + where,
+      '嵌套层数或项数超出可解析范围。把它拆成多步（用 variables 传中间结果），或改用 expressions 批量。',
+    )
+  }
 
   /** mathjs 的未定义符号。 */
   const undefinedSymbol = /Undefined symbol\s+(\S+)/i.exec(raw)

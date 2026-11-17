@@ -119,12 +119,23 @@ export function toBracket(raw: unknown, name: string): Bracket {
   )
 }
 
-/** 保证 low ≤ high。 */
-function normalizeBracket(low: number, high: number): Bracket {
+/**
+ * 保证 low ≤ high。
+ *
+ * 反序输入（`low:20, high:6`）会交换，但**必须说出来**（R51 D 类）：
+ * 静默交换会让调用方以为参数按原样生效，后续把高低界弄反。
+ */
+function normalizeBracket(low: number, high: number, name?: string): Bracket {
   if (!Number.isFinite(low) || !Number.isFinite(high)) {
     throw new CalcError('invalid_argument', '区间的上下界必须是有限数', '')
   }
-  return low <= high ? { low, high } : { low: high, high: low }
+  if (low <= high) return { low, high }
+  const label = name !== undefined && name !== '' ? '「' + name + '」' : ''
+  throw new CalcError(
+    'invalid_argument',
+    '区间' + label + '的上下界写反了：low=' + low + ' > high=' + high,
+    '区间要写成 [小, 大]。若你确实要 [20,6]，请改成 [6,20]——工具不会替你交换，因为那可能掩盖真实的参数错误。',
+  )
 }
 
 /**
