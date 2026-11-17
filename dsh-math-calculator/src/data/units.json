@@ -201,7 +201,9 @@
    "aliases": [
     "链",
     "测链",
-    "ch"
+    "ch",
+    "冈特测链",
+    "锁"
    ],
    "dimension": "length",
    "factor": 20.1168,
@@ -464,7 +466,8 @@
   {
    "name": "cubit",
    "aliases": [
-    "肘尺"
+    "肘尺",
+    "腕尺"
    ],
    "dimension": "length",
    "factor": 0.4572,
@@ -473,7 +476,8 @@
   {
    "name": "span",
    "aliases": [
-    "拃"
+    "拃",
+    "一掌"
    ],
    "dimension": "length",
    "factor": 0.2286,
@@ -645,7 +649,8 @@
     "LT",
     "gross ton",
     "载重吨",
-    "brton"
+    "brton",
+    "英吨"
    ],
    "dimension": "mass",
    "factor": 1016.0469088,
@@ -657,7 +662,8 @@
     "短吨",
     "ST",
     "净吨",
-    "uston"
+    "uston",
+    "美吨"
    ],
    "dimension": "mass",
    "factor": 907.18474,
@@ -758,7 +764,8 @@
    "name": "dwt",
    "aliases": [
     "便士重",
-    "本尼威特"
+    "本尼威特",
+    "英钱"
    ],
    "dimension": "mass",
    "factor": 0.00155517384,
@@ -1214,7 +1221,8 @@
   {
    "name": "sqft",
    "aliases": [
-    "平方英尺"
+    "平方英尺",
+    "英尺平方"
    ],
    "dimension": "area",
    "factor": 0.09290304
@@ -1419,7 +1427,8 @@
   {
    "name": "gal",
    "aliases": [
-    "加仑"
+    "加仑",
+    "美制加仑"
    ],
    "dimension": "volume",
    "factor": 0.003785411784,
@@ -1429,7 +1438,8 @@
    "name": "gal_uk",
    "aliases": [
     "英制加仑",
-    "imperial gallon"
+    "imperial gallon",
+    "英加仑"
    ],
    "dimension": "volume",
    "factor": 0.00454609,
@@ -1438,7 +1448,8 @@
   {
    "name": "qt",
    "aliases": [
-    "夸脱"
+    "夸脱",
+    "美制夸脱"
    ],
    "dimension": "volume",
    "factor": 0.000946352946,
@@ -1447,7 +1458,8 @@
   {
    "name": "pt",
    "aliases": [
-    "品脱"
+    "品脱",
+    "美制品脱"
    ],
    "dimension": "volume",
    "factor": 0.000473176473,
@@ -1527,7 +1539,8 @@
     "及尔",
     "gi",
     "liquid_gill",
-    "US_liquid_gill"
+    "US_liquid_gill",
+    "吉耳"
    ],
    "dimension": "volume",
    "factor": 0.00011829411825,
@@ -1697,7 +1710,8 @@
    "name": "BTU",
    "aliases": [
     "英热单位",
-    "btu"
+    "btu",
+    "英国热能单位"
    ],
    "dimension": "energy",
    "factor": 1055.05585262,
@@ -1747,7 +1761,8 @@
   {
    "name": "tTNT",
    "aliases": [
-    "吨TNT"
+    "吨TNT",
+    "吨TNT当量"
    ],
    "dimension": "energy",
    "factor": 4184000000,
@@ -1756,7 +1771,8 @@
   {
    "name": "ktTNT",
    "aliases": [
-    "千吨TNT"
+    "千吨TNT",
+    "千吨TNT当量"
    ],
    "dimension": "energy",
    "factor": 4184000000000,
@@ -1766,7 +1782,8 @@
    "name": "MtTNT",
    "aliases": [
     "百万吨TNT",
-    "megaton"
+    "megaton",
+    "百万吨TNT当量"
    ],
    "dimension": "energy",
    "factor": 4184000000000000,
@@ -1775,7 +1792,8 @@
   {
    "name": "GtTNT",
    "aliases": [
-    "十亿吨TNT"
+    "十亿吨TNT",
+    "十亿吨TNT当量"
    ],
    "dimension": "energy",
    "factor": 4184000000000000000,
@@ -2020,7 +2038,8 @@
    "name": "ton_refrig",
    "aliases": [
     "冷吨",
-    "RT"
+    "RT",
+    "制冷吨"
    ],
    "dimension": "power",
    "factor": 3516.8528420667,
@@ -2387,7 +2406,8 @@
   {
    "name": "cmH2O",
    "aliases": [
-    "厘米水柱"
+    "厘米水柱",
+    "毫米水柱"
    ],
    "dimension": "pressure",
    "factor": 98.0665,
@@ -2412,7 +2432,8 @@
   {
    "name": "Ba",
    "aliases": [
-    "巴（CGS）"
+    "巴（CGS）",
+    "巴利"
    ],
    "dimension": "pressure",
    "factor": 0.00001,
@@ -4113,7 +4134,8 @@
    "name": "Sv",
    "aliases": [
     "希沃特",
-    "sievert"
+    "sievert",
+    "西弗"
    ],
    "dimension": "dose_equivalent",
    "factor": 1,
