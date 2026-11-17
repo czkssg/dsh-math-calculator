@@ -22,7 +22,8 @@
     "kilometer",
     "kilometers",
     "kilometre",
-    "kilometres"
+    "kilometres",
+    "click"
    ],
    "dimension": "length",
    "factor": 1000
@@ -30,7 +31,8 @@
   {
    "name": "dm",
    "aliases": [
-    "分米"
+    "分米",
+    "公寸"
    ],
    "dimension": "length",
    "factor": 0.1
@@ -61,7 +63,8 @@
    "name": "µm",
    "aliases": [
     "微米",
-    "μm"
+    "μm",
+    "公忽"
    ],
    "dimension": "length",
    "factor": 0.000001
@@ -69,7 +72,8 @@
   {
    "name": "nm",
    "aliases": [
-    "纳米"
+    "纳米",
+    "毫微米"
    ],
    "dimension": "length",
    "factor": 1e-9
@@ -174,7 +178,9 @@
    "name": "mi",
    "aliases": [
     "英里",
-    "mile"
+    "mile",
+    "哩",
+    "international_mile"
    ],
    "dimension": "length",
    "factor": 1609.344,
@@ -193,7 +199,9 @@
   {
    "name": "chain",
    "aliases": [
-    "链"
+    "链",
+    "测链",
+    "ch"
    ],
    "dimension": "length",
    "factor": 20.1168,
@@ -203,7 +211,9 @@
    "name": "rd",
    "aliases": [
     "杆",
-    "rod"
+    "rod",
+    "pole",
+    "perch"
    ],
    "dimension": "length",
    "factor": 5.0292,
@@ -223,7 +233,8 @@
    "name": "yd",
    "aliases": [
     "码",
-    "yard"
+    "yard",
+    "international_yard"
    ],
    "dimension": "length",
    "factor": 0.9144,
@@ -234,7 +245,10 @@
    "aliases": [
     "英尺",
     "foot",
-    "呎"
+    "呎",
+    "international_foot",
+    "feet",
+    "international_feet"
    ],
    "dimension": "length",
    "factor": 0.3048,
@@ -245,7 +259,10 @@
    "aliases": [
     "英寸",
     "inch",
-    "吋"
+    "吋",
+    "international_inch",
+    "inches",
+    "international_inches"
    ],
    "dimension": "length",
    "factor": 0.0254,
@@ -254,7 +271,9 @@
   {
    "name": "hand",
    "aliases": [
-    "掌"
+    "掌",
+    "手宽",
+    "palmwidth"
    ],
    "dimension": "length",
    "factor": 0.1016,
@@ -263,7 +282,8 @@
   {
    "name": "barleycorn",
    "aliases": [
-    "大麦粒"
+    "大麦粒",
+    "麦粒"
    ],
    "dimension": "length",
    "factor": 0.0084667,
@@ -282,7 +302,8 @@
   {
    "name": "AU",
    "aliases": [
-    "天文单位"
+    "天文单位",
+    "天文距離單位"
    ],
    "dimension": "length",
    "factor": 149597870700,
@@ -301,7 +322,8 @@
    "name": "pc",
    "aliases": [
     "秒差距",
-    "parsec"
+    "parsec",
+    "视差秒"
    ],
    "dimension": "length",
    "factor": 30856775814913670,
@@ -311,13 +333,20 @@
    "name": "kpc",
    "category": "science",
    "dimension": "length",
-   "factor": 30856775814913670000
+   "factor": 30856775814913670000,
+   "aliases": [
+    "千秒差距"
+   ]
   },
   {
    "name": "Mpc",
    "category": "science",
    "dimension": "length",
-   "factor": 3.085677581491367e+22
+   "factor": 3.085677581491367e+22,
+   "aliases": [
+    "百万秒差距",
+    "兆秒差距"
+   ]
   },
   {
    "name": "Rearth",
@@ -351,7 +380,8 @@
    "name": "Å",
    "aliases": [
     "埃",
-    "angstrom"
+    "angstrom",
+    "埃格斯特朗"
    ],
    "dimension": "length",
    "factor": 1e-10,
@@ -362,7 +392,13 @@
    "name": "bohr",
    "category": "science",
    "aliases": [
-    "玻尔半径"
+    "玻尔半径",
+    "波尔半径",
+    "a_0",
+    "a0",
+    "bohr_radius",
+    "atomic_unit_of_length",
+    "a_u_length"
    ],
    "dimension": "length",
    "factor": 5.29177210903e-11
@@ -381,12 +417,17 @@
    "name": "町",
    "dimension": "length",
    "factor": 109.09,
-   "note": "日本「町」≈ 109 m（60 间）"
+   "note": "日本「町」≈ 109 m（60 间）",
+   "aliases": [
+    "町",
+    "日本町"
+   ]
   },
   {
    "name": "verst",
    "aliases": [
-    "俄里"
+    "俄里",
+    "维尔斯特"
    ],
    "dimension": "length",
    "factor": 1066.8,
@@ -440,7 +481,8 @@
   {
    "name": "pica",
    "aliases": [
-    "派卡"
+    "派卡",
+    "printers_pica"
    ],
    "dimension": "length",
    "factor": 0.0042333,
@@ -462,7 +504,8 @@
     "千克",
     "公斤",
     "kilogram",
-    "kilograms"
+    "kilograms",
+    "key"
    ],
    "dimension": "mass",
    "factor": 1,
@@ -477,7 +520,8 @@
     "tonne",
     "metric ton",
     "metric tonne",
-    "MT"
+    "MT",
+    "short_ton"
    ],
    "dimension": "mass",
    "factor": 1000,
@@ -490,7 +534,8 @@
     "gram",
     "grams",
     "gramme",
-    "grammes"
+    "grammes",
+    "公克"
    ],
    "dimension": "mass",
    "factor": 0.001
@@ -498,7 +543,8 @@
   {
    "name": "mg",
    "aliases": [
-    "毫克"
+    "毫克",
+    "公丝"
    ],
    "dimension": "mass",
    "factor": 0.000001
@@ -507,7 +553,8 @@
    "name": "µg",
    "aliases": [
     "微克",
-    "mcg"
+    "mcg",
+    "公忽克"
    ],
    "dimension": "mass",
    "factor": 1e-9
@@ -515,7 +562,8 @@
   {
    "name": "ng",
    "aliases": [
-    "纳克"
+    "纳克",
+    "毫微克"
    ],
    "dimension": "mass",
    "factor": 1e-12
@@ -595,7 +643,8 @@
     "长吨",
     "LT",
     "gross ton",
-    "载重吨"
+    "载重吨",
+    "brton"
    ],
    "dimension": "mass",
    "factor": 1016.0469088,
@@ -606,7 +655,8 @@
    "aliases": [
     "短吨",
     "ST",
-    "净吨"
+    "净吨",
+    "uston"
    ],
    "dimension": "mass",
    "factor": 907.18474,
@@ -616,7 +666,10 @@
    "name": "lb",
    "aliases": [
     "磅",
-    "pound"
+    "pound",
+    "lbm",
+    "avoirdupois_pound",
+    "avdp_pound"
    ],
    "dimension": "mass",
    "factor": 0.45359237,
@@ -625,7 +678,8 @@
   {
    "name": "oz",
    "aliases": [
-    "盎司"
+    "盎司",
+    "英两"
    ],
    "dimension": "mass",
    "factor": 0.028349523125,
@@ -643,7 +697,8 @@
   {
    "name": "gr",
    "aliases": [
-    "格令"
+    "格令",
+    "喱"
    ],
    "dimension": "mass",
    "factor": 0.00006479891,
@@ -672,13 +727,18 @@
    "dimension": "mass",
    "factor": 14.5939029372,
    "category": "science",
-   "note": "英制工程质量单位 ≈ 14.59 kg（1 lbf·s²/ft）"
+   "note": "英制工程质量单位 ≈ 14.59 kg（1 lbf·s²/ft）",
+   "aliases": [
+    "斯勒格",
+    "geepound"
+   ]
   },
   {
    "name": "ozt",
    "aliases": [
     "金衡盎司",
-    "troy ounce"
+    "troy ounce",
+    "特洛伊盎司"
    ],
    "dimension": "mass",
    "factor": 0.0311034768,
@@ -696,7 +756,8 @@
   {
    "name": "dwt",
    "aliases": [
-    "便士重"
+    "便士重",
+    "本尼威特"
    ],
    "dimension": "mass",
    "factor": 0.00155517384,
@@ -705,7 +766,8 @@
   {
    "name": "carat",
    "aliases": [
-    "克拉"
+    "克拉",
+    "ct"
    ],
    "dimension": "mass",
    "factor": 0.0002,
@@ -714,7 +776,8 @@
   {
    "name": "scruple",
    "aliases": [
-    "斯克鲁普尔"
+    "斯克鲁普尔",
+    "斯克鲁普"
    ],
    "dimension": "mass",
    "factor": 0.0012959782,
@@ -723,7 +786,8 @@
   {
    "name": "drachm",
    "aliases": [
-    "液量打兰"
+    "液量打兰",
+    "特拉姆"
    ],
    "dimension": "mass",
    "factor": 0.0038879346,
@@ -741,7 +805,8 @@
   {
    "name": "kan",
    "aliases": [
-    "贯"
+    "贯",
+    "kwan"
    ],
    "dimension": "mass",
    "factor": 3.75,
@@ -916,7 +981,9 @@
    "name": "day",
    "aliases": [
     "天",
-    "昼夜"
+    "昼夜",
+    "d",
+    "da"
    ],
    "dimension": "time",
    "factor": 86400
@@ -925,7 +992,8 @@
    "name": "week",
    "aliases": [
     "周",
-    "星期"
+    "星期",
+    "wk"
    ],
    "dimension": "time",
    "factor": 604800
@@ -942,7 +1010,8 @@
   {
    "name": "month",
    "aliases": [
-    "月"
+    "月",
+    "mo"
    ],
    "dimension": "time",
    "factor": 2629746,
@@ -951,7 +1020,11 @@
   {
    "name": "year",
    "aliases": [
-    "年"
+    "年",
+    "yr",
+    "solaryear",
+    "a",
+    "julian_year"
    ],
    "dimension": "time",
    "factor": 31557600,
@@ -978,7 +1051,8 @@
   {
    "name": "century",
    "aliases": [
-    "世纪"
+    "世纪",
+    "centuries"
    ],
    "dimension": "time",
    "factor": 3155760000
@@ -1226,7 +1300,8 @@
   {
    "name": "barn",
    "aliases": [
-    "靶恩"
+    "靶恩",
+    "b"
    ],
    "dimension": "area",
    "factor": 1e-28,
@@ -1379,7 +1454,10 @@
   {
    "name": "cup",
    "aliases": [
-    "杯"
+    "杯",
+    "cp",
+    "liquid_cup",
+    "US_liquid_cup"
    ],
    "dimension": "volume",
    "factor": 0.0002365882365,
@@ -1444,7 +1522,10 @@
   {
    "name": "gill",
    "aliases": [
-    "及尔"
+    "及尔",
+    "gi",
+    "liquid_gill",
+    "US_liquid_gill"
    ],
    "dimension": "volume",
    "factor": 0.00011829411825,
@@ -1453,7 +1534,9 @@
   {
    "name": "boardfoot",
    "aliases": [
-    "板尺"
+    "板尺",
+    "boardfeet",
+    "fbm"
    ],
    "dimension": "volume",
    "factor": 0.002359737216,
@@ -1621,7 +1704,9 @@
   {
    "name": "therm",
    "aliases": [
-    "色姆"
+    "色姆",
+    "thm",
+    "EC_therm"
    ],
    "dimension": "energy",
    "factor": 105434184,
@@ -1698,7 +1783,9 @@
    "name": "eV",
    "category": "science",
    "aliases": [
-    "电子伏"
+    "电子伏",
+    "electronvolt",
+    "ev"
    ],
    "dimension": "energy",
    "factor": 1.602176634e-19
@@ -1725,7 +1812,8 @@
    "name": "GeV",
    "category": "science",
    "aliases": [
-    "吉电子伏"
+    "吉电子伏",
+    "beV"
    ],
    "dimension": "energy",
    "factor": 1.602176634e-10
@@ -1752,7 +1840,13 @@
   {
    "name": "hartree",
    "aliases": [
-    "哈特里"
+    "哈特里",
+    "Hartree",
+    "E_h",
+    "Eh",
+    "hartree_energy",
+    "atomic_unit_of_energy",
+    "a_u_energy"
    ],
    "dimension": "energy",
    "factor": 4.3597447222071e-18,
@@ -1996,7 +2090,11 @@
   {
    "name": "K",
    "aliases": [
-    "开尔文"
+    "开尔文",
+    "kelvin",
+    "degK",
+    "tempK",
+    "thermalvolt"
    ],
    "dimension": "temperature",
    "factor": 1,
@@ -2076,7 +2174,10 @@
    "name": "kn",
    "aliases": [
     "节",
-    "knot"
+    "knot",
+    "kt",
+    "knot_international",
+    "international_knot"
    ],
    "dimension": "speed",
    "factor": 0.514444,
@@ -2103,7 +2204,8 @@
   {
    "name": "ft/s",
    "aliases": [
-    "英尺每秒"
+    "英尺每秒",
+    "fps"
    ],
    "dimension": "speed",
    "factor": 0.3048
@@ -2120,7 +2222,8 @@
   {
    "name": "c",
    "aliases": [
-    "光速"
+    "光速",
+    "light"
    ],
    "dimension": "speed",
    "factor": 299792458,
@@ -2148,7 +2251,9 @@
    "name": "Pa",
    "aliases": [
     "帕",
-    "帕斯卡"
+    "帕斯卡",
+    "tor",
+    "pa"
    ],
    "dimension": "pressure",
    "factor": 1,
@@ -2210,7 +2315,8 @@
    "name": "atm",
    "aliases": [
     "大气压",
-    "标准大气压"
+    "标准大气压",
+    "atmosphere"
    ],
    "dimension": "pressure",
    "factor": 101325,
@@ -2219,7 +2325,8 @@
   {
    "name": "psi",
    "aliases": [
-    "磅每平方英寸"
+    "磅每平方英寸",
+    "psia"
    ],
    "dimension": "pressure",
    "factor": 6894.757293168,
@@ -2237,7 +2344,8 @@
   {
    "name": "mmHg",
    "aliases": [
-    "毫米汞柱"
+    "毫米汞柱",
+    "torr"
    ],
    "dimension": "pressure",
    "factor": 133.322387415,
@@ -2318,7 +2426,8 @@
    "name": "bit",
    "aliases": [
     "比特",
-    "位"
+    "位",
+    "INFORMATION"
    ],
    "dimension": "data",
    "factor": 1,
@@ -2328,7 +2437,8 @@
    "name": "B",
    "aliases": [
     "字节",
-    "byte"
+    "byte",
+    "octet"
    ],
    "dimension": "data",
    "factor": 8,
@@ -2464,7 +2574,8 @@
    "name": "arcmin",
    "aliases": [
     "角分",
-    "′"
+    "′",
+    "arcminute"
    ],
    "dimension": "angle",
    "factor": 0.0002908882086657216,
@@ -2474,7 +2585,8 @@
    "name": "arcsec",
    "aliases": [
     "角秒",
-    "″"
+    "″",
+    "arcsecond"
    ],
    "dimension": "angle",
    "factor": 0.00000484813681109536,
@@ -2494,7 +2606,11 @@
    "name": "turn",
    "aliases": [
     "周角",
-    "圈"
+    "圈",
+    "revolution",
+    "rev",
+    "cycle",
+    "circle"
    ],
    "dimension": "angle",
    "factor": 6.283185307179586,
@@ -2503,7 +2619,8 @@
   {
    "name": "mil",
    "aliases": [
-    "密位"
+    "密位",
+    "pointthickness"
    ],
    "dimension": "angle",
    "factor": 0.0009817477042468104,
@@ -2512,7 +2629,8 @@
   {
    "name": "N",
    "aliases": [
-    "牛顿"
+    "牛顿",
+    "nt"
    ],
    "dimension": "force",
    "factor": 1,
@@ -2585,7 +2703,8 @@
   {
    "name": "Hz",
    "aliases": [
-    "赫兹"
+    "赫兹",
+    "hz"
    ],
    "dimension": "frequency",
    "factor": 1,
@@ -2920,7 +3039,9 @@
   {
    "name": "vershok",
    "aliases": [
-    "维尔肖克"
+    "维尔肖克",
+    "韦尔绍克",
+    "俄寸"
    ],
    "dimension": "length",
    "factor": 0.04445,
@@ -3037,7 +3158,8 @@
   {
    "name": "lot",
    "aliases": [
-    "洛特"
+    "洛特",
+    "罗特"
    ],
    "dimension": "mass",
    "factor": 0.014606,
@@ -3046,7 +3168,8 @@
   {
    "name": "quint",
    "aliases": [
-    "昆特"
+    "昆特",
+    "德公斤"
    ],
    "dimension": "mass",
    "factor": 0.014606,
@@ -3092,7 +3215,8 @@
   {
    "name": "pied",
    "aliases": [
-    "法尺"
+    "法尺",
+    "巴黎尺"
    ],
    "dimension": "length",
    "factor": 0.32484,
@@ -3191,7 +3315,8 @@
   {
    "name": "vara",
    "aliases": [
-    "西尺"
+    "西尺",
+    "瓦拉"
    ],
    "dimension": "length",
    "factor": 0.8359,
@@ -3209,7 +3334,9 @@
   {
    "name": "libra",
    "aliases": [
-    "西磅"
+    "西磅",
+    "librae",
+    "romanpound"
    ],
    "dimension": "mass",
    "factor": 0.460093,
@@ -3218,7 +3345,8 @@
   {
    "name": "arroba",
    "aliases": [
-    "阿罗巴"
+    "阿罗巴",
+    "阿罗瓦"
    ],
    "dimension": "mass",
    "factor": 11.502,
@@ -3236,7 +3364,8 @@
   {
    "name": "braça",
    "aliases": [
-    "葡丈"
+    "葡丈",
+    "布拉萨"
    ],
    "dimension": "length",
    "factor": 2.2,
@@ -3254,7 +3383,8 @@
   {
    "name": "braccio",
    "aliases": [
-    "意丈"
+    "意丈",
+    "布拉乔"
    ],
    "dimension": "length",
    "factor": 0.5836,
@@ -3308,7 +3438,8 @@
   {
    "name": "el",
    "aliases": [
-    "荷兰厄尔"
+    "荷兰厄尔",
+    "厄尔"
    ],
    "dimension": "length",
    "factor": 0.6878,
@@ -3335,7 +3466,8 @@
   {
    "name": "aln_sv",
    "aliases": [
-    "瑞典尺"
+    "瑞典尺",
+    "瑞典厄尔"
    ],
    "dimension": "length",
    "factor": 0.5938,
@@ -3371,7 +3503,8 @@
   {
    "name": "pund_dk",
    "aliases": [
-    "丹麦磅"
+    "丹麦磅",
+    "丹磅"
    ],
    "dimension": "mass",
    "factor": 0.4963,
@@ -3435,7 +3568,8 @@
   {
    "name": "日寸",
    "aliases": [
-    "sun"
+    "sun",
+    "日寸"
    ],
    "dimension": "length",
    "factor": 0.030303,
@@ -3444,7 +3578,8 @@
   {
    "name": "日分",
    "aliases": [
-    "bu_jp"
+    "bu_jp",
+    "日分"
    ],
    "dimension": "length",
    "factor": 0.0030303,
@@ -3453,7 +3588,8 @@
   {
    "name": "日厘",
    "aliases": [
-    "rin"
+    "rin",
+    "日厘"
    ],
    "dimension": "length",
    "factor": 0.00030303,
@@ -3462,7 +3598,9 @@
   {
    "name": "间",
    "aliases": [
-    "ken"
+    "ken",
+    "间",
+    "日本间"
    ],
    "dimension": "length",
    "factor": 1.81818,
@@ -3480,7 +3618,8 @@
   {
    "name": "鲸尺",
    "aliases": [
-    "kujira-shaku"
+    "kujira-shaku",
+    "鲸尺"
    ],
    "dimension": "length",
    "factor": 0.378787,
@@ -3543,7 +3682,9 @@
   {
    "name": "日匁",
    "aliases": [
-    "monme"
+    "monme",
+    "日匁",
+    "日文目"
    ],
    "dimension": "mass",
    "factor": 0.00375,
@@ -3552,7 +3693,8 @@
   {
    "name": "日斤_质量",
    "aliases": [
-    "kin_jp"
+    "kin_jp",
+    "日斤"
    ],
    "dimension": "mass",
    "factor": 0.6,
@@ -3571,7 +3713,8 @@
   {
    "name": "日両",
    "aliases": [
-    "ryō_mass"
+    "ryō_mass",
+    "日两"
    ],
    "dimension": "mass",
    "factor": 0.0375,
@@ -3607,7 +3750,9 @@
   {
    "name": "seer",
    "aliases": [
-    "锡尔"
+    "锡尔",
+    "西尔",
+    "ser"
    ],
    "dimension": "mass",
    "factor": 0.9331,
@@ -3616,7 +3761,8 @@
   {
    "name": "maund",
    "aliases": [
-    "芒德"
+    "芒德",
+    "蒙德"
    ],
    "dimension": "mass",
    "factor": 37.3242,
@@ -3680,7 +3826,8 @@
   {
    "name": "ratl",
    "aliases": [
-    "拉特儿"
+    "拉特儿",
+    "拉特尔"
    ],
    "dimension": "mass",
    "factor": 0.4375,
@@ -3698,7 +3845,8 @@
   {
    "name": "qintar",
    "aliases": [
-    "坎塔"
+    "坎塔",
+    "坎塔尔"
    ],
    "dimension": "mass",
    "factor": 44.928,
@@ -3717,7 +3865,8 @@
   {
    "name": "dirhem_ott",
    "aliases": [
-    "奥斯曼德拉姆"
+    "奥斯曼德拉姆",
+    "迪尔汉"
    ],
    "dimension": "mass",
    "factor": 0.003207,
@@ -3771,7 +3920,8 @@
   {
    "name": "picul",
    "aliases": [
-    "担_南洋"
+    "担_南洋",
+    "担（南洋）"
    ],
    "dimension": "mass",
    "factor": 60.478,
@@ -3813,7 +3963,8 @@
    "name": "cd",
    "aliases": [
     "坎德拉",
-    "candela"
+    "candela",
+    "candle"
    ],
    "dimension": "luminous_intensity",
    "factor": 1,
@@ -3835,7 +3986,8 @@
    "name": "C",
    "aliases": [
     "库仑",
-    "coulomb"
+    "coulomb",
+    "coul"
    ],
    "dimension": "charge",
    "factor": 1,
@@ -3866,22 +4018,11 @@
    "note": "1 F = 1 C/V = 1 A²·s⁴/(kg·m²)。源：BIPM SI Brochure 9th (2019) Table 3"
   },
   {
-   "name": "Ω",
-   "aliases": [
-    "Ω",
-    "欧姆",
-    "ohm"
-   ],
-   "dimension": "resistance",
-   "factor": 1,
-   "category": "science",
-   "note": "1 Ω = 1 V/A = 1 kg·m²/(s³·A²)。U+03A9 与 U+2126 两个码位都收。源：BIPM SI Brochure 9th (2019) Table 3"
-  },
-  {
    "name": "S",
    "aliases": [
     "西门子",
-    "siemens"
+    "siemens",
+    "mho"
    ],
    "dimension": "conductance",
    "factor": 1,
@@ -4068,30 +4209,6 @@
    "note": "SI 词头单位，1 kV = 10³ V。源：BIPM SI Brochure 9th (2019) Table 5"
   },
   {
-   "name": "kΩ",
-   "aliases": [
-    "千欧",
-    "kiloohm",
-    "kohm"
-   ],
-   "dimension": "resistance",
-   "factor": 1000,
-   "category": "measure",
-   "note": "SI 词头单位，1 kΩ = 10³ Ω。源：BIPM SI Brochure 9th (2019) Table 5"
-  },
-  {
-   "name": "MΩ",
-   "aliases": [
-    "兆欧",
-    "megaohm",
-    "mohm"
-   ],
-   "dimension": "resistance",
-   "factor": 1000000,
-   "category": "measure",
-   "note": "SI 词头单位，1 MΩ = 10⁶ Ω。源：BIPM SI Brochure 9th (2019) Table 5"
-  },
-  {
    "name": "gauss",
    "aliases": [
     "高斯",
@@ -4153,7 +4270,8 @@
    "aliases": [
     "酶单位",
     "enzyme unit",
-    "IU"
+    "IU",
+    "RU"
    ],
    "dimension": "catalytic_activity",
    "factor": 1.6666666666666667e-8,
@@ -4171,6 +4289,37 @@
    "dimension": "volume",
    "factor": 0.158987294928,
    "note": "石油桶（反馈报告补）"
+  },
+  {
+   "name": "ohm",
+   "dimension": "resistance",
+   "factor": 1,
+   "aliases": [
+    "欧姆",
+    "欧",
+    "Ω",
+    "ohms"
+   ]
+  },
+  {
+   "name": "kohm",
+   "dimension": "resistance",
+   "factor": 1000,
+   "aliases": [
+    "千欧",
+    "kΩ",
+    "kiloohm"
+   ]
+  },
+  {
+   "name": "Mohm",
+   "dimension": "resistance",
+   "factor": 1000000,
+   "aliases": [
+    "兆欧",
+    "MΩ",
+    "megaohm"
+   ]
   }
  ],
  "ANGLE_UNITS": [

@@ -411,8 +411,41 @@ function autoCjkAliases(): Array<[string, string]> {
       /** 目标名可能带下划线（`year_trop`），注册时被清洗过，这里要一致。 */
       const target = sanitizeUnitName(name) || name
       for (const alias of aliases) {
-        if (!/[\u4e00-\u9fa5]/.test(alias)) continue
         if (manual.has(alias)) continue
+        /**
+         * 中文别名一律收；**英文别名也收**（2026-11-18）。
+         *
+         * 从 GNU units / pint 词典补进来的一批英文全称（`kelvin`/`arcminute`/
+         * `bohr_radius`/`revolution`）原先只写进数据表、没进归一链，
+         * 于是「1 kelvin to K」照样报 unknown_symbol。
+         *
+         * 只收「纯字母且长度 ≥3」的，避免 `m`/`s` 这类短符号被重复替换；
+         * 且目标名不能等于别名本身。
+         */
+        const isCjkAlias = /[\u4e00-\u9fa5]/.test(alias)
+        /**
+         * ⚠ 英文别名**必须更长**才收（2026-11-18 实测回归）。
+         *
+         * `knot` → `kn` 会让 `knotmodern` 被替换成 `knmodern`（子串误伤）。
+         * 中文按字匹配没问题（汉字不会嵌在英文单词里），英文要求 ≥5 字符，
+         * 且不能是另一个别名的前缀。
+         */
+        const isLongEn = /^[A-Za-z][A-Za-z0-9_]{4,}$/.test(alias) && alias !== target
+        if (!isCjkAlias && !isLongEn) continue
+        if (alias === target) continue
+        /**
+         * ⚠ **不要往 Unicode 符号上映射**（2026-11-18 实测回归）。
+         *
+         * `ohm` 的别名里有 `Ω`，若收进来会变成：
+         *
+         * ```
+         *   1 ohm to kohm  →  1 Ω to kΩ   ← mathjs 不认 Ω，报 unknown_symbol
+         * ```
+         *
+         * 正确方向是「符号 → ASCII 名」（`Ω` → `ohm`），不是反过来。
+         * 目标名必须是 ASCII 才能被 mathjs 解析。
+         */
+        if (!/^[A-Za-z]/.test(target)) continue
         out.push([alias, target])
       }
     }
