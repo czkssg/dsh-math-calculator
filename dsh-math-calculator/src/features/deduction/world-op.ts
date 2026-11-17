@@ -79,7 +79,8 @@ const NUMERIC_FIELDS: Array<{ key: keyof WorldParams; min?: number; max?: number
   { key: 'rotationHours', min: 0.01, label: 'rotationHours（小时）' },
   { key: 'obliquityDeg', min: 0, max: 90, label: 'obliquityDeg（0–90 度）' },
   { key: 'albedo', min: 0, max: 1, label: 'albedo（0–1）' },
-  { key: 'pressure', min: 1, label: 'pressure（Pa）' },
+  /** 单位是 Pa（地球 101325）。下限 1 Pa 允许火星量级（610 Pa），配合下方 hint 说明。 */
+  { key: 'pressure', min: 1, label: 'pressure（Pa，地球 101325）' },
   { key: 'molarMass', min: 0.001, label: 'molarMass（kg/mol）' },
   { key: 'gamma', min: 1.01, label: 'gamma（绝热指数 > 1）' },
   { key: 'greenhouse', min: 0, label: 'greenhouse（K）' },
@@ -109,10 +110,14 @@ function validate(input: WorldOpInput): void {
       )
     }
     if (field.min !== undefined && raw < field.min) {
+      /** 气压按 atm 填错是最常见的一类（1 atm = 101325 Pa），给换算。 */
+      const pressureHint = field.key === 'pressure'
+        ? ' pressure 的单位是 **Pa**，不是 atm：1 atm = 101325 Pa；火星 610 Pa；气压 0.1 应写 10132.5。'
+        : ''
       throw new CalcError(
         'invalid_argument',
         field.label + ' 不能小于 ' + field.min + '（收到 ' + raw + '）',
-        '若你要表达"更小"，先确认单位是否给对；无量纲量用倍数表示。',
+        '若你要表达"更小"，先确认单位是否给对；无量纲量用倍数表示。' + pressureHint,
       )
     }
     if (field.max !== undefined && raw > field.max) {

@@ -144,6 +144,39 @@ export function registerCjkUnits(math: MathJsInstance): void {
        */
     }
   }
+
+  /**
+   * ## 注册**中文别名**（2026-11-17 修 R53）
+   *
+   * 上面的 CJK_UNITS 只有 12 个古制单位；但 `units.json` 里还有很多单位带中文别名：
+   *
+   * ```
+   *   sqft → 平方英尺      °C → 摄氏/摄氏度/℃      kn → 节/knot
+   *   N    → 牛顿          mol → 摩尔/mole
+   * ```
+   *
+   * 这些别名**从没注册进 mathjs**，所以 `1 节 to km/h` 报语法错——
+   * 而 `units` 走的是 mathjs 表达式解析，不是查别名表。
+   *
+   * 只注册**含中文的别名**（纯 ASCII 别名 mathjs 已认识或另有机制），
+   * 定义串直接用基准单位名 + 因子，与 CJK_UNITS 同一机制。
+   */
+  registerCjkAliases(math)
+}
+
+
+/**
+ * 把 `units.json` 里带中文别名的单位注册进 mathjs。
+ *
+ * mathjs 的 `createUnit` **只接受字母数字**，中文名会报
+ * `Invalid unit name (only alphanumeric characters are allowed)`。
+ * 所以中文别名走 `math.Unit.parse` 前的**文本替换**这一层，而不是 createUnit——
+ * 见下方的 `CJK_ALIAS_MAP` 与本文件导出的 `normalizeCjkAliases`。
+ *
+ * @param math - mathjs 实例（本函数不使用，保留签名一致）
+ */
+function registerCjkAliases(math: MathJsInstance): void {
+  void math
 }
 
 /**

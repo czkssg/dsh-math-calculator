@@ -122,7 +122,23 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
   // 压强
   ['帕斯卡', 'Pa'], ['千帕', 'kPa'], ['兆帕', 'MPa'], ['巴', 'bar'],
   // 其他
-  ['摄氏度', 'degC'], ['度', 'deg'],
+  ['摄氏度', 'degC'], ['摄氏', 'degC'], ['度', 'deg'],
+  /**
+   * ## R53 补：中文单位的大面积缺失
+   *
+   * 这些在 `units.json` 里**有别名**，但别名表里没有，于是走 mathjs 解析时报语法错。
+   * 「米/公里/斤」能用是因为别名表恰好有它们——不是设计，是遗漏。
+   */
+  /** mathjs 的面积单位名是 `sqft`/`sqin`，不是 `ft2`（实测）。 */
+  ['平方英尺', 'sqft'], ['平方英寸', 'sqin'], ['平方码', 'sqyd'], ['平方英里', 'sqmi'],
+  ['牛顿', 'N'], ['千牛', 'kN'], ['兆牛', 'MN'],
+  ['摩尔', 'mol'], ['千摩尔', 'kmol'],
+  /** 节（航速）—— 必须放在「节点」之类之前，且不与任何长词冲突。 */
+  ['节', 'knot'],
+  /** 石：古制容量/质量（1 石 ≈ 60 kg），走已注册的 cndan。 */
+  ['石', 'cndan'],
+  /** 吨标煤：能源常用口径（1 tce = 29.3076 GJ）。 */
+  ['吨标煤', 'tce'], ['标煤', 'tce'],
 
   /**
    * ## 英制工业补充（第二批）—— 中文写法 → 清洗后的注册名
@@ -276,6 +292,25 @@ export function normalizeUnits(source: string): string {
         const isTargetSlot = /(?:^|\s)(?:to|in|as)$/i.test(beforeWord)
         /** 复合单位位置：`吨/年` 的「年」前是 `/`，也要替换。 */
         const isInCompound = /[/*×·^]/.test(nearest)
+        /**
+         * ## ⚠ 后边界同样要判（2026-11-17 实测回归）
+         *
+         * 只判前文会拆掉长词：
+         *
+         * ```
+         *   1 石炭 to MJ   ← 「石」前是数字 → 放行
+         *   →  1 cndan炭  ← 「炭」成孤儿，报语法错
+         * ```
+         *
+         * 「石炭」是煤（一个完整的词/单位名），不该被「石」拆开。
+         * 判据：别名后面若紧跟汉字，说明它只是更长词的一部分 → 不替换。
+         *
+         * 例外：别名本身已是表里最长匹配（`sorted` 降序保证先试长的），
+         * 所以这里挡住的一定是「表外的更长词」。
+         */
+        const nextChar = source[i + cjk.length] ?? ''
+        const nextIsCjk = /[\u4e00-\u9fa5]/.test(nextChar)
+        if (nextIsCjk) continue
         if (prevIsDigitOrSpace || /[\d)\]]/.test(nearest) || isTargetSlot || isInCompound) {
           out += symbol
           i += cjk.length
@@ -640,12 +675,26 @@ export function buildEngine(): Engine {
    *
    * 用 createUnit 的常量定义（不是可执行代码），与中文古制单位同一机制。
    */
-  try {
-    math.createUnit('AU', '149597870700 m')
-    math.createUnit('barrel', '0.158987294928 m3')
-    math.createUnit('bbl', '0.158987294928 m3')
-  } catch {
-    /* 已存在/注册失败都不致命 */
+  /**
+   * ⚠ **必须逐个 try**（2026-11-17 实测）。
+   *
+   * 原来四条挤在一个 try 里：只要有一条抛（比如重复注册），后面的全被跳过。
+   * 实测 `tce` 就是这样静默消失的——单独注册成功，一起注册就没了。
+   */
+  for (const [name, definition] of [
+    ['AU', '149597870700 m'],
+    ['barrel', '0.158987294928 m3'],
+    ['bbl', '0.158987294928 m3'],
+    /** 吨标准煤：1 tce = 29.3076 GJ（能源统计标准口径）。 */
+    ['tce', '29307600000 J'],
+    /** R53 补：中文单位的英文名（别名表映射到这里）。 */
+    ['knot', '0.514444444 m/s'],
+  ] as Array<[string, string]>) {
+    try {
+      math.createUnit(name, definition)
+    } catch {
+      /* 单条失败不影响其它（已存在也走这里） */
+    }
   }
   /**
    * ## 注册矩阵扩展函数

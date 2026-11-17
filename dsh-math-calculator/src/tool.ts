@@ -326,7 +326,7 @@ const PARAMETER_SPEC = {
   orbitAU: { type: 'number', description: 'world：轨道半长轴 AU' },
   eccentricity: { type: 'number', description: 'world：轨道偏心率（0–0.95）' },
   albedo: { type: 'number', description: 'world：反照率（地球 0.3）' },
-  pressure: { type: 'number', description: 'world：地表气压 atm' },
+  pressure: { type: 'number', description: 'world：地表气压 **Pa**（地球 101325；火星 610；不要写 atm）' },
   molarMass: { type: 'number', description: 'world：大气平均摩尔质量 g/mol' },
   gamma: { type: 'number', description: 'world：绝热指数（双原子 1.4）' },
   greenhouse: { type: 'number', description: 'world：温室增量 K（地球 33）' },
