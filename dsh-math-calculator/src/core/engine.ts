@@ -26,6 +26,9 @@
  */
 
 import { create, all, type MathJsInstance } from 'mathjs'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { CalcError, normalizeError } from './errors.js'
 import { registerCjkUnits } from './cjk-units.js'
 import { registerEraUnits, normalizeEraUnit } from './units-era-registry.js'
@@ -237,6 +240,196 @@ const CJK_UNIT_ALIASES: Array<[string, string]> = [
  * @param source - 原始表达式
  * @returns 归一后的表达式
  */
+
+/** 从 units.json 生成的中文别名表（懒建一次）。 */
+let AUTO_CJK_ALIASES: Array<[string, string]> | null = null
+
+/**
+ * 自动生成的中文别名 → 单位名映射。
+ *
+ * 只取**中文**别名（ASCII 别名交给 UCUM/mathjs），且**已被手写表覆盖的不重复加**。
+ * 目标名优先用该条目的 `name`（如 `分米 → dm`）。
+ *
+ * @returns 别名对列表
+ */
+
+/**
+ * 把 `units.json` 里的全部单位注册进 mathjs。
+ *
+ * ## 为什么需要
+ *
+ * `units.json` 是知识库（459 条带中文别名），但 mathjs 只认识一小部分。
+ * 不注册的话，`unitTo:"fur"`（浪）、`"verst"`（俄里）、`"cubit"`（肘尺）
+ * 全部 `unknown_symbol` —— 中文别名换对了，目标单位又挂了。
+ *
+ * ## 只注册 ASCII 名
+ *
+ * `createUnit` 只接受字母数字，中文名注册不进去（也不需要——中文走 normalizeUnits 替换）。
+ * 另外**已存在的不覆盖**：mathjs 内置单位（m/kg/s）比数据表更权威。
+ *
+ * @param math - mathjs 实例
+ */
+function registerDataUnits(math: MathJsInstance): void {
+  let list: Array<Record<string, unknown>> = []
+  try {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'units.json')
+    const data = JSON.parse(readFileSync(path, 'utf8')) as { ALL_UNITS?: Array<Record<string, unknown>> }
+    list = data.ALL_UNITS ?? []
+  } catch {
+    return
+  }
+  /** 已有单位（含内置），不覆盖。 */
+  const existing = new Set<string>()
+  try {
+    for (const name of Object.keys((math.Unit as unknown as { UNITS?: Record<string, unknown> }).UNITS ?? {})) existing.add(name)
+  } catch {
+    /* 取不到就都试一遍 */
+  }
+  for (const unit of list) {
+    const name = typeof unit['name'] === 'string' ? unit['name'] : ''
+    const factor = typeof unit['factor'] === 'number' ? unit['factor'] : Number.NaN
+    const dimension = typeof unit['dimension'] === 'string' ? unit['dimension'] : ''
+    /** 中文名也要注册（用合成名 + factor），所以不能要求含 A-Za-z。 */
+    if (name === '' || !Number.isFinite(factor) || factor <= 0) continue
+    if (!/[A-Za-z\u4e00-\u9fa5]/.test(name)) continue
+    /**
+     * `createUnit` 只允许字母数字，`year_trop`/`gal_uk` 这类带下划线的要去掉下划线。
+     * 别名映射（autoCjkAliases）走同一套 sanitize，保证两边一致。
+     */
+    /** 中文名用合成名注册（保留 factor）；ASCII 名清洗后注册。 */
+    const safe = /[\u4e00-\u9fa5]/.test(name) ? cjkUnitName(name) : sanitizeUnitName(name)
+    if (safe === '' || existing.has(safe)) continue
+    const base = SI_BASE[dimension]
+    if (base === undefined) continue
+    try {
+      math.createUnit(safe, factor + ' ' + base)
+      existing.add(safe)
+    } catch {
+      /* 单条失败不影响其它 */
+    }
+  }
+}
+
+
+/**
+ * 把单位名清洗成 `createUnit` 能接受的形式。
+ *
+ * `createUnit` 只允许字母数字，而 `units.json` 里有 `year_trop` / `gal_uk` /
+ * `hp_metric` 这类带下划线的，还有 `sążeń` 这类带变音符号的。
+ *
+ * 规则：下划线去掉；非 ASCII 字母返回空串（注册不了，跳过）。
+ *
+ * @param name - 原始单位名
+ * @returns 清洗后的名字（空串表示不能注册）
+ */
+function sanitizeUnitName(name: string): string {
+  const stripped = name.replace(/_/g, '')
+  return /^[A-Za-z][A-Za-z0-9]*$/.test(stripped) ? stripped : ''
+}
+
+/** 中文单位名 → 可注册的合成名（稳定、不撞车）。 */
+const CJK_UNIT_NAMES = new Map<string, string>()
+
+/**
+ * 给中文单位名生成一个可注册的合成名。
+ *
+ * `createUnit` 只收字母数字，中文名注册不进去；但中文单位**有 factor**，
+ * 不能简单映射到 SI 基准——那会把 `1 担`（50 kg）算成 `1 kg`，差 50 倍。
+ *
+ * 所以注册成 `cz<hash>`，别名表把「担」映射到它，换算时按 factor 走。
+ *
+ * @param cjk - 中文单位名
+ * @returns 合成名（如 `cz3f2a`）
+ */
+function cjkUnitName(cjk: string): string {
+  const cached = CJK_UNIT_NAMES.get(cjk)
+  if (cached !== undefined) return cached
+  /** FNV-1a：幂等且分布均匀（早期用累乘，对单字会退化成 cp×31）。 */
+  let hash = 2166136261
+  for (const char of cjk) {
+    hash ^= char.codePointAt(0) ?? 0
+    hash = Math.imul(hash, 16777619) >>> 0
+  }
+  const name = 'cz' + (hash % 100000).toString(36)
+  CJK_UNIT_NAMES.set(cjk, name)
+  return name
+}
+
+/** 量纲 → SI 基准单位（`name` 是中文时用合成名 + factor 注册）。 */
+const SI_BASE: Record<string, string> = {
+  length: 'm', mass: 'kg', time: 's', area: 'm2', volume: 'm3',
+  energy: 'J', power: 'W', temperature: 'K', speed: 'm/s', pressure: 'Pa',
+  data: 'bit', angle: 'rad', force: 'N', frequency: 'Hz', current: 'A',
+  amount_of_substance: 'mol', luminous_intensity: 'cd', solid_angle: 'sr',
+  charge: 'C', voltage: 'V', capacitance: 'F', resistance: 'ohm', conductance: 'S',
+  magnetic_flux: 'Wb', magnetic_flux_density: 'T', inductance: 'H',
+  luminous_flux: 'lm', illuminance: 'lux', activity: 'Bq',
+  absorbed_dose: 'Gy', dose_equivalent: 'Sv', catalytic_activity: 'kat',
+}
+
+function autoCjkAliases(): Array<[string, string]> {
+  if (AUTO_CJK_ALIASES !== null) return AUTO_CJK_ALIASES
+  const out: Array<[string, string]> = []
+  const manual = new Set(CJK_UNIT_ALIASES.map(([cjk]) => cjk))
+  try {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'units.json')
+    const data = JSON.parse(readFileSync(path, 'utf8')) as { ALL_UNITS?: Array<Record<string, unknown>> }
+    for (const unit of data.ALL_UNITS ?? []) {
+      const name = typeof unit['name'] === 'string' ? unit['name'] : ''
+      if (name === '') continue
+      const aliases = Array.isArray(unit['aliases']) ? (unit['aliases'] as unknown[]).map(String) : []
+      /**
+       * `name` 本身是中文的那批（`分`/`厘`/`钱`/`担`/`步`…）必须**走 SI 基准名**，
+       * 因为 mathjs 不认中文单位名。基准名取 `DIMENSION_TO_SI`。
+       *
+       * 以前这里 `continue` 掉了它们，于是「1 分 to m」永远报语法错。
+       */
+      if (/[\u4e00-\u9fa5]/.test(name)) {
+        /**
+         * ⚠ **不能直接映射到 SI 基准单位**（2026-11-17 实测踩到）。
+         *
+         * ```
+         *   担：factor = 50（1 担 = 50 kg）
+         *   若映射成「担 → kg」→ 1 担 被当成 1 kg  → 差 50 倍！
+         * ```
+         *
+         * 这是**数值错误**，比「不支持」危险得多——数字看着正常。
+         *
+         * 正确做法：注册一个专属单位名（`cn_担` 形式不行，createUnit 要字母数字），
+         * 用 `xzh<拼音索引>` 这类合成名，并在注册时带上 factor。
+         * 见 `registerDataUnits` 里对中文 name 的处理。
+         */
+        const alias = cjkUnitName(name)
+        if (alias !== '' && !manual.has(name)) out.push([name, alias])
+        continue
+      }
+      /** 目标名可能带下划线（`year_trop`），注册时被清洗过，这里要一致。 */
+      const target = sanitizeUnitName(name) || name
+      for (const alias of aliases) {
+        if (!/[\u4e00-\u9fa5]/.test(alias)) continue
+        if (manual.has(alias)) continue
+        out.push([alias, target])
+      }
+    }
+  } catch {
+    /* 读不到就用空表 */
+  }
+  AUTO_CJK_ALIASES = out
+  return out
+}
+
+/**
+ * 把表达式里的中文/历史单位写法归一成 mathjs 认识的形式。
+ *
+ * 处理顺序（每一步都有踩坑记录，不要随意调换）：
+ * 1. 中文量级词展开（`1.2 亿` → `120000000`）；
+ * 2. 上标与微符号归一（`km²`→`km2`、`µg`→`ug`）；
+ * 3. 别名替换（手写表 + units.json 自动补充，长词优先）；
+ * 4. **替换后再归一一次**——`µg`/`m²` 是别名替换的产物，前面做等于没做。
+ *
+ * @param source - 原始表达式
+ * @returns 归一后的表达式
+ */
 export function normalizeUnits(source: string): string {
   if (source === '') return source
   /**
@@ -251,12 +444,34 @@ export function normalizeUnits(source: string): string {
   })
   /** 上标归一：`km²` → `km2`、`m³` → `m3`（反馈 R44 #5 的 `km²`）。 */
   source = source.replace(/²/g, '2').replace(/³/g, '3')
+  /**
+   * Unicode 微符号与埃归一（2026-11-17）。
+   *
+   * mathjs **不认** `µg`/`µs`/`µm`（U+00B5 微符号）与 `Å`（埃），
+   * 而 `units.json` 的 name 字段正是这些写法。归一成 ASCII：
+   *
+   * ```
+   *   µg → ug    µs → us    µm → um    Å → angstrom
+   * ```
+   */
+  source = source.replace(/µ/g, 'u').replace(/μ/g, 'u').replace(/Å/g, 'angstrom')
   /** 计数单位「人」：`1 万 人` 是 10000 人，mathjs 没有「人」这个单位 → 去掉后按纯数算。 */
   source = source.replace(/\s*人(?!口)/g, '').replace(/\s+to\s*$/i, '')
   let out = ''
   let i = 0
-  /** 按长度降序排一次，保证「最长匹配优先」。 */
-  const sorted = [...CJK_UNIT_ALIASES].sort((a, b) => b[0].length - a[0].length)
+  /**
+   * 按长度降序排一次，保证「最长匹配优先」。
+   *
+   * ## 手写表 + 数据表自动补充（2026-11-17）
+   *
+   * `CJK_UNIT_ALIASES` 只有 172 条，而 `units.json` 有 459 条带中文别名的单位。
+   * 全量扫的结果：**459 条里只有 78 条能通**（`公尺`/`分米`/`公分`/`海里` 全都失败）。
+   *
+   * 手写表继续保留（它带更准的映射，如 `里 → cnli` 而非 `li`），
+   * 但**缺的那些从 units.json 自动补**：中文别名 → 该单位的英文 name。
+   * 这样以后 units.json 加条目，这里自动跟上，不用再手工维护两份。
+   */
+  const sorted = [...CJK_UNIT_ALIASES, ...autoCjkAliases()].sort((a, b) => b[0].length - a[0].length)
 
   while (i < source.length) {
     let matched = false
@@ -324,7 +539,14 @@ export function normalizeUnits(source: string): string {
       i += 1
     }
   }
-  return out
+  /**
+   * ## 别名替换**之后**再做一次符号归一（2026-11-17）
+   *
+   * 因为 `µg`/`µs`/`m²` 这些是**别名替换的产物**——
+   * `微克` 在别名词典里映射到 `µg`，而 mathjs 不认 U+00B5。
+   * 放在前面做等于没做（那时还是「微克」三个汉字）。
+   */
+  return out.replace(/µ/g, 'u').replace(/μ/g, 'u').replace(/²/g, '2').replace(/³/g, '3').replace(/Å/g, 'angstrom')
 }
 
 /**
@@ -749,6 +971,17 @@ export function buildEngine(): Engine {
    * `gallonimp` 等具名变体还没建立，重绑定会缺少参照。
    */
   rebindDefaults(math)
+  /**
+   * ## 自动注册 units.json 的**全部**单位（2026-11-17）
+   *
+   * 知识库有 459 条带中文别名的单位，但 mathjs 只认识其中一小部分：
+   * `fur`/`verst`/`cubit`/`longton`/`Mearth`… 全都 `unknown_symbol`。
+   * 于是「1 浪 to m」这类换算必然失败。
+   *
+   * 修法：用 `createUnit(name, factor 基准单位)` 把它们批量注册进去。
+   * 已有同名的不覆盖（mathjs 内置的更权威）。
+   */
+  registerDataUnits(math)
   /**
    * ## ★ 所有注册完成后，切掉 `import`（安全边界）
    *

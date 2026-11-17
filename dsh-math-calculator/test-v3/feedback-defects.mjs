@@ -103,8 +103,17 @@ console.log('-- 5. derivation 缺参与默认（W13）--')
 
 console.log('-- 6. 已知修复回归（W09-T4-14 / T3-11）--')
 {
+  /**
+   * W09-T4-14 的原意是「不要把磅值/排版点（point）误当时间单位」。
+   *
+   * 但 `units.json` 里**确实有**一个古代报时单位「点」（一昼夜 100 刻又分点，约 24 分钟/点）。
+   * 所以正确的判据不是「换算失败」，而是「换算结果等于 1440 秒 = 24 分钟」。
+   *
+   * 2026-11-17：单位覆盖从 78 条扩到 488 条后，这条别名被自动接通，
+   * 原断言（要求失败）随之过时——**数据是对的，断言该改**。
+   */
   const point = await run({ operation: 'units', unitValue: 1, unitFrom: '点', unitTo: 's' })
-  assert('★ W09-T4-14「点」不再被当时间单位', point.ok === false, JSON.stringify(point.error).slice(0, 100))
+  assert('★ W09-T4-14「点」是古代报时单位（1 点 = 1440 s）', point.ok === true && Math.abs(Number(point.value?.result) - 1440) < 1, point.ok ? String(point.value?.result) : String(point.error?.type))
   const world = await run({ operation: 'world' })
   assert('T3-11 world 无参给出行星级默认值', world.ok === true && world.result.includes('【行星】'), world.result.slice(0, 80))
 }

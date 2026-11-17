@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validateUcumUnit } from './ucum.js'
+import { DIMENSION_TO_SI } from './unit-bridge.js'
 import { convertViaUcum } from './ucum-registry.js'
 
 /** 复合单位条目（有物理意义）。 */
@@ -86,14 +87,70 @@ let ALIASES: Record<string, UnitAliasEntry> | null = null
  */
 export function loadUnitAliases(): Record<string, UnitAliasEntry> {
   if (ALIASES !== null) return ALIASES
+  let base: Record<string, UnitAliasEntry> = {}
   try {
     const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'unit-aliases.json')
     const data = JSON.parse(readFileSync(path, 'utf8')) as { aliases?: Record<string, UnitAliasEntry> }
-    ALIASES = data.aliases ?? {}
+    base = data.aliases ?? {}
   } catch {
-    ALIASES = {}
+    base = {}
   }
+  ALIASES = mergeUnitsAliases(base)
   return ALIASES
+}
+
+/**
+ * 把 `units.json` 里的中文别名并进索引（2026-11-17）。
+ *
+ * ## 为什么必须合并
+ *
+ * `unit-aliases.json` 是**精选索引**（只收常用），而 `units.json` 是**全量表**
+ * （459 条带中文别名）。两者不同步的后果：
+ *
+ * ```
+ *   units.json 有「公尺/分米/公分/海里」 → 但索引里没有
+ *   → convertUnits 落到 UCUM → 报语法错
+ * ```
+ *
+ * 压测（R53）里 7 个单位缺失只是冰山一角：按全量扫，**459 条里只有 78 条能通**。
+ *
+ * 合并策略：
+ * - 只补**中文名与中文别名**（ASCII 名交给 UCUM，避免与 mathjs 撞名）；
+ * - 已存在的键不覆盖（精选索引优先，它带更准的 source/dimension）；
+ * - 条目里的 `name` 是中文时，也把 `name` 本身作为别名。
+ *
+ * @param base - 精选索引
+ * @returns 合并后的索引
+ */
+function mergeUnitsAliases(base: Record<string, UnitAliasEntry>): Record<string, UnitAliasEntry> {
+  const merged: Record<string, UnitAliasEntry> = { ...base }
+  let allUnits: Array<Record<string, unknown>> = []
+  try {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'data', 'units.json')
+    const data = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+    const list = data['ALL_UNITS']
+    if (Array.isArray(list)) allUnits = list as Array<Record<string, unknown>>
+  } catch {
+    return merged
+  }
+  const isCjk = (text: string): boolean => /[\u4e00-\u9fa5]/.test(text)
+  for (const unit of allUnits) {
+    const name = typeof unit['name'] === 'string' ? unit['name'] : ''
+    const factor = typeof unit['factor'] === 'number' ? unit['factor'] : Number.NaN
+    const dimension = typeof unit['dimension'] === 'string' ? unit['dimension'] : ''
+    if (name === '' || !Number.isFinite(factor)) continue
+    const si = DIMENSION_TO_SI[dimension] ?? ''
+    const aliases = Array.isArray(unit['aliases']) ? (unit['aliases'] as unknown[]).map(String) : []
+    /** 参与合并的写法：name 是中文就用 name，另加全部中文别名。 */
+    const names: string[] = []
+    if (isCjk(name)) names.push(name)
+    for (const alias of aliases) if (isCjk(alias)) names.push(alias)
+    for (const alias of names) {
+      if (merged[alias] !== undefined) continue
+      merged[alias] = { source: 'local', code: name, name, factor, si, dimension }
+    }
+  }
+  return merged
 }
 
 /**
