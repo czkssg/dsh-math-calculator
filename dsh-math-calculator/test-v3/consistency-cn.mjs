@@ -50,6 +50,21 @@ console.log('-- 4. 成本 vs 售价是两个量（不是冲突）--')
   assert('★ 成本与售价是不同主体 → 不算口径冲突', r.value.conflicts.length === 0, JSON.stringify(r.value.conflicts))
   assert('但两个量都被抽出（供核对）', r.value.allClaims.length === 2, String(r.value.allClaims.length))
 }
+console.log('-- 5. 大写中文数字（R51 C 类）--')
+{
+  const big = await run({ operation: 'consistency', consistency: { sections: [
+    { number: 1, text: '部壹仟贰佰人。' },
+    { number: 2, text: '部二千人。' },
+  ] } })
+  assert('★ 大写壹仟贰佰 → 1200', big.value.allClaims.some((c) => c.value === 1200), JSON.stringify(big.value.allClaims.map((c) => c.value)))
+  assert('★ 同一主体 → 报冲突', big.value.conflicts.length === 1, String(big.value.conflicts.length))
+  assert('★ 主体不含数字汉字（是「部」不是「部壹」）', big.value.allClaims.every((c) => c.subject === '部'), JSON.stringify(big.value.allClaims.map((c) => c.subject)))
+  const mixed = await run({ operation: 'consistency', consistency: { sections: [
+    { number: 1, text: '部壹仟200人。' },
+    { number: 2, text: '部二千人。' },
+  ] } })
+  assert('大小写混写也能抽', mixed.value.claimCount === 2, String(mixed.value.claimCount))
+}
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

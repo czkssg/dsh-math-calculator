@@ -59,8 +59,15 @@ export interface ConsistencyOutcome {
  */
 function parseChineseNumber(raw: string | undefined): number {
   if (raw === undefined || raw === '') return Number.NaN
-  const digits: Record<string, number> = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 }
-  const units: Record<string, number> = { 十: 10, 百: 100, 千: 1000, 万: 10000, 亿: 100000000 }
+  /** 含**大写**（壹贰叁…）：账册、契约、碑铭里全用大写，以前完全盲。 */
+  const digits: Record<string, number> = {
+    零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9,
+    壹: 1, 贰: 2, 貳: 2, 叁: 3, 參: 3, 肆: 4, 伍: 5, 陆: 6, 陸: 6, 柒: 7, 捌: 8, 玖: 9,
+  }
+  const units: Record<string, number> = {
+    十: 10, 百: 100, 千: 1000, 万: 10000, 亿: 100000000,
+    拾: 10, 佰: 100, 仟: 1000, 萬: 10000, 億: 100000000,
+  }
   let total = 0
   let section = 0
   let digit = 0
@@ -153,7 +160,28 @@ function extractClaims(section: ConsistencySection): Claim[] {
    *
    * 修法：主体用**非贪婪**匹配，程度词单独成组（`(?:约|达到|为|是|有)?` 在主体之后）。
    */
-  const pattern = /([\u4e00-\u9fa5]{2,6}?)\s*[:：]?\s*(约|达到|大约|约为|为|是|有)?\s*(?:([0-9]+(?:\.[0-9]+)?)|([零〇一二三四五六七八九十百千万亿两]+))\s*(万亿|亿|万|千|百)?/g
+  /**
+   * 数字字符集含**大写中文数字**（R51 C 类：壹仟贰佰 以前完全匹配不到）。
+   * 大小写混写（壹仟200）也能吃进来，由 parseChineseNumber 处理。
+   */
+  const CN_DIGITS = '零〇一二三四五六七八九十百千万亿两壹贰叁肆伍陆柒捌玖拾佰仟萬億'
+  /**
+   * 主体字符集必须**排除数字汉字**（R51）：
+   * 中文数字本身在 `[\u4e00-\u9fa5]` 里，不排除的话
+   *
+   * ```
+   *   部壹仟贰佰人  →  主体被抽成「部壹」   ✗
+   *   部八百至一千人 →  主体被抽成「部八」「至一」 ✗
+   * ```
+   *
+   * 所以主体用「非数字汉字」的 1–6 字（单字主体如「部」「军」也合法，
+   * 噪音由下方的 SKIP_SUBJECTS 与指代词过滤兜住）。
+   */
+  const SUBJECT = '(?:(?![' + CN_DIGITS + '])[\\u4e00-\\u9fa5]){1,6}?'
+  const pattern = new RegExp(
+    '(' + SUBJECT + ')\\s*[:：]?\\s*(约|达到|大约|约为|为|是|有)?\\s*(?:([0-9]+(?:\\.[0-9]+)?)|([' + CN_DIGITS + ']+))\\s*(万亿|亿|万|千|百|萬億|萬|億)?',
+    'g',
+  )
 
   for (const match of text.matchAll(pattern)) {
     /** 同义词归一：『总人口』与『人口』是同一个量（反馈报告：主体切分漏报）。 */
