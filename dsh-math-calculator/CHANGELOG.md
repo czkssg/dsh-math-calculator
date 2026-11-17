@@ -2,6 +2,25 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.4.1] — 2026-11-18
+
+**「教 AI 用的文档」精修**：功能描述与实际功能/声明对齐（测试员反馈“二者不一致”）。
+
+### 修复
+
+- **门面清单只留真实 operation**：移除 `sanity`（其实是 evaluate 的条目参数）、`alert`（从未实现）、
+  `catalog/explain/invariants/examples`（是 help 的能力）——这些调用原先被门面放行后落到 internal。
+- **playbook 的公式数 342 → 动态**（实际 805）；SKILL 与工具描述的 help 节数同步到 63。
+- **help 补 6 节**：`chain`（链接/阈值/缩放/锚定四合一）、`data`、`document`、`world-map`、
+  `audit`（units_audit + timeline_check）、`tools`（optimize/simulate/crosscheck/custom）；
+  并给 `solve/formula/evaluate/world` 补合并别名 → **22 个原先查不到的 operation 全部可按名查**。
+- **管道串清除**：SKILL 的 14 处 `action:"model|route|…"` 与 help 的同类写法改成可复制的单值
+  （AI 照抄整串必失败）；`astro` 节参数名拼写 `precison` → `precision`。
+
+### 测试
+
+**118 套 / 2,940 项全绿**。新增 `r62-doc-consistency` **90 项**：数字一致、门面自洽、operation 覆盖、每节可按 key 取全文、
+关键术语三处一致、help 示例可运行、无管道串。
 ## [3.4.0] — 2026-11-18
 
 **R61/R62 增量测试与官方自检落地**：7 条真缺陷全部收口，新增 5 套 156 项守护。

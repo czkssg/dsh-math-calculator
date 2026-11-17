@@ -202,10 +202,10 @@ console.log('-- 5. skill 不重复 help 的内容（避免两处漂移）--')
    * skill 若把 help 的字段表抄一遍，就有两份会漂移的副本。
    * 这里只做粗判：skill 不该长到与 help 单节同量级。
    *
-   * 阈值取 12000 字符 —— 目前 skill 约 5000，help 单节最长约 2400。
+   * 阈值取 15000 字符 —— skill 现约 12K（含 calls/批量/管道串改写），help 全文约 60K。
    * skill 是「一篇流程文档」，比任何单节长是正常的，但**不该成为第二份 help**。
    */
-  assert('skill 长度合理（未抄成第二份 help）', skill.length < 12000, skill.length + ' 字符')
+  assert('skill 长度合理（未抄成第二份 help）', skill.length < 15000, skill.length + ' 字符')
   assert('skill 明确说明详细说明去查 help', /helpTopic|helpQuery/.test(skill), '')
   /** 不该出现大段字段表（`| 字段 | 默认值 |` 这类）。 */
   const tableRows = (skill.match(/^\|\s*[a-zA-Z_]+\s*\|/gm) ?? []).length

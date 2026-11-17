@@ -10,9 +10,27 @@
    "计算",
    "求值",
    "mathjs",
-   "expression"
+   "expression",
+   "auto"
   ],
   "body": "【evaluate】任意 mathjs 表达式，BigNumber 高位精度。\n\n★ 物理量一律带单位写 —— 带单位时量纲错误会被当场拦下：\n    好：(10 hp/0.475) to kW、28000 BTU/lb to MJ/kg、(5 inch)^3 to cm^3\n        (0.5 * 117 g * (900 ft/s)^2) to J、30 里 to km、1800 grain to g\n    差：10*745.7/0.475 —— 裸数字无从判断 745.7 是瓦还是千瓦，\n        同一批里 0.907/(10*745.7/…)*60 与 0.907/(10*0.7457/…)*60 会一个算成\n        0.369、一个算成 368.9，而工具无法告诉你哪个对。\n\n【带单位时的量纲校验】\n  10 hp + 3 kg        → unit_mismatch（两侧必须同量纲）\n  1 m + 1 s           → unit_mismatch\n  光年 to kg          → 量纲不符（长度 vs 质量）\n\n【单位换写的三种写法】\n  5 cm to inch        后缀式（最常用）\n  to(5 cm, inch)      函数式\n  (10 hp/0.475).to(\"kW\")   点式\n  ★ 写了目标单位时**不会被输出层改写**；没写时才归到常用档\n    （1e6 m → 1 Mm、1e12 g → 1 Mt、2.66e8*330 kg → 87.78 Mt）\n\n【复合单位】evaluate 能算复合单位，units 操作只认单单位。\n  1 L/min to m^3/s     → 1.6667e-5 m^3 / s（L/min 里的 min 会自动当成分钟）\n  1 MJ/day to kW       → 0.01157407 kW\n  1 g/dL to kg/m^3     → 10 kg / m^3\n  ★ 写成 min 也没问题：单位位置的 min 与函数 min() 不会互相干扰\n  ★ units 操作的单位表是按量纲组织的，复合单位请改用 evaluate\n\n【Math.xxx 不支持】写 Math.min(3,5) 会提示「去掉 Math. 前缀」，\n  直接写 min(3,5) 即可。\n\n【显式精度】precision（计算位，默认 64）与 displayPrecision（小数位，默认 8）\n  1/3                      → 0.33333333（默认 8 位小数）\n  1/3, displayPrecision:0  → 0（只留整数）\n  ★ 调低 precision 会算错大数：(10^20+1)-(10^20) 在 precision=20 得 0\n\n【批量】expressions 一次算多条，逐条独立报错（一条错不影响其它条）\n  元素两种写法：字符串 \"1/7\"，或对象 {label:\"名称\", expr:\"算式\"}\n  ★ \"标签=表达式\" 这种写法不支持（= 左边是中文标识符，会报 syntax）\n  例：[{label:\"煤砖含能\", expr:\"2 lb * 28000 BTU/lb to MJ\"}, \"1/7\"]\n  terse:true 只回「表达式 = 结果」，省 token；失败行照常标出，不藏风险。\n\n【带单位的变量与公式】变量可以给带单位的量，量纲自动参与运算：\n  variables:{V:\"10 m/s\", T:\"1 s\"}, expression:\"V*T\"   →  10 m\n  也支持中文单位：variables:{V:\"30 里/h\", T:\"2 时辰\"}  →  60 km\n  链式赋值同样可用：[\"V=10 m/s\", \"T=1 s\", \"L=V*T\"]\n  ★ 公式的参数也可以带单位，工具会校验量纲并换算到该参数声明的单位：\n    formula:\"velocity_uniform\", overrides:{s:\"60 里\", t:\"2 时辰\"}\n      → 结果 2.08333333 m/s；【单位换算】说明换成了什么\n      → 【同体系折算】约 30 里/时辰（输入用了里、时辰就折回里、时辰）\n    量纲不符会当场报错（把 kg 传给位移参数），不会静默按数字算。\n  ★ 裸数字照旧接受 —— 工具不猜 10 是米还是公里。\n\n【批量里的 ok 契约】\n  全成功  → ok=true\n  有失败  → ok=false + partial=true + failed=N + succeeded=M\n  ★ 单条与批量对非有限值（1/0、log(0)）的判断完全一致，都报 non_finite\n  复数是正常结果（sqrt(-1) → i），不算失败。\n\n【常见语法】2**10、π、2 × 3、6 ÷ 2、ln(10) 都能直接写。\n  三角函数默认弧度：sin(30) = -0.988，要角度请写 sin(30 deg)。"
+ },
+ {
+  "key": "batch",
+  "tier": "core",
+  "weight": 24,
+  "title": "批量调用（calls）",
+  "summary": "一次工具调用提交多条，逐条独立报错；别再一条一条发。★ 多组对比先看这里。",
+  "aliases": [
+   "批量",
+   "批量调用",
+   "calls",
+   "一次多条",
+   "批处理",
+   "多组",
+   "批量求值"
+  ],
+  "body": "【批量调用】一次提交多条，别逐条发工具调用\n  {calls:[{operation:\"units\",unitFrom:\"担\",unitTo:\"kg\"},{operation:\"evaluate\",expression:\"1/3\"}]}\n\n  · 顺序执行、逐条独立报错（一条失败不中断），单次上限 50 条\n  · 外层 precision / displayPrecision 会继承；条目显式值覆盖\n  · saveAs 写在条目里；外层写了会被忽略并提示\n  · 条目禁止嵌套 calls；结果在 value.results[]（ok/operation/result/error）\n  · 未知 operation 会在该条报 invalid_argument，不影响其它条\n\n  ★ 专用批量优先（更省 token）：\n    evaluate 的 expressions:[{label,expr,sanity}]  —— 可带锚点判据\n    formulas 的 formulas:[{formula,overrides,label}]\n  ★ 规则：多组结果一次交；单条仍直接写参数，不要套 calls。"
  },
  {
   "key": "solve",
@@ -27,7 +45,13 @@
    "积分",
    "求导",
    "微积分",
-   "algebra"
+   "algebra",
+   "derivative",
+   "integral",
+   "simplify",
+   "expand",
+   "roots",
+   "system"
   ],
   "body": "【解方程与微积分】\n\n  solve        解方程。多方程用逗号分隔 = 方程组\n                 3x + 2y = 10, x - y = 1   → x=2.4, y=1.4\n                 x^2 - 5x + 6 = 0          → x=2, x=3\n                 x^3 - 6x^2 + 11x - 6 = 0  → x=1, 2, 3（三次也解）\n               ★ 退化方程组会说「无穷多解」，不静默给单解 ——\n                 那正是最容易把错答案当对的场景。\n               ★ 无解时会说「无解」，不给一个近似值糊弄。\n\n  system       显式线性系统（matrix 系数 + vector 右端项）\n                 例：{matrix:[[3,2],[1,-1]], vector:[10,1]}  ← 3x+2y=10, x-y=1\n               与 solve 的区别：solve 吃方程文本，system 吃矩阵。\n               两者都能解同一组方程；**大方程组用 system 更清晰**。\n\n  derivative   符号求导，variable 指定自变量（默认 x）\n                 例：{expression:\"x^3*sin(x)\", variable:\"x\"}\n\n  integral     符号积分。给 from/to 就做定积分\n                 ★ 定积分用 **Fraction 引擎**代入上下限，不出 8.9999… 这类尾差\n                   （BigNumber 的 1/3 是截断小数，乘 27 回不到整数）\n\n  simplify     化简（含三角恒等式）\n  expand       展开（多项式与二项式）\n  roots        多项式求根（含复数根）\n\n【扩展函数】\n  rank(A) 秩 / nullspace(A) 零空间 / svd(A) 奇异值\n  factorize(n) 整数分解 / nsolve(\"表达式\", 初值) 数值求根\n\n  ★ 这些函数在 evaluate 里也能用（它们是注册进 mathjs 的）。\n    例如 {expression:\"rank([[1,2],[2,4]])\"} → 1（两行线性相关）"
  },
@@ -61,7 +85,8 @@
    "formula",
    "检索",
    "overrides",
-   "覆盖参数"
+   "覆盖参数",
+   "formula-table"
   ],
   "body": "【公式库】共 805 条自然科学公式\n  formula      调一条公式：formula=\"escape_velocity\", overrides={M,r}\n               ★ overrides 可覆盖任意参数 —— 这是架空世界改造的关键\n               例：把重力改成 1.5 倍地球 {\"g\": 14.71}；光速 {\"c\": 1e8}\n               ★ 错拼的 key 会点名上报，不会静默忽略\n\n  【体系】公式不是散着的 —— 22 条推演链按「一条链算一遍」组织：\n    formulas query=\"sys\"                  → 列出全部体系（材料/结构/能源/产能/食物/生物/\n                                             时间/财政/增长/建筑/气候/交通/军事/信息/水利/\n                                             金融/天文/生理/信息控制/决策/量子/排队）\n    formulas query=\"sys:sys-energy\"       → 看能源链的逐步（每步公式、输出单位、需自备参数）\n    formulas query=\"sys:formula:材料\"      → 看某条公式属于哪几条链（体系间的接点）\n    formulas query=\"sys:compound\"           → 看 7 条**复合路径**（跨 4 条链的现成路线）\n    formulas query=\"sys:compound:mine-to-empire\" → 从矿石到帝国：每一跳的接点公式\n    ★ 每步都标「← 上一步的谁作为本步的哪个参数」，照着填即可\n    ★ 体系之间靠共用公式连接（如 metallurgy_yield 同时属于材料链与产能链）\n    ★ 不必追求全部串成一条 —— 按推演目的取一条链，参数才不会拖家带口\n  【参数带单位】两种写法等价，都能让单位真的参与计算：\n    1) 逐参数带单位：overrides={V:\"324375 L\", n:20}   ← 更精确，可各给不同单位\n    2) 整批声明：unitFrom=\"L\", overrides={V:324375, n:20}   ← 更省事\n       目标单位默认用该参数自己声明的（V 声明 m³，故 324375 L → 324.375 m³）\n       ★ 无量纲参数（人数、个数、份额）**不参与换算** —— 只有声明了单位的才换\n       ★ 量纲不符会报错，不会静默按原数字算\n\n  【terse】只回一行，省 token：\n    terse:true → kleiber = 164316767.25 W，并注明覆盖了哪些参数\n    ★ 砍掉的是标题与参数表，**风险提示不砍**：经验式的【适用域】仍然保留\n\n  ★ 调低 precision 导致结果被截时会提示（如 10^20+1 在 precision=8 下末位失真）\n  ★ 新补充的领域（写世界观常用）：\n    engineering/structures  梁柱应力/挠度/惯性矩/螺栓焊缝（7 条）\n    engineering/thermal     卡诺效率/蒸汽功率/煤耗/换热/导热（5 条）\n    engineering/fluid,energy 管流/水头损失/泵/孔口/风电/水电（6 条）\n    biology/ecology         载畜量/出栏/料肉比/NPP/营养级（5 条）\n    econ/macro              劳力/总产出/储蓄/资本产出比/货币供应/通胀（6 条）\n\n  formulas     检索与分类：\n               query=\"关键词\"        按名称/关键词（如 \"重力\"、\"人口\"）\n               query=\"layer:derived\" 按规则层级\n                 fundamental 基本规则 / mathematical 数学基础（与基本同级）\n                 derived 派生 / phenomenological 唯象\n                 engineering 工程 / conventional 惯例\n               query=\"domain:物理\"   按学科领域（多标签）\n               query=\"freq:high\"     按主角感知频率（high/medium/low）\n               query=\"symbol:m\"      按符号含义\n               query=\"*\" 或留空      列出全部分类\n  formula-table 两级扩展：工作区临时公式（覆盖/自定义/停用）+ 全局公式包\n               tableAction: global-list / global-add / global-remove\n               字段与校验规则见 docs/formula-authoring.md"
  },
@@ -83,7 +108,8 @@
    "卫星",
    "月亮",
    "潮汐",
-   "历法"
+   "历法",
+   "world-build"
   ],
   "body": "【世界观推演】world 输入星球参数 → 体感画像\n  world        重力/昼夜/季节/纬度气候/地形上限 + 天空配色/恒星结构与寿命/\n               卫星系统/化学窗口/生命闸门/跨模块一致性检查\n  例：{operation:\"world\", planetMass:0.75, starTemp:5000, terrain:{kind:\"coastal\"}}\n\n  ★ 全部字段可选，默认地球。计步单位见括号。\n\n  【恒星】\n    starMass        太阳质量倍数，默认 1\n    starRadius      太阳半径倍数，默认 1\n    starTemp        表面温度 K，默认 5778\n  【轨道】\n    orbitAU         轨道半径 AU，默认 1\n    eccentricity    偏心率，默认 0.0167\n  【行星】\n    planetMass      地球质量倍数，默认 1\n    planetRadius    地球半径倍数，默认 1\n    rotationHours   自转周期小时，默认 23.93\n    obliquityDeg    轴倾角 度，默认 23.44\n    albedo          反照率，默认 0.306\n  【大气】\n    pressure        地表气压 Pa，默认 101325\n    molarMass       平均摩尔质量 kg/mol，默认 0.02896\n    gamma           比热比，默认 1.4\n    greenhouse      温室增温 K，默认 33\n  【地表】\n    materialStrength 材料强度 Pa，默认 1.3e8（花岗岩）\n    materialDensity  材料密度 kg/m³，默认 2700\n\n  【地形 terrain】（给了才输出局地气候细节）\n    kind            coastal/plain/plateau/mountain/valley/desert/\n                    forest/tundra/island/lake\n    elevation       海拔 m\n    latitudeDeg     纬度 度\n    distanceToSea   距海 km\n    annualPrecipMm  年降水 mm\n    humidity        湿度 0-1\n    windward        1 迎风 / -1 背风\n    reliefHeight    地形起伏 m\n    oceanCurrent    warm/cold/none\n    surface         soil/sand/rock/ice/water/vegetation\n\n  ★ 两个经常被误解的点：\n    1. 行星质量/半径/轨道与 α、c 等常数**无关**，改常数不该让它们变；\n    2. 恒星不给时**不会**静默替换成太阳 —— 会用默认值但明确声明用了什么。"
  },
@@ -766,7 +792,7 @@
    "编制拓扑",
    "topology"
   ],
-  "body": "【拓扑】topology 一个 operation 覆盖空间 / 工程 / 编制三类，用 action 选：\n\n  空间  action:\"model\"    {nodes:[{id,lat,lon}], edges:[{from,to,distanceKm?}]}\n        action:\"route\"    最短路；mode：road/rail/sea/air（系数不同）\n        action:\"sightline\" 视线（眼高 1.7 m，含地球曲率）\n        action:\"reachable\" 预算内可达；action:\"logistics\" 疆域信息时延上限\n\n  工程  action:\"structure\" + kind：building / vehicle / space-vessel / space-habitat /\n        enclosure / greenhouse / closed-loop / megastructure / sponge / mechanism /\n        fluid-power / thermal / electric / fluid / gear-train（规则表驱动，见 docs）\n        ★ 液压功率、卡诺效率、线阻压降、雷诺数/沿程损失、多级传动比都在这里\n\n  编制  action:\"org\" + units:[{id,level,headcount,parent}]（不等比 / 跨级 / 兵种混合）\n\n  地形  action:\"terrain\" + kind：coastal/plain/plateau/mountain/valley/ocean/sea/ice/\n        volcano/gas/urban/hive/cave/sky/space；真空与气态不输出陆地气候量\n\n  存取  action:\"save|load|list|export|import\"；类型 action:\"entities|define|validate\"\n\n  ★ 体积/容量/限高交给 feasibility 的上限判据；拓扑只负责几何与连通。\n  ★ 脏图（重复 id / 悬空边 / 自环）会报「非法边：A→X」，不会崩成 internal。\n"
+  "body": "【拓扑】topology 一个 operation 覆盖空间 / 工程 / 编制三类，用 action 选：\n\n  空间  action:\"model\"    {nodes:[{id,lat,lon}], edges:[{from,to,distanceKm?}]}\n        action:\"route\"    最短路；mode：road/rail/sea/air（系数不同）\n        action:\"sightline\" 视线（眼高 1.7 m，含地球曲率）\n        action:\"reachable\" 预算内可达；action:\"logistics\" 疆域信息时延上限\n\n  工程  action:\"structure\" + kind：building / vehicle / space-vessel / space-habitat /\n        enclosure / greenhouse / closed-loop / megastructure / sponge / mechanism /\n        fluid-power / thermal / electric / fluid / gear-train（规则表驱动，见 docs）\n        ★ 液压功率、卡诺效率、线阻压降、雷诺数/沿程损失、多级传动比都在这里\n\n  编制  action:\"org\" + units:[{id,level,headcount,parent}]（不等比 / 跨级 / 兵种混合）\n\n  地形  action:\"terrain\" + kind：\"coastal\"/\"plain\"/\"plateau\"/\"mountain\"/\"valley\"/\"ocean\"/\"sea\"/\"ice\"/\n        volcano/gas/urban/hive/cave/sky/space；真空与气态不输出陆地气候量\n\n  存取  action:\"save\" / \"load\" / \"list\" / \"export\" / \"import\"；类型 action:\"entities\" / \"define\" / \"validate\"\n\n  ★ 体积/容量/限高交给 feasibility 的上限判据；拓扑只负责几何与连通。\n  ★ 脏图（重复 id / 悬空边 / 自环）会报「非法边：A→X」，不会崩成 internal。\n"
  },
  {
   "key": "quick",
@@ -1040,7 +1066,7 @@
    "黑洞",
    "星历"
   ],
-  "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope|sextant|clock|pendulum|shadow|calendar-drift\",precison}\n  ★ 太阳光度是常数 3.828e26 W（不是公式）；需要时用 evaluate 直接算，或看 solar_flux_at_1au 由光度推辐照度。"
+  "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope\"（或 sextant/clock/pendulum/shadow/calendar-drift）,precision}\n  ★ 太阳光度是常数 3.828e26 W（不是公式）；需要时用 evaluate 直接算，或看 solar_flux_at_1au 由光度推辐照度。"
  },
  {
   "key": "history",
@@ -1111,6 +1137,111 @@
    "derive",
    "manage"
   ],
-  "body": "【门面】{operation:\"calc\", op:\"solve\", expression:\"x^2-4=0\"}\n  calc    → evaluate/solve/derivative/integral/matrix/eigen/stats/dist/ode/formula/...\n  derive  → world/derivation/feasibility/hierarchy/chain/threshold/backtrace/...\n  manage  → help/workspace/catalog/explain\n缺 op 或 op 不合法时返回可用清单（不报错）；旧 op 名全部继续可用。"
+  "body": "【门面】{operation:\"calc\", op:\"solve\", expression:\"x^2-4=0\"}\n  calc    → evaluate/solve/derivative/integral/matrix/eigen/stats/dist/ode/formula/…\n  derive  → world/derivation/feasibility/hierarchy/chain/threshold/backtrace/…\n  manage  → help/workspace\n\n  ★ 门面只转发**真实 operation**。sanity 是 evaluate 条目里的参数（见 evaluate 节）；\n    catalog/explain/invariants/examples 是 help 的能力，直接用 help 查，不是 op。\n  ★ 缺 op 或 op 不合法时返回可用清单（不报错）；旧 op 名全部继续可用。"
+ },
+ {
+  "key": "chain",
+  "tier": "core",
+  "weight": 22,
+  "title": "链条与判据（chain / threshold / scaling / anchor）",
+  "summary": "多段传导、阈值分档、平方立方律、基准锚定。判据由你给，工具只计算。",
+  "aliases": [
+   "chain",
+   "threshold",
+   "scaling",
+   "anchor",
+   "链条",
+   "传导",
+   "阈值",
+   "缩放",
+   "锚定",
+   "平方立方"
+  ],
+  "body": "【链条与判据】四个小工具，都是「给判据/给链」的确定性计算：\n  chain     多段传导 {chain:{raw:8, stages:[{name:\"坑口\",expr:\"raw\"},{name:\"到岸\",expr:\"prev*1.3\"}]}}\n            ★ expr 可用 raw（起始值）与 prev（上一段的值）；断点按**增量占比**判，不是累计占比\n  threshold 阈值分档 {thresholds:[{at:100,label:\"低\"},{at:1000,label:\"中\"}]} + value → 判档\n  scaling   平方立方律 {from:{...}, to:{...}, law:\"square-cube\"}（材料强度缺省不随尺度变）\n  anchor    基准锚定：只查表、不编数（给锚点 id，返回标准值）\n  ★ 四者都不替作者判断「这个数合不合理」：判据由你给。"
+ },
+ {
+  "key": "data",
+  "tier": "core",
+  "weight": 21,
+  "title": "统一数据层（data）",
+  "summary": "记录/版本/血缘/全文检索/导入导出；设定库（原 world_state）也在这一层。★ 长对话不丢设定。",
+  "aliases": [
+   "data",
+   "数据层",
+   "数据",
+   "记录",
+   "血缘",
+   "检索记录",
+   "world_state",
+   "设定库",
+   "存档"
+  ],
+  "body": "【统一数据层】记录 / 版本 / 血缘 / 检索 / 导入导出\n  {operation:\"data\", dataAction:\"put\", name:\"北境\", payload:{...}}\n  dataAction：put / get / query / search / lineage / stats / export / import / compact / migrate\n  · 同名再写 = 新版本；dataVersion:N 取历史版本\n  · refs 记「依赖谁」；refsTo 查「谁引用它」\n  · kind:\"setting\" 是设定库（原 world_state）；旧文件用 migrate（幂等）\n  ★ 存在 <工作区>/.artifacts/datastore/，不占对话上下文。"
+ },
+ {
+  "key": "document",
+  "tier": "extra",
+  "weight": 8,
+  "title": "文档解析（document）",
+  "summary": "PDF → 文本/表格/数字台账（不做 OCR）。",
+  "aliases": [
+   "document",
+   "文档",
+   "pdf",
+   "解析文档"
+  ],
+  "body": "【文档解析】PDF → 文本 / 表格 / 数字台账（不做 OCR）\n  {operation:\"document\", document:{action:\"extract\", path:\"D:/book.pdf\"}}\n  action：extract（全文）/ tables（表格）/ numbers（数字台账）\n  ★ 只读本地文件；扫描版 PDF 没有文本层时会明确报「没有可提取文本」。"
+ },
+ {
+  "key": "world-map",
+  "tier": "core",
+  "weight": 18,
+  "title": "全球地图（world-map）",
+  "summary": "高度场/地形/河流/矿产/国家 + 可选气候层；球体跨 180° 不绕远路。",
+  "aliases": [
+   "world-map",
+   "地图",
+   "全球地图",
+   "地形图",
+   "气候层",
+   "国家分布"
+  ],
+  "body": "【全球地图】高度场 / 地形 / 河流 / 矿产 / 国家（+ 可选气候层）\n  {operation:\"world-map\", worldTopology:\"sphere\", mapWidth:360, mapHeight:180, seed:7}\n  · worldTopology：\"sphere\"（球体，跨 180° 经线不绕远路）/ \"plane\"（天圆地方）\n  · mapDistance:{from:{x,y},to:{x,y}} 查两点实际距离（球体用大圆）\n  · climate:true 叠加温度/降水/分区/可耕率；useMap 反算承载力\n  · edits:[{x,y,height,seaLevel,nation}] 改地形与国界\n  ★ 定常解不是 CFD；气候层是地球标定的解析模型（标可信度）。"
+ },
+ {
+  "key": "audit",
+  "tier": "extra",
+  "weight": 12,
+  "title": "单位与时间线体检（units_audit / timeline_check）",
+  "summary": "一组数的量纲一致性 + 裸数字护栏；事件逆序/重叠/跨度/缺起点。",
+  "aliases": [
+   "units_audit",
+   "timeline_check",
+   "量纲体检",
+   "时间线体检",
+   "逆序",
+   "重叠"
+  ],
+  "body": "【单位与时间线体检】\n  units_audit    {claims:[{name:\"楼高\",value:320,unit:\"m\"}]}\n                 → 组内量纲一致性 + 裸数字护栏（N12）\n  timeline_check {events:[{name:\"建国\",start:1,end:20},{name:\"战争\",start:15,end:30}]}\n                 → 逆序 / 重叠 / 跨度 / 缺起点 / 乱序（N9）\n  ★ 只报告，不判断哪个事件该在前。"
+ },
+ {
+  "key": "tools",
+  "tier": "extra",
+  "weight": 14,
+  "title": "优化/模拟/对账/自创量（tools）",
+  "summary": "线性与整数规划、存量流量演化、跨实现对账、带量纲自创量。",
+  "aliases": [
+   "optimize",
+   "simulate",
+   "crosscheck",
+   "custom",
+   "优化",
+   "规划",
+   "模拟",
+   "系统动力学",
+   "对账",
+   "自创量"
+  ],
+  "body": "【优化 / 模拟 / 对账 / 自创量】\n  optimize   {objective:\"profit\", opType:\"max\", constraints:{资源:{max:100}}, lpVariables:{x:{资源:1,profit:3}}, integers:[\"x\"]}\n  simulate   {stocks:{人口:{initial:100}}, flows:{出生:{to:\"人口\",rate:\"人口*0.02\"}}, dt:1, simSteps:100}\n  crosscheck {checkId:\"escapeVelocity\"}（5 项：逃逸速度/一年天数/排水量/耗氧/人口）\n  custom     {customAction:\"add\", name:\"灵力\", unit:\"J\", expectedDimension:{M:1,L:2,T:-2}}\n  ★ crosscheck 只报差异，不替你选哪边对。"
  }
 ]

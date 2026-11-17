@@ -130,7 +130,7 @@ export const TOOL_DESCRIPTION = [
    * 关键是**必须告诉 AI 这个两步动作存在**，否则它会以为 help 只给目录、
    * 或者干脆不去查 —— 那功能就等于不存在。
    */
-  '某功能不确定怎么用 → help 看目录（56 节带简介），再 helpTopic:"world" 取该节全文。',
+  '某功能不确定怎么用 → help 看目录（63 节带简介），再 helpTopic:"world" 取该节全文。',
   '',
   '读输出：[精确]/[标度]/[量级]/[仅方向] 是可信度标签，引用时保留；',
   '【跨模块一致性】✗ 先修正设定；【模型可信度】标出哪些数是地球标定。',
@@ -225,7 +225,7 @@ export function buildSystemPromptSection(): string {
       '',
       '涉及数值计算时**必须**调用，不要心算、不要用 bash 拼凑。',
       '',
-      '**选哪个 operation**：一条式子 → `evaluate`（多条用 `expressions` 批量，可带 label）；',
+      '**选哪个 operation**：一条式子 → `evaluate`（多条用 `calls` 批量；`expressions` 可带 label 与 sanity）；',
       '解方程 → `solve`；数据 → `stats`/`dist`/`regression`；公式 → `formula`（' + FORMULA_COUNT + ' 条，参数可覆盖）；',
       '单位 → `units`；改设定 → `world`/`constants`/`derivation`；不确定 → `help`。',
       '',

@@ -30,8 +30,21 @@
  *   ④ 判据（什么算硬约束、什么算叙事选择）。
  */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join as joinPath } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { currentWorkspace } from './features/workspace.js'
 import { loadWorkspaceFile, saveWorkspaceFile } from './io/workspace-store.js'
+
+/** 公式条数（与 src/data/formulas.json 同源；提示里的数字不能再手写）。 */
+const FORMULA_COUNT = (() => {
+  try {
+    const data = JSON.parse(readFileSync(joinPath(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'formulas.json'), 'utf8'))
+    return Array.isArray(data) ? data.length : 0
+  } catch {
+    return 0
+  }
+})()
 
 /** 底座的一项能力。 */
 export interface BaseCapability {
@@ -48,13 +61,19 @@ export interface BaseCapability {
 /** 确定性底座清单。 */
 export const BASE_CAPABILITIES: BaseCapability[] = [
   {
+    call: 'calls（批量：一次多条，逐条独立报错）',
+    produces: '一次工具调用拿到多组结果（value.results[]）',
+    when: '多组对比、多方案、多地区同算',
+    doesNot: '不替你挑哪个方案更好',
+  },
+  {
     call: 'evaluate / solve / derivative / integral / matrix / stats',
     produces: '数值结果与可信度标签',
     when: '任何需要精确数字的地方',
     doesNot: '不解释数字的意义',
   },
   {
-    call: 'formula / formulas（342 条）',
+    call: 'formula / formulas（' + FORMULA_COUNT + ' 条）',
     produces: '带适用域的自然科学公式求值',
     when: '需要标准物理量（重力、标高、恒星寿命等）',
     doesNot: '不判断这个值在故事里合适不合适',

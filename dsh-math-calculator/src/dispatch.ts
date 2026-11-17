@@ -133,11 +133,17 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
  * @param args - 原始参数
  * @returns 结果；未迁移返回 null
  */
-/** 门面分组：把 53 个 operation 收成 3 个入口（旧名仍兼容）。 */
-const FACADE_GROUPS: Record<string, string[]> = {
-  calc: ['evaluate', 'solve', 'derivative', 'integral', 'simplify', 'expand', 'roots', 'matrix', 'eigen', 'system', 'stats', 'dist', 'regression', 'ode', 'recurrence', 'balance', 'compare', 'interval', 'ledger', 'consistency', 'sanity', 'formula', 'formulas'],
-  derive: ['world', 'derivation', 'bodies', 'feasibility', 'quick_feasible', 'hierarchy', 'world_state', 'chain', 'threshold', 'scaling', 'anchor', 'extract_numbers', 'units_audit', 'timeline_check', 'impact', 'alert'],
-  manage: ['workspace', 'help', 'catalog', 'explain', 'invariants', 'examples'],
+/**
+ * 门面分组：把 operation 收成 3 个入口（旧名仍兼容）。
+ *
+ * ⚠ 只放**真实 operation**（R62 审计）：早先列过 `sanity`（其实是 evaluate 的条目参数）、
+ * `alert`（从未实现）与 `catalog/explain/invariants/examples`（是 help 的能力，不是 op），
+ * 这些调用会被门面放行、再落到不存在实现 → internal，属于「声明了但不可用」。
+ */
+export const FACADE_GROUPS: Record<string, string[]> = {
+  calc: ['evaluate', 'solve', 'derivative', 'integral', 'simplify', 'expand', 'roots', 'matrix', 'eigen', 'system', 'stats', 'dist', 'regression', 'ode', 'recurrence', 'balance', 'compare', 'interval', 'ledger', 'consistency', 'formula', 'formulas'],
+  derive: ['world', 'derivation', 'bodies', 'feasibility', 'quick_feasible', 'hierarchy', 'world_state', 'chain', 'threshold', 'scaling', 'anchor', 'extract_numbers', 'units_audit', 'timeline_check', 'impact'],
+  manage: ['workspace', 'help'],
 }
 
 /**
