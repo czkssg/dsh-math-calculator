@@ -47,6 +47,26 @@ console.log('-- 1. 材料链跑通 --')
   assert('末端有值', typeof out.value.terminal.value === 'number' && Number.isFinite(out.value.terminal.value), JSON.stringify(out.value.terminal))
 }
 
+console.log('-- 1b. 新增的两处映射 --')
+{
+  const material = await run({ operation: 'formulas', query: 'chain', formulaFocus: 'sys-material', initial: BASE })
+  const step7 = material.value.steps.find((item) => item.step === 7)
+  assert('★ 材料链第 7 步 strength ← 第 5 步', step7?.linked?.strength?.fromStep === 5, JSON.stringify(step7?.linked))
+  assert('强度值与第 5 步一致', Math.abs(step7.linked.strength.value - material.value.steps[4].value) < 1e-6, '')
+
+  const BUILD = {
+    area: 100, load_per_area: 5000, sigma_y: 2e8, A: 0.04, U: 1.5, total_area: 200, delta_T: 20, dT: 20,
+    r_value: 2, ventilation_loss: 0.2, rho_out: 1.2, g: 9.81, h: 5, T_out: 300, T_in: 290,
+    thickness: 0.24, brick_l: 0.24, brick_w: 0.115, brick_h: 0.053, mortar_factor: 1.25,
+    fuel_per_brick: 1.2, wall_area: 50, density: 1800, mortar_ratio: 0.25, rho: 1000,
+  }
+  const building = await run({ operation: 'formulas', query: 'chain', formulaFocus: 'sys-building', initial: BUILD })
+  assert('建筑链跑通', building.ok === true, String(building.error?.message).slice(0, 80))
+  const step7b = building.value?.steps?.find((item) => item.step === 7)
+  assert('★ 建筑链第 7 步 brick_count ← 第 6 步', step7b?.linked?.brick_count?.fromStep === 6, JSON.stringify(step7b?.linked))
+  assert('砖数与第 6 步一致', Math.abs(step7b.linked.brick_count.value - building.value.steps[5].value) < 1e-6, '')
+}
+
 console.log('-- 2. 传导是真的（改上游，下游变）--')
 {
   const base = await run({ operation: 'formulas', query: 'chain', formulaFocus: 'sys-material', initial: BASE })

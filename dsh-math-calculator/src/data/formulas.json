@@ -467,7 +467,12 @@
    "W": {
     "value": null,
     "desc": "功 J",
-    "quantity": "功"
+    "quantity": "功",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "t": {
     "value": null,
@@ -984,7 +989,10 @@
    "a": {
     "value": null,
     "desc": "轨道半长轴 m",
-    "quantity": "轨道半长轴"
+    "quantity": "轨道半长轴",
+    "dimension": {
+     "L": 1
+    }
    },
    "m": {
     "value": null,
@@ -1081,7 +1089,10 @@
    "d": {
     "value": null,
     "desc": "天体尺度 m",
-    "quantity": "天体尺度"
+    "quantity": "天体尺度",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m/s^2",
@@ -1231,7 +1242,12 @@
    "F0": {
     "value": null,
     "desc": "基准承重 N",
-    "quantity": "基准承重"
+    "quantity": "基准承重",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "s": {
     "value": null,
@@ -1256,7 +1272,12 @@
    "B0": {
     "value": null,
     "desc": "基准代谢率 W",
-    "quantity": "基准代谢率"
+    "quantity": "基准代谢率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    },
    "m0": {
     "value": null,
@@ -1471,7 +1492,10 @@
    "T1": {
     "value": null,
     "desc": "初温1 K",
-    "quantity": "初温1"
+    "quantity": "初温1",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "m2": {
     "value": null,
@@ -1489,7 +1513,10 @@
    "T2": {
     "value": null,
     "desc": "初温2 K",
-    "quantity": "初温2"
+    "quantity": "初温2",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "K",
@@ -1638,12 +1665,18 @@
    "Tc": {
     "value": null,
     "desc": "低温热源 K",
-    "quantity": "低温热源"
+    "quantity": "低温热源",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "Th": {
     "value": null,
     "desc": "高温热源 K",
-    "quantity": "高温热源"
+    "quantity": "高温热源",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "无量纲",
@@ -1975,7 +2008,12 @@
    "B": {
     "value": null,
     "desc": "磁感应强度 T",
-    "quantity": "磁感应强度"
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
    },
    "theta": {
     "value": 1.5707963267948966,
@@ -2122,12 +2160,20 @@
    "I": {
     "value": null,
     "desc": "声强 W/m²",
-    "quantity": "声强"
+    "quantity": "声强",
+    "dimension": {
+     "M": 1,
+     "T": -3
+    }
    },
    "I0": {
     "value": 1e-12,
     "desc": "基准声强 W/m²",
-    "quantity": "基准声强"
+    "quantity": "基准声强",
+    "dimension": {
+     "M": 1,
+     "T": -3
+    }
    }
   },
   "unit": "dB",
@@ -2594,7 +2640,12 @@
    "mu": {
     "value": null,
     "desc": "动力粘度 Pa·s",
-    "quantity": "动力粘度"
+    "quantity": "动力粘度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
    }
   },
   "unit": "无量纲",
@@ -2710,7 +2761,10 @@
    "dm": {
     "value": null,
     "desc": "质量亏损 kg",
-    "quantity": "质量亏损"
+    "quantity": "质量亏损",
+    "dimension": {
+     "M": 1
+    }
    },
    "c": {
     "value": 299792458,
@@ -4652,7 +4706,12 @@
    "F": {
     "value": null,
     "desc": "集中载荷 N",
-    "quantity": "集中载荷"
+    "quantity": "集中载荷",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "L": {
     "value": null,
@@ -4902,7 +4961,12 @@
    "B": {
     "value": null,
     "desc": "磁感应强度 T",
-    "quantity": "磁感应强度"
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
    },
    "theta": {
     "value": 1.5707963267948966,
@@ -4927,7 +4991,12 @@
    "B": {
     "value": null,
     "desc": "磁感应强度 T",
-    "quantity": "磁感应强度"
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
    },
    "A": {
     "value": null,
@@ -4966,7 +5035,13 @@
    "dPhi": {
     "value": null,
     "desc": "磁通变化 Wb",
-    "quantity": "磁通变化"
+    "quantity": "磁通变化",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -1
+    }
    },
    "dt": {
     "value": null,
@@ -5410,12 +5485,18 @@
    "Tc": {
     "value": null,
     "desc": "低温 K",
-    "quantity": "低温"
+    "quantity": "低温",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "Th": {
     "value": null,
     "desc": "高温 K",
-    "quantity": "高温"
+    "quantity": "高温",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "无量纲",
@@ -5779,7 +5860,10 @@
    "d": {
     "value": null,
     "desc": "栅距 m",
-    "quantity": "栅距"
+    "quantity": "栅距",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "rad",
@@ -6240,7 +6324,10 @@
    "h": {
     "value": null,
     "desc": "身高 cm",
-    "quantity": "身高"
+    "quantity": "身高",
+    "dimension": {
+     "L": 1
+    }
    },
    "age": {
     "value": null,
@@ -6272,7 +6359,10 @@
    "h": {
     "value": null,
     "desc": "身高 cm",
-    "quantity": "身高"
+    "quantity": "身高",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m²",
@@ -6614,7 +6704,13 @@
    "Ea": {
     "value": null,
     "desc": "活化能 J/mol",
-    "quantity": "活化能"
+    "quantity": "活化能",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "N": -1
+    }
    },
    "T": {
     "value": null,
@@ -6718,7 +6814,12 @@
    "dH": {
     "value": null,
     "desc": "焓变 J",
-    "quantity": "焓变"
+    "quantity": "焓变",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "T": {
     "value": null,
@@ -6731,7 +6832,13 @@
    "dS": {
     "value": null,
     "desc": "熵变 J/K",
-    "quantity": "熵变"
+    "quantity": "熵变",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1
+    }
    }
   },
   "unit": "J",
@@ -6819,7 +6926,12 @@
    "P0": {
     "value": null,
     "desc": "纯溶剂蒸气压 Pa",
-    "quantity": "纯溶剂蒸气压"
+    "quantity": "纯溶剂蒸气压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    }
   },
   "unit": "Pa",
@@ -7441,12 +7553,18 @@
    "h1": {
     "value": null,
     "desc": "塔1 高度 m",
-    "quantity": "塔1"
+    "quantity": "塔1",
+    "dimension": {
+     "L": 1
+    }
    },
    "h2": {
     "value": null,
     "desc": "塔2 高度 m",
-    "quantity": "塔2"
+    "quantity": "塔2",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m",
@@ -7768,7 +7886,10 @@
    "a": {
     "value": null,
     "desc": "轨道半长轴 m",
-    "quantity": "轨道半长轴"
+    "quantity": "轨道半长轴",
+    "dimension": {
+     "L": 1
+    }
    },
    "M": {
     "value": null,
@@ -7987,7 +8108,12 @@
    "P0": {
     "value": 101325,
     "desc": "海平面气压 Pa",
-    "quantity": "海平面气压"
+    "quantity": "海平面气压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "h": {
     "value": null,
@@ -8000,7 +8126,10 @@
    "H": {
     "value": 8500,
     "desc": "大气标高 m",
-    "quantity": "大气标高"
+    "quantity": "大气标高",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "Pa",
@@ -8299,7 +8428,10 @@
    "per_day": {
     "value": 3,
     "desc": "每人每日补给 kg",
-    "quantity": "每人每日补给"
+    "quantity": "每人每日补给",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "kg",
@@ -8397,7 +8529,10 @@
    "yield_per_m2": {
     "value": null,
     "desc": "每平方米年产量 kg",
-    "quantity": "每平方米年产量"
+    "quantity": "每平方米年产量",
+    "dimension": {
+     "M": 1
+    }
    },
    "kcal_per_kg": {
     "value": 3500,
@@ -8460,7 +8595,10 @@
    "yield_per_m2": {
     "value": null,
     "desc": "每平方米年产 kg",
-    "quantity": "每平方米年产"
+    "quantity": "每平方米年产",
+    "dimension": {
+     "M": 1
+    }
    },
    "kcal_per_day": {
     "value": 2200,
@@ -8520,12 +8658,18 @@
    "width": {
     "value": null,
     "desc": "河宽 m",
-    "quantity": "河宽"
+    "quantity": "河宽",
+    "dimension": {
+     "L": 1
+    }
    },
    "depth": {
     "value": null,
     "desc": "水深 m",
-    "quantity": "水深"
+    "quantity": "水深",
+    "dimension": {
+     "L": 1
+    }
    },
    "velocity": {
     "value": null,
@@ -8554,12 +8698,19 @@
    "width": {
     "value": null,
     "desc": "河宽 m",
-    "quantity": "河宽"
+    "quantity": "河宽",
+    "dimension": {
+     "L": 1
+    }
    },
    "boat_speed": {
     "value": 1,
     "desc": "船速 m/s",
-    "quantity": "船速"
+    "quantity": "船速",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    }
   },
   "unit": "s",
@@ -8621,7 +8772,12 @@
    "W": {
     "value": null,
     "desc": "总重量 N",
-    "quantity": "总重量"
+    "quantity": "总重量",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "sigma_allow": {
     "value": null,
@@ -8661,7 +8817,12 @@
    "sigma": {
     "value": null,
     "desc": "材料强度 Pa",
-    "quantity": "材料强度"
+    "quantity": "材料强度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "h": {
     "value": null,
@@ -8694,7 +8855,10 @@
    "area_per_person": {
     "value": 200,
     "desc": "人均占地 m²（古代城市约 100-300）",
-    "quantity": "人均占地"
+    "quantity": "人均占地",
+    "dimension": {
+     "L": 2
+    }
    }
   },
   "unit": "m²",
@@ -8779,7 +8943,11 @@
    "speed": {
     "value": 15,
     "desc": "马速 km/h",
-    "quantity": "马速"
+    "quantity": "马速",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    },
    "stops": {
     "value": null,
@@ -8858,7 +9026,11 @@
    "rainfall": {
     "value": null,
     "desc": "降水量 m/年",
-    "quantity": "降水量"
+    "quantity": "降水量",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    },
    "runoff_coefficient": {
     "value": 0.4,
@@ -8890,12 +9062,22 @@
    "es": {
     "value": null,
     "desc": "饱和水汽压 Pa",
-    "quantity": "饱和水汽压"
+    "quantity": "饱和水汽压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "ea": {
     "value": null,
     "desc": "实际水汽压 Pa",
-    "quantity": "实际水汽压"
+    "quantity": "实际水汽压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    }
   },
   "unit": "kg/(m²·s)",
@@ -8922,7 +9104,11 @@
    "lapse": {
     "value": 0.0065,
     "desc": "递减率 K/m",
-    "quantity": "递减率"
+    "quantity": "递减率",
+    "dimension": {
+     "L": -1,
+     "Theta": 1
+    }
    },
    "h": {
     "value": null,
@@ -8958,7 +9144,11 @@
    "lapse": {
     "value": 0.0065,
     "desc": "递减率 K/m",
-    "quantity": "递减率"
+    "quantity": "递减率",
+    "dimension": {
+     "L": -1,
+     "Theta": 1
+    }
    }
   },
   "unit": "m",
@@ -9017,7 +9207,11 @@
    "cp": {
     "value": null,
     "desc": "比热 J/(kg·K)",
-    "quantity": "比热"
+    "quantity": "比热",
+    "dimension": {
+     "M": 1,
+     "Theta": 1
+    }
    },
    "T_melt": {
     "value": null,
@@ -9063,7 +9257,12 @@
    "total_energy": {
     "value": null,
     "desc": "总能耗 J/年",
-    "quantity": "总能耗"
+    "quantity": "总能耗",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    },
    "population": {
     "value": null,
@@ -9088,7 +9287,10 @@
    "kg_per_hectare": {
     "value": null,
     "desc": "每公顷产量 kg",
-    "quantity": "每公顷产量"
+    "quantity": "每公顷产量",
+    "dimension": {
+     "M": 1
+    }
    },
    "kcal_per_kg": {
     "value": 3500,
@@ -9167,7 +9369,12 @@
    "p": {
     "value": null,
     "desc": "内压 Pa",
-    "quantity": "内压"
+    "quantity": "内压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "r": {
     "value": null,
@@ -9180,7 +9387,10 @@
    "t": {
     "value": null,
     "desc": "壁厚 m",
-    "quantity": "壁厚"
+    "quantity": "壁厚",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "Pa",
@@ -9202,7 +9412,12 @@
    "F": {
     "value": null,
     "desc": "集中载荷 N",
-    "quantity": "集中载荷"
+    "quantity": "集中载荷",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "L": {
     "value": null,
@@ -9251,7 +9466,12 @@
    "F": {
     "value": null,
     "desc": "集中载荷 N",
-    "quantity": "集中载荷"
+    "quantity": "集中载荷",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "L": {
     "value": null,
@@ -9279,7 +9499,12 @@
    "sigma_b": {
     "value": null,
     "desc": "抗弯强度 Pa",
-    "quantity": "抗弯强度"
+    "quantity": "抗弯强度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "b": {
     "value": null,
@@ -9316,7 +9541,12 @@
    "sigma_y": {
     "value": null,
     "desc": "屈服强度 Pa",
-    "quantity": "屈服强度"
+    "quantity": "屈服强度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "A": {
     "value": null,
@@ -9345,7 +9575,12 @@
    "W": {
     "value": null,
     "desc": "总竖向载荷 N",
-    "quantity": "总竖向载荷"
+    "quantity": "总竖向载荷",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "L": {
     "value": null,
@@ -9409,7 +9644,12 @@
    "sigma_a": {
     "value": null,
     "desc": "应力幅 Pa",
-    "quantity": "应力幅"
+    "quantity": "应力幅",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "b": {
     "value": -0.1,
@@ -9436,7 +9676,10 @@
    "W": {
     "value": null,
     "desc": "失重 g",
-    "quantity": "失重"
+    "quantity": "失重",
+    "dimension": {
+     "M": 1
+    }
    },
    "A": {
     "value": null,
@@ -9797,7 +10040,10 @@
    "t": {
     "value": null,
     "desc": "看到闪电到听到雷声的秒数 s",
-    "quantity": "看到闪电到听到雷声的秒数"
+    "quantity": "看到闪电到听到雷声的秒数",
+    "dimension": {
+     "T": 1
+    }
    }
   },
   "unit": "km",
@@ -10225,12 +10471,18 @@
    "Tmax": {
     "value": null,
     "desc": "日最高温 °C",
-    "quantity": "日最高温"
+    "quantity": "日最高温",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "Tmin": {
     "value": null,
     "desc": "日最低温 °C",
-    "quantity": "日最低温"
+    "quantity": "日最低温",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "Tbase": {
     "value": null,
@@ -10272,17 +10524,31 @@
    "u2": {
     "value": null,
     "desc": "2m 风速 m/s",
-    "quantity": "2"
+    "quantity": "2",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    },
    "es": {
     "value": null,
     "desc": "饱和水汽压 kPa",
-    "quantity": "饱和水汽压"
+    "quantity": "饱和水汽压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "ea": {
     "value": null,
     "desc": "实际水汽压 kPa",
-    "quantity": "实际水汽压"
+    "quantity": "实际水汽压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    }
   },
   "unit": "mm/日",
@@ -10311,7 +10577,10 @@
    "H": {
     "value": null,
     "desc": "身高 cm",
-    "quantity": "身高"
+    "quantity": "身高",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m^2",
@@ -10401,7 +10670,10 @@
    "t": {
     "value": null,
     "desc": "自饮酒起小时数 h",
-    "quantity": "自饮酒起小时数"
+    "quantity": "自饮酒起小时数",
+    "dimension": {
+     "T": 1
+    }
    }
   },
   "unit": "g/L",
@@ -10502,22 +10774,34 @@
    "thickness": {
     "value": null,
     "desc": "墙厚 m",
-    "quantity": "墙厚"
+    "quantity": "墙厚",
+    "dimension": {
+     "L": 1
+    }
    },
    "brick_l": {
     "value": 0.24,
     "desc": "砖长 m",
-    "quantity": "砖长"
+    "quantity": "砖长",
+    "dimension": {
+     "L": 1
+    }
    },
    "brick_w": {
     "value": 0.115,
     "desc": "砖宽 m",
-    "quantity": "砖宽"
+    "quantity": "砖宽",
+    "dimension": {
+     "L": 1
+    }
    },
    "brick_h": {
     "value": 0.053,
     "desc": "砖高 m",
-    "quantity": "砖高"
+    "quantity": "砖高",
+    "dimension": {
+     "L": 1
+    }
    },
    "mortar_factor": {
     "value": 1.15,
@@ -10552,7 +10836,12 @@
    "load_per_area": {
     "value": null,
     "desc": "面载荷 N/m^2（含雪载/瓦重）",
-    "quantity": "面载荷"
+    "quantity": "面载荷",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    }
   },
   "unit": "N",
@@ -10573,12 +10862,18 @@
    "rise": {
     "value": null,
     "desc": "踏步高 m",
-    "quantity": "踏步高"
+    "quantity": "踏步高",
+    "dimension": {
+     "L": 1
+    }
    },
    "run": {
     "value": null,
     "desc": "踏步宽 m",
-    "quantity": "踏步宽"
+    "quantity": "踏步宽",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m",
@@ -10655,7 +10950,10 @@
    "dT": {
     "value": null,
     "desc": "室内外温差 K",
-    "quantity": "室内外温差"
+    "quantity": "室内外温差",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "W",
@@ -10869,7 +11167,10 @@
    "thickness": {
     "value": null,
     "desc": "墙厚 m",
-    "quantity": "墙厚"
+    "quantity": "墙厚",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "J",
@@ -10925,7 +11226,10 @@
    "stores": {
     "value": null,
     "desc": "存粮 kg",
-    "quantity": "存粮"
+    "quantity": "存粮",
+    "dimension": {
+     "M": 1
+    }
    },
    "troops": {
     "value": null,
@@ -10936,7 +11240,10 @@
    "daily_ration": {
     "value": null,
     "desc": "人均日耗 kg",
-    "quantity": "人均日耗"
+    "quantity": "人均日耗",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "日",
@@ -11003,7 +11310,11 @@
    "yield_per_ha": {
     "value": null,
     "desc": "单产 kg/公顷",
-    "quantity": "单产"
+    "quantity": "单产",
+    "dimension": {
+     "M": 1,
+     "L": -2
+    }
    }
   },
   "unit": "kg",
@@ -11067,7 +11378,12 @@
    "daily_kcal_per_person": {
     "value": 2500,
     "desc": "人均日需 kcal",
-    "quantity": "人均日需"
+    "quantity": "人均日需",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    }
   },
   "unit": "人·日",
@@ -11096,7 +11412,10 @@
    "plants_per_m2": {
     "value": null,
     "desc": "目标株数 /m^2",
-    "quantity": "目标株数"
+    "quantity": "目标株数",
+    "dimension": {
+     "L": -2
+    }
    },
    "germination": {
     "value": null,
@@ -11135,7 +11454,11 @@
    "rate_kg_per_ha": {
     "value": null,
     "desc": "施肥量 kg/公顷",
-    "quantity": "施肥量"
+    "quantity": "施肥量",
+    "dimension": {
+     "M": 1,
+     "L": -2
+    }
    }
   },
   "unit": "kg",
@@ -11193,7 +11516,10 @@
    "daily_feed_kg": {
     "value": null,
     "desc": "每头每日 kg",
-    "quantity": "每头每日"
+    "quantity": "每头每日",
+    "dimension": {
+     "M": 1
+    }
    },
    "days": {
     "value": null,
@@ -11227,12 +11553,19 @@
    "productivity_kg_per_ha": {
     "value": null,
     "desc": "年产草量 kg/公顷",
-    "quantity": "年产草量"
+    "quantity": "年产草量",
+    "dimension": {
+     "M": 1,
+     "L": -2
+    }
    },
    "intake_kg_per_day": {
     "value": null,
     "desc": "每头日食量 kg",
-    "quantity": "每头日食量"
+    "quantity": "每头日食量",
+    "dimension": {
+     "M": 1
+    }
    },
    "days": {
     "value": null,
@@ -11327,7 +11660,10 @@
    "weight": {
     "value": null,
     "desc": "儿童体重 kg",
-    "quantity": "儿童体重"
+    "quantity": "儿童体重",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "mg",
@@ -11401,7 +11737,10 @@
    "volume_ml": {
     "value": null,
     "desc": "液体总量 ml",
-    "quantity": "液体总量"
+    "quantity": "液体总量",
+    "dimension": {
+     "L": 3
+    }
    },
    "hours": {
     "value": null,
@@ -11641,7 +11980,10 @@
    "kg_per_hectare": {
     "value": 3000,
     "desc": "每公顷年产 kg",
-    "quantity": "每公顷年产"
+    "quantity": "每公顷年产",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "kg/年",
@@ -11667,7 +12009,11 @@
    "grain_kg": {
     "value": null,
     "desc": "可用粮食 kg/年",
-    "quantity": "可用粮食"
+    "quantity": "可用粮食",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
    },
    "kcal_per_kg": {
     "value": 3500,
@@ -11728,7 +12074,10 @@
    "kg_per_hectare": {
     "value": 3000,
     "desc": "每公顷年产 kg",
-    "quantity": "每公顷年产"
+    "quantity": "每公顷年产",
+    "dimension": {
+     "M": 1
+    }
    },
    "kcal_per_kg": {
     "value": 3500,
@@ -11769,7 +12118,10 @@
    "output_per_capita": {
     "value": 3000,
     "desc": "人均年产出（折粮 kg 或等价货币）",
-    "quantity": "人均年产出"
+    "quantity": "人均年产出",
+    "dimension": {
+     "M": 1
+    }
    },
    "tax_rate": {
     "value": 0.1,
@@ -13136,7 +13488,11 @@
    "capacity": {
     "value": null,
     "desc": "电池容量 mAh",
-    "quantity": "电池容量"
+    "quantity": "电池容量",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
    },
    "load": {
     "value": null,
@@ -13273,7 +13629,12 @@
    "mu": {
     "value": null,
     "desc": "动力黏度 Pa·s（20°C 水约 1e-3）",
-    "quantity": "动力黏度"
+    "quantity": "动力黏度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
    }
   },
   "unit": "无量纲",
@@ -13344,7 +13705,12 @@
    "pressure": {
     "value": null,
     "desc": "液压 Pa",
-    "quantity": "液压"
+    "quantity": "液压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "area": {
     "value": null,
@@ -13457,7 +13823,10 @@
    "length": {
     "value": null,
     "desc": "水线长 m",
-    "quantity": "水线长"
+    "quantity": "水线长",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "kn（节）",
@@ -13595,7 +13964,11 @@
    "flux0": {
     "value": null,
     "desc": "参考点辐照 W/m²",
-    "quantity": "参考点辐照"
+    "quantity": "参考点辐照",
+    "dimension": {
+     "M": 1,
+     "T": -3
+    }
    },
    "distance0": {
     "value": null,
@@ -14690,12 +15063,21 @@
    "phi": {
     "value": null,
     "desc": "光通量 lm",
-    "quantity": "光通量"
+    "quantity": "光通量",
+    "dimension": {
+     "J": 1
+    }
    },
    "efficacy": {
     "value": 100,
     "desc": "光效 lm/W（LED 约 100，白炽约 12）",
-    "quantity": "光效"
+    "quantity": "光效",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 3,
+     "J": 1
+    }
    }
   },
   "unit": "W",
@@ -14715,7 +15097,10 @@
    "phi": {
     "value": null,
     "desc": "光通量 lm",
-    "quantity": "光通量"
+    "quantity": "光通量",
+    "dimension": {
+     "J": 1
+    }
    },
    "A": {
     "value": null,
@@ -15061,7 +15446,11 @@
    "U": {
     "value": null,
     "desc": "酶活 U（µmol/min）",
-    "quantity": "酶活"
+    "quantity": "酶活",
+    "dimension": {
+     "T": -1,
+     "N": 1
+    }
    }
   },
   "unit": "kat",
@@ -15081,7 +15470,10 @@
    "delta_n": {
     "value": null,
     "desc": "底物消耗量 mol",
-    "quantity": "底物消耗量"
+    "quantity": "底物消耗量",
+    "dimension": {
+     "N": 1
+    }
    },
    "t": {
     "value": null,
@@ -15178,7 +15570,12 @@
    "M": {
     "value": null,
     "desc": "弯矩 N·m",
-    "quantity": "弯矩"
+    "quantity": "弯矩",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "b": {
     "value": null,
@@ -15285,7 +15682,11 @@
    "q": {
     "value": null,
     "desc": "均布荷载 N/m",
-    "quantity": "均布荷载"
+    "quantity": "均布荷载",
+    "dimension": {
+     "M": 1,
+     "T": -2
+    }
    },
    "L": {
     "value": null,
@@ -15421,7 +15822,10 @@
    "a": {
     "value": null,
     "desc": "焊脚尺寸 m（K 值，如 6mm 焊脚 = 0.006）",
-    "quantity": "焊脚尺寸"
+    "quantity": "焊脚尺寸",
+    "dimension": {
+     "L": 1
+    }
    },
    "L": {
     "value": null,
@@ -15513,7 +15917,11 @@
    "dh": {
     "value": null,
     "desc": "进出口焓差 J/kg（饱和蒸汽 2.7 MPa 约 2.1e6）",
-    "quantity": "进出口焓差"
+    "quantity": "进出口焓差",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    },
    "eta": {
     "value": 0.15,
@@ -15556,7 +15964,11 @@
    "coal_cv": {
     "value": 29300000,
     "desc": "煤低位热值 J/kg（标准煤 2.93e7 约 7000 kcal）",
-    "quantity": "煤低位热值"
+    "quantity": "煤低位热值",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    },
    "eta": {
     "value": 0.7,
@@ -15603,12 +16015,18 @@
    "dT1": {
     "value": 40,
     "desc": "热端温差 K（入口，与 dT2 必须不同）",
-    "quantity": "热端温差"
+    "quantity": "热端温差",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "dT2": {
     "value": 20,
     "desc": "冷端温差 K（出口，与 dT1 必须不同）",
-    "quantity": "冷端温差"
+    "quantity": "冷端温差",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "W",
@@ -15653,12 +16071,18 @@
    "dT": {
     "value": null,
     "desc": "两侧温差 K",
-    "quantity": "两侧温差"
+    "quantity": "两侧温差",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "d": {
     "value": null,
     "desc": "壁厚 m",
-    "quantity": "壁厚"
+    "quantity": "壁厚",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "W",
@@ -15695,7 +16119,10 @@
    "d": {
     "value": null,
     "desc": "管内径 m",
-    "quantity": "管内径"
+    "quantity": "管内径",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "m³/s",
@@ -15736,7 +16163,10 @@
    "d": {
     "value": null,
     "desc": "管内径 m",
-    "quantity": "管内径"
+    "quantity": "管内径",
+    "dimension": {
+     "L": 1
+    }
    },
    "v": {
     "value": null,
@@ -15808,7 +16238,10 @@
    "H": {
     "value": null,
     "desc": "扬程 m",
-    "quantity": "扬程"
+    "quantity": "扬程",
+    "dimension": {
+     "L": 1
+    }
    },
    "eta": {
     "value": 0.7,
@@ -16069,12 +16502,18 @@
    "target_weight": {
     "value": null,
     "desc": "出栏体重 kg",
-    "quantity": "出栏体重"
+    "quantity": "出栏体重",
+    "dimension": {
+     "M": 1
+    }
    },
    "birth_weight": {
     "value": null,
     "desc": "初生体重 kg（仔猪 1.5，犊牛 40，羔羊 3）",
-    "quantity": "初生体重"
+    "quantity": "初生体重",
+    "dimension": {
+     "M": 1
+    }
    },
    "adg": {
     "value": null,
@@ -16107,12 +16546,18 @@
    "feed_consumed": {
     "value": null,
     "desc": "消耗饲料总量 kg（干物质）",
-    "quantity": "消耗饲料总量"
+    "quantity": "消耗饲料总量",
+    "dimension": {
+     "M": 1
+    }
    },
    "weight_gain": {
     "value": null,
     "desc": "增重 kg",
-    "quantity": "增重"
+    "quantity": "增重",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "无量纲（kg 料/kg 肉）",
@@ -16186,7 +16631,10 @@
    "primary": {
     "value": null,
     "desc": "初级生产者生物量 kg",
-    "quantity": "初级生产者生物量"
+    "quantity": "初级生产者生物量",
+    "dimension": {
+     "M": 1
+    }
    },
    "eff": {
     "value": 0.1,
@@ -16675,7 +17123,10 @@
    "debt_ratio": {
     "value": null,
     "desc": "债务/GDP 比 d（如 0.8 表示 80%）",
-    "quantity": "债务"
+    "quantity": "债务",
+    "dimension": {
+     "T": 1
+    }
    },
    "primary_balance": {
     "value": null,
@@ -16840,7 +17291,12 @@
    "yield_strength": {
     "value": null,
     "desc": "屈服强度 Pa",
-    "quantity": "屈服强度"
+    "quantity": "屈服强度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "safety_factor": {
     "value": 1.5,
@@ -16873,7 +17329,12 @@
    "kic": {
     "value": null,
     "desc": "断裂韧性 K_IC（单位 Pa·m^0.5；钢约 30e6，陶瓷约 1e6）",
-    "quantity": "断裂韧性"
+    "quantity": "断裂韧性",
+    "dimension": {
+     "M": 1,
+     "L": -0.5,
+     "T": -2
+    }
    },
    "y_factor": {
     "value": 1,
@@ -17016,7 +17477,12 @@
    "cohesive_energy": {
     "value": null,
     "desc": "每原子结合能 J），即把原子完全分离所需的能量",
-    "quantity": "每原子结合能"
+    "quantity": "每原子结合能",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "kB": {
     "value": 1.380649e-23,
@@ -17094,7 +17560,13 @@
    "heat_capacity": {
     "value": null,
     "desc": "定容热容 J/K",
-    "quantity": "定容热容"
+    "quantity": "定容热容",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "Theta": -1
+    }
    },
    "bulk_modulus": {
     "value": null,
@@ -17197,7 +17669,13 @@
    "electrical_conductivity": {
     "value": null,
     "desc": "电导率 S/m",
-    "quantity": "电导率"
+    "quantity": "电导率",
+    "dimension": {
+     "M": -1,
+     "L": -3,
+     "T": 3,
+     "I": 2
+    }
    }
   },
   "unit": "W/(m·K)（电子贡献的导热系数）",
@@ -17406,7 +17884,10 @@
    "p": {
     "value": null,
     "desc": "等位基因 A 频率（0—1）",
-    "quantity": "等位基因"
+    "quantity": "等位基因",
+    "dimension": {
+     "I": 1
+    }
    },
    "q": {
     "value": null,
@@ -17603,7 +18084,12 @@
    "population": {
     "value": null,
     "desc": "当前种群个体数 N",
-    "quantity": "当前种群个体数"
+    "quantity": "当前种群个体数",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -2
+    }
    },
    "carrying_capacity": {
     "value": null,
@@ -17692,7 +18178,10 @@
    "delta_T": {
     "value": null,
     "desc": "升温幅度 K（室温→烧成温度）",
-    "quantity": "升温幅度"
+    "quantity": "升温幅度",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "shell_loss_ratio": {
     "value": 12,
@@ -17775,17 +18264,30 @@
    "delta_T": {
     "value": null,
     "desc": "内外温差 K",
-    "quantity": "内外温差"
+    "quantity": "内外温差",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "r_value": {
     "value": 2,
     "desc": "总热阻 R = Σ(δ/k) m²·K/W（单层砖墙 0.5，多层保温 9+）",
-    "quantity": "总热阻"
+    "quantity": "总热阻",
+    "dimension": {
+     "M": -1,
+     "T": 1,
+     "I": 1
+    }
    },
    "ventilation_loss": {
     "value": 0,
     "desc": "通风换气热损 W（可单列）",
-    "quantity": "通风换气热损"
+    "quantity": "通风换气热损",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    }
   },
   "unit": "W（维持室内温度所需加热功率）",
@@ -17813,7 +18315,10 @@
    "ore_mass": {
     "value": null,
     "desc": "矿石量 kg",
-    "quantity": "矿石量"
+    "quantity": "矿石量",
+    "dimension": {
+     "M": 1
+    }
    },
    "grade": {
     "value": null,
@@ -17861,7 +18366,13 @@
    "activation_energy": {
     "value": 150000,
     "desc": "激活能 J/mol（碳在 γ-Fe 约 1.3~1.6e5）",
-    "quantity": "激活能"
+    "quantity": "激活能",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "N": -1
+    }
    },
    "R": {
     "value": 8.314462618,
@@ -17927,12 +18438,18 @@
    "face_width": {
     "value": null,
     "desc": "齿宽 b m",
-    "quantity": "齿宽"
+    "quantity": "齿宽",
+    "dimension": {
+     "L": 1
+    }
    },
    "gear_module": {
     "value": null,
     "desc": "模数 m m",
-    "quantity": "模数"
+    "quantity": "模数",
+    "dimension": {
+     "L": 1
+    }
    },
    "form_factor": {
     "value": 0.32,
@@ -18043,7 +18560,10 @@
    "height": {
     "value": null,
     "desc": "落差 m",
-    "quantity": "落差"
+    "quantity": "落差",
+    "dimension": {
+     "L": 1
+    }
    },
    "power": {
     "value": null,
@@ -18135,7 +18655,10 @@
    "excess_daily_temp": {
     "value": 10,
     "desc": "日均温超出基点部分 K（日均 20℃、基点 10℃ → 10）",
-    "quantity": "日均温超出基点部分"
+    "quantity": "日均温超出基点部分",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "days": {
     "value": null,
@@ -18318,7 +18841,13 @@
    "activation_energy": {
     "value": 80000,
     "desc": "烧结活化能 J/mol（氧化物烧结中值 80 kJ/mol）",
-    "quantity": "烧结活化能"
+    "quantity": "烧结活化能",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "N": -1
+    }
    },
    "R": {
     "value": 8.314462618,
@@ -18615,22 +19144,41 @@
    "stock": {
     "value": 2000,
     "desc": "土壤有效养分库存（kg/ha，耕地典型 1500~2500）",
-    "quantity": "土壤有效养分库存"
+    "quantity": "土壤有效养分库存",
+    "dimension": {
+     "M": 1,
+     "L": -2
+    }
    },
    "input": {
     "value": null,
     "desc": "年投入（kg/ha/年）：化肥、绿肥、秸秆回田、豆科固氮、沉降",
-    "quantity": "年投入"
+    "quantity": "年投入",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
    },
    "uptake": {
     "value": null,
     "desc": "年吸收（kg/ha/年）：作物带走 + 挥发损失（谷类 60~120）",
-    "quantity": "年吸收"
+    "quantity": "年吸收",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
    },
    "leach": {
     "value": null,
     "desc": "年淋失（kg/ha/年）：随水流失（沙土 30~50、黏土 10~20）",
-    "quantity": "年淋失"
+    "quantity": "年淋失",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
    },
    "years": {
     "value": 10,
@@ -18668,12 +19216,22 @@
    "uptake": {
     "value": null,
     "desc": "年吸收（kg/ha/年）",
-    "quantity": "年吸收"
+    "quantity": "年吸收",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
    },
    "leach": {
     "value": null,
     "desc": "年淋失（kg/ha/年）",
-    "quantity": "年淋失"
+    "quantity": "年淋失",
+    "dimension": {
+     "M": 1,
+     "L": -2,
+     "T": -1
+    }
    }
   },
   "unit": "kg/ha/年（维持库存不降所需的最低投入）",
@@ -18732,7 +19290,10 @@
    "initial": {
     "value": null,
     "desc": "入储量（kg 或任何同单位存量）",
-    "quantity": "入储量"
+    "quantity": "入储量",
+    "dimension": {
+     "M": 1
+    }
    },
    "loss_rate": {
     "value": 0.04,
@@ -18864,7 +19425,10 @@
    "loop_gain": {
     "value": 0,
     "desc": "环路增益 K（无反馈时取 0）",
-    "quantity": "环路增益"
+    "quantity": "环路增益",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "与 disturbance 同单位（最终留在输出上的偏差）",
@@ -18895,12 +19459,18 @@
    "delay": {
     "value": null,
     "desc": "环路纯延迟 τ（s；传感器滞后 + 执行器滞后 + 传输）",
-    "quantity": "环路纯延迟"
+    "quantity": "环路纯延迟",
+    "dimension": {
+     "T": 1
+    }
    },
    "bandwidth": {
     "value": null,
     "desc": "系统带宽 ω_c（rad/s；≈ 无延迟时能跟上的最高频率）",
-    "quantity": "系统带宽"
+    "quantity": "系统带宽",
+    "dimension": {
+     "T": -1
+    }
    }
   },
   "unit": "无量纲（允许的最大环路增益；超过它系统开始自激振荡）",
@@ -18996,7 +19566,10 @@
    "bandwidth": {
     "value": null,
     "desc": "带宽 B（Hz）",
-    "quantity": "带宽"
+    "quantity": "带宽",
+    "dimension": {
+     "T": -1
+    }
    },
    "signal_to_noise": {
     "value": null,
@@ -19510,7 +20083,11 @@
    "servers": {
     "value": null,
     "desc": "服务台数 c（取整数；本式对连续值也给合理插值，但不代表半台机器）",
-    "quantity": "服务台数"
+    "quantity": "服务台数",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    }
   },
   "unit": "个（系统中平均排队等待的人数，不含服务中）",
@@ -19619,7 +20196,12 @@
    "component_reliability": {
     "value": null,
     "desc": "单环节可靠度 R（0~1）",
-    "quantity": "单环节可靠度"
+    "quantity": "单环节可靠度",
+    "dimension": {
+     "M": -1,
+     "T": 1,
+     "I": 1
+    }
    },
    "stages": {
     "value": null,
@@ -19654,7 +20236,12 @@
    "component_reliability": {
     "value": null,
     "desc": "单件可靠度 R（0~1）",
-    "quantity": "单件可靠度"
+    "quantity": "单件可靠度",
+    "dimension": {
+     "M": -1,
+     "T": 1,
+     "I": 1
+    }
    },
    "copies": {
     "value": null,
@@ -20099,7 +20686,10 @@
    "position_uncertainty": {
     "value": null,
     "desc": "位置不确定度 Δx（m）",
-    "quantity": "位置不确定度"
+    "quantity": "位置不确定度",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "kg·m/s（动量不确定度下限 Δp）",
@@ -20214,7 +20804,12 @@
    "band_gap": {
     "value": null,
     "desc": "带隙 E_g（J）= eV × 1.602e-19。Ge 0.67eV→1.07e-19、Si 1.12eV→1.79e-19、GaAs 1.42eV→2.27e-19、GaN 3.4eV→5.45e-19、InGaN 可调 0.7~3.4eV",
-    "quantity": "带隙"
+    "quantity": "带隙",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    }
   },
   "unit": "m（对应光子波长；大于它则吸收）",
@@ -20296,12 +20891,24 @@
    "mobility": {
     "value": null,
     "desc": "迁移率 μ（m²/(V·s)；硅电子 0.14、空穴 0.045、铜 4.3e-3）",
-    "quantity": "迁移率"
+    "quantity": "迁移率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -1
+    }
    },
    "electric_field": {
     "value": null,
     "desc": "电场强度 E（V/m）",
-    "quantity": "电场强度"
+    "quantity": "电场强度",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "I": -1
+    }
    }
   },
   "unit": "m/s（漂移速度）",
@@ -20372,7 +20979,10 @@
    "mean_free_path": {
     "value": null,
     "desc": "中子在材料中的平均自由程 λ（m；U-235 约 0.017）",
-    "quantity": "中子在材料中的平均自由程"
+    "quantity": "中子在材料中的平均自由程",
+    "dimension": {
+     "L": 1
+    }
    },
    "neutrons_per_fission": {
     "value": 2.5,
@@ -20415,7 +21025,12 @@
    "binding_energy": {
     "value": null,
     "desc": "总结合能（MeV；原子核的结合能）",
-    "quantity": "总结合能"
+    "quantity": "总结合能",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "mass_number": {
     "value": null,
@@ -20464,7 +21079,11 @@
    "reactivity": {
     "value": 1e-22,
     "desc": "反应率 ⟨σv⟩（m³/s；氘氚在 1e8K 时约 1e-22，峰值约 8e-22）",
-    "quantity": "反应率"
+    "quantity": "反应率",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
    },
    "fusion_cross_section_energy": {
     "value": null,
@@ -21377,17 +21996,29 @@
    "h_in": {
     "value": null,
     "desc": "透平进口焓（J/kg；如 3MPa 饱和蒸汽约 2.8e6）",
-    "quantity": "透平进口焓"
+    "quantity": "透平进口焓",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    },
    "h_out_condenser": {
     "value": null,
     "desc": "冷凝器出口焓（J/kg；低压饱和水约 2e5）",
-    "quantity": "冷凝器出口焓"
+    "quantity": "冷凝器出口焓",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    },
    "h_pump_out": {
     "value": null,
     "desc": "泵出口焓（J/kg；约等于冷凝水焓 + 泵功，通常 h_pump_out ≈ h_out_condenser + 1e3）",
-    "quantity": "泵出口焓"
+    "quantity": "泵出口焓",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    }
   },
   "unit": "无量纲（0~1；循环热效率）",
@@ -21438,7 +22069,11 @@
    "high_pressure_enthalpy_drop": {
     "value": null,
     "desc": "高压缸焓降（J/kg）",
-    "quantity": "高压缸焓降"
+    "quantity": "高压缸焓降",
+    "dimension": {
+     "L": 2,
+     "T": -2
+    }
    }
   },
   "unit": "无量纲（效率的相对增量，非绝对效率）",
@@ -21729,17 +22364,32 @@
    "heat_through_walls": {
     "value": null,
     "desc": "围护传热（W；= U·A·ΔT）",
-    "quantity": "围护传热"
+    "quantity": "围护传热",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    },
    "internal_heat": {
     "value": null,
     "desc": "内部发热（W；人 100W/人、电灯、设备）",
-    "quantity": "内部发热"
+    "quantity": "内部发热",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    },
    "infiltration_heat": {
     "value": null,
     "desc": "渗透/新风热（W；换气带来的显热+潜热）",
-    "quantity": "渗透/新风热"
+    "quantity": "渗透/新风热",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    }
   },
   "unit": "W（需要的制冷量）",
@@ -21774,12 +22424,19 @@
    "specific_heat": {
     "value": null,
     "desc": "比热（J/(kg·K)）；水 4186、岩石 800、铸铁 450",
-    "quantity": "比热；水"
+    "quantity": "比热；水",
+    "dimension": {
+     "M": 1,
+     "Theta": 1
+    }
    },
    "temperature_span": {
     "value": null,
     "desc": "允许温差（K）",
-    "quantity": "允许温差"
+    "quantity": "允许温差",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "J（可储存的热量）",
@@ -21808,7 +22465,12 @@
    "stagnation_pressure": {
     "value": null,
     "desc": "总压 / 静止压强（Pa）",
-    "quantity": "总压"
+    "quantity": "总压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "density": {
     "value": null,
@@ -21952,7 +22614,12 @@
    "viscosity": {
     "value": null,
     "desc": "动力粘度 μ（Pa·s；水 1e-3、空气 1.8e-5、蜂蜜 10）",
-    "quantity": "动力粘度"
+    "quantity": "动力粘度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
    },
    "radius": {
     "value": null,
@@ -22033,7 +22700,12 @@
    "viscosity": {
     "value": null,
     "desc": "流体动力粘度（Pa·s；水 1e-3、空气 1.8e-5）",
-    "quantity": "流体动力粘度"
+    "quantity": "流体动力粘度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
    }
   },
   "unit": "m/s（沉降末速）",
@@ -22194,7 +22866,13 @@
    "wing_loading": {
     "value": null,
     "desc": "翼载 W/S（N/m²；滑翔机 300、客机 6000、战斗机 4000）",
-    "quantity": "翼载"
+    "quantity": "翼载",
+    "dimension": {
+     "M": 2,
+     "L": 4,
+     "T": -6,
+     "I": -2
+    }
    },
    "density": {
     "value": null,
@@ -22356,7 +23034,11 @@
    "kinematic_viscosity": {
     "value": null,
     "desc": "运动粘度 ν（m²/s；水 1e-6、空气 1.5e-5）",
-    "quantity": "运动粘度"
+    "quantity": "运动粘度",
+    "dimension": {
+     "L": 2,
+     "T": -1
+    }
    }
   },
   "unit": "无量纲（Re；平板边界层转捩约 5e5）",
@@ -22496,7 +23178,10 @@
    "production_rate": {
     "value": null,
     "desc": "目标产量（m³ 进料/h 或 kg/h，与 yield_factor 同口径）",
-    "quantity": "目标产量"
+    "quantity": "目标产量",
+    "dimension": {
+     "L": 3
+    }
    },
    "residence_time": {
     "value": null,
@@ -22574,7 +23259,10 @@
    "solvent_ratio": {
     "value": null,
     "desc": "溶剂比 S/F（萃取剂与料液体积比）",
-    "quantity": "溶剂比"
+    "quantity": "溶剂比",
+    "dimension": {
+     "T": -1
+    }
    }
   },
   "unit": "级（需要的理论萃取级数，向上取整）",
@@ -22762,12 +23450,18 @@
    "moisture": {
     "value": null,
     "desc": "当前干基含水率（kg 水/kg 干料）",
-    "quantity": "当前干基含水率"
+    "quantity": "当前干基含水率",
+    "dimension": {
+     "M": 1
+    }
    },
    "equilibrium_moisture": {
     "value": null,
     "desc": "平衡含水率（kg 水/kg 干料）",
-    "quantity": "平衡含水率"
+    "quantity": "平衡含水率",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "kg 水/(kg 干料·h)（干燥速率）",
@@ -22852,7 +23546,10 @@
    "temperature_difference": {
     "value": null,
     "desc": "平均温差（K；冷媒与反应液之差）",
-    "quantity": "平均温差"
+    "quantity": "平均温差",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "m²（所需换热面积）",
@@ -23058,7 +23755,10 @@
    "body_fat_mass": {
     "value": null,
     "desc": "可动用体脂（kg；成年男性正常 10~20，饥饿前可能 5）",
-    "quantity": "可动用体脂"
+    "quantity": "可动用体脂",
+    "dimension": {
+     "M": 1
+    }
    },
    "energy_per_kg_fat": {
     "value": 32200,
@@ -23155,7 +23855,10 @@
    "annual_need": {
     "value": null,
     "desc": "年粮食需求（kg 或 kcal）",
-    "quantity": "年粮食需求"
+    "quantity": "年粮食需求",
+    "dimension": {
+     "M": 1
+    }
    },
    "stored_stock": {
     "value": null,
@@ -23400,7 +24103,12 @@
    "daily_need": {
     "value": null,
     "desc": "人均日需求（kcal/天；成人 2000~2500）",
-    "quantity": "人均日需求"
+    "quantity": "人均日需求",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
    }
   },
   "unit": "天（存粮可维持天数）",
@@ -23429,12 +24137,19 @@
    "body_water_available": {
     "value": null,
     "desc": "可损失水量（L；体重 70kg 约 4~5 L 才会致命）",
-    "quantity": "可损失水量"
+    "quantity": "可损失水量",
+    "dimension": {
+     "L": 3
+    }
    },
    "daily_water_loss": {
     "value": null,
     "desc": "每日失水（L/天；静息 1.5~2，炎热/劳动 4~8）",
-    "quantity": "每日失水"
+    "quantity": "每日失水",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
    }
   },
   "unit": "天（缺水存活时间）",
@@ -23506,7 +24221,10 @@
    "cloth_length": {
     "value": null,
     "desc": "布长（m）",
-    "quantity": "布长"
+    "quantity": "布长",
+    "dimension": {
+     "L": 1
+    }
    },
    "labor_per_meter": {
     "value": 1.5,
@@ -23710,7 +24428,10 @@
    "fuel_per_brick": {
     "value": 1.2,
     "desc": "每块砖的燃料（kg 柴/块；传统砖窑 0.8~1.5）",
-    "quantity": "每块砖的燃料"
+    "quantity": "每块砖的燃料",
+    "dimension": {
+     "M": 1
+    }
    }
   },
   "unit": "kg（所需木柴量）",
@@ -23793,7 +24514,11 @@
    "sediment_yield": {
     "value": null,
     "desc": "年输沙量（kg/年）",
-    "quantity": "年输沙量"
+    "quantity": "年输沙量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
    },
    "drainage_area": {
     "value": null,
@@ -23838,7 +24563,10 @@
    "mountain_height": {
     "value": null,
     "desc": "山高（m）",
-    "quantity": "山高"
+    "quantity": "山高",
+    "dimension": {
+     "L": 1
+    }
    },
    "erosion_rate": {
     "value": null,
@@ -23941,7 +24669,11 @@
    "sediment_yield": {
     "value": null,
     "desc": "年输沙量（kg/年）",
-    "quantity": "年输沙量"
+    "quantity": "年输沙量",
+    "dimension": {
+     "M": 1,
+     "T": -1
+    }
    },
    "rock_density": {
     "value": 2000,
@@ -23978,7 +24710,12 @@
    "wave_energy": {
     "value": null,
     "desc": "年均波能（J/m/年；暴露海岸 1e6~1e8）",
-    "quantity": "年均波能"
+    "quantity": "年均波能",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3
+    }
    },
    "exposure_factor": {
     "value": 1,
@@ -24026,12 +24763,19 @@
    "aquifer_storage": {
     "value": null,
     "desc": "含水层储量（m³）",
-    "quantity": "含水层储量"
+    "quantity": "含水层储量",
+    "dimension": {
+     "L": 3
+    }
    },
    "recharge_rate": {
     "value": null,
     "desc": "年补给量（m³/年）",
-    "quantity": "年补给量"
+    "quantity": "年补给量",
+    "dimension": {
+     "L": 3,
+     "T": -1
+    }
    }
   },
   "unit": "年（全部更新一遍所需时间；即「换水周期」）",
@@ -24060,7 +24804,10 @@
    "reservoir_capacity": {
     "value": null,
     "desc": "水库库容（m³）",
-    "quantity": "水库库容"
+    "quantity": "水库库容",
+    "dimension": {
+     "L": 3
+    }
    },
    "annual_sediment_volume": {
     "value": null,
@@ -24097,7 +24844,10 @@
    "reservoir_capacity": {
     "value": null,
     "desc": "有效库容（m³）",
-    "quantity": "有效库容"
+    "quantity": "有效库容",
+    "dimension": {
+     "L": 3
+    }
    },
    "annual_sediment_volume": {
     "value": null,
@@ -24139,7 +24889,10 @@
    "production": {
     "value": null,
     "desc": "实际可用产出（kg 或 kcal）",
-    "quantity": "实际可用产出"
+    "quantity": "实际可用产出",
+    "dimension": {
+     "M": 1
+    }
    },
    "required_consumption": {
     "value": null,
@@ -24607,7 +25360,12 @@
    "mu": {
     "value": 1e-19,
     "desc": "化学势 J",
-    "quantity": "化学势"
+    "quantity": "化学势",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "T": {
     "value": 300,
@@ -24673,7 +25431,12 @@
    "mu": {
     "value": 1e-19,
     "desc": "化学势 J（须低于 E）",
-    "quantity": "化学势"
+    "quantity": "化学势",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "T": {
     "value": 300,
@@ -24855,7 +25618,10 @@
    "d": {
     "value": 0.000001,
     "desc": "缝距 m",
-    "quantity": "缝距"
+    "quantity": "缝距",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "rad",
@@ -24903,7 +25669,10 @@
    "a": {
     "value": 0.000001,
     "desc": "缝宽 m",
-    "quantity": "缝宽"
+    "quantity": "缝宽",
+    "dimension": {
+     "L": 1
+    }
    }
   },
   "unit": "rad",
@@ -24945,7 +25714,12 @@
    "phi": {
     "value": 2e-19,
     "desc": "逸出功 J（约 1.25 eV）",
-    "quantity": "逸出功"
+    "quantity": "逸出功",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "h": {
     "value": 6.62607015e-34,
@@ -24985,7 +25759,12 @@
    "dE": {
     "value": 1e-19,
     "desc": "能级间隔 J",
-    "quantity": "能级间隔"
+    "quantity": "能级间隔",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "T": {
     "value": 300,
@@ -25041,7 +25820,12 @@
    "dE": {
     "value": 1e-19,
     "desc": "能级间隔 J",
-    "quantity": "能级间隔"
+    "quantity": "能级间隔",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
    },
    "T": {
     "value": 300,
@@ -25268,7 +26052,13 @@
    "dPhiE_dt": {
     "value": 1000000,
     "desc": "电通量变化率 V·m/s",
-    "quantity": "电通量变化率"
+    "quantity": "电通量变化率",
+    "dimension": {
+     "M": 1,
+     "L": 3,
+     "T": -4,
+     "I": -1
+    }
    }
   },
   "unit": "A",
@@ -25754,7 +26544,12 @@
    "dP": {
     "value": 1000,
     "desc": "压差 Pa",
-    "quantity": "压差"
+    "quantity": "压差",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "r": {
     "value": 0.01,
@@ -25767,7 +26562,12 @@
    "mu": {
     "value": 0.001,
     "desc": "动力黏度 Pa·s（水约 1e-3）",
-    "quantity": "动力黏度"
+    "quantity": "动力黏度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
    },
    "L": {
     "value": 1,
@@ -26032,7 +26832,11 @@
    "dv": {
     "value": -0.0000905,
     "desc": "比容变化 m³/kg（冰→水为负）",
-    "quantity": "比容变化"
+    "quantity": "比容变化",
+    "dimension": {
+     "M": -1,
+     "L": 3
+    }
    }
   },
   "unit": "Pa/K",
@@ -26191,7 +26995,13 @@
    "dG": {
     "value": -1000,
     "desc": "标准吉布斯自由能变 J/mol",
-    "quantity": "标准吉布斯自由能变"
+    "quantity": "标准吉布斯自由能变",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "N": -1
+    }
    },
    "R": {
     "value": 8.314462618,
@@ -26384,12 +27194,18 @@
    "dT1": {
     "value": 100,
     "desc": "热端温差 K",
-    "quantity": "热端温差"
+    "quantity": "热端温差",
+    "dimension": {
+     "Theta": 1
+    }
    },
    "dT2": {
     "value": 50,
     "desc": "冷端温差 K",
-    "quantity": "冷端温差"
+    "quantity": "冷端温差",
+    "dimension": {
+     "Theta": 1
+    }
    }
   },
   "unit": "K",
@@ -26622,12 +27438,20 @@
    "v1": {
     "value": 5,
     "desc": "碰撞前 1 的速度 m/s",
-    "quantity": "碰撞前"
+    "quantity": "碰撞前",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    },
    "v2": {
     "value": -2,
     "desc": "碰撞前 2 的速度 m/s",
-    "quantity": "碰撞前"
+    "quantity": "碰撞前",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    }
   },
   "unit": "m/s",
@@ -26669,7 +27493,12 @@
    "P1": {
     "value": 101325,
     "desc": "初压 Pa",
-    "quantity": "初压"
+    "quantity": "初压",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
    },
    "V1": {
     "value": 1,
@@ -26814,12 +27643,20 @@
    "Cp": {
     "value": 29.1,
     "desc": "定压比热 J/(mol·K)（空气约 29.1）",
-    "quantity": "定压比热"
+    "quantity": "定压比热",
+    "dimension": {
+     "Theta": 1,
+     "N": 1
+    }
    },
    "Cv": {
     "value": 20.8,
     "desc": "定容比热 J/(mol·K)（空气约 20.8）",
-    "quantity": "定容比热"
+    "quantity": "定容比热",
+    "dimension": {
+     "Theta": 1,
+     "N": 1
+    }
    }
   },
   "unit": "无量纲",
@@ -27233,12 +28070,23 @@
    "E": {
     "value": 100,
     "desc": "电场强度 V/m",
-    "quantity": "电场强度"
+    "quantity": "电场强度",
+    "dimension": {
+     "M": 1,
+     "L": 1,
+     "T": -3,
+     "I": -1
+    }
    },
    "B": {
     "value": 0.000001,
     "desc": "磁感应强度 T",
-    "quantity": "磁感应强度"
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
    },
    "mu0": {
     "value": 0.00000125663706212,
@@ -28290,7 +29138,10 @@
    "opd": {
     "value": 0.000001,
     "desc": "光程差 m",
-    "quantity": "光程差"
+    "quantity": "光程差",
+    "dimension": {
+     "L": 1
+    }
    },
    "lambda": {
     "value": 5e-7,
@@ -28340,7 +29191,11 @@
    "I0": {
     "value": 1,
     "desc": "入射偏振光强 W/m²",
-    "quantity": "入射偏振光强"
+    "quantity": "入射偏振光强",
+    "dimension": {
+     "M": 1,
+     "T": -3
+    }
    },
    "theta": {
     "value": 0.7853981633974483,
@@ -28449,7 +29304,13 @@
    "dHfus": {
     "value": 6000,
     "desc": "熔化焓 J/mol（铝约 10.7 kJ/mol）",
-    "quantity": "熔化焓"
+    "quantity": "熔化焓",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "N": -1
+    }
    },
    "R": {
     "value": 8.314462618,
@@ -28658,7 +29519,10 @@
    "n1": {
     "value": 1500,
     "desc": "主动轮转速 rpm",
-    "quantity": "主动轮转速"
+    "quantity": "主动轮转速",
+    "dimension": {
+     "T": -1
+    }
    },
    "N1": {
     "value": 20,

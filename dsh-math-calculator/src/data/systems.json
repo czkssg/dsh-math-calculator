@@ -38,7 +38,13 @@
    },
    {
     "formula": "ashby_index",
-    "note": "E/强度/密度 → 性能指数（同工况下横向比较，替代「感觉这材料不错」）"
+    "note": "E/强度/密度 → 性能指数（同工况下横向比较，替代「感觉这材料不错」）",
+    "dataFlow": {
+     "strength": {
+      "fromStep": 5,
+      "note": "第 5 步屈服强度 → Ashby 强度项"
+     }
+    }
    },
    {
     "formula": "hooke_law",
@@ -903,7 +909,13 @@
    },
    {
     "formula": "brick_firing_fuel",
-    "note": "砖数 → 烧砖要多少木柴（砖房为何是奢侈品）"
+    "note": "砖数 → 烧砖要多少木柴（砖房为何是奢侈品）",
+    "dataFlow": {
+     "brick_count": {
+      "fromStep": 6,
+      "note": "第 6 步砖数 → 烧砖燃料"
+     }
+    }
    },
    {
     "formula": "lime_plaster_need",
