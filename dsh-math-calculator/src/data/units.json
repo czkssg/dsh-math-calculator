@@ -323,7 +323,8 @@
    "aliases": [
     "秒差距",
     "parsec",
-    "视差秒"
+    "视差秒",
+    "百分数"
    ],
    "dimension": "length",
    "factor": 30856775814913670,
@@ -899,7 +900,8 @@
   {
    "name": "h",
    "aliases": [
-    "小时"
+    "小时",
+    "时"
    ],
    "dimension": "time",
    "factor": 3600,
@@ -2103,9 +2105,7 @@
   {
    "name": "°C",
    "aliases": [
-    "℃",
-    "摄氏度",
-    "摄氏"
+    "℃"
    ],
    "dimension": "temperature",
    "factor": 1,
@@ -2114,9 +2114,7 @@
   {
    "name": "°F",
    "aliases": [
-    "℉",
-    "华氏度",
-    "华氏"
+    "℉"
    ],
    "dimension": "temperature",
    "factor": 0.5555555555555556,
@@ -2125,7 +2123,6 @@
   {
    "name": "°R",
    "aliases": [
-    "兰氏度",
     "Rankine"
    ],
    "dimension": "temperature",
@@ -2135,7 +2132,6 @@
   {
    "name": "°Ré",
    "aliases": [
-    "列氏度",
     "Reaumur"
    ],
    "dimension": "temperature",
@@ -2155,7 +2151,8 @@
    "name": "km/h",
    "aliases": [
     "公里每小时",
-    "迈"
+    "迈",
+    "千米每小时"
    ],
    "dimension": "speed",
    "factor": 0.2777777777777778,
@@ -2564,7 +2561,8 @@
    "name": "deg",
    "aliases": [
     "度",
-    "°"
+    "°",
+    "角度"
    ],
    "dimension": "angle",
    "factor": 0.017453292519943295,
@@ -2610,7 +2608,8 @@
     "revolution",
     "rev",
     "cycle",
-    "circle"
+    "circle",
+    "转"
    ],
    "dimension": "angle",
    "factor": 6.283185307179586,
@@ -2630,7 +2629,8 @@
    "name": "N",
    "aliases": [
     "牛顿",
-    "nt"
+    "nt",
+    "牛"
    ],
    "dimension": "force",
    "factor": 1,
@@ -2713,7 +2713,8 @@
   {
    "name": "kHz",
    "aliases": [
-    "千赫"
+    "千赫",
+    "千赫兹"
    ],
    "dimension": "frequency",
    "factor": 1000
@@ -2721,7 +2722,8 @@
   {
    "name": "MHz",
    "aliases": [
-    "兆赫"
+    "兆赫",
+    "兆赫兹"
    ],
    "dimension": "frequency",
    "factor": 1000000
@@ -4319,6 +4321,35 @@
     "兆欧",
     "MΩ",
     "megaohm"
+   ]
+  },
+  {
+   "name": "degC",
+   "dimension": "temperature",
+   "factor": 1,
+   "aliases": [
+    "摄氏度",
+    "摄氏",
+    "℃"
+   ]
+  },
+  {
+   "name": "degF",
+   "dimension": "temperature",
+   "factor": 1,
+   "aliases": [
+    "华氏度",
+    "华氏",
+    "℉"
+   ]
+  },
+  {
+   "name": "degR",
+   "dimension": "temperature",
+   "factor": 1,
+   "aliases": [
+    "兰氏度",
+    "Rankine"
    ]
   }
  ],
