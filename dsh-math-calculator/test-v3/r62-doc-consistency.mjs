@@ -96,6 +96,9 @@ console.log('-- 5. 关键术语三处一致 --')
     assert(label + ' 在工具描述里', awareness.includes(word), '')
   }
   assert('SKILL 提到 topology', skill.includes('topology'), '')
+  /** R66：表达式上限的三道闸要写清楚（文档与实测一致）。 */
+  assert('help 写明运算符上限', helpText.includes('运算符') && helpText.includes('2000'), '')
+  assert('SKILL 写明表达式规模', skill.includes('运算符 ≤2000') || skill.includes('运算符'), '')
   assert('工具描述提到单位优先符号', /单位\*\*优先用国际符号\*\*/.test(awareness), '')
 }
 

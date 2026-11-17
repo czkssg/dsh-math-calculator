@@ -42,6 +42,15 @@ import { loadCustomUnits } from './units-custom-store.js'
 
 /** 表达式长度上限（字符）。超过就拒绝，而不是慢慢算。 */
 const MAX_EXPRESSION_LENGTH = 10_000
+/**
+ * 结构复杂度上限（R66）。
+ *
+ * 解析是递归的：**项数与括号深度会先于字符数撞栈**——实测 4950 项平铺、
+ * 1000 层括号都会报「解析栈溢出」，而它们的字符数都在 10000 以内。
+ * 文档写着 10000 字符上限，用户按它写到 9,900 就会踩坑，所以这里提前拦。
+ */
+const MAX_OPERATOR_COUNT = 2_000
+const MAX_PAREN_DEPTH = 200
 
 /**
  * 中文单位 → 符号别名。
@@ -1110,7 +1119,42 @@ export function buildEngine(): Engine {
    */
   registerEraUnits(math)
 
-  const evaluate = (source: string, scope?: Record<string, unknown>): unknown => {
+/**
+ * 表达式的结构复杂度预检（项数 / 嵌套深度）。
+ *
+ * @param source - 归一前的原始表达式
+ * @returns 超限说明；未超返回 null
+ */
+function expressionComplexity(source: string): { message: string; hint: string } | null {
+  let depth = 0
+  let maxDepth = 0
+  let operators = 0
+  for (const char of source) {
+    if (char === '(') {
+      depth += 1
+      if (depth > maxDepth) maxDepth = depth
+    } else if (char === ')') {
+      if (depth > 0) depth -= 1
+    } else if (char === '+' || char === '-' || char === '*' || char === '/' || char === '^' || char === ',' || char === ';') {
+      operators += 1
+    }
+  }
+  if (operators > MAX_OPERATOR_COUNT) {
+    return {
+      message: '表达式过长：约 ' + operators + ' 个运算符，超过 ' + MAX_OPERATOR_COUNT + ' 个的解析上限',
+      hint: '拆成多条用 calls / expressions 批量给，或先化简。字符数上限只是第一道闸，项数才是真正会撞栈的那个。',
+    }
+  }
+  if (maxDepth > MAX_PAREN_DEPTH) {
+    return {
+      message: '表达式嵌套过深：括号 ' + maxDepth + ' 层，超过 ' + MAX_PAREN_DEPTH + ' 层',
+      hint: '拆成多步（用 variables 传中间结果），不要用超深嵌套表达优先级。',
+    }
+  }
+  return null
+}
+
+const evaluate = (source: string, scope?: Record<string, unknown>): unknown => {
     if (typeof source !== 'string') {
       throw new CalcError('invalid_argument', '表达式必须是字符串', '例如 expression:"1+1"。')
     }
@@ -1120,6 +1164,11 @@ export function buildEngine(): Engine {
         '表达式超过 ' + MAX_EXPRESSION_LENGTH + ' 字符上限（收到 ' + source.length + '）',
         '拆成多条用 expressions 批量给，或先化简。',
       )
+    }
+    /** 字符数只是第一道闸：项数/嵌套过深会先撞解析栈（R66）。 */
+    const complexity = expressionComplexity(source)
+    if (complexity !== null) {
+      throw new CalcError('invalid_argument', complexity.message, complexity.hint)
     }
     /**
      * 两级归一，顺序不能反：

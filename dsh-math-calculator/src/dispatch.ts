@@ -836,7 +836,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const neighborLine = call.neighbors.length > 0 ? '相邻公式：' + call.neighbors.slice(0, 4).map((hit) => hit.id + '（' + hit.reason + '）').join('；') : ''
       return {
         result: call.result,
-        value: call.value !== null && typeof call.value === 'object' ? { ...(call.value as Record<string, unknown>), neighbors: call.neighbors } : { value: call.value, neighbors: call.neighbors },
+        value: call.value !== null && typeof call.value === 'object' ? { ...(call.value as Record<string, unknown>), neighbors: call.neighbors, ...(call.parts !== undefined ? { parts: call.parts } : {}) } : { value: call.value, neighbors: call.neighbors, ...(call.parts !== undefined ? { parts: call.parts } : {}) },
         ...(call.notice !== undefined ? { notice: call.notice } : {}),
         ...(neighborLine !== '' ? { notice: (call.notice !== undefined ? call.notice + '\n' : '') + neighborLine } : {}),
       }

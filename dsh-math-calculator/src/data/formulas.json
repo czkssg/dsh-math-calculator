@@ -17427,6 +17427,20 @@
   "layer": "fundamental",
   "domains": [
    "biology"
+  ],
+  "parts": [
+   {
+    "label": "p²",
+    "expr": "p^2"
+   },
+   {
+    "label": "2pq",
+    "expr": "2*p*q"
+   },
+   {
+    "label": "q²",
+    "expr": "q^2"
+   }
   ]
  },
  {

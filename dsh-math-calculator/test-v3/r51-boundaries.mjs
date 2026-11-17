@@ -34,7 +34,7 @@ console.log('-- 2. 栈溢出报成「表达式太复杂」而不是 internal --'
 {
   const deep = await run({ operation: 'evaluate', expression: '('.repeat(500) + '1' + ')'.repeat(500) })
   assert('★ 深嵌套 → 不是 internal', deep.ok === false && deep.error.type !== 'internal', String(deep.error?.type))
-  assert('★ 说清是表达式太复杂', String(deep.error.message).includes('太复杂'), String(deep.error?.message).slice(0, 50))
+  assert('★ 说清是表达式太复杂（或更具体的嵌套过深）', String(deep.error.message).includes('太复杂') || String(deep.error.message).includes('嵌套过深'), String(deep.error?.message).slice(0, 50))
   assert('★ hint 给出拆解办法', String(deep.error.hint).includes('拆') || String(deep.error.hint).includes('批量'), String(deep.error?.hint).slice(0, 50))
   assert('★ 超长表达式不全塞进消息（截断）', String(deep.error.message).length < 300, String(String(deep.error.message).length))
 }

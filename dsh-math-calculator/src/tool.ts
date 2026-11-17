@@ -805,6 +805,15 @@ export const mathExecuteTool = {
         /* 入库失败不影响返回 */
       }
     }
+    /**
+     * 性能预警（R66）：>2s 的调用不是卡死，但要在结果里说明。
+     * 批量外层不重复报（各条会各自报），避免一段结果里出现 N 条同样的提示。
+     */
+    const elapsedMs = Date.now() - startedAt
+    if (elapsedMs >= 2000 && result.ok === true && !Array.isArray(rawArgsUnknown['calls'])) {
+      const timing = '本次耗时 ' + (elapsedMs / 1000).toFixed(1) + ' 秒（规模较大）；这是正常等待，不是卡死。要更快请减小规模或分批。'
+      result = { ...result, notice: result.notice !== undefined && result.notice !== '' ? result.notice + '\n' + timing : timing }
+    }
     /** 运行日志：成功与失败都记一条（旁路，失败不影响返回）。 */
     try {
       writeRunLog(entryFromResult((args ?? {}) as Record<string, unknown>, result, startedAt))

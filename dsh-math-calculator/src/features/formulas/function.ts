@@ -26,6 +26,7 @@
  */
 
 import { CalcError } from '../../core/errors.js'
+import { fmtNumber, FMT } from '../../core/format.js'
 import type { Engine } from '../../core/engine.js'
 import { evaluateFormula } from './evaluate.js'
 import type { FormulaEntry } from './query.js'
@@ -53,6 +54,8 @@ export interface FormulaCallResult {
   substituted: Record<string, number>
   /** 没给又没有默认值的参数（正常调用不应出现；出现即报错）。 */
   missing: string[]
+  /** 分项结果（公式声明了 parts 时）。 */
+  parts?: Array<{ label: string; value: number }>
   /** 相邻公式（共用物理量/常数/标签）。 */
   neighbors: Array<{
     id: string
@@ -223,6 +226,21 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
       }
 
       const evaluated = evaluateFormula(engine, entry, substituted, options.displayPrecision ?? 8, options.terse === true)
+      /**
+       * 分项（R66）：用同一组代入值算中间项，避免调用方自己再算一遍。
+       * 算不出不影响主结果（try 单条）。
+       */
+      const partResults: Array<{ label: string; value: number }> = []
+      for (const part of entry.parts ?? []) {
+        try {
+          const computed = engine.evaluate(part.expr, { ...substituted })
+          const numeric = typeof computed === 'number' ? computed : Number(computed)
+          if (Number.isFinite(numeric)) partResults.push({ label: part.label, value: numeric })
+        } catch {
+          /* 单项算不出就跳过 */
+        }
+      }
+      const partsText = partResults.length > 0 ? '\n分项：' + partResults.map((part) => part.label + '=' + fmtNumber(part.value, FMT.general)).join('、') : ''
       /** 相邻公式：共用参数优先，其次共用常数与同标签。 */
       const neighbors = (index?.neighbors(entry.id, 6) ?? []).map((hit) => ({
         id: hit.id,
@@ -236,8 +254,9 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
       }))
 
       return {
-        result: evaluated.result,
+        result: evaluated.result + partsText,
         value: evaluated.value,
+        ...(partResults.length > 0 ? { parts: partResults } : {}),
         ...(evaluated.notice !== undefined ? { notice: evaluated.notice } : {}),
         substituted,
         missing,

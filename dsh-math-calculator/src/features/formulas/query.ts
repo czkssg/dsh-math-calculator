@@ -51,6 +51,12 @@ export interface FormulaEntry {
    * 帮助里；调用求值时必须明确报「这是展示式」，而不是抛语法错。
    */
   executable?: boolean
+  /**
+   * 可选分项（R66）：有些公式真正要算的是中间项。
+   * 例：哈迪-温伯格总和恒为 1，用户要的是 2pq（携带者比例）。
+   * 每项 expr 用同一组代入值计算，结果附在 result 与 value.parts。
+   */
+  parts?: Array<{ label: string; expr: string }>
 }
 
 /** 检索结果。 */
