@@ -123,6 +123,9 @@ console.log('-- 8. saveAs 外层忽略 --')
 {
   const r = await run({ saveAs: '整批', calls: [{ operation: 'evaluate', expression: '1+1' }] })
   assert('外层 saveAs 被忽略并提示', String(r.notice ?? '').includes('外层 saveAs 已忽略'), String(r.notice))
+  const op = await run({ operation: 'units', calls: [{ operation: 'evaluate', expression: '1+1' }] })
+  assert('外层 operation 被忽略并提示', String(op.notice ?? '').includes('外层 operation'), String(op.notice))
+  assert('条目仍按自己的 operation 执行', op.ok === true && op.value.results[0].operation === 'evaluate', json(op.value.results[0].operation))
 }
 
 console.log('-- 9. 渲染 --')

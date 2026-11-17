@@ -708,6 +708,13 @@ async function runBatchCalls(
   }
 
   const noticeParts: string[] = []
+  /**
+   * 外层同时写了 operation 是常见误用（以为「批量默认 operation」）。
+   * 不提示的话，调用方会以为它生效了，实际每条按自己的 operation 跑。
+   */
+  if (typeof outer['operation'] === 'string' && outer['operation'].trim() !== '' && outer['operation'].trim() !== 'auto') {
+    noticeParts.push('外层 operation「' + outer['operation'] + '」已忽略：批量按每条自己的 operation 执行。')
+  }
   if (failed > 0) {
     noticeParts.push('批量：' + succeeded + ' 条成功、' + failed + ' 条失败；失败条目已逐条标注，未中断后续。')
   }
