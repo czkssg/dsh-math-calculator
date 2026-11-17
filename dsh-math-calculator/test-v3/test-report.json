@@ -1,0 +1,1164 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T17:58:54.061Z",
+  "project": "dsh-math-calculator",
+  "version": "3.2.0",
+  "summaryText": "111 套 / 2657 项全绿（失败 0）· v3.2.0",
+  "summary": {
+    "suites": 111,
+    "passed": 2657,
+    "failed": 0,
+    "allGreen": true,
+    "slowest": {
+      "name": "feedback-aliases",
+      "ms": 9435
+    }
+  },
+  "howToRun": {
+    "build": "npm run build",
+    "single": "node test-v3/<name>.mjs",
+    "all": "node scripts/test-report.mjs",
+    "note": "测试 import lib/ 产物，改过 src/ 必须先 build；每套自设独立临时 DSH_MATH_CALC_HOME。"
+  },
+  "conventions": [
+    "改过 src/ 必须先 npm run build——测试 import 的是 lib/ 产物，不是 src/。",
+    "每套测试自设独立 DSH_MATH_CALC_HOME（临时目录）；共用会互相污染。",
+    "断言成对：每条「该拒绝」都要配一条「该放行」；只测一边会漏掉过度收紧。",
+    "断言的 detail 用 String(x === undefined ? 'ok' : JSON.stringify(x))；JSON.stringify(undefined).slice() 会让测试自己崩（已犯三次）。",
+    "统计行固定为「通过 N，失败 M」；缺失即视为该套崩溃（多半是断言或 import 写错）。",
+    "新增测试放 test-v3/<kebab-case>.mjs；文件头写 /** 用途 */，本报告会读成 title/purpose。",
+    "测试不联网；需要外部数据用 test-v3/fixtures/ 快照（如 world-parity 的 169 KB 快照）。",
+    "失败先看本报告 failures[] 与 suites[].tail，再看 <DSH_MATH_CALC_HOME>/logs/run.log.jsonl。",
+    "本报告只覆盖 test-v3/；test/ 是 v3 之前的旧套件（141 个文件，node test/run.mjs），未纳入统计。"
+  ],
+  "suites": [
+    {
+      "name": "assessment-rules",
+      "file": "test-v3/assessment-rules.mjs",
+      "command": "node test-v3/assessment-rules.mjs",
+      "title": "数据驱动耦合规则：建筑/舰船/太空舰船/太空建筑，未命中不瞎编。",
+      "passed": 16,
+      "failed": 0,
+      "ok": true,
+      "ms": 1949
+    },
+    {
+      "name": "astro",
+      "file": "test-v3/astro.mjs",
+      "command": "node test-v3/astro.mjs",
+      "title": "astro：天文历表（astronomy-engine）。",
+      "passed": 7,
+      "failed": 0,
+      "ok": true,
+      "ms": 1854
+    },
+    {
+      "name": "astrotech",
+      "file": "test-v3/astrotech.mjs",
+      "command": "node test-v3/astrotech.mjs",
+      "title": "astro tech：天文观测 → 科技能力（望远远/六分仪/航海钟/钟摆/圭表/历法漂移）。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 1906
+    },
+    {
+      "name": "backtrace",
+      "file": "test-v3/backtrace.mjs",
+      "command": "node test-v3/backtrace.mjs",
+      "title": "目标驱动回溯（#1）：给目标 → 命中公式 + 链 + 缺参 + 可执行调用。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 1940
+    },
+    {
+      "name": "balance-cross",
+      "file": "test-v3/balance-cross.mjs",
+      "command": "node test-v3/balance-cross.mjs",
+      "title": "balance 跨量纲与速率单位（反馈 G3/H3/I1/K4：粮/水/能三项）。",
+      "passed": 7,
+      "failed": 0,
+      "ok": true,
+      "ms": 2175
+    },
+    {
+      "name": "calendar-logistics",
+      "file": "test-v3/calendar-logistics.mjs",
+      "command": "node test-v3/calendar-logistics.mjs",
+      "title": "历法换算 + 后勤时延（固化边界清单 #2/#3）。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 2135
+    },
+    {
+      "name": "calendar",
+      "file": "test-v3/calendar.mjs",
+      "command": "node test-v3/calendar.mjs",
+      "title": "astro calendar：行星参数 → 历法（年/闰/月/季节/分至点）。",
+      "passed": 13,
+      "failed": 0,
+      "ok": true,
+      "ms": 1822
+    },
+    {
+      "name": "circulation",
+      "file": "test-v3/circulation.mjs",
+      "command": "node test-v3/circulation.mjs",
+      "title": "简化环流：热成风 + 三圈环流 + 水汽平流（不是 CFD）。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 1829
+    },
+    {
+      "name": "climate-grid",
+      "file": "test-v3/climate-grid.mjs",
+      "command": "node test-v3/climate-grid.mjs",
+      "title": "气候层：温度/降水/分区/可耕率，以及与 world 的耦合。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 1976
+    },
+    {
+      "name": "climate-model",
+      "file": "test-v3/climate-model.mjs",
+      "command": "node test-v3/climate-model.mjs",
+      "title": "通用气候拟合模型：地球标定 + 推广到其他行星。",
+      "passed": 17,
+      "failed": 0,
+      "ok": true,
+      "ms": 2075
+    },
+    {
+      "name": "closure",
+      "file": "test-v3/closure.mjs",
+      "command": "node test-v3/closure.mjs",
+      "title": "闭环稳态（上限）+ 故障模式 + 多舱段拓扑。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 1976
+    },
+    {
+      "name": "conflict",
+      "file": "test-v3/conflict.mjs",
+      "command": "node test-v3/conflict.mjs",
+      "title": "冲突/贡赋模型（Axelrod 原料二次加工）：确定性 + 上限输出。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 1887
+    },
+    {
+      "name": "consistency-cn",
+      "file": "test-v3/consistency-cn.mjs",
+      "command": "node test-v3/consistency-cn.mjs",
+      "title": "consistency 的中国数字与指代主体（R48 反馈）。",
+      "passed": 15,
+      "failed": 0,
+      "ok": true,
+      "ms": 1950
+    },
+    {
+      "name": "consistency-fixes",
+      "file": "test-v3/consistency-fixes.mjs",
+      "command": "node test-v3/consistency-fixes.mjs",
+      "title": "反馈报告 v3：consistency 三漏（中文数字 / 阈值 / 同义词）。",
+      "passed": 6,
+      "failed": 0,
+      "ok": true,
+      "ms": 1836
+    },
+    {
+      "name": "core",
+      "file": "test-v3/core.mjs",
+      "command": "node test-v3/core.mjs",
+      "title": "core 层自检：引擎、格式化、错误。",
+      "purpose": "这一步的验收标准（来自重写方案第 2 步）：",
+      "passed": 52,
+      "failed": 0,
+      "ok": true,
+      "ms": 1526
+    },
+    {
+      "name": "crosscheck",
+      "file": "test-v3/crosscheck.mjs",
+      "command": "node test-v3/crosscheck.mjs",
+      "title": "跨模块对账（crosscheck）：同一量两处实现比对。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 2470
+    },
+    {
+      "name": "data-store-advanced",
+      "file": "test-v3/data-store-advanced.mjs",
+      "command": "node test-v3/data-store-advanced.mjs",
+      "title": "数据层进阶：全文检索 / 迁移 / 自动入库（saveAs）。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 2053
+    },
+    {
+      "name": "data-store",
+      "file": "test-v3/data-store.mjs",
+      "command": "node test-v3/data-store.mjs",
+      "title": "统一数据层（data op）：记录/版本/查询/血缘/统计/导入导出。",
+      "passed": 23,
+      "failed": 0,
+      "ok": true,
+      "ms": 1964
+    },
+    {
+      "name": "deduction-bodies",
+      "file": "test-v3/deduction-bodies.mjs",
+      "command": "node test-v3/deduction-bodies.mjs",
+      "title": "bodies 对齐测试：天体目录 + 天体类型 + 常数传导。",
+      "passed": 47,
+      "failed": 0,
+      "ok": true,
+      "ms": 133
+    },
+    {
+      "name": "deduction-derivation",
+      "file": "test-v3/deduction-derivation.mjs",
+      "command": "node test-v3/deduction-derivation.mjs",
+      "title": "derivation 子命令对齐测试（第一批：纯计算类）。",
+      "passed": 139,
+      "failed": 0,
+      "ok": true,
+      "ms": 222
+    },
+    {
+      "name": "deduction-feasibility",
+      "file": "test-v3/deduction-feasibility.mjs",
+      "command": "node test-v3/deduction-feasibility.mjs",
+      "title": "feasibility 对齐测试：11 条物理上限 + 设定一致性校验。",
+      "passed": 53,
+      "failed": 0,
+      "ok": true,
+      "ms": 138
+    },
+    {
+      "name": "deduction-hierarchy-align",
+      "file": "test-v3/deduction-hierarchy-align.mjs",
+      "command": "node test-v3/deduction-hierarchy-align.mjs",
+      "title": "hierarchy 对齐测试：等比链三种用法 + 自由拓扑四形态。",
+      "passed": 32,
+      "failed": 0,
+      "ok": true,
+      "ms": 126
+    },
+    {
+      "name": "deduction-hierarchy-boundary",
+      "file": "test-v3/deduction-hierarchy-boundary.mjs",
+      "command": "node test-v3/deduction-hierarchy-boundary.mjs",
+      "title": "hierarchy 边界测试：拓扑不成立时必须报错，真实编制状态只报告。",
+      "passed": 33,
+      "failed": 0,
+      "ok": true,
+      "ms": 126
+    },
+    {
+      "name": "deduction-new-ops",
+      "file": "test-v3/deduction-new-ops.mjs",
+      "command": "node test-v3/deduction-new-ops.mjs",
+      "title": "第 6 步新增四个 operation 的测试：chain / anchor / threshold / scaling。",
+      "passed": 67,
+      "failed": 0,
+      "ok": true,
+      "ms": 1504
+    },
+    {
+      "name": "deduction-quick-feasible-align",
+      "file": "test-v3/deduction-quick-feasible-align.mjs",
+      "command": "node test-v3/deduction-quick-feasible-align.mjs",
+      "title": "quick_feasible 对齐测试：一句话 → 四态判定。",
+      "purpose": "老实现的三条核心行为： ① 认维度用词面匹配（不做语义理解）； ② 尺寸/能量交给已有上限判（feasibility / 行星截获功率）；",
+      "passed": 19,
+      "failed": 0,
+      "ok": true,
+      "ms": 133
+    },
+    {
+      "name": "deduction-quick-feasible-boundary",
+      "file": "test-v3/deduction-quick-feasible-boundary.mjs",
+      "command": "node test-v3/deduction-quick-feasible-boundary.mjs",
+      "title": "quick_feasible 边界测试：缺参、世界参数变化、数值边界。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 118
+    },
+    {
+      "name": "deduction-world-parity",
+      "file": "test-v3/deduction-world-parity.mjs",
+      "command": "node test-v3/deduction-world-parity.mjs",
+      "title": "world 对齐测试（第 6 步验收）：新实现必须复现老插件的 world 输出。",
+      "passed": 31,
+      "failed": 0,
+      "ok": true,
+      "ms": 165
+    },
+    {
+      "name": "deduction-world-state-align",
+      "file": "test-v3/deduction-world-state-align.mjs",
+      "command": "node test-v3/deduction-world-state-align.mjs",
+      "title": "world_state 对齐测试：设定库的增删查改与废弃链。",
+      "purpose": "老接口动作：set / check / get / list（缺省）。新实现补齐 deprecate / search。 核心判据是「废弃链而不是删除」：改设定时标 deprecated 并指向新条目， 留下完整演化史——这是压缩总结永远做不到的。",
+      "passed": 23,
+      "failed": 0,
+      "ok": true,
+      "ms": 113
+    },
+    {
+      "name": "deduction-world-state-boundary",
+      "file": "test-v3/deduction-world-state-boundary.mjs",
+      "command": "node test-v3/deduction-world-state-boundary.mjs",
+      "title": "world_state 边界测试：非法输入、未知动作、文件层读坏不当空库。",
+      "passed": 20,
+      "failed": 0,
+      "ok": true,
+      "ms": 132
+    },
+    {
+      "name": "deduction-world",
+      "file": "test-v3/deduction-world.mjs",
+      "command": "node test-v3/deduction-world.mjs",
+      "title": "deduction 层对齐测试（第 6 步第一批）：物理式 / 分层气候 / 世界推演。",
+      "passed": 97,
+      "failed": 0,
+      "ok": true,
+      "ms": 180
+    },
+    {
+      "name": "dedupe",
+      "file": "test-v3/dedupe.mjs",
+      "command": "node test-v3/dedupe.mjs",
+      "title": "功能合并：旧名转发到主入口（单向，不递归）。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 2399
+    },
+    {
+      "name": "derivation-demo",
+      "file": "test-v3/derivation-demo.mjs",
+      "command": "node test-v3/derivation-demo.mjs",
+      "title": "derivation 演示模式：五条子命令无参也能跑（反馈报告 H 类）。",
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "ms": 1998
+    },
+    {
+      "name": "diverge",
+      "file": "test-v3/diverge.mjs",
+      "command": "node test-v3/diverge.mjs",
+      "title": "分支推演（DIVERGE）：两条时间线对照。",
+      "passed": 8,
+      "failed": 0,
+      "ok": true,
+      "ms": 1993
+    },
+    {
+      "name": "document-pdf",
+      "file": "test-v3/document-pdf.mjs",
+      "command": "node test-v3/document-pdf.mjs",
+      "title": "文档解析（PDF）：来自实践文档 _tools/pdf2md 的整合。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 2824
+    },
+    {
+      "name": "enclosure",
+      "file": "test-v3/enclosure.mjs",
+      "command": "node test-v3/enclosure.mjs",
+      "title": "封闭系统（避难所/生物温室）：NASA ECLSS 量级核算。",
+      "passed": 13,
+      "failed": 0,
+      "ok": true,
+      "ms": 2089
+    },
+    {
+      "name": "error-structure",
+      "file": "test-v3/error-structure.mjs",
+      "command": "node test-v3/error-structure.mjs",
+      "title": "错误结构化：所有失败都带 {type,message,hint?}，不再有 THROW / [object Object]。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2250
+    },
+    {
+      "name": "facade",
+      "file": "test-v3/facade.mjs",
+      "command": "node test-v3/facade.mjs",
+      "title": "门面：53 个 operation 收成 3 个入口（calc / derive / manage），旧名仍可用。",
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "ms": 2301
+    },
+    {
+      "name": "feedback-aliases",
+      "file": "test-v3/feedback-aliases.mjs",
+      "command": "node test-v3/feedback-aliases.mjs",
+      "title": "反馈报告 v3 的参数兼容层（solve/ode/chain/impact/topology structure/world 嵌套）。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 9435
+    },
+    {
+      "name": "feedback-defects",
+      "file": "test-v3/feedback-defects.mjs",
+      "command": "node test-v3/feedback-defects.mjs",
+      "title": "反馈缺陷回归（vdocs/反馈包完整对账.md 的 P0–P2 条目）。",
+      "purpose": "每条都成对：**该拒绝的拒绝，该放行的放行**。 已修的在 v3 下必须保持；文档里过时的（如 feasibility 字符串单位）在这里锁住现状。",
+      "passed": 38,
+      "failed": 0,
+      "ok": true,
+      "ms": 7032
+    },
+    {
+      "name": "formula-unit-check",
+      "file": "test-v3/formula-unit-check.mjs",
+      "command": "node test-v3/formula-unit-check.mjs",
+      "title": "公式结果单位自检（反馈 §1 公式量纲类）。",
+      "passed": 4,
+      "failed": 0,
+      "ok": true,
+      "ms": 2834
+    },
+    {
+      "name": "formulas-align",
+      "file": "test-v3/formulas-align.mjs",
+      "command": "node test-v3/formulas-align.mjs",
+      "title": "formulas 对齐测试：检索 / 求值 / 体系链。",
+      "passed": 40,
+      "failed": 0,
+      "ok": true,
+      "ms": 3304
+    },
+    {
+      "name": "formulas-chain-run",
+      "file": "test-v3/formulas-chain-run.mjs",
+      "command": "node test-v3/formulas-chain-run.mjs",
+      "title": "阶段 3.3：链的数值传导（只走显式声明的数据流）。",
+      "purpose": "关键判据： 1. 有映射的步骤真的取到前序结果； 2. 改前序输入，下游结果跟着变（传导是真的）；",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2438
+    },
+    {
+      "name": "formulas-function-relations",
+      "file": "test-v3/formulas-function-relations.mjs",
+      "command": "node test-v3/formulas-function-relations.mjs",
+      "title": "公式即函数 + 关系图：共用物理量/常数建立联系，调用时看见相邻公式。",
+      "passed": 25,
+      "failed": 0,
+      "ok": true,
+      "ms": 2531
+    },
+    {
+      "name": "formulas-solve-graph",
+      "file": "test-v3/formulas-solve-graph.mjs",
+      "command": "node test-v3/formulas-solve-graph.mjs",
+      "title": "阶段 2：公式反解（solve-for）与公式-链结构图。",
+      "passed": 17,
+      "failed": 0,
+      "ok": true,
+      "ms": 2100
+    },
+    {
+      "name": "formulas-static",
+      "file": "test-v3/formulas-static.mjs",
+      "command": "node test-v3/formulas-static.mjs",
+      "title": "公式库静态校验：665 条是不是「真能算」。",
+      "passed": 15,
+      "failed": 0,
+      "ok": true,
+      "ms": 5868
+    },
+    {
+      "name": "formulas-units-dimensions",
+      "file": "test-v3/formulas-units-dimensions.mjs",
+      "command": "node test-v3/formulas-units-dimensions.mjs",
+      "title": "阶段 3.1/3.2：参数量纲向量 + 带单位参数校验。",
+      "purpose": "判据：参数标注了量纲，就给「带单位的值」做量纲检查； 没标注的不猜（只解析数值，不拦），宁可少拦不可乱拦。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 3086
+    },
+    {
+      "name": "graph-align",
+      "file": "test-v3/graph-align.mjs",
+      "command": "node test-v3/graph-align.mjs",
+      "title": "graph 层对齐测试：依赖传导 / 台账闭合 / 口径体检 / 方案对比 / 区间运算。",
+      "passed": 52,
+      "failed": 0,
+      "ok": true,
+      "ms": 148
+    },
+    {
+      "name": "graph-extract-numbers-align",
+      "file": "test-v3/graph-extract-numbers-align.mjs",
+      "command": "node test-v3/graph-extract-numbers-align.mjs",
+      "title": "extract_numbers 对齐测试：中文量级 / 单位 / 区间 / 上下文。",
+      "passed": 32,
+      "failed": 0,
+      "ok": true,
+      "ms": 118
+    },
+    {
+      "name": "graph-extract-numbers-boundary",
+      "file": "test-v3/graph-extract-numbers-boundary.mjs",
+      "command": "node test-v3/graph-extract-numbers-boundary.mjs",
+      "title": "extract_numbers 边界测试：极端输入不静默给错值。",
+      "purpose": "老实现的已知失败模式是「静默」——单位丢了、区间拆出负数、噪音混进台账。 这里成对验证：该抽的抽到、该拒的拒掉、该标注的标注。",
+      "passed": 21,
+      "failed": 0,
+      "ok": true,
+      "ms": 127
+    },
+    {
+      "name": "graph-timeline-check",
+      "file": "test-v3/graph-timeline-check.mjs",
+      "command": "node test-v3/graph-timeline-check.mjs",
+      "title": "timeline_check 行为测试：逆序 / 重叠 / 跨度 / 缺起点 / 乱序。",
+      "purpose": "这是反馈包 N9 新增的 op。核心设计：重叠是否合理由作者定 （`overlapAllowed`），工具只列冲突不说「该删哪个」。",
+      "passed": 21,
+      "failed": 0,
+      "ok": true,
+      "ms": 128
+    },
+    {
+      "name": "graph-units-audit",
+      "file": "test-v3/graph-units-audit.mjs",
+      "command": "node test-v3/graph-units-audit.mjs",
+      "title": "units_audit 行为测试：组内量纲一致性 + 裸数字护栏。",
+      "purpose": "这个 op 是反馈包 N12 新增的（老插件里没有），所以测的是需求本身： · 同一个量在不同位置给了不同量纲 → 报 conflict，且不判断哪个对； · 数字后面没有单位 → 进裸数字护栏；",
+      "passed": 20,
+      "failed": 0,
+      "ok": true,
+      "ms": 146
+    },
+    {
+      "name": "gravity",
+      "file": "test-v3/gravity.mjs",
+      "command": "node test-v3/gravity.mjs",
+      "title": "astro gravity/relativity：万有引力 + 史瓦西相对论（宇宙各天体）。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 2424
+    },
+    {
+      "name": "history-prng",
+      "file": "test-v3/history-prng.mjs",
+      "command": "node test-v3/history-prng.mjs",
+      "title": "二次加工原料：LCG PRNG（Psychohistory）+ 纪元划分（WorldBuilding/extrema）。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2189
+    },
+    {
+      "name": "history-sim",
+      "file": "test-v3/history-sim.mjs",
+      "command": "node test-v3/history-sim.mjs",
+      "title": "一站式历史模拟：冲突模型 → 份额序列 → 纪元 + 危机。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 2175
+    },
+    {
+      "name": "hydraulic-train",
+      "file": "test-v3/hydraulic-train.mjs",
+      "command": "node test-v3/hydraulic-train.mjs",
+      "title": "液压/气动 + 多级传动链（规则表第 12/13 类）。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 2047
+    },
+    {
+      "name": "mechanism",
+      "file": "test-v3/mechanism.mjs",
+      "command": "node test-v3/mechanism.mjs",
+      "title": "机械系统校核（齿轮/轴承/轴），规则表驱动。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 3726
+    },
+    {
+      "name": "megastructure",
+      "file": "test-v3/megastructure.mjs",
+      "command": "node test-v3/megastructure.mjs",
+      "title": "千万级聚居：舱室网络（个位数 → 亿级人口）。",
+      "passed": 16,
+      "failed": 0,
+      "ok": true,
+      "ms": 5441
+    },
+    {
+      "name": "model-chains",
+      "file": "test-v3/model-chains.mjs",
+      "command": "node test-v3/model-chains.mjs",
+      "title": "模型链：backtrace 拼跨 operation 的链（world → 人口 → 财政）。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 2726
+    },
+    {
+      "name": "moon-calendar",
+      "file": "test-v3/moon-calendar.mjs",
+      "command": "node test-v3/moon-calendar.mjs",
+      "title": "卫星周期 → 月长（calendar 与 system/orbit 耦合）。",
+      "passed": 5,
+      "failed": 0,
+      "ok": true,
+      "ms": 2518
+    },
+    {
+      "name": "numeric-align",
+      "file": "test-v3/numeric-align.mjs",
+      "command": "node test-v3/numeric-align.mjs",
+      "title": "numeric 对齐测试：新实现（`src/features/numeric/`）vs 老插件基线。",
+      "passed": 64,
+      "failed": 0,
+      "ok": true,
+      "ms": 6349
+    },
+    {
+      "name": "numeric-boundary",
+      "file": "test-v3/numeric-boundary.mjs",
+      "command": "node test-v3/numeric-boundary.mjs",
+      "title": "numeric 边界验证：极限输入、类型异常、精度边界。",
+      "passed": 73,
+      "failed": 0,
+      "ok": true,
+      "ms": 2862
+    },
+    {
+      "name": "optimize",
+      "file": "test-v3/optimize.mjs",
+      "command": "node test-v3/optimize.mjs",
+      "title": "线性规划（optimize）：资源最优配比。",
+      "passed": 8,
+      "failed": 0,
+      "ok": true,
+      "ms": 2102
+    },
+    {
+      "name": "orbit",
+      "file": "test-v3/orbit.mjs",
+      "command": "node test-v3/orbit.mjs",
+      "title": "astro 的通用轨道（开普勒：orbit / binary）。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 2116
+    },
+    {
+      "name": "output-lossless",
+      "file": "test-v3/output-lossless.mjs",
+      "command": "node test-v3/output-lossless.mjs",
+      "title": "输出无损性守护（宿主 snapshotJsonValue 要求）。",
+      "purpose": "真实缺陷（R48）：ledger 的 parts[i].note 缺省时被赋 undefined → 宿主判「value is not lossless JSON」→ 整个工具崩、错误还读不出。 修法：出口统一 stripUndefined，本测试防止回归。",
+      "passed": 8,
+      "failed": 0,
+      "ok": true,
+      "ms": 2303
+    },
+    {
+      "name": "physical-systems",
+      "file": "test-v3/physical-systems.mjs",
+      "command": "node test-v3/physical-systems.mjs",
+      "title": "热工/电气/流体 校核（规则表第 14/15/16 类）。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 2039
+    },
+    {
+      "name": "r44-fixes",
+      "file": "test-v3/r44-fixes.mjs",
+      "command": "node test-v3/r44-fixes.mjs",
+      "title": "R44 复测：中文量级 + 上标 + 计数单位（报告 #5）。",
+      "passed": 7,
+      "failed": 0,
+      "ok": true,
+      "ms": 2066
+    },
+    {
+      "name": "r49-fixes",
+      "file": "test-v3/r49-fixes.mjs",
+      "command": "node test-v3/r49-fixes.mjs",
+      "title": "R49 的三项失败：eigen 非对称 / system equations / recurrence 状态名。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2305
+    },
+    {
+      "name": "r51-boundaries",
+      "file": "test-v3/r51-boundaries.mjs",
+      "command": "node test-v3/r51-boundaries.mjs",
+      "title": "R51 极端边界：空表达式 / 栈溢出 / 静默默认 / 区间反序。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 2209
+    },
+    {
+      "name": "r52-topology-dirty",
+      "file": "test-v3/r52-topology-dirty.mjs",
+      "command": "node test-v3/r52-topology-dirty.mjs",
+      "title": "R52 拓扑脏图边界：自环/反向重复/重复 id/悬空边/无坐标/经纬越界。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 1911
+    },
+    {
+      "name": "r53-units-pressure",
+      "file": "test-v3/r53-units-pressure.mjs",
+      "command": "node test-v3/r53-units-pressure.mjs",
+      "title": "R53：中文单位大面积缺失（7/10）+ pressure 单位口径 + 公式缺参提示。",
+      "passed": 17,
+      "failed": 0,
+      "ok": true,
+      "ms": 2251
+    },
+    {
+      "name": "run-log",
+      "file": "test-v3/run-log.mjs",
+      "command": "node test-v3/run-log.mjs",
+      "title": "运行日志：每次调用都落 JSONL（成功/失败），不依赖用户反馈。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 2108
+    },
+    {
+      "name": "schema-coverage",
+      "file": "test-v3/schema-coverage.mjs",
+      "command": "node test-v3/schema-coverage.mjs",
+      "title": "schema 覆盖率守护（实测记录 R45/R46 的根因测试）。",
+      "purpose": "真实缺陷：52 个键在 dispatch/WorldParams 里被读取，但 schema 未声明 → 校验阶段被丢弃 → 参数静默忽略（starType、orbitAU、ledger 全是这个原因）。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2146
+    },
+    {
+      "name": "skill-sync",
+      "file": "test-v3/skill-sync.mjs",
+      "command": "node test-v3/skill-sync.mjs",
+      "title": "skills 与插件功能的同步性测试。",
+      "passed": 39,
+      "failed": 0,
+      "ok": true,
+      "ms": 1784
+    },
+    {
+      "name": "solar-validation",
+      "file": "test-v3/solar-validation.mjs",
+      "command": "node test-v3/solar-validation.mjs",
+      "title": "太阳系验证：地球矫正 + 外推边界。",
+      "passed": 7,
+      "failed": 0,
+      "ok": true,
+      "ms": 1972
+    },
+    {
+      "name": "sponge",
+      "file": "test-v3/sponge.mjs",
+      "command": "node test-v3/sponge.mjs",
+      "title": "海绵状庇护所：小空腔网络（山体/太空舱群），跨度与 S/V 双限制。",
+      "passed": 13,
+      "failed": 0,
+      "ok": true,
+      "ms": 2054
+    },
+    {
+      "name": "system-dynamics",
+      "file": "test-v3/system-dynamics.mjs",
+      "command": "node test-v3/system-dynamics.mjs",
+      "title": "系统动力学（simulate）：存量/流量演化。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 2013
+    },
+    {
+      "name": "system",
+      "file": "test-v3/system.mjs",
+      "command": "node test-v3/system.mjs",
+      "title": "astro system：任意恒星 + 多行星 + 卫星（希尔球/洛希/稳定性）。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2174
+    },
+    {
+      "name": "terrain-kinds",
+      "file": "test-v3/terrain-kinds.mjs",
+      "command": "node test-v3/terrain-kinds.mjs",
+      "title": "扩展地形（R49）：ocean/volcano/ice/gas/urban/hive/sea/cave/sky/space 都要能传且有效应。",
+      "passed": 15,
+      "failed": 0,
+      "ok": true,
+      "ms": 1903
+    },
+    {
+      "name": "tool-batch",
+      "file": "test-v3/tool-batch.mjs",
+      "command": "node test-v3/tool-batch.mjs",
+      "title": "批量调用测试（`calls`）。",
+      "passed": 41,
+      "failed": 0,
+      "ok": true,
+      "ms": 2033
+    },
+    {
+      "name": "tool-dispatch-numeric",
+      "file": "test-v3/tool-dispatch-numeric.mjs",
+      "command": "node test-v3/tool-dispatch-numeric.mjs",
+      "title": "入口第二批：数值/公式/图谱走新实现。",
+      "purpose": "这两批加起来后，入口的「具名 operation」几乎全部由新代码处理； 仍走老入口的只剩 constants / workspace / quantities / formula-table / custom / balance / help / auto（不在本轮范围，见交接）。",
+      "passed": 33,
+      "failed": 0,
+      "ok": true,
+      "ms": 3956
+    },
+    {
+      "name": "tool-dispatch-rest",
+      "file": "test-v3/tool-dispatch-rest.mjs",
+      "command": "node test-v3/tool-dispatch-rest.mjs",
+      "title": "入口收尾批：剩余 8 个 operation（constants/workspace/quantities/formula-table/custom/balance/help/auto）。",
+      "passed": 30,
+      "failed": 0,
+      "ok": true,
+      "ms": 2372
+    },
+    {
+      "name": "tool-dispatch",
+      "file": "test-v3/tool-dispatch.mjs",
+      "command": "node test-v3/tool-dispatch.mjs",
+      "title": "第 8 步入口测试：dispatch 路由 + tool 执行 + 输出 schema。",
+      "passed": 35,
+      "failed": 0,
+      "ok": true,
+      "ms": 2048
+    },
+    {
+      "name": "topology-artifacts",
+      "file": "test-v3/topology-artifacts.mjs",
+      "command": "node test-v3/topology-artifacts.mjs",
+      "title": "拓扑模型持久化 + 工作区产物导出/导入。",
+      "purpose": "用户要求：导出路径在工作区；导出的是**结果**（建好的模型/自创常数/公式）， 并且要能**导入**（常用字段不必每次重抄）。",
+      "passed": 13,
+      "failed": 0,
+      "ok": true,
+      "ms": 2088
+    },
+    {
+      "name": "topology-engineering",
+      "file": "test-v3/topology-engineering.mjs",
+      "command": "node test-v3/topology-engineering.mjs",
+      "title": "topology × 工程公式耦合：建筑校核 / 舰船校核。",
+      "passed": 15,
+      "failed": 0,
+      "ok": true,
+      "ms": 1920
+    },
+    {
+      "name": "topology-entities",
+      "file": "test-v3/topology-entities.mjs",
+      "command": "node test-v3/topology-entities.mjs",
+      "title": "实体类型 / 自创接口 / 数据导出。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 1951
+    },
+    {
+      "name": "topology-examples",
+      "file": "test-v3/topology-examples.mjs",
+      "command": "node test-v3/topology-examples.mjs",
+      "title": "topology 示例清单 + 小行星显示（反馈 107 次猜参数 / 5 篇小行星）。",
+      "passed": 6,
+      "failed": 0,
+      "ok": true,
+      "ms": 2033
+    },
+    {
+      "name": "topology-geometry",
+      "file": "test-v3/topology-geometry.mjs",
+      "command": "node test-v3/topology-geometry.mjs",
+      "title": "topology geometry 测试：距离 / 最短路径 / 视线 / 可达性。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 148
+    },
+    {
+      "name": "topology-model",
+      "file": "test-v3/topology-model.mjs",
+      "command": "node test-v3/topology-model.mjs",
+      "title": "topology model 测试：构建、校验与摘要。",
+      "passed": 21,
+      "failed": 0,
+      "ok": true,
+      "ms": 171
+    },
+    {
+      "name": "topology-ops",
+      "file": "test-v3/topology-ops.mjs",
+      "command": "node test-v3/topology-ops.mjs",
+      "title": "topology operation 测试：层级 / 地形 / 舱室三类不可简化的拓扑。",
+      "passed": 26,
+      "failed": 0,
+      "ok": true,
+      "ms": 1985
+    },
+    {
+      "name": "topology-rules",
+      "file": "test-v3/topology-rules.mjs",
+      "command": "node test-v3/topology-rules.mjs",
+      "title": "topology rules 测试：七条通用规则。",
+      "purpose": "每条都成对验证：健康的拓扑判 ok，人为破坏的结构判 warn。 缺数据时必须「未检查」，不能当通过。",
+      "passed": 18,
+      "failed": 0,
+      "ok": true,
+      "ms": 145
+    },
+    {
+      "name": "topology-structure",
+      "file": "test-v3/topology-structure.mjs",
+      "command": "node test-v3/topology-structure.mjs",
+      "title": "structure 测试：建筑容量/限高、载具续航/载荷。",
+      "passed": 16,
+      "failed": 0,
+      "ok": true,
+      "ms": 112
+    },
+    {
+      "name": "topology-terrain",
+      "file": "test-v3/topology-terrain.mjs",
+      "command": "node test-v3/topology-terrain.mjs",
+      "title": "terrain 对齐测试（第 6 步最后一块）：局部地形与局地气候。",
+      "purpose": "设计原则是「全局气候给基准，地形叠加修正」。每条修正都对应一个可查证的机制： 海拔按绝热递减率降温、距海越远温差越大、洋流冷暖、迎风/背风雨影与焚风、 雪线/林线、谷地逆温、海陆风。测试逐条核对方向与量级。",
+      "passed": 36,
+      "failed": 0,
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "name": "ucum-compound",
+      "file": "test-v3/ucum-compound.mjs",
+      "command": "node test-v3/ucum-compound.mjs",
+      "title": "UCUM 复合单位复用（NLM ucum-lhc）。",
+      "passed": 8,
+      "failed": 0,
+      "ok": true,
+      "ms": 2044
+    },
+    {
+      "name": "ucum-registry",
+      "file": "test-v3/ucum-registry.mjs",
+      "command": "node test-v3/ucum-registry.mjs",
+      "title": "借 UCUM 代码建体系：把本地单位注册进 UnitTables，换算走 UCUM 引擎。",
+      "passed": 17,
+      "failed": 0,
+      "ok": true,
+      "ms": 1956
+    },
+    {
+      "name": "unit-bridge",
+      "file": "test-v3/unit-bridge.mjs",
+      "command": "node test-v3/unit-bridge.mjs",
+      "title": "非现代单位桥：穷举映射（1032 别名）抽样验证。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 2503
+    },
+    {
+      "name": "unit-coverage",
+      "file": "test-v3/unit-coverage.mjs",
+      "command": "node test-v3/unit-coverage.mjs",
+      "title": "单位覆盖守护：`units.json` 里每个带中文别名的单位都要能换算。",
+      "passed": 17,
+      "failed": 0,
+      "ok": true,
+      "ms": 4583
+    },
+    {
+      "name": "unit-pipeline",
+      "file": "test-v3/unit-pipeline.mjs",
+      "command": "node test-v3/unit-pipeline.mjs",
+      "title": "单位处理管道：统一别名索引（4,764 条）判定 + 换算。",
+      "passed": 19,
+      "failed": 0,
+      "ok": true,
+      "ms": 2092
+    },
+    {
+      "name": "unit-symbols",
+      "file": "test-v3/unit-symbols.mjs",
+      "command": "node test-v3/unit-symbols.mjs",
+      "title": "提示词承诺的单位必须真的可用（R53 后续：用户要求「优先用英语专业符号」）。",
+      "purpose": "背景：提示词写「单位优先用国际符号」，那这些符号就必须**真的能换算**， 否则 AI 照做会撞 unknown_symbol —— 比不提示更糟。",
+      "passed": 11,
+      "failed": 0,
+      "ok": true,
+      "ms": 2264
+    },
+    {
+      "name": "units-ancient-4",
+      "file": "test-v3/units-ancient-4.mjs",
+      "command": "node test-v3/units-ancient-4.mjs",
+      "title": "第四批历史单位测试：奥斯曼 / 波斯 / 玛雅 / 阿兹特克 / 北欧 / 荷兰 /",
+      "purpose": "伊比利亚 / 意大利 / 波兰匈牙利。",
+      "passed": 67,
+      "failed": 0,
+      "ok": true,
+      "ms": 1808
+    },
+    {
+      "name": "units-byzantine-arab",
+      "file": "test-v3/units-byzantine-arab.mjs",
+      "command": "node test-v3/units-byzantine-arab.mjs",
+      "title": "第五批测试：拜占庭细分 + 阿拉伯帝国。",
+      "passed": 48,
+      "failed": 0,
+      "ok": true,
+      "ms": 1630
+    },
+    {
+      "name": "units-custom",
+      "file": "test-v3/units-custom.mjs",
+      "command": "node test-v3/units-custom.mjs",
+      "title": "自设单位扩充口测试。",
+      "passed": 51,
+      "failed": 0,
+      "ok": true,
+      "ms": 1953
+    },
+    {
+      "name": "units-default",
+      "file": "test-v3/units-default.mjs",
+      "command": "node test-v3/units-default.mjs",
+      "title": "默认指向策略测试。",
+      "passed": 56,
+      "failed": 0,
+      "ok": true,
+      "ms": 1729
+    },
+    {
+      "name": "units-era-world",
+      "file": "test-v3/units-era-world.mjs",
+      "command": "node test-v3/units-era-world.mjs",
+      "title": "世界古代度量衡体系测试。",
+      "passed": 50,
+      "failed": 0,
+      "ok": true,
+      "ms": 1646
+    },
+    {
+      "name": "units-era",
+      "file": "test-v3/units-era.mjs",
+      "command": "node test-v3/units-era.mjs",
+      "title": "带时代的单位体系测试。",
+      "passed": 50,
+      "failed": 0,
+      "ok": true,
+      "ms": 1562
+    },
+    {
+      "name": "units-extended",
+      "file": "test-v3/units-extended.mjs",
+      "command": "node test-v3/units-extended.mjs",
+      "title": "扩充批测试：英制工业补充 + 更多古文明。",
+      "passed": 67,
+      "failed": 0,
+      "ok": true,
+      "ms": 1618
+    },
+    {
+      "name": "units-extra",
+      "file": "test-v3/units-extra.mjs",
+      "command": "node test-v3/units-extra.mjs",
+      "title": "反馈报告 v3：单位缺口（AU / 光年 / 桶 / 吨·年复合）。",
+      "passed": 9,
+      "failed": 0,
+      "ok": true,
+      "ms": 1977
+    },
+    {
+      "name": "units-imperial",
+      "file": "test-v3/units-imperial.mjs",
+      "command": "node test-v3/units-imperial.mjs",
+      "title": "英制工业、市制细分、计数与角度单位测试。",
+      "passed": 69,
+      "failed": 0,
+      "ok": true,
+      "ms": 2151
+    },
+    {
+      "name": "units-si",
+      "file": "test-v3/units-si.mjs",
+      "command": "node test-v3/units-si.mjs",
+      "title": "SI 与现代标准单位测试。",
+      "passed": 52,
+      "failed": 0,
+      "ok": true,
+      "ms": 2215
+    },
+    {
+      "name": "world-build",
+      "file": "test-v3/world-build.mjs",
+      "command": "node test-v3/world-build.mjs",
+      "title": "完整世界编排（world-build）：多模块串联 + 瓶颈判定。",
+      "passed": 12,
+      "failed": 0,
+      "ok": true,
+      "ms": 1968
+    },
+    {
+      "name": "world-calendar",
+      "file": "test-v3/world-calendar.mjs",
+      "command": "node test-v3/world-calendar.mjs",
+      "title": "astro world-calendar：world 轨道/自转 → 历法（耦合）。",
+      "passed": 7,
+      "failed": 0,
+      "ok": true,
+      "ms": 1868
+    },
+    {
+      "name": "world-map",
+      "file": "test-v3/world-map.mjs",
+      "command": "node test-v3/world-map.mjs",
+      "title": "全球地图模拟：地形/河流/矿产/国家，可编辑。",
+      "passed": 22,
+      "failed": 0,
+      "ok": true,
+      "ms": 4613
+    }
+  ],
+  "failures": []
+}

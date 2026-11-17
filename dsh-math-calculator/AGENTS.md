@@ -41,8 +41,9 @@ npm run doccheck   # 注释覆盖（大段插入后必跑，否则 JSDoc 被挤�
 npm run preflight  # 自检（版本三处一致、清单声明等）
 ```
 
-全量测试见 `run-all-tests.mjs`；因 Node `spawn EPERM` 限制，
-需为每个套件用独立的 `DSH_MATH_CALC_HOME` 逐个跑。
+全量测试：`npm run test:report`——逐套运行并写出 `test-v3/test-report.json`（AI 可直接读：
+逐套项数、总数、失败清单、最近运行时间）。改过 `src/` 必须先 `npm run build`。
+旧 `run-all-tests.mjs` 在部分环境会撞 `spawn EPERM`；以 `test:report` 为准。
 
 ## 四、已知的坑（都踩过）
 
@@ -66,6 +67,7 @@ npm run preflight  # 自检（版本三处一致、清单声明等）
 
 | 文档 | 内容 |
 |---|---|
+| **[全量测试报告](test-v3/test-report.json)** | **机器可读**：111 套逐套项数、总数、失败清单、最近运行时间（`npm run test:report` 生成） |
 | **[项目状态总结](docs/项目状态总结_2026-11-12.md)** | **接手先读**：已实现/未实现全清单 |
 | **[全量功能清单](docs/全量功能清单.md)** | **逐条查**：39 operation + 29 子命令 + 反馈包 18 项，每行标状态 |
 | **[反馈包功能建议清单](docs/反馈包功能建议清单.md)** | 反馈包希望添加的 **38 项**功能，逐条给原始要求与状态 |

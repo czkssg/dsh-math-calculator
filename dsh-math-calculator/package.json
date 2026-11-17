@@ -90,6 +90,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node test/run.mjs",
     "test:all": "node run-all-tests.mjs",
+    "test:report": "node scripts/test-report.mjs",
     "preflight": "node scripts/preflight.mjs",
     "doccheck": "node scripts/doc-coverage.mjs",
     "prepack": "npm run build",

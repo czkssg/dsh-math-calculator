@@ -9,6 +9,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 process.env.DSH_MATH_CALC_HOME = mkdtempSync(join(tmpdir(), 'dsh-runlog-'))
+/** 这一套验证日志写入，必须显式开启：外部 DSH_MATH_CALC_LOG=off 时不能让测试静默崩掉。 */
+process.env.DSH_MATH_CALC_LOG = 'on'
 await import(pathToFileURL(join(root, 'lib/index.js')).href)
 const toolMod = await import(pathToFileURL(join(root, 'lib/tool.js')).href)
 const logMod = await import(pathToFileURL(join(root, 'lib/core/run-log.js')).href)

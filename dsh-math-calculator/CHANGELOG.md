@@ -13,6 +13,8 @@
   `saveAs` 只在条目内生效。结果同时给分段文本与 `value.results[]`（含每条的 ok/operation/result/error）。
 - **选型文档**：`docs/批量调用选型.md`（MCP 2025-06-18 / 2025-11-25 两版 schema 无 batch 的实测，
   JSON-RPC 2.0 batch 语义，以及为什么放在参数层而不是新增 operation）。
+- **机器可读测试报告**：`npm run test:report` 逐套运行并写 `test-v3/test-report.json`——
+  给测试员 AI 的参考文件（summary / howToRun / conventions / 每套 title+purpose+项数+耗时+复现命令）。
 
 ### 变更
 
