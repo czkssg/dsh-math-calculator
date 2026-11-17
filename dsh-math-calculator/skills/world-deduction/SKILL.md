@@ -239,7 +239,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 
 ```
 {operation:"help"}                        能力目录（63 节带简介）
-{operation:"help", helpTopic:"world"}     星球参数 25 个字段带默认值
+{operation:"help", helpTopic:"world"}     星球参数字段表（20+ 个带默认值）
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）
 ```

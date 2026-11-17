@@ -365,7 +365,17 @@ console.log('-- 20. civilization：物理锁死技术树 --')
   assert('★ 地球卡尔达肖夫 ≈ 0.73', Math.abs(kardashev.value - 0.73) < 0.03, String(kardashev.value))
   assert('★ 化学火箭航天开放（Δv 13.5 > 逃逸 11.2）', out.value.civilization.tech.some((item) => item.branch === '化学火箭航天' && item.status === 'open'), JSON.stringify(out.value.civilization.tech))
   assert('★ 太空电梯锁死（材料差数千倍）', out.value.civilization.tech.some((item) => item.branch === '太空电梯' && item.status === 'locked'), '')
-  assert('生态承载力 > 0', out.value.civilization.limits.some((item) => item.name === '生态承载力' && item.value > 0), '')
+  const eco = out.value.civilization.limits.find((item) => item.name === '生态承载力')
+  assert('生态承载力 > 0', eco !== undefined && eco.value > 0, '')
+  assert('★ 地球默认承载力与实况同量级（3–15 亿×10）', eco.value > 3e9 && eco.value < 1.5e10, String(eco.value))
+  const vegan = der.runDerivation({ derivation: 'civilization', world: { meatFraction: 0 } }, deps)
+  const carnivore = der.runDerivation({ derivation: 'civilization', world: { meatFraction: 1 } }, deps)
+  const veganEco = vegan.value.civilization.limits.find((item) => item.name === '生态承载力').value
+  const carnivoreEco = carnivore.value.civilization.limits.find((item) => item.name === '生态承载力').value
+  assert('★ 肉食比例 0→1 承载力降约 10 倍', veganEco / carnivoreEco > 9 && veganEco / carnivoreEco < 11, String(veganEco / carnivoreEco))
+  const big = der.runDerivation({ derivation: 'civilization', world: { planetRadius: 2 } }, deps)
+  const bigEco = big.value.civilization.limits.find((item) => item.name === '生态承载力').value
+  assert('★ 半径 ×2 → 承载力 ×4（截面积平方律）', Math.abs(bigEco / eco.value - 4) < 0.1, String(bigEco / eco.value))
   assert('result 给统计', out.result.includes('统计：开放'), '')
 }
 

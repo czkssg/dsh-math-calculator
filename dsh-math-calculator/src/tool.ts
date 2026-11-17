@@ -351,6 +351,9 @@ const PARAMETER_SPEC = {
   lightPollution: { type: 'number', description: 'world：光污染等级（影响观星）' },
   galaxyBand: { type: 'string', description: 'world：银河带方向' },
   dayDefinition: { type: 'string', description: 'world：一天的定义（恒星日/太阳日）' },
+  meatFraction: { type: 'number', description: 'world：肉食比例 0–1（默认 0.2；1 份肉要 10 份植物，10% 法则）' },
+  humanUsableNpp: { type: 'number', description: 'world：人类可占用的 NPP 比例（默认 0.1；陆地实际约 0.25）' },
+  caloriesPerDay: { type: 'number', description: 'world：人均食物能量 kcal/日（默认 2000，范围 1500–4000）' },
   /** 通用别名与子命令。 */
   action: { type: 'string', description: '子动作（topology/data/astro 的 action）' },
   action2: { type: 'string', description: 'workspace 的子动作 set/list/switch/export/import' },

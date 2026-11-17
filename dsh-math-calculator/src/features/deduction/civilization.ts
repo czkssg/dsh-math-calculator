@@ -15,14 +15,15 @@
  *
  * ## 复用而非重写
  *
- * 材料/结构极限直接取 feasibility 的约束；生态承载力用简化的能量流估算
- * （标【量级】——真实生态还受营养盐、水循环、纬度分布影响）。
+ * 材料/结构极限直接取 feasibility 的约束；生态承载力用**地球实测 NPP 标定**的
+ * 能量流模型（`ecosystem.ts`，标【标度】——真实生态还受营养盐、水循环、纬度分布影响）。
  *
  * @module dsh-math-calculator/features/deduction/civilization
  */
 
 import { CONSTRAINTS, deriveConstraintContext, type ConstraintContext } from './feasibility.js'
 import { BASE_PHYSICS } from './constants.js'
+import { computeEcosystem } from './ecosystem.js'
 
 /** 一条文明极限。 */
 export interface CivilLimit {
@@ -303,25 +304,43 @@ export function techTree(ctx: ConstraintContext, limits: CivilLimit[]): TechBran
 }
 
 /**
- * 生态承载力（简化能量流估算）。
+ * 生态承载力（地球实测 NPP 标定）。
  *
- * P = 日照 × 光合效率 1% × 人类可占用 10% × 收获效率 10% / 人均能量需求。
- * 【量级】真实生态还受营养盐、水循环、纬度分布影响。
+ * ## 为什么不再用「光合效率 × 折扣连乘」
+ *
+ * 旧版按「日照 × 1% 光合效率 × 10% 占用 × 10% 收获」估算：1% 是**叶片峰值**，
+ * 全球实际光能→碳转化只有约 0.11%（地球 NPP 1.05e14 kg C/yr 反推），
+ * 两者差近 10 倍；再用固定系数会把误差放大到百万倍（旧版给 1e15 人）。
+ *
+ * 现在按「行星吸收能量 / 地球吸收能量」比例缩放地球实测 NPP，量级天然正确。
+ * 可调项：人类占用比例（默认 10%）、肉食比例（10% 法则）、人均热量。
  *
  * @param world - 世界参数
- * @returns 承载力（人）与判定
+ * @returns 承载力（人）、判定与依据
  */
-export function carryingCapacity(world: Record<string, unknown>): { value: number; verdict: string } {
+export function carryingCapacity(world: Record<string, unknown>): { value: number; verdict: string; basis: string } {
   const luminositySun = num(world, 'starLuminositySun', 1)
   const orbitAU = num(world, 'orbitAU', 1)
-  const flux = (luminositySun * BASE_PHYSICS.Lsun) / (4 * Math.PI * (orbitAU * BASE_PHYSICS.AU) ** 2)
-  const planetArea = 4 * Math.PI * (BASE_PHYSICS.Rearth * num(world, 'planetRadius', 1)) ** 2
-  const npp = flux * planetArea * 0.01
-  const usable = npp * 0.1 * 0.1
-  const perPerson = 2200 * 4184 / 86400 / 365
-  const value = usable / perPerson
-  const verdict = value > 1e10 ? 'ample' : value > 1e9 ? 'tight' : 'scarce'
-  return { value, verdict }
+  const planetRadiusM = BASE_PHYSICS.Rearth * num(world, 'planetRadius', 1)
+  const albedo = Math.min(0.95, Math.max(0, num(world, 'albedo', 0.306)))
+  /** 行星截获并吸收的太阳能（W），再折成年能量。 */
+  const intercepted = (luminositySun * BASE_PHYSICS.Lsun * Math.PI * planetRadiusM ** 2) /
+    (4 * Math.PI * (orbitAU * BASE_PHYSICS.AU) ** 2)
+  const insolationJ = intercepted * (1 - albedo) * 365.25 * 86400
+  const appropriation = Math.min(0.8, Math.max(0.01, num(world, 'humanUsableNpp', 0.1)))
+  const meatFraction = Math.min(1, Math.max(0, num(world, 'meatFraction', 0.2)))
+  const caloriesPerDay = Math.min(4000, Math.max(1500, num(world, 'caloriesPerDay', 2000)))
+  const state = computeEcosystem(insolationJ, {
+    appropriation,
+    meatFraction,
+    perCapitaEnergy: caloriesPerDay * 4184 * 365,
+  })
+  const value = state.carryingCapacity
+  const verdict = value > 2e10 ? 'ample' : value > 2e9 ? 'tight' : 'scarce'
+  const basis = '按地球实测 NPP 标定（光能→碳 0.11% 反推，非逐项折扣）× 人类占用 ' +
+    Math.round(appropriation * 100) + '% × 收获 10% × 肉食 ' + Math.round(meatFraction * 100) +
+    '%（10% 法则）× 现实折扣 58% / 人均 ' + caloriesPerDay + ' kcal/日（【标度】）'
+  return { value, verdict, basis }
 }
 
 /**
@@ -340,7 +359,7 @@ export function runCivilization(world: Record<string, unknown>): CivilizationRes
     name: '生态承载力',
     value: eco.value,
     unit: '人',
-    basis: '日照 × 光合效率 1% × 人类可占用 10% × 收获效率 10% / 人均能量需求（【量级】）',
+    basis: eco.basis,
     sensitiveTo: ['恒星光度', '轨道距离', '肉食比例', '农业效率'],
     breakthrough: eco.verdict === 'ample' ? '承载力充足，人口瓶颈不在食物' : '承载力紧张，需提高农业效率或降低人口',
   })

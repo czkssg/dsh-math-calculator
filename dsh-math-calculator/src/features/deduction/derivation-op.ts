@@ -664,7 +664,7 @@ export function runDerivation(input: Record<string, unknown>, deps: DerivationDe
     }
     const eco = civ.limits.find((item) => item.name === '生态承载力')
     if (eco) {
-      lines.push('', '  生态承载力：' + f(eco.value) + ' 人（【量级】）')
+      lines.push('', '  生态承载力：' + f(eco.value) + ' 人（【标度】）')
       if (eco.breakthrough) lines.push('    突破方向：' + eco.breakthrough)
     }
     lines.push('', '统计：开放 ' + civ.summary.open + ' / 有条件 ' + civ.summary.conditional + ' / 锁死 ' + civ.summary.locked)
