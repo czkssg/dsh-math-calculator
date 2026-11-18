@@ -39,28 +39,28 @@ const SAFE_REPLACEMENTS: Array<[RegExp, string, string]> = [
   /**
    * `min` → `minute`。
    *
-   * 判据：前后不能紧接字母（避免把 `minimum` 里的 `min` 也换掉），
+   * 判据：前后不能紧接**字母或下划线**（避免把 `minimum`、`area_ha` 里的 `min`/`ha` 换掉），
    * 但**可以紧接数字或空格或斜杠**（`5min`、`5 min`、`L/min` 都要换）。
    */
-  [/(?<![A-Za-z])min(?![A-Za-z])/g, 'minute', 'min 被拆成 m×in（米×英寸）'],
+  [/(?<![A-Za-z_])min(?![A-Za-z_])/g, 'minute', 'min 被拆成 m×in（米×英寸）'],
   /**
    * `mins` → `minutes`（复数）。
    */
-  [/(?<![A-Za-z])mins(?![A-Za-z])/g, 'minutes', 'mins 同上'],
+  [/(?<![A-Za-z_])mins(?![A-Za-z_])/g, 'minutes', 'mins 同上'],
   /**
    * `sec` → `second`。
    *
    * `sec` 在 mathjs 里是合法的（secondary 的缩写冲突较少），
    * 但三角函数 `sec()` 会与它冲突，显式写全名更安全。
    */
-  [/(?<![A-Za-z])sec(?![A-Za-z(])/g, 'second', 'sec 与三角函数 sec() 冲突'],
+  [/(?<![A-Za-z_])sec(?![A-Za-z_(])/g, 'second', 'sec 与三角函数 sec() 冲突'],
   /**
    * `ha` → `hectare`。
    *
    * mathjs 内置的是 `hectare`，不认 `ha` 这个缩写。
    * 而中文场景里「公顷」几乎总被写成 `ha`。
    */
-  [/(?<![A-Za-z])ha(?![A-Za-z])/g, 'hectare', 'ha 是公顷的常用缩写，mathjs 只认 hectare'],
+  [/(?<![A-Za-z_])ha(?![A-Za-z_])/g, 'hectare', 'ha 是公顷的常用缩写，mathjs 只认 hectare'],
 ]
 
 /**

@@ -61,6 +61,10 @@
     }
    },
    {
+    "formula": "beam_self_weight_moment",
+    "note": "梁自重弯矩（大跨度必须先算）"
+   },
+   {
     "formula": "beam_bending_stress",
     "note": "弯矩 + 截面 → 实际弯曲应力",
     "feeds": [
@@ -68,15 +72,17 @@
       "from": "beam_self_weight_moment",
       "to": "M"
      }
-    ]
+    ],
+    "dataFlow": {
+     "M": {
+      "fromStep": 10,
+      "note": "自重弯矩 → 弯曲应力"
+     }
+    }
    },
    {
     "formula": "fracture_kic",
     "note": "裂纹长度 → 临界应力（比屈服更狠的判据）"
-   },
-   {
-    "formula": "beam_self_weight_moment",
-    "note": "梁自重弯矩（大跨度必须先算）"
    }
   ],
   "bridges": [
@@ -130,7 +136,13 @@
       "from": "rect_inertia",
       "to": "I"
      }
-    ]
+    ],
+    "dataFlow": {
+     "I": {
+      "fromStep": 3,
+      "note": "截面惯性矩 → 挠度"
+     }
+    }
    },
    {
     "formula": "buckling_euler",
@@ -140,7 +152,13 @@
       "from": "rect_inertia",
       "to": "I"
      }
-    ]
+    ],
+    "dataFlow": {
+     "I": {
+      "fromStep": 3,
+      "note": "截面惯性矩 → 屈曲"
+     }
+    }
    },
    {
     "formula": "bolt_shear_capacity",
@@ -152,7 +170,13 @@
    },
    {
     "formula": "beam_center_deflection",
-    "note": "集中荷载跨中挠度"
+    "note": "集中荷载跨中挠度",
+    "dataFlow": {
+     "I": {
+      "fromStep": 3,
+      "note": "截面惯性矩 → 集中荷载挠度"
+     }
+    }
    },
    {
     "formula": "wood_beam_moment_capacity",
@@ -215,7 +239,17 @@
    },
    {
     "formula": "boiler_coal_rate",
-    "note": "功率 → 每小时耗煤（热机场景）"
+    "note": "功率 → 每小时耗煤（热机场景）",
+    "dataFlow": {
+     "P": {
+      "fromStep": 5,
+      "note": "围护热损功率 → 锅炉功率"
+     },
+     "eta": {
+      "fromStep": 2,
+      "note": "炉膛效率 → 锅炉效率"
+     }
+    }
    },
    {
     "formula": "thermal_efficiency_carnot",
@@ -497,7 +531,13 @@
    },
    {
     "formula": "storage_loss",
-    "note": "存 t 年还剩多少（总产 ≠ 可吃量，中间这一段最容易被忽略）"
+    "note": "存 t 年还剩多少（总产 ≠ 可吃量，中间这一段最容易被忽略）",
+    "dataFlow": {
+     "initial": {
+      "fromStep": 4,
+      "note": "粮食总产 → 入储量"
+     }
+    }
    },
    {
     "formula": "salt_preservation_need",
@@ -505,7 +545,13 @@
    },
    {
     "formula": "smoking_drying_capacity",
-    "note": "熏房日处理量（秋杀旺季的瓶颈）"
+    "note": "熏房日处理量（秋杀旺季的瓶颈）",
+    "dataFlow": {
+     "drying_days": {
+      "fromStep": 5,
+      "note": "晾干天数 → 熏房节拍"
+     }
+    }
    },
    {
     "formula": "population_fed_by_grain",
@@ -515,11 +561,23 @@
       "from": "grain_yield_total",
       "to": "grain_kg"
      }
-    ]
+    ],
+    "dataFlow": {
+     "grain_kg": {
+      "fromStep": 6,
+      "note": "存后剩余 → 可用粮"
+     }
+    }
    },
    {
     "formula": "food_surplus_ratio",
-    "note": "总产 − 自耗 → 剩余率（决定能不能脱产）"
+    "note": "总产 − 自耗 → 剩余率（决定能不能脱产）",
+    "dataFlow": {
+     "yield": {
+      "fromStep": 4,
+      "note": "粮食总产 → 剩余率"
+     }
+    }
    },
    {
     "formula": "growing_degree_days",
@@ -535,7 +593,13 @@
    },
    {
     "formula": "food_energy_supply",
-    "note": "食物 → 能量供给（换算成热量口径）"
+    "note": "食物 → 能量供给（换算成热量口径）",
+    "dataFlow": {
+     "mass_kg": {
+      "fromStep": 12,
+      "note": "作物总产 → 能量供给"
+     }
+    }
    },
    {
     "formula": "livestock_feed_need",
@@ -571,7 +635,13 @@
    },
    {
     "formula": "labor_force",
-    "note": "劳力（人口 × 参与率）—— 与产能链共用"
+    "note": "劳力（人口 × 参与率）—— 与产能链共用",
+    "dataFlow": {
+     "population": {
+      "fromStep": 9,
+      "note": "可养人口 → 劳力"
+     }
+    }
    },
    {
     "formula": "trophic_chain_support",
@@ -628,7 +698,13 @@
       "from": "sa_volume_ratio",
       "to": "area"
      }
-    ]
+    ],
+    "dataFlow": {
+     "area": {
+      "fromStep": 1,
+      "note": "体表面积 → 扩散面积"
+     }
+    }
    },
    {
     "formula": "diffusion_time",
