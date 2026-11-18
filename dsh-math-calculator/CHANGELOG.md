@@ -2,6 +2,26 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.9.0] — 2026-11-18
+
+**公式信源补全（搜索核实）**：带 sources 的公式 135 → 371（17% → 46%）。
+
+### 新增
+
+- 按「分类 + 关键词 → 教材章节」给 236 条公式补 sources：
+  University Physics Vol 1/2/3（力学/热/电磁/光/量子/相对论/核）、Chemistry 2e、Biology 2e、
+  Principles of Economics 3e、Introductory Statistics、Calculus Vol 1、Shannon 1948（信息论）。
+- 章节页 slug 与标题**逐条抓取验证**（7-1-work、1-1-temperature-and-thermal-equilibrium、
+  14-1-bronsted-lowry-acids-and-bases、44-1-the-scope-of-ecology 等，全部 200）。
+
+### 口径
+
+- confidence 一律 `scaling`；license 注明「教材引用，未逐字比对」——引用的是章节主题，不是逐字原文。
+- perception/engineering/materials/military 等无对应教材的领域**保持无 sources**（不硬凑）。
+
+### 测试
+
+`formulas-static` 15 项通过（sources 完整性/confidence 合法/URL 格式）；全量 **121 套 / 2,978 项全绿**（test-report 已刷新）。
 ## [3.8.0] — 2026-11-18
 
 **面状地形绕障**：`topology action:"avoid"`（绕山/绕湖/禁飞区）。
