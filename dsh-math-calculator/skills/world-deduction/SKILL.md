@@ -77,6 +77,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 实体类型 / 自创 / 校验 | `topology` | `action:"entities"（或 "define" / "validate"）` |
 | 拓扑模型存取 | `topology` | `action:"save"（或 "load" / "list" / "export" / "import"）` |
 | 后勤/信息时延（疆域上限） | `topology` | `action:"logistics"` + `{mode,distanceKm,maxRoundTripDays}` |
+| **面状绕障（绕山/绕湖/禁飞区）** | `topology` | `action:"avoid"` + `fromPoint/toPoint:{lat,lon}` + `obstacles:[[[lon,lat],…]]`；`gridKm`/`safetyKm`/`planetRadiusKm` |
 
 ### astro：天文与历法
 

@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.8.0] — 2026-11-18
+
+**面状地形绕障**：`topology action:"avoid"`（绕山/绕湖/禁飞区）。
+
+### 新增
+
+- **栅格 A* 绕障**：输入 `fromPoint`/`toPoint`（{lat,lon}）、`obstacles:[[[lon,lat],…]]`、
+  `gridKm`（分辨率，默认 2）、`safetyKm`（安全间距）、`planetRadiusKm`（架空星球半径）。
+  输出绕行长度、绕行比、采样路径点；起点/终点落在障碍内明确报错。
+  - 为什么自写：`@turf/shortest-path` 的距离用 `@turf/distance`（**地球半径写死**），
+    架空星球不可配；自写约 200 行、零依赖。选型记录在 `docs/推演选型.md` 第九节。
+- schema 补 5 个键；help 的 topology 节与示例清单补 `avoid`；SKILL 速查表补一行。
+
+### 测试
+
+新增 `topology-avoid` 10 项：直线基线、矩形绕行、安全间距、非法起点、行星半径缩放、示例清单。
+全量 **121 套 / 2,978 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.7.0] — 2026-11-18
 
 **生态承载力迁移 + 适用域补全**（功能深度检查的后续）。

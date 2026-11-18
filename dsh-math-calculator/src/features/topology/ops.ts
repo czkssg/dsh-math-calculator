@@ -54,6 +54,7 @@ function withAssessment(action: string, flat: Record<string, unknown>, text: str
 }
 import { buildTopology, summarizeTopology, type Topology, type TopologyEdge, type TopologyNode } from './model.js'
 import { distanceBetween, reachableWithin, shortestRoute, sightline } from './geometry.js'
+import { avoidRoute, type AvoidResult } from './avoid.js'
 import { assessStructure, type BuildingInput, type VehicleInput } from './structure.js'
 import { checkRules, type RuleContext } from './rules.js'
 import { ENTITY_TYPES, RELATION_TYPES, mergeEntityTypes, validateEntityGraph, validateEntityType, type EntityTypeDef } from './entities.js'
@@ -69,6 +70,7 @@ const TOPOLOGY_EXAMPLES: Array<{ action: string; label: string; example: Record<
   { action: 'route', label: '最短路径', example: { action: 'route', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', to: 'B', mode: 'road' } },
   { action: 'sightline', label: '视线', example: { action: 'sightline', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', to: 'B' } },
   { action: 'reachable', label: '可达预算', example: { action: 'reachable', nodes: [{ id: 'A', lat: 0, lon: 0 }, { id: 'B', lat: 0, lon: 1 }], edges: [{ from: 'A', to: 'B', kind: 'road' }], from: 'A', maxKm: 200 } },
+  { action: 'avoid', label: '面状绕障（绕山/绕湖/禁飞区）', example: { action: 'avoid', fromPoint: { lat: 30, lon: 110 }, toPoint: { lat: 31, lon: 111 }, obstacles: [[[110.3, 30.3], [110.7, 30.3], [110.7, 30.7], [110.3, 30.7]]], gridKm: 2, safetyKm: 0 } },
   { action: 'structure', label: '建筑/载具（扁平写法）', example: { action: 'structure', kind: 'building', levels: 320, area: 1000 } },
   { action: 'structure', label: '建筑/载具（嵌套写法）', example: { action: 'structure', building: { kind: 'building', floors: 100, footprintM2: 500 } } },
   { action: 'rules', label: '七条结构规则', example: { action: 'rules', nodes: [{ id: 'A', lat: 0, lon: 0 }], edges: [] } },
@@ -133,6 +135,16 @@ export interface TopologyOpInput {
   modelKey?: string
   /** export/import：文件名（相对 <工作区>.artifacts/）。 */
   file?: string
+  /** avoid：起点坐标（{lat,lon}）。 */
+  fromPoint?: { lat: number; lon: number }
+  /** avoid：终点坐标（{lat,lon}）。 */
+  toPoint?: { lat: number; lon: number }
+  /** avoid：障碍多边形（每个是 [[lon,lat],...] 环，可多个）。 */
+  obstacles?: number[][][]
+  /** avoid：栅格分辨率 km（默认 2）。 */
+  gridKm?: number
+  /** avoid：障碍安全间距 km（默认 0）。 */
+  safetyKm?: number
 }
 
 /** 结果。 */
@@ -339,7 +351,7 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
-  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import', 'logistics'])
+  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'avoid', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import', 'logistics'])
   /** 示例清单：`action:"examples"`，或拼错动作时也给清单（反馈：107 次猜参数失败）。 */
   if (action === 'examples' || action === 'help' || !KNOWN_ACTIONS.has(action)) return renderExamples()
   if (action === 'save') {
@@ -478,6 +490,38 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
     const topology = buildTopology({ nodes: input.nodes ?? [], edges: input.edges ?? [], planetRadiusKm: input.planetRadiusKm })
     const outcome = checkRules(topology, input.rules ?? {})
     return { result: outcome.result, value: outcome.value, ...(outcome.notice !== undefined ? { notice: outcome.notice } : {}) }
+  }
+  if (action === 'avoid') {
+    const fromPoint = input.fromPoint
+    const toPoint = input.toPoint
+    if (fromPoint === undefined || toPoint === undefined) {
+      throw new CalcError('missing_params', 'avoid 需要 fromPoint 与 toPoint（{lat,lon}）', '例：{topology:{action:"avoid", fromPoint:{lat:30,lon:110}, toPoint:{lat:31,lon:111}, obstacles:[[[110.3,30.3],[110.7,30.3],[110.7,30.7],[110.3,30.7]]]}}。')
+    }
+    let avoided: AvoidResult
+    try {
+      avoided = avoidRoute({
+        from: fromPoint,
+        to: toPoint,
+        ...(input.obstacles !== undefined ? { obstacles: input.obstacles } : {}),
+        ...(typeof input.gridKm === 'number' ? { gridKm: input.gridKm } : {}),
+        ...(typeof input.safetyKm === 'number' ? { safetyKm: input.safetyKm } : {}),
+        ...(typeof input.planetRadiusKm === 'number' ? { planetRadiusKm: input.planetRadiusKm } : {}),
+      })
+    } catch (error) {
+      throw new CalcError('invalid_argument', '绕障路径算不出：' + (error instanceof Error ? error.message : String(error)), '起终点不能落在障碍内；障碍多边形至少 3 个点（[[lon,lat],…]）。')
+    }
+    const lines: string[] = ['', '【绕障路径】']
+    if (!avoided.reachable) {
+      lines.push('  ⚠ 没有可行路径（障碍封闭，或安全间距把通道封死）')
+      lines.push('  直线 ' + avoided.straightKm.toFixed(1) + ' km；栅格 ' + avoided.gridKm.toFixed(2) + ' km')
+      return { result: lines.join('\n'), value: avoided }
+    }
+    lines.push('  直线 ' + avoided.straightKm.toFixed(1) + ' km；绕行 ' + avoided.lengthKm.toFixed(1) + ' km（' + avoided.detourRatio.toFixed(2) + ' 倍）')
+    lines.push('  栅格 ' + avoided.gridKm.toFixed(2) + ' km' + (avoided.coarsened ? '（因规模自动加粗）' : '') + '；障碍 ' + avoided.obstacleCount + ' 个；安全间距 ' + avoided.safetyKm + ' km')
+    const sample = avoided.points.slice(0, 6).map((point) => '(' + point.lat.toFixed(3) + ',' + point.lon.toFixed(3) + ')').join(' → ')
+    lines.push('  路径（' + avoided.points.length + ' 点）：' + sample + (avoided.points.length > 6 ? ' …' : ''))
+    lines.push('', '★ 栅格离散会有约 1 格的误差；障碍多边形用 [[lon,lat],…] 环（可不闭合）。')
+    return { result: lines.join('\n'), value: avoided }
   }
   if (action === 'route' || action === 'sightline' || action === 'reachable') {
     if (typeof input.from !== 'string' || input.from === '') throw new CalcError('missing_params', action + ' 需要 from（起点）', '')
