@@ -1,55 +1,54 @@
 /**
- * 公式网：从物理常数出发的全量依赖网。
+ * 公式网：从物理常数出发的全量依赖网（闭合版）。
  *
  * ## 结构
  *
  * ```
  *   第 0 层   常数（c / G / h / kB / ...）
- *   第 1 层   公式参数默认值等于该常数（如 E = mc² 用 c）
- *   第 2 层+  上游公式的输出物理量 = 下游参数的 quantity
+ *   第 1 层   参数默认值等于该常数的公式
+ *   第 2 层+  输出物理量组 == 下游参数组（同义词组 + 量纲校验）
  * ```
  *
- * 边存在 `src/data/formula-web.json`（离线构建）：
- * - `constantEdges`：常数 → 公式（参数默认值 ≈ 常数标准值）；
- * - `formulaEdges`：公式 → 公式（输出量 identity 与下游参数 quantity 相同，且量纲一致）。
+ * 边存在 `src/data/formula-web.json`（紧凑数组格式）：
+ * - `constantEdges`：[常数, 公式, 参数]；
+ * - `formulaEdges`：[上游公式, 下游公式, 下游参数, 物理量组]；
+ * - 组表在 `groupNames`；环样例在 `meta.sampleCycles`。
  *
  * @module dsh-math-calculator/features/formulas/web
  */
 
-/** 常数节点。 */
-export interface WebConstant {
-  name: string
-  standard: number
-  unit: string
-  fundamental?: boolean
-  siDefines?: string | null
-}
+/** 常数：[名称, 标准值, 单位]。 */
+export type WebConstant = [string, number, string]
 
-/** 常数 → 公式的边。 */
-export interface WebConstantEdge {
-  constant: string
-  formula: string
-  param: string
-  value: number
-}
+/** 常数边：[常数, 公式, 参数]。 */
+export type WebConstantEdge = [string, string, string]
 
-/** 公式 → 公式的边。 */
-export interface WebFormulaEdge {
-  from: string
-  to: string
-  param: string
-  identity: string
-}
+/** 公式边：[上游, 下游, 下游参数, 物理量组]。 */
+export type WebFormulaEdge = [string, string, string, string]
 
 /** 公式网数据。 */
 export interface FormulaWeb {
-  meta?: { constants?: number; formulas?: number; constantEdges?: number; formulaEdges?: number; builtAt?: string; note?: string }
+  meta?: {
+    builtAt?: string
+    formulas?: number
+    constants?: number
+    constantEdges?: number
+    formulaEdges?: number
+    groups?: number
+    cycleEdges?: number
+    isolatedNoIn?: number
+    sources?: number
+    sinks?: number
+    sampleCycles?: string[][]
+    note?: string
+  }
+  groupNames?: string[]
   constants: WebConstant[]
   constantEdges: WebConstantEdge[]
   formulaEdges: WebFormulaEdge[]
 }
 
-/** 公式条目（查询只需要 id/name）。 */
+/** 公式条目。 */
 export interface WebFormula {
   id: string
   name: string
@@ -85,94 +84,103 @@ function nameOf(byId: Map<string, WebFormula>, id: string): string {
  * 跑一次查询。
  *
  * @param web - 公式网数据
- * @param formulas - 公式表（取名称）
- * @param query - focus/depth/direction
+ * @param formulas - 公式表
+ * @param query - focus/depth/direction/limit
  * @returns 文本与结构化结果
  */
 export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: WebQuery): WebOutcome {
   const byId = new Map(formulas.map((item) => [item.id, item]))
-  const constantByName = new Map(web.constants.map((item) => [item.name, item]))
+  const constantByName = new Map(web.constants.map((item) => [item[0], item]))
   const constantEdges = web.constantEdges ?? []
   const formulaEdges = web.formulaEdges ?? []
   const outByFrom = new Map<string, WebFormulaEdge[]>()
   const inByTo = new Map<string, WebFormulaEdge[]>()
   for (const edge of formulaEdges) {
-    if (outByFrom.get(edge.from) === undefined) outByFrom.set(edge.from, [])
-    outByFrom.get(edge.from)?.push(edge)
-    if (inByTo.get(edge.to) === undefined) inByTo.set(edge.to, [])
-    inByTo.get(edge.to)?.push(edge)
+    if (outByFrom.get(edge[0]) === undefined) outByFrom.set(edge[0], [])
+    outByFrom.get(edge[0])?.push(edge)
+    if (inByTo.get(edge[1]) === undefined) inByTo.set(edge[1], [])
+    inByTo.get(edge[1])?.push(edge)
   }
   const constToFormula = new Map<string, WebConstantEdge[]>()
   for (const edge of constantEdges) {
-    if (constToFormula.get(edge.constant) === undefined) constToFormula.set(edge.constant, [])
-    constToFormula.get(edge.constant)?.push(edge)
+    if (constToFormula.get(edge[0]) === undefined) constToFormula.set(edge[0], [])
+    constToFormula.get(edge[0])?.push(edge)
   }
+  const groups = new Set(formulaEdges.map((edge) => edge[3]))
 
   const focus = typeof query.focus === 'string' ? query.focus.trim() : ''
   const depth = Math.max(1, Math.min(5, Number.isFinite(query.depth ?? NaN) ? (query.depth as number) : 2))
-  const limit = Math.max(1, Math.min(100, Number.isFinite(query.limit ?? NaN) ? (query.limit as number) : 20))
+  const limit = Math.max(1, Math.min(200, Number.isFinite(query.limit ?? NaN) ? (query.limit as number) : 20))
   const direction = query.direction ?? 'down'
 
-  /** 统计模式。 */
+  /** 统计。 */
   if (focus === '') {
-    const reachable = new Set<string>()
-    const firstFormulas = new Set<string>()
-    for (const edge of constantEdges) { firstFormulas.add(edge.formula); reachable.add(edge.formula) }
-    const frontier = [...firstFormulas]
-    const seen = new Set(firstFormulas)
+    const first = new Set<string>()
+    for (const edge of constantEdges) first.add(edge[1])
+    const seen = new Set(first)
+    const frontier = [...first]
     while (frontier.length > 0) {
       const id = frontier.shift() as string
       for (const edge of outByFrom.get(id) ?? []) {
-        if (seen.has(edge.to)) continue
-        seen.add(edge.to)
-        reachable.add(edge.to)
-        frontier.push(edge.to)
+        if (seen.has(edge[1])) continue
+        seen.add(edge[1])
+        frontier.push(edge[1])
       }
     }
-    const withInEdge = new Set(formulaEdges.map((edge) => edge.to))
-    const isolated = formulas.filter((item) => !withInEdge.has(item.id) && !firstFormulas.has(item.id)).length
     const lines = [
       '═══ 公式网（物理常数 → 公式 → 公式）═══',
       '',
-      '  节点：常数 ' + web.constants.length + ' · 公式 ' + formulas.length,
+      '  节点：常数 ' + web.constants.length + ' · 公式 ' + formulas.length + ' · 物理量组 ' + groups.size,
       '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length,
-      '  从常数可达的公式：' + reachable.size + '（沿常数边与公式边）',
-      '  直接使用常数的公式：' + firstFormulas.size,
-      '  未被公式引用的常数：' + (web.constants.length - constToFormula.size),
-      '  孤立公式（无入边）：' + isolated,
+      '  从常数可达的公式：' + seen.size,
+      '  直接使用常数的公式：' + first.size,
+      '  无入边（源/孤立）：' + (web.meta?.sources ?? 0) + ' · 无出边（汇）：' + (web.meta?.sinks ?? 0),
+      '  闭合环：' + (web.meta?.cycleEdges ?? 0) + ' 条环边（互引产生）',
       '',
-      '★ 公式边只保留「输出量 == 下游参数量 + 量纲一致」的强边；弱相关在 formulas query:"neighbors"。',
+      '  环样例：' + (web.meta?.sampleCycles ?? []).slice(0, 2).map((cycle) => cycle.join(' → ')).join('；'),
+      '',
+      '★ 公式边只保留「输出组 == 输入组 + 量纲一致」的强边；弱相关在 formulas query:"neighbors"。',
     ]
-    return { result: lines.join('\n'), value: { constants: web.constants.length, formulas: formulas.length, constantEdges: constantEdges.length, formulaEdges: formulaEdges.length, reachable: reachable.size, isolated } }
+    return {
+      result: lines.join('\n'),
+      value: {
+        constants: web.constants.length,
+        formulas: formulas.length,
+        groups: groups.size,
+        constantEdges: constantEdges.length,
+        formulaEdges: formulaEdges.length,
+        reachable: seen.size,
+        sources: web.meta?.sources ?? 0,
+        sinks: web.meta?.sinks ?? 0,
+        cycleEdges: web.meta?.cycleEdges ?? 0,
+      },
+    }
   }
 
   /** 常数起点。 */
   const constant = constantByName.get(focus)
   if (constant !== undefined) {
-    const first = constToFormula.get(constant.name) ?? []
-    const lines: string[] = ['═══ 公式网：从常数 ' + constant.name + ' 向下（深度 ' + depth + '）═══', '']
-    lines.push('第 0 层 · ' + constant.name + ' = ' + constant.standard + ' ' + constant.unit)
-    if (first.length === 0) {
-      lines.push('  （没有公式的直接使用这个常数）')
-      return { result: lines.join('\n'), value: { focus: constant.name, layers: [] } }
-    }
-    const layer1 = [...new Set(first.map((edge) => edge.formula))]
-    lines.push('', '第 1 层 · 直接使用 ' + constant.name + ' 的公式（' + layer1.length + '）：')
+    const first = constToFormula.get(constant[0]) ?? []
+    const layer1 = [...new Set(first.map((edge) => edge[1]))]
+    const lines: string[] = ['═══ 公式网：从常数 ' + constant[0] + ' 向下（深度 ' + depth + '）═══', '']
+    lines.push('第 0 层 · ' + constant[0] + ' = ' + constant[1] + ' ' + constant[2])
+    lines.push('', '第 1 层 · 直接使用 ' + constant[0] + ' 的公式（' + layer1.length + '）：')
     for (const id of layer1.slice(0, limit)) {
-      const params = first.filter((edge) => edge.formula === id).map((edge) => edge.param).join(', ')
+      const params = first.filter((edge) => edge[1] === id).map((edge) => edge[2]).join(', ')
       lines.push('  ' + id.padEnd(30) + nameOf(byId, id) + '（作为 ' + params + '）')
     }
     if (layer1.length > limit) lines.push('  … 另有 ' + (layer1.length - limit) + ' 条（用 webLimit 放宽）')
-    const layers: WebLayer[] = [{ layer: 1, formulas: layer1.map((id) => ({ id, name: nameOf(byId, id), via: first.filter((edge) => edge.formula === id).map((edge) => edge.param) })) }]
+    if (layer1.length === 0) lines.push('  （没有公式直接使用这个常数）')
+    const layers: WebLayer[] = [{ layer: 1, formulas: layer1.map((id) => ({ id, name: nameOf(byId, id), via: first.filter((edge) => edge[1] === id).map((edge) => edge[2]) })) }]
     let frontier = layer1
     const seen = new Set(layer1)
     for (let level = 2; level <= depth; level += 1) {
       const nextMap = new Map<string, string[]>()
       for (const id of frontier) {
         for (const edge of outByFrom.get(id) ?? []) {
-          if (seen.has(edge.to)) continue
-          if (nextMap.get(edge.to) === undefined) nextMap.set(edge.to, [])
-          nextMap.get(edge.to)?.push(edge.from + '.' + edge.param + '（' + edge.identity + '）')
+          if (seen.has(edge[1])) continue
+          if (nextMap.get(edge[1]) === undefined) nextMap.set(edge[1], [])
+          nextMap.get(edge[1])?.push(edge[0] + '.' + edge[2] + '（' + edge[3] + '）')
         }
       }
       if (nextMap.size === 0) break
@@ -183,14 +191,12 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       for (const id of frontier) seen.add(id)
       layers.push({ layer: level, formulas: [...nextMap].map(([id, via]) => ({ id, name: nameOf(byId, id), via })) })
     }
-    return { result: lines.join('\n'), value: { focus: constant.name, layers } }
+    return { result: lines.join('\n'), value: { focus: constant[0], layers } }
   }
 
   /** 公式起点。 */
   const entry = formulas.find((item) => item.id === focus || item.name === focus)
-  if (entry === undefined) {
-    throw new Error('没有名为 "' + focus + '" 的常数或公式')
-  }
+  if (entry === undefined) throw new Error('没有名为 "' + focus + '" 的常数或公式')
   const lines: string[] = ['═══ 公式网：' + entry.id + '（' + entry.name + '）· ' + (direction === 'down' ? '下游' : direction === 'up' ? '上游' : '上下游') + '（深度 ' + depth + '）═══', '']
   const collect = (start: string, dir: 'down' | 'up'): WebLayer[] => {
     const layers: WebLayer[] = []
@@ -201,10 +207,10 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       for (const id of frontier) {
         const list = dir === 'down' ? (outByFrom.get(id) ?? []) : (inByTo.get(id) ?? [])
         for (const edge of list) {
-          const other = dir === 'down' ? edge.to : edge.from
+          const other = dir === 'down' ? edge[1] : edge[0]
           if (seen.has(other)) continue
           if (nextMap.get(other) === undefined) nextMap.set(other, [])
-          nextMap.get(other)?.push(dir === 'down' ? edge.from + '.' + edge.param + '（' + edge.identity + '）' : other + '.' + edge.param + ' → ' + edge.to)
+          nextMap.get(other)?.push(dir === 'down' ? edge[0] + '.' + edge[2] + '（' + edge[3] + '）' : other + '.' + edge[2] + ' → ' + edge[1] + '（' + edge[3] + '）')
         }
       }
       if (nextMap.size === 0) break
