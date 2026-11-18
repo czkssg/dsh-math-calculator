@@ -39211,5 +39211,759 @@
    }
   ],
   "confidence": "exact"
+ },
+ {
+  "id": "mohr_circle_normal",
+  "cat": "engineering/structures",
+  "name": "莫尔圆正应力",
+  "expr": "(sigma_x + sigma_y) / 2 + (sigma_x - sigma_y) / 2 * cos(2 * theta) + tau_xy * sin(2 * theta)",
+  "unit": "Pa",
+  "desc": "σ = (σx+σy)/2 + (σx−σy)/2·cos2θ + τxy·sin2θ。平面应力状态任意斜面的正应力（莫尔圆）。",
+  "keys": [
+   "莫尔",
+   "应力",
+   "mohr"
+  ],
+  "params": {
+   "sigma_x": {
+    "value": null,
+    "desc": "x 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "sigma_y": {
+    "value": null,
+    "desc": "y 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "tau_xy": {
+    "value": null,
+    "desc": "剪应力 τxy Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "theta": {
+    "value": null,
+    "desc": "斜面角 rad",
+    "quantity": "角度",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "principal_stress_max",
+  "cat": "engineering/structures",
+  "name": "最大主应力",
+  "expr": "(sigma_x + sigma_y) / 2 + sqrt(((sigma_x - sigma_y) / 2)^2 + tau_xy^2)",
+  "unit": "Pa",
+  "desc": "σ₁ = (σx+σy)/2 + √(((σx−σy)/2)² + τxy²)。平面应力最大主应力；与屈服强度比较判安全。",
+  "keys": [
+   "主应力",
+   "principal"
+  ],
+  "params": {
+   "sigma_x": {
+    "value": null,
+    "desc": "x 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "sigma_y": {
+    "value": null,
+    "desc": "y 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "tau_xy": {
+    "value": null,
+    "desc": "剪应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "max_shear_stress_plane",
+  "cat": "engineering/structures",
+  "name": "最大剪应力（平面）",
+  "expr": "sqrt(((sigma_x - sigma_y) / 2)^2 + tau_xy^2)",
+  "unit": "Pa",
+  "desc": "τmax = √(((σx−σy)/2)² + τxy²)。平面应力最大剪应力；莫尔圆半径。",
+  "keys": [
+   "剪应力",
+   "shear"
+  ],
+  "params": {
+   "sigma_x": {
+    "value": null,
+    "desc": "x 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "sigma_y": {
+    "value": null,
+    "desc": "y 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "tau_xy": {
+    "value": null,
+    "desc": "剪应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "von_mises_plane",
+  "cat": "engineering/structures",
+  "name": "冯·米塞斯等效应力（平面）",
+  "expr": "sqrt(sigma_x^2 - sigma_x * sigma_y + sigma_y^2 + 3 * tau_xy^2)",
+  "unit": "Pa",
+  "desc": "σv = √(σx² − σxσy + σy² + 3τxy²)。平面应力的米塞斯等效应力；与屈服强度比较。",
+  "keys": [
+   "米塞斯",
+   "mises",
+   "等效应力"
+  ],
+  "params": {
+   "sigma_x": {
+    "value": null,
+    "desc": "x 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "sigma_y": {
+    "value": null,
+    "desc": "y 向正应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "tau_xy": {
+    "value": null,
+    "desc": "剪应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "venturi_flow",
+  "cat": "engineering/fluid",
+  "name": "文丘里流量",
+  "expr": "A2 * sqrt(2 * (P1 - P2) / (rho * (1 - (A2 / A1)^2)))",
+  "unit": "m^3/s",
+  "desc": "Q = A₂√(2(P₁−P₂)/(ρ(1−(A₂/A₁)²)))。文丘里管的流量（伯努利 + 连续性）。",
+  "keys": [
+   "文丘里",
+   "venturi",
+   "流量"
+  ],
+  "params": {
+   "A1": {
+    "value": null,
+    "desc": "入口面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "A2": {
+    "value": null,
+    "desc": "喉部面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "P1": {
+    "value": null,
+    "desc": "入口压强 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "P2": {
+    "value": null,
+    "desc": "喉部压强 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "rho": {
+    "value": 1000,
+    "desc": "密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "hydraulic_radius",
+  "cat": "engineering/fluid",
+  "name": "水力半径",
+  "expr": "A / P_wetted",
+  "unit": "m",
+  "desc": "R = A/P。过水断面面积除以湿周；曼宁/达西公式的输入。",
+  "keys": [
+   "水力半径",
+   "湿周"
+  ],
+  "params": {
+   "A": {
+    "value": null,
+    "desc": "过水面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "P_wetted": {
+    "value": null,
+    "desc": "湿周 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "current_divider",
+  "cat": "engineering/energy",
+  "name": "分流电路",
+  "expr": "I_in * R1 / (R1 + R2)",
+  "unit": "A",
+  "desc": "I₂ = I·R₁/(R₁+R₂)。并联电阻的分流。",
+  "keys": [
+   "分流",
+   "divider"
+  ],
+  "params": {
+   "I_in": {
+    "value": null,
+    "desc": "总电流 A",
+    "quantity": "电流",
+    "dimension": {
+     "I": 1
+    }
+   },
+   "R1": {
+    "value": null,
+    "desc": "电阻 1 Ω",
+    "quantity": "电阻",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -2
+    }
+   },
+   "R2": {
+    "value": null,
+    "desc": "电阻 2 Ω",
+    "quantity": "电阻",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "rms_current",
+  "cat": "engineering/energy",
+  "name": "交流有效电流",
+  "expr": "I_peak / sqrt(2)",
+  "unit": "A",
+  "desc": "I_rms = I_peak/√2（正弦波）。",
+  "keys": [
+   "有效值",
+   "rms"
+  ],
+  "params": {
+   "I_peak": {
+    "value": null,
+    "desc": "峰值电流 A",
+    "quantity": "电流",
+    "dimension": {
+     "I": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "reactive_power",
+  "cat": "engineering/energy",
+  "name": "无功功率",
+  "expr": "V * I * sin(phi)",
+  "unit": "W",
+  "desc": "Q = VI·sinφ。交流无功功率（单位 var）；φ 为电压电流相位差。",
+  "keys": [
+   "无功",
+   "reactive"
+  ],
+  "params": {
+   "V": {
+    "value": null,
+    "desc": "电压 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   },
+   "I": {
+    "value": null,
+    "desc": "电流 A",
+    "quantity": "电流",
+    "dimension": {
+     "I": 1
+    }
+   },
+   "phi": {
+    "value": null,
+    "desc": "相位差 rad",
+    "quantity": "角度",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "mohr_coulomb",
+  "cat": "geology/soil",
+  "name": "莫尔-库仑强度准则",
+  "expr": "c + sigma_n * tan(phi)",
+  "unit": "Pa",
+  "desc": "τ = c + σn·tanφ。岩土抗剪强度准则；c 黏聚力、φ 内摩擦角。",
+  "keys": [
+   "莫尔库仑",
+   "抗剪",
+   "mohr"
+  ],
+  "params": {
+   "c": {
+    "value": null,
+    "desc": "黏聚力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "sigma_n": {
+    "value": null,
+    "desc": "法向应力 Pa",
+    "quantity": "应力",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "phi": {
+    "value": null,
+    "desc": "内摩擦角 rad",
+    "quantity": "角度",
+    "dimension": {}
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "airy_isostasy_root",
+  "cat": "geology/soil",
+  "name": "艾里均衡地壳根深度",
+  "expr": "rho_c / (rho_m - rho_c) * h_crust",
+  "unit": "m",
+  "desc": "h_root = ρc/(ρm−ρc)·h_crust。山根深度（艾里均衡）；解释山地为何「有根」。",
+  "keys": [
+   "艾里",
+   "均衡",
+   "isostasy"
+  ],
+  "params": {
+   "rho_c": {
+    "value": null,
+    "desc": "地壳密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   },
+   "rho_m": {
+    "value": null,
+    "desc": "地幔密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   },
+   "h_crust": {
+    "value": null,
+    "desc": "地壳厚度 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "radiometric_age",
+  "cat": "geology/erosion",
+  "name": "放射性定年",
+  "expr": "log(1 + D / P) / lambda",
+  "unit": "s",
+  "desc": "t = ln(1 + D/P)/λ。母体-子体定年；D/P 为子体与现存母体之比。",
+  "keys": [
+   "定年",
+   "放射性",
+   "radiometric"
+  ],
+  "params": {
+   "D": {
+    "value": null,
+    "desc": "子体原子数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "P": {
+    "value": null,
+    "desc": "现存母体原子数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "lambda": {
+    "value": null,
+    "desc": "衰变常数 1/s",
+    "quantity": "频率",
+    "dimension": {
+     "T": -1
+    }
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "stokes_settling",
+  "cat": "geology/river",
+  "name": "斯托克斯沉降速度",
+  "expr": "(rho_p - rho_f) * g * d^2 / (18 * mu)",
+  "unit": "m/s",
+  "desc": "v = (ρp−ρf)gd²/(18μ)。细颗粒在流体中的沉降速度；沉积分选的基础。",
+  "keys": [
+   "斯托克斯",
+   "沉降"
+  ],
+  "params": {
+   "rho_p": {
+    "value": null,
+    "desc": "颗粒密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   },
+   "rho_f": {
+    "value": null,
+    "desc": "流体密度 kg/m³",
+    "quantity": "密度",
+    "dimension": {
+     "M": 1,
+     "L": -3
+    }
+   },
+   "g": {
+    "value": 9.80665,
+    "desc": "重力加速度 m/s²",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
+   },
+   "d": {
+    "value": null,
+    "desc": "粒径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "mu": {
+    "value": null,
+    "desc": "动力粘度 Pa·s",
+    "quantity": "动力粘度",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -1
+    }
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "palma_ratio",
+  "cat": "social/inequality",
+  "name": "帕尔马比值",
+  "expr": "top10_share / bottom40_share",
+  "unit": "无量纲",
+  "desc": "顶层 10% 收入份额 / 底层 40% 份额。衡量收入集中度；帕尔马指数。",
+  "keys": [
+   "帕尔马",
+   "不平等"
+  ],
+  "params": {
+   "top10_share": {
+    "value": null,
+    "desc": "顶层 10% 份额 0–1",
+    "quantity": "比率",
+    "dimension": {}
+   },
+   "bottom40_share": {
+    "value": null,
+    "desc": "底层 40% 份额 0–1",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "dissimilarity_index",
+  "cat": "social/urban",
+  "name": "差异指数（隔离）",
+  "expr": "0.5 * (abs(a1 / A - b1 / B) + abs(a2 / A - b2 / B))",
+  "unit": "无量纲",
+  "desc": "D = ½Σ|aᵢ/A − bᵢ/B|。两个群体空间分布的差异/隔离程度（社会学经典指数）。",
+  "keys": [
+   "隔离",
+   "差异指数"
+  ],
+  "params": {
+   "a1": {
+    "value": null,
+    "desc": "A 组在区 1 人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "a2": {
+    "value": null,
+    "desc": "A 组在区 2 人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "b1": {
+    "value": null,
+    "desc": "B 组在区 1 人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "b2": {
+    "value": null,
+    "desc": "B 组在区 2 人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "A": {
+    "value": null,
+    "desc": "A 组总人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "B": {
+    "value": null,
+    "desc": "B 组总人数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "confidence": "exact"
  }
 ]
