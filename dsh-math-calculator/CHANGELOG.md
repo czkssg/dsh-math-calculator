@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.17.0] — 2026-11-19
+
+**上下游显示：每条边都标「输出量 → 参数」**。
+
+### 改进
+
+- `value.web` 的每条边加 `output`（上游输出物理量组；常数边为单位）与 `value`（常数数值）；
+- `notice` 摘要改为可读的双向格式：
+  `上游 56：velocity_uniform（输出「速度」） → .v`；`下游 46：输出「能量」 → power.W`；
+  常数上游：`c（输出 m/s，值 299792458） → .c`；
+- `formulas query:"web"` 的树同步：`G → gravitation.G`、`velocity_uniform 输出「速度」→ kinetic_energy.v`。
+
+### 测试
+
+- `r65-formula-web-context` 10 → **14** 项（输出字段、常数单位/数值、摘要格式）；
+- `r64-formula-web` 断言更新为「G → 公式.参数」；
+  全量 **124 套 / 3,044 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.16.0] — 2026-11-19
 
 **真重复折叠 + 公式调用带网上下文**。

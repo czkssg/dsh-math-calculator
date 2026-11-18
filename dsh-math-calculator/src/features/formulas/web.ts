@@ -175,7 +175,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
     lines.push('', '第 1 层 · 直接使用 ' + constant[0] + ' 的公式（' + layer1.length + '）：')
     for (const id of layer1.slice(0, limit)) {
       const params = first.filter((edge) => edge[1] === id).map((edge) => edge[2]).join(', ')
-      lines.push('  ' + id.padEnd(30) + nameOf(byId, id) + '（作为 ' + params + '）')
+      lines.push('  ' + id.padEnd(30) + nameOf(byId, id) + '（' + constant[0] + ' → ' + id + '.' + params + '）')
     }
     if (layer1.length > limit) lines.push('  … 另有 ' + (layer1.length - limit) + ' 条（用 webLimit 放宽）')
     if (layer1.length === 0) lines.push('  （没有公式直接使用这个常数）')
@@ -188,7 +188,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
         for (const edge of outByFrom.get(id) ?? []) {
           if (seen.has(edge[1])) continue
           if (nextMap.get(edge[1]) === undefined) nextMap.set(edge[1], [])
-          nextMap.get(edge[1])?.push(edge[0] + '.' + edge[2] + '（' + edge[3] + '）')
+          nextMap.get(edge[1])?.push(edge[0] + ' 输出「' + edge[3] + '」→ ' + edge[1] + '.' + edge[2])
         }
       }
       if (nextMap.size === 0) break
@@ -218,7 +218,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
           const other = dir === 'down' ? edge[1] : edge[0]
           if (seen.has(other)) continue
           if (nextMap.get(other) === undefined) nextMap.set(other, [])
-          nextMap.get(other)?.push(dir === 'down' ? edge[0] + '.' + edge[2] + '（' + edge[3] + '）' : other + '.' + edge[2] + ' → ' + edge[1] + '（' + edge[3] + '）')
+          nextMap.get(other)?.push(edge[0] + ' 输出「' + edge[3] + '」→ ' + edge[1] + '.' + edge[2])
         }
       }
       if (nextMap.size === 0) break

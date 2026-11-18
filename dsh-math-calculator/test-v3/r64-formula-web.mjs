@@ -46,7 +46,7 @@ console.log('-- 2. 从常数出发（G）--')
 {
   const out = await run({ operation: 'formulas', query: 'web', formulaFocus: 'G', webDepth: 2 })
   assert('★ G 第 0 层', String(out.result).includes('第 0 层 · G = 6.6743e-11'), String(out.result).slice(0, 80))
-  assert('★ G 第 1 层含万有引力', String(out.result).includes('gravitation') && String(out.result).includes('作为 G'), '')
+  assert('★ G 第 1 层显示「G → 公式.参数」', String(out.result).includes('gravitation') && String(out.result).includes('G → gravitation.G'), '')
   assert('★ G 第 1 层含环绕速度', String(out.result).includes('orbital_velocity'), '')
   assert('★ G 第 2 层存在', String(out.result).includes('第 2 层'), '')
 }
