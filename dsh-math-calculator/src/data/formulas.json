@@ -12414,7 +12414,7 @@
   "id": "optical_resolving_power",
   "cat": "perception/senses",
   "name": "望远镜分辨极限",
-  "expr": "1.22 * lambda / D",
+  "expr": "rayleigh_factor * lambda / D",
   "params": {
    "lambda": {
     "value": null,
@@ -12431,6 +12431,12 @@
     "dimension": {
      "L": 1
     }
+   },
+   "rayleigh_factor": {
+    "value": 1.22,
+    "desc": "瑞利判据系数（圆孔 1.22；改 1.0 为理想方孔）",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "rad",
@@ -15767,7 +15773,7 @@
   "id": "particles_from_moles",
   "cat": "chemistry/mole",
   "name": "摩尔数换算粒子数",
-  "expr": "n * 6.02214076e23",
+  "expr": "n * NA",
   "params": {
    "n": {
     "value": null,
@@ -15775,6 +15781,14 @@
     "quantity": "物质的量",
     "dimension": {
      "N": 1
+    }
+   },
+   "NA": {
+    "value": 6.02214076e+23,
+    "desc": "阿伏伽德罗常数 1/mol",
+    "quantity": "阿伏伽德罗常数",
+    "dimension": {
+     "N": -1
     }
    }
   },
@@ -22220,7 +22234,7 @@
   "id": "pendulum_clock_drift",
   "cat": "engineering/process",
   "name": "摆钟走时精度（温度引起的快慢）",
-  "expr": "86400 * (-0.5 * length_change_ratio + 0.5 * gravity_change_ratio)",
+  "expr": "day_seconds * (-0.5 * length_change_ratio + 0.5 * gravity_change_ratio)",
   "params": {
    "length_change_ratio": {
     "value": null,
@@ -22234,6 +22248,14 @@
     "value": 0,
     "desc": "重力相对变化 Δg/g（同地可忽略，高原/异星要算）",
     "quantity": "重力相对变化"
+   },
+   "day_seconds": {
+    "value": 86400,
+    "desc": "每天的秒数 s",
+    "quantity": "时间",
+    "dimension": {
+     "T": 1
+    }
    }
   },
   "unit": "s/天（正为走快，负为走慢）",
@@ -22255,7 +22277,7 @@
   "id": "gravity_storage_discharge",
   "cat": "engineering/process",
   "name": "重力储能放电时长（自洽性检查）",
-  "expr": "mass * 9.80665 * height / power",
+  "expr": "mass * g0 * height / power",
   "params": {
    "mass": {
     "value": null,
@@ -22282,6 +22304,15 @@
      "L": 2,
      "T": -3
     }
+   },
+   "g0": {
+    "value": 9.80665,
+    "desc": "重力加速度 m/s²（架空世界可改）",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
    }
   },
   "unit": "s（能维持该功率的时长）",
@@ -22304,7 +22335,7 @@
   "id": "water_turbine_output",
   "cat": "engineering/process",
   "name": "水轮输出（功率/扭矩/转速）",
-  "expr": "density * 9.80665 * flow * head * efficiency",
+  "expr": "density * g0 * flow * head * efficiency",
   "params": {
    "density": {
     "value": 1000,
@@ -22337,6 +22368,15 @@
     "desc": "总效率（木制水轮 0.4~0.6、改进 0.7~0.85）",
     "quantity": "比率",
     "dimension": {}
+   },
+   "g0": {
+    "value": 9.80665,
+    "desc": "重力加速度 m/s²（架空世界可改）",
+    "quantity": "加速度",
+    "dimension": {
+     "L": 1,
+     "T": -2
+    }
    }
   },
   "unit": "W（轴输出功率）",
@@ -24463,12 +24503,22 @@
   "id": "photoelectric_threshold",
   "cat": "physics/quantum",
   "name": "光电效应阈频（为什么红光打不出电子）",
-  "expr": "work_function / h",
+  "expr": "work_function / h_planck",
   "params": {
    "work_function": {
     "value": null,
     "desc": "逸出功 W（J；铯 3.0e-19、锌 6.9e-19、铁 7.6e-19、铂 1.0e-18）",
     "quantity": "逸出功"
+   },
+   "h_planck": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s（架空宇宙可改）",
+    "quantity": "普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
    }
   },
   "unit": "Hz（最低光频率；低于它无论多强都不行）",
@@ -24504,12 +24554,39 @@
   "id": "compton_shift",
   "cat": "physics/quantum",
   "name": "康普顿位移（光撞电子会变「长」）",
-  "expr": "h / (me * c) * (1 - cos(scatter_angle))",
+  "expr": "h_planck / (m_e * c) * (1 - cos(scatter_angle))",
   "params": {
    "scatter_angle": {
     "value": null,
     "desc": "散射角 θ（弧度；0=不偏，π=正反弹回）",
     "quantity": "散射角"
+   },
+   "h_planck": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s",
+    "quantity": "普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
+   },
+   "m_e": {
+    "value": 9.1093837015e-31,
+    "desc": "电子质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "光速 m/s（架空宇宙可改）",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
    }
   },
   "unit": "m（波长增量 Δλ）",
@@ -24554,6 +24631,16 @@
     "dimension": {
      "L": 1
     }
+   },
+   "hbar": {
+    "value": 1.054571817e-34,
+    "desc": "约化普朗克常数 J·s",
+    "quantity": "约化普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
    }
   },
   "unit": "kg·m/s（动量不确定度下限 Δp）",
@@ -24589,7 +24676,7 @@
   "id": "fermi_energy",
   "cat": "physics/solid",
   "name": "费米能（金属里电子的「水面」）",
-  "expr": "hbar^2 / (2 * me) * (3 * pi^2 * electron_density)^(2/3)",
+  "expr": "hbar^2 / (2 * m_e) * (3 * pi^2 * electron_density)^(2/3)",
   "params": {
    "electron_density": {
     "value": null,
@@ -24598,6 +24685,24 @@
     "dimension": {
      "M": 1,
      "L": -3
+    }
+   },
+   "hbar": {
+    "value": 1.054571817e-34,
+    "desc": "约化普朗克常数 J·s",
+    "quantity": "约化普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
+   },
+   "m_e": {
+    "value": 9.1093837015e-31,
+    "desc": "电子质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
     }
    }
   },
@@ -24702,7 +24807,7 @@
   "id": "band_gap_wavelength",
   "cat": "physics/solid",
   "name": "带隙对应的光波长（LED 颜色从哪来）",
-  "expr": "h * c / band_gap",
+  "expr": "h_planck * c / band_gap",
   "params": {
    "band_gap": {
     "value": null,
@@ -24712,6 +24817,25 @@
      "M": 1,
      "L": 2,
      "T": -2
+    }
+   },
+   "h_planck": {
+    "value": 6.62607015e-34,
+    "desc": "普朗克常数 J·s",
+    "quantity": "普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "光速 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
     }
    }
   },
@@ -24892,6 +25016,14 @@
     "quantity": "质量",
     "dimension": {
      "M": 1
+    }
+   },
+   "NA": {
+    "value": 6.02214076e+23,
+    "desc": "阿伏伽德罗常数 1/mol",
+    "quantity": "阿伏伽德罗常数",
+    "dimension": {
+     "N": -1
     }
    }
   },
@@ -37213,8 +37345,19 @@
   "id": "solar_luminosity",
   "cat": "astronomy/star",
   "name": "太阳光度",
-  "expr": "3.828e26",
-  "params": {},
+  "expr": "Lsun",
+  "params": {
+   "Lsun": {
+    "value": 3.828e+26,
+    "desc": "太阳光度 W（架空恒星可改）",
+    "quantity": "功率",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3
+    }
+   }
+  },
   "unit": "W（太阳的光度，约 3.828×10²⁶ W）",
   "desc": "太阳每秒辐射的总能量；恒星光度决定宜居带距离与行星平衡温度。K 型约 0.1–0.5 L☉，M 型约 0.001–0.01 L☉。",
   "keys": [

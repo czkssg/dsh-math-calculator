@@ -80,6 +80,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **面状绕障（绕山/绕湖/禁飞区）** | `topology` | `action:"avoid"` + `fromPoint/toPoint:{lat,lon}` + `obstacles:[[[lon,lat],…]]`；`gridKm`/`safetyKm`/`planetRadiusKm` |
 | **公式网（常数→公式→公式）** | `formulas` | `query:"web"`（统计）；`formulaFocus` 传常数名/公式 id，`webDepth`/`webDirection`/`webLimit` |
 | **公式调用带上下游** | `formula` | 默认返回 `value.web`（上游/下游）+ notice；`webContext:false` 关闭 |
+| **架空常数可改** | formulas | 物理常数是参数（c、G、h_planck、NA、Lsun、rayleigh_factor…），默认现实值，params 里直接覆盖 |
 
 ### astro：天文与历法
 

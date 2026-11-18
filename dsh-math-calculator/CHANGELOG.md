@@ -2,6 +2,27 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.18.0] — 2026-11-19
+
+**架空常数可改：公式里的物理常数不再定死**。
+
+### 新增
+
+- 12 条公式把硬编码/隐式注入的常数提升为**可选参数**（默认现实值，可覆盖）：
+  `c`、`G`、`h_planck`、`hbar`、`NA`、`m_e`、`g0`、`Lsun`、`day_seconds`、`rayleigh_factor` 等；
+- 覆盖即生效：`photoelectric_threshold` 改 `h_planck` 翻倍 → 阈值频率减半；
+  `compton_shift` 改 `c` 翻倍 → 频移减半；`fission_energy_per_mass` 改 `NA` → 结果按比例；
+  `solar_luminosity` 改 `Lsun`、`optical_resolving_power` 改 `rayleigh_factor` 同理。
+- 扫描确认：**表达式里已无硬编码物理常数**（宽松匹配 0 条）；数学系数（0.5/2/π）保留。
+
+### 文档
+
+- 新增 `docs/架空常数.md`：原则、参数化清单、用法、限制。
+
+### 测试
+
+- 新增 `r66-formula-constants` 9 项（默认值 + 覆盖生效）；
+  全量 **125 套 / 3,053 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.17.0] — 2026-11-19
 
 **上下游显示：每条边都标「输出量 → 参数」**。
