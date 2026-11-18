@@ -643,7 +643,7 @@
    "引力常数",
    "推翻物理"
   ],
-  "body": "【常数推演】改变物理常数，自动推导派生量并评估世界偏离度\n  constants    改常数：{constants:{c:1.5e8}} → mu0/sigma/alpha_fs 自动重算\n    【可改的基础旋钮】\n      c(光速) / G(引力常数) / h(普朗克) / kB(玻尔兹曼) / e_charge(元电荷)\n      me(电子质量) / mp(质子质量) / NA(阿伏伽德罗) / epsilon0(真空介电常数)\n    【派生量，自动跟随，不能直接改】\n      hbar / R / mu0 / kCoulomb / sigma / bWien / alpha_fs / Ry / muB\n  quantities   看哪些物理量该跟着变、哪些不该（量纲分析 + 缩放指数）\n  impact       改常数后跑全部公式并与现实对比，算每条偏差\n  ★ 常数指纹进缓存键：改了常数后绝不会拿到旧宇宙的数"
+  "body": "【常数推演】改变物理常数，自动推导派生量并评估世界偏离度\n  constants    改常数：{constants:{c:1.5e8}} → mu0/sigma/alpha_fs 自动重算\n    【可改的基础旋钮】\n      c(光速) / G(引力常数) / h(普朗克) / kB(玻尔兹曼) / e_charge(元电荷)\n      me(电子质量) / mp(质子质量) / NA(阿伏伽德罗) / epsilon0(真空介电常数)\n    【派生量，自动跟随，不能直接改】\n      hbar / R / mu0 / kCoulomb / sigma / bWien / alpha_fs / Ry / muB\n  quantities   看哪些物理量该跟着变、哪些不该（量纲分析 + 缩放指数）\n  impact       改常数后跑全部公式并与现实对比，算每条偏差\n  ★ 常数指纹进缓存键：改了常数后绝不会拿到旧宇宙的数\n\n【关系网】常数不独立：改基础旋钮会自动重算派生量（hbar、R、mu0、sigma、alpha_fs、Ry、g、Lsun…）。\n  不带 constants 调用会列出每个旋钮「→ 派生: …」；联动与调和办法见 docs/常数关系网.md。"
  },
  {
   "key": "balance",

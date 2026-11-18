@@ -101,6 +101,24 @@ export function runConstants(input: {
   workspace?: string
 } = {}): ConstantsOutcome {
   const overrides = input.constants ?? {}
+  /**
+   * 派生量不能直接设：会与依赖矛盾（用户规则：改一个别的跟着改）。
+   * 实测（2026-11-19）：传 mu0 曾被静默忽略，现在明确拒绝并告诉怎么改。
+   */
+  const fundamentalSet = new Set(FUNDAMENTAL_NAMES)
+  for (const key of Object.keys(overrides)) {
+    if (fundamentalSet.has(key)) continue
+    const node = CONSTANT_GRAPH.find((item) => item.name === key)
+    if (node !== undefined) {
+      throw new CalcError(
+        'invalid_argument',
+        key + ' 是派生量，不能直接设',
+        '它由 ' + (node.dependsOn ?? []).join('、') + ' 派生；改这些旋钮会自动重算它。' +
+          '若只想在某个公式里改，用该公式的 params 覆盖（不碰全局）。',
+      )
+    }
+    throw new CalcError('unknown_symbol', '没有名为 ' + key + ' 的常数', '可改的旋钮：' + FUNDAMENTAL_NAMES.join('、') + '。')
+  }
   const workspace = currentWorkspace()
   if (input.workspace !== undefined && input.workspace.trim() !== '') switchWorkspace(input.workspace)
 
@@ -126,7 +144,10 @@ export function runConstants(input: {
   if (Object.keys(overrides).length === 0) {
     lines.push('未指定改动，列出当前基础旋钮与派生量：', '', '【基础旋钮】（可自由设定）')
     for (const node of CONSTANT_GRAPH.filter((item) => item.fundamental)) {
-      lines.push('  ' + node.name.padEnd(10) + big(node.standard).padEnd(16) + ' ' + node.unit.padEnd(12) + ' ' + node.meaning)
+      /** 反查：改这个旋钮会牵动哪些派生量（用户要求「改一个别的跟着改」）。 */
+      const derived = CONSTANT_GRAPH.filter((item) => (item.dependsOn ?? []).includes(node.name)).map((item) => item.name)
+      const tail = derived.length > 0 ? '  → 派生: ' + derived.join(', ') : ''
+      lines.push('  ' + node.name.padEnd(10) + big(node.standard).padEnd(16) + ' ' + node.unit.padEnd(12) + ' ' + node.meaning + tail)
     }
     lines.push('', '【派生量】（由旋钮自动算出，不能直接设定）')
     for (const node of CONSTANT_GRAPH.filter((item) => !item.fundamental)) {
