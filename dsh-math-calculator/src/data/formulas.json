@@ -745,7 +745,20 @@
   "keys": [
    "circular",
    "周期"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 3 章 直线运动（圆周运动）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "spring_force",
@@ -1167,7 +1180,20 @@
    "surface gravity",
    "表面重力",
    "星球"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 13 章 引力",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "orbital_velocity",
@@ -1989,7 +2015,20 @@
   "keys": [
    "expansion",
    "膨胀"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 温度与热（热膨胀）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "stefan_boltzmann",
@@ -2286,7 +2325,20 @@
   "keys": [
    "joule",
    "焦耳"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章 电流与电阻",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "coulomb",
@@ -2525,7 +2577,20 @@
   "keys": [
    "resonance",
    "谐振"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章 交流电路（LC 振荡）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "lorentz_force",
@@ -2616,7 +2681,20 @@
   "keys": [
    "wave",
    "波速"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章 波",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "snell",
@@ -2734,7 +2812,20 @@
   "keys": [
    "magnification",
    "放大率"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章 几何光学与成像",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "decibel",
@@ -2766,7 +2857,20 @@
   "keys": [
    "decibel",
    "分贝"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 17 章 声",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "doppler",
@@ -2806,7 +2910,20 @@
   "keys": [
    "doppler",
    "多普勒"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 17 章 声",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "lorentz_factor",
@@ -2944,7 +3061,20 @@
   "keys": [
    "length contraction",
    "长度收缩"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 5 章 相对论",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "mass_energy",
@@ -2975,7 +3105,20 @@
   "keys": [
    "mass energy",
    "质能"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 5 章 相对论",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "relativistic_energy",
@@ -3535,7 +3678,20 @@
   "keys": [
    "mass defect",
    "质量亏损"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "circle_area",
@@ -4555,7 +4711,20 @@
    "gini",
    "基尼"
   ],
-  "executable": false
+  "executable": false,
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 9 章 美国的社会分层"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "hhi",
@@ -4577,7 +4746,20 @@
    "集中度",
    "垄断"
   ],
-  "executable": false
+  "executable": false,
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 9 章 美国的社会分层"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "shannon_entropy",
@@ -4673,7 +4855,20 @@
    "幂律",
    "zipf",
    "齐夫"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 9 章 美国的社会分层"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "population_exponential",
@@ -4708,7 +4903,20 @@
    "malthus",
    "马尔萨斯",
    "人口"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "population_logistic",
@@ -4748,7 +4956,20 @@
    "logistic",
    "人口上限",
    "环境容量"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "r0_basic",
@@ -4967,7 +5188,20 @@
    "free fall",
    "自由落体",
    "坠落"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 3 章 直线运动（自由落体）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "free_fall_velocity",
@@ -5110,7 +5344,20 @@
    "reduced mass",
    "约化质量",
    "双体"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 13 章 引力（二体问题）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "elastic_collision_v1",
@@ -5573,7 +5820,20 @@
   "keys": [
    "damping ratio",
    "阻尼比"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章 振动",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pressure_force",
@@ -5855,7 +6115,20 @@
    "buckling",
    "屈曲",
    "压杆"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 13 章 Buckling of Columns",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "hydrostatic_pressure",
@@ -6039,7 +6312,20 @@
   "keys": [
    "electric field",
    "电场"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 5 章 电荷与电场",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "magnetic_force_wire",
@@ -6238,7 +6524,20 @@
   "keys": [
    "transformer",
    "变压器"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章 交流电路（变压器）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "parallel_plate_capacitance",
@@ -6520,7 +6819,20 @@
   "keys": [
    "drift",
    "漂移速度"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章 电流与电阻（漂移速度）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "joule_power",
@@ -6615,7 +6927,20 @@
   "keys": [
    "conduction",
    "热传导"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 温度与热（热传导）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "convection",
@@ -6908,7 +7233,20 @@
   "keys": [
    "most probable",
    "最概然"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 2 章 气体动理论",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "thermal_voltage",
@@ -6987,7 +7325,20 @@
    "string",
    "弦",
    "基频"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章 波",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pipe_frequency",
@@ -7019,7 +7370,20 @@
    "pipe",
    "驻波",
    "管"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章 波",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "sound_intensity",
@@ -7051,7 +7415,20 @@
   "keys": [
    "intensity",
    "声强"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 17 章 声",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beat_frequency",
@@ -7081,7 +7458,20 @@
   "keys": [
    "beat",
    "拍频"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章 波",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "standing_wave_wavelength",
@@ -7109,7 +7499,20 @@
   "keys": [
    "standing wave",
    "驻波"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 16 章 波",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "diffraction_grating",
@@ -7709,7 +8112,20 @@
   "keys": [
    "body surface",
    "体表面积"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "heat_dissipation",
@@ -7906,7 +8322,20 @@
   "keys": [
    "predator prey",
    "捕食平衡"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 44–47 章 生态学",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "photosynthesis_rate",
@@ -8838,7 +9267,20 @@
    "effective parties",
    "政党",
    "拉阿克"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 17 章 政府与政治"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "banzhaf_power",
@@ -8858,7 +9300,20 @@
   "keys": [
    "banzhaf",
    "权力指数"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 17 章 政府与政治"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "popitz_law",
@@ -8879,7 +9334,20 @@
    "popitz",
    "财富分布",
    "帕累托"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 17 章 政府与政治"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "cost_of_corruption",
@@ -8902,7 +9370,20 @@
   "keys": [
    "corruption",
    "腐败"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 17 章 政府与政治"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "tragedy_commons",
@@ -8927,7 +9408,20 @@
    "commons",
    "公地",
    "可持续"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 17 章 政府与政治"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "information_propagation",
@@ -9049,7 +9543,20 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（城市化）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "horizon_distance",
@@ -10905,7 +11412,20 @@
    "失稳",
    "柱子"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 13 章 Buckling of Columns",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "hoop_stress",
@@ -10948,7 +11468,20 @@
    "压力容器",
    "管道"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 8 章 Combined Loadings（薄壁压力容器）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beam_center_deflection",
@@ -11002,7 +11535,20 @@
    "梁",
    "楼板"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 12 章 Deflection of Beams and Shafts",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beam_center_moment",
@@ -11035,7 +11581,20 @@
    "bending moment",
    "弯矩"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "wood_beam_moment_capacity",
@@ -11077,7 +11636,20 @@
    "木梁",
    "抗弯"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "column_axial_capacity",
@@ -11111,7 +11683,20 @@
    "柱",
    "轴压"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 4 章 Axial Load",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "arch_thrust",
@@ -11440,7 +12025,20 @@
    "散热",
    "对流"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Heat and Mass Transfer (8th ed.)",
+    "authors": "Bergman, Lavine, Incropera, DeWitt",
+    "publisher": "Wiley",
+    "chapter": "第 6 章 Introduction to Convection",
+    "url": "https://bcs.wiley.com/he-bcs/Books?action=contents&itemId=1119320429&bcsId=10769",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "heat_conduction_slab",
@@ -11491,7 +12089,20 @@
    "导热",
    "保温"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Heat and Mass Transfer (8th ed.)",
+    "authors": "Bergman, Lavine, Incropera, DeWitt",
+    "publisher": "Wiley",
+    "chapter": "第 3 章 One-Dimensional, Steady-State Conduction",
+    "url": "https://bcs.wiley.com/he-bcs/Books?action=contents&itemId=1119320429&bcsId=10769",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "thermal_time_constant",
@@ -11543,7 +12154,20 @@
    "加热时间",
    "比热"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Heat and Mass Transfer (8th ed.)",
+    "authors": "Bergman, Lavine, Incropera, DeWitt",
+    "publisher": "Wiley",
+    "chapter": "第 5 章 Transient Conduction",
+    "url": "https://bcs.wiley.com/he-bcs/Books?action=contents&itemId=1119320429&bcsId=10769",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "echo_distance",
@@ -12136,7 +12760,20 @@
    "bsa",
    "体表面积"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "basal_metabolic_rate",
@@ -12197,7 +12834,20 @@
    "饮水",
    "需水量"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "widmark_bac",
@@ -12296,7 +12946,20 @@
    "剂量",
    "异速"
   ],
-  "frequency": "medium"
+  "frequency": "medium",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "floor_area_ratio",
@@ -13214,7 +13877,20 @@
    "给药",
    "剂量"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "clark_child_dose",
@@ -13246,7 +13922,20 @@
    "儿童",
    "剂量"
   ],
-  "frequency": "medium"
+  "frequency": "medium",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "blood_volume_estimate",
@@ -13312,7 +14001,20 @@
    "脱水",
    "补水"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "infusion_rate",
@@ -13341,7 +14043,20 @@
    "输液",
    "滴速"
   ],
-  "frequency": "medium"
+  "frequency": "medium",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "max_heart_rate",
@@ -13361,7 +14076,20 @@
    "heart rate",
    "心率"
   ],
-  "frequency": "medium"
+  "frequency": "medium",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pregnancy_days_remaining",
@@ -13382,7 +14110,20 @@
    "孕期",
    "预产期"
   ],
-  "frequency": "medium"
+  "frequency": "medium",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "fever_energy_cost",
@@ -13453,7 +14194,20 @@
    "毒理",
    "致死"
   ],
-  "frequency": "low"
+  "frequency": "low",
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "eroi",
@@ -15284,7 +16038,20 @@
   "domains": [
    "physics",
    "economics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章 电流与电阻（电功率）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "battery_runtime",
@@ -15540,7 +16307,20 @@
   "layer": "derived",
   "domains": [
    "materials"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 4 章 Axial Load（4.6 热应力）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "hydraulic_force",
@@ -15579,7 +16359,20 @@
   "domains": [
    "physics",
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 14 章 流体力学（帕斯卡原理）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pulley_ratio",
@@ -15998,7 +16791,20 @@
   "domains": [
    "physics",
    "biology"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "evaporation_saturation_generic",
@@ -16587,7 +17393,20 @@
    "resonance",
    "谐振",
    "lc"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章 交流电路（LC 振荡）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "magnetic_field_wire",
@@ -16812,7 +17631,20 @@
    "ampere",
    "安培力",
    "导线"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 12 章 磁场源（平行导线作用力）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "faraday_emf_from_flux_change",
@@ -17033,7 +17865,20 @@
    "power factor",
    "功率因数",
    "有功"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 15 章 交流电路（功率因数）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "solid_angle_cone",
@@ -17053,7 +17898,20 @@
    "solid angle",
    "立体角",
    "圆锥"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "illuminance_inverse_square",
@@ -17084,7 +17942,20 @@
    "illuminance",
    "照度",
    "照度衰减"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "luminous_flux_from_intensity_angle",
@@ -17112,7 +17983,20 @@
    "luminous flux",
    "光通量",
    "流明"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "luminance_required",
@@ -17145,7 +18029,20 @@
    "lighting",
    "照明",
    "光通量"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "lamp_power_from_flux",
@@ -17179,7 +18076,20 @@
    "lamp",
    "灯具",
    "光效"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "illuminance_from_flux_area",
@@ -17210,7 +18120,20 @@
    "illuminance",
    "照度",
    "光通量"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 1 章 光的性质（光度学基础）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "decay_constant_from_halflife",
@@ -17333,7 +18256,20 @@
    "活度",
    "居里",
    "质量"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "radiation_absorbed_dose",
@@ -17366,7 +18302,20 @@
    "dose",
    "吸收剂量",
    "戈瑞"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "dose_equivalent_from_dose",
@@ -17395,7 +18344,20 @@
    "dose equivalent",
    "剂量当量",
    "希沃特"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "radiation_dose_rate",
@@ -17444,7 +18406,20 @@
    "dose rate",
    "剂量率",
    "辐照"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "radioactive_remaining_fraction",
@@ -17505,7 +18480,20 @@
    "shielding",
    "屏蔽",
    "防护"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "moles_from_mass",
@@ -17743,7 +18731,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending（抗弯应力与截面模量）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beam_bending_stress",
@@ -17791,7 +18792,20 @@
   "domains": [
    "engineering",
    "materials"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beam_self_weight_moment",
@@ -17855,7 +18869,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "beam_uniform_load_deflection",
@@ -17913,7 +18940,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 12 章 Deflection of Beams and Shafts",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "rect_inertia",
@@ -17950,7 +18990,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 6 章 Bending（截面几何性质）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "bolt_shear_capacity",
@@ -17995,7 +19048,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 1 章 Stress（1.5 平均剪应力）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "weld_throat_capacity",
@@ -18042,7 +19108,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 1 章 Stress（1.5 平均剪应力）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "thermal_efficiency_carnot",
@@ -18081,7 +19160,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（卡诺定理）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "steam_power_output",
@@ -18127,7 +19219,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（热机循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "boiler_coal_rate",
@@ -18174,7 +19279,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（热机效率）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "heat_exchanger_duty",
@@ -18225,7 +19343,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Heat and Mass Transfer (8th ed.)",
+    "authors": "Bergman, Lavine, Incropera, DeWitt",
+    "publisher": "Wiley",
+    "chapter": "第 11 章 Heat Exchangers",
+    "url": "https://bcs.wiley.com/he-bcs/Books?action=contents&itemId=1119320429&bcsId=10769",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "conduction_wall_loss",
@@ -18283,7 +19414,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Fundamentals of Heat and Mass Transfer (8th ed.)",
+    "authors": "Bergman, Lavine, Incropera, DeWitt",
+    "publisher": "Wiley",
+    "chapter": "第 3 章 One-Dimensional, Steady-State Conduction",
+    "url": "https://bcs.wiley.com/he-bcs/Books?action=contents&itemId=1119320429&bcsId=10769",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pipe_flow_rate",
@@ -18322,7 +19466,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 14 章 流体力学（连续性方程）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "darcy_head_loss",
@@ -18384,7 +19541,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 14 章 流体力学（粘性流与沿程损失）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "pump_power",
@@ -18448,7 +19618,20 @@
   "domains": [
    "engineering",
    "perception"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 14 章 流体力学（泵与功率）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "orifice_discharge",
@@ -18501,7 +19684,20 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 14 章 流体力学（伯努利方程）",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "wind_power_available",
@@ -18675,7 +19871,20 @@
   "domains": [
    "biology",
    "perception"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 44–47 章 生态学",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "livestock_growth_time",
@@ -18719,7 +19928,20 @@
   "domains": [
    "biology",
    "perception"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 44–47 章 生态学",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "feed_conversion_ratio",
@@ -18757,7 +19979,20 @@
   "domains": [
    "biology",
    "perception"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 44–47 章 生态学",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "crop_yield_npp",
@@ -19581,7 +20816,20 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 3 章 Mechanical Properties of Materials",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "safety_factor_check",
@@ -19619,7 +20867,20 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Mechanics of Materials (10th ed., SI)",
+    "authors": "R. C. Hibbeler",
+    "publisher": "Pearson",
+    "chapter": "第 1 章 Stress（1.6 许用应力设计）",
+    "url": "https://elibrary.pearson.de/book/99.150005/9781292457444",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "fracture_kic",
@@ -20029,7 +21290,20 @@
   "layer": "fundamental",
   "domains": [
    "biology"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 33–43 章 动物生理",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "fick_diffusion",
@@ -20356,7 +21630,20 @@
   "layer": "fundamental",
   "domains": [
    "biology"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "第 6 章 代谢（酶动力学）",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "q10_temperature",
@@ -23467,7 +24754,20 @@
   "domains": [
    "physics",
    "materials"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章 凝聚态物理（半导体）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "drift_velocity_mobility",
@@ -23513,7 +24813,20 @@
   "domains": [
    "physics",
    "materials"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 9 章 凝聚态物理（半导体）",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "fission_energy_per_mass",
@@ -23614,7 +24927,20 @@
   "layer": "phenomenological",
   "domains": [
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "nuclear_binding_energy_curve",
@@ -23781,7 +25107,20 @@
   "domains": [
    "physics",
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 10 章 核物理",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "doubling_time_population",
@@ -23812,7 +25151,20 @@
   "domains": [
    "social",
    "mathematics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "dependency_ratio",
@@ -23853,7 +25205,20 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "demographic_transition_rate",
@@ -23886,7 +25251,20 @@
   "layer": "engineering",
   "domains": [
    "social"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "tfr_replacement",
@@ -23914,7 +25292,20 @@
   "layer": "phenomenological",
   "domains": [
    "social"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "clustering_coefficient",
@@ -24049,7 +25440,20 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 21 章 集体行为与社会运动"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "span_of_control",
@@ -24085,7 +25489,20 @@
   "domains": [
    "social",
    "power"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 6 章 群体与组织"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "parkinson_law_growth",
@@ -24129,7 +25546,20 @@
   "domains": [
    "social",
    "power"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 6 章 群体与组织"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "rank_size_city",
@@ -24170,7 +25600,20 @@
   "domains": [
    "social",
    "power"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（城市化）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "social_mobility_percentile",
@@ -24199,7 +25642,20 @@
   "layer": "phenomenological",
   "domains": [
    "social"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 9 章 美国的社会分层"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "gini_from_lorenz",
@@ -24231,7 +25687,20 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 9 章 美国的社会分层"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "weibull_mean_life",
@@ -24792,7 +26261,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（热机循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "rankine_reheat_gain",
@@ -24846,7 +26328,20 @@
   "layer": "phenomenological",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（热机循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "condenser_vacuum_gain",
@@ -24894,7 +26389,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（卡诺效率）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "otto_efficiency",
@@ -24930,7 +26438,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（Otto 循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "diesel_efficiency",
@@ -24973,7 +26494,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（Diesel 循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "brayton_efficiency",
@@ -25008,7 +26542,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（燃气轮机循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "combined_cycle_efficiency",
@@ -25044,7 +26591,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（联合循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "refrigeration_cop_real",
@@ -25080,7 +26640,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（制冷机与热泵）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "heat_pump_cop",
@@ -25109,7 +26682,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（制冷机与热泵）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "cooling_load",
@@ -25161,7 +26747,20 @@
   "layer": "engineering",
   "domains": [
    "engineering"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 4 章 热力学第二定律（制冷循环）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "thermal_storage_capacity",
@@ -25210,7 +26809,20 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "第 3 章 热力学第一定律（显热）",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "bernoulli_pressure",
@@ -26928,7 +28540,20 @@
   "domains": [
    "social",
    "medicine"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "survival_to_age",
@@ -26967,7 +28592,20 @@
   "domains": [
    "social",
    "medicine"
-  ]
+  ],
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Introduction to Sociology 3e",
+    "authors": "Conerly, Holmes, Tamang",
+    "publisher": "OpenStax",
+    "url": "https://openstax.org/books/introduction-sociology-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-18",
+    "chapter": "第 20 章 人口、城市化与环境（人口学）"
+   }
+  ],
+  "confidence": "scaling"
  },
  {
   "id": "maternal_mortality_risk",

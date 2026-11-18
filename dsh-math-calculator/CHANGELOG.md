@@ -2,6 +2,22 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.10.0] — 2026-11-18
+
+**公式信源第二批（工程/社会）**：带 sources 的公式 371 → 497（46% → 62%）。
+
+### 新增
+
+- **Hibbeler《Mechanics of Materials》10e**（Pearson eLibrary 目录逐条抓取）：结构/材料力学 14 条；
+- **Incropera《Fundamentals of Heat and Mass Transfer》8e**（Wiley 目录逐条抓取）：传热 8 条；
+- **University Physics Vol 2 第 4 章**：热机/制冷循环 12 条；**Vol 1 第 14 章**：工程流体 5 条；
+- **OpenStax《Introduction to Sociology 3e》**：社会 23 条（章节 slug 已验证）；
+- 物理规则漏匹配约 50 条、生物生理/生态 17 条。
+
+### 口径
+
+- 仍未补 308 条：perception/engineering-process/military 等无对应教材；全量 **121 套 / 2,978 项全绿**。
+  Callister/Hillier/地质 OER 的目录抓不到——按「不编造」保持空。
 ## [3.9.0] — 2026-11-18
 
 **公式信源补全（搜索核实）**：带 sources 的公式 135 → 371（17% → 46%）。
