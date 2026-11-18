@@ -54,6 +54,7 @@ import { callFormula, findFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
 import { runFormulaWeb, type FormulaWeb } from './features/formulas/web.js'
+import { webContextOf, webContextSummary } from './features/formulas/web-context.js'
 import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
@@ -849,11 +850,18 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         terse: args['terse'] === true,
       })
       const neighborLine = call.neighbors.length > 0 ? '相邻公式：' + call.neighbors.slice(0, 4).map((hit) => hit.id + '（' + hit.reason + '）').join('；') : ''
+      /** 公式网上下文：调用时顺带给上下游（可用 webContext:false 关掉）。 */
+      let web: ReturnType<typeof webContextOf> | undefined
+      if (args['webContext'] !== false) {
+        const webData = dataOf<FormulaWeb>('formulaWeb', 'formula-web.json', { constants: [], constantEdges: [], formulaEdges: [] })
+        if (webData.formulaEdges.length > 0) web = webContextOf(webData, formulaEntries(), entry.id)
+      }
+      const webLine = web !== undefined ? webContextSummary(web) : ''
+      const baseValue = call.value !== null && typeof call.value === 'object' ? (call.value as Record<string, unknown>) : { value: call.value }
       return {
         result: call.result,
-        value: call.value !== null && typeof call.value === 'object' ? { ...(call.value as Record<string, unknown>), neighbors: call.neighbors, ...(call.parts !== undefined ? { parts: call.parts } : {}) } : { value: call.value, neighbors: call.neighbors, ...(call.parts !== undefined ? { parts: call.parts } : {}) },
-        ...(call.notice !== undefined ? { notice: call.notice } : {}),
-        ...(neighborLine !== '' ? { notice: (call.notice !== undefined ? call.notice + '\n' : '') + neighborLine } : {}),
+        value: { ...baseValue, neighbors: call.neighbors, ...(call.parts !== undefined ? { parts: call.parts } : {}), ...(web !== undefined ? { web } : {}) },
+        ...((call.notice !== undefined || neighborLine !== '' || webLine !== '') ? { notice: [call.notice, neighborLine, webLine].filter((line) => line !== undefined && line !== '').join('\n') } : {}),
       }
     }
 

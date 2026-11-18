@@ -179,6 +179,7 @@ const PARAMETER_SPEC = {
   webDepth: { type: 'number', description: 'formulas web：上下游展开层数（默认 2，最大 5）' },
   webDirection: { type: 'string', description: 'formulas web：down（下游）/ up（上游）/ both' },
   webLimit: { type: 'number', description: 'formulas web：每层最多显示几条（默认 20）' },
+  webContext: { type: 'boolean', description: 'formula：调用时附带上下游（默认开；false 关闭）' },
   neighbors: { type: 'boolean', description: '配合 query:"neighbors" 列出与某公式相邻的公式（共用参数/常数/标签）' },
   formulaFocus: { type: 'string', description: '结构图焦点：公式 id 或链 id' },
   formulas: { type: 'array', items: { type: 'json', description: '"kleiber" 或 {formula,overrides?,label?}' }, description: '批量调公式' },

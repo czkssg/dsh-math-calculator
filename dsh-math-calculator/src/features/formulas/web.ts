@@ -35,6 +35,7 @@ export interface FormulaWeb {
     constantEdges?: number
     formulaEdges?: number
     groups?: number
+    aliasCount?: number
     cycleEdges?: number
     isolatedNoIn?: number
     sources?: number
@@ -43,6 +44,8 @@ export interface FormulaWeb {
     note?: string
   }
   groupNames?: string[]
+  /** 同式重复条 → 主节点（查询别名时自动指向主）。 */
+  aliases?: Record<string, string>
   constants: WebConstant[]
   constantEdges: WebConstantEdge[]
   formulaEdges: WebFormulaEdge[]
@@ -108,7 +111,11 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
   }
   const groups = new Set(formulaEdges.map((edge) => edge[3]))
 
-  const focus = typeof query.focus === 'string' ? query.focus.trim() : ''
+  const rawFocus = typeof query.focus === 'string' ? query.focus.trim() : ''
+  const aliases = web.aliases ?? {}
+  /** 别名条目自动指向主节点。 */
+  const focus = rawFocus !== '' && aliases[rawFocus] !== undefined ? aliases[rawFocus] : rawFocus
+  const aliasNote = focus !== rawFocus ? '（' + rawFocus + ' 是 ' + focus + ' 的别名）' : ''
   const depth = Math.max(1, Math.min(5, Number.isFinite(query.depth ?? NaN) ? (query.depth as number) : 2))
   const limit = Math.max(1, Math.min(200, Number.isFinite(query.limit ?? NaN) ? (query.limit as number) : 20))
   const direction = query.direction ?? 'down'
@@ -130,7 +137,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
     const lines = [
       '═══ 公式网（物理常数 → 公式 → 公式）═══',
       '',
-      '  节点：常数 ' + web.constants.length + ' · 公式 ' + formulas.length + ' · 物理量组 ' + groups.size,
+      '  节点：常数 ' + web.constants.length + ' · 公式 ' + (web.meta?.formulas ?? formulas.length) + ' · 物理量组 ' + groups.size,
       '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length,
       '  从常数可达的公式：' + seen.size,
       '  直接使用常数的公式：' + first.size,
@@ -145,7 +152,8 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       result: lines.join('\n'),
       value: {
         constants: web.constants.length,
-        formulas: formulas.length,
+        formulas: web.meta?.formulas ?? formulas.length,
+        aliasCount: web.meta?.aliasCount ?? 0,
         groups: groups.size,
         constantEdges: constantEdges.length,
         formulaEdges: formulaEdges.length,
@@ -162,7 +170,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
   if (constant !== undefined) {
     const first = constToFormula.get(constant[0]) ?? []
     const layer1 = [...new Set(first.map((edge) => edge[1]))]
-    const lines: string[] = ['═══ 公式网：从常数 ' + constant[0] + ' 向下（深度 ' + depth + '）═══', '']
+    const lines: string[] = ['═══ 公式网：从常数 ' + constant[0] + ' 向下（深度 ' + depth + '）═══' + aliasNote, '']
     lines.push('第 0 层 · ' + constant[0] + ' = ' + constant[1] + ' ' + constant[2])
     lines.push('', '第 1 层 · 直接使用 ' + constant[0] + ' 的公式（' + layer1.length + '）：')
     for (const id of layer1.slice(0, limit)) {
@@ -197,7 +205,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
   /** 公式起点。 */
   const entry = formulas.find((item) => item.id === focus || item.name === focus)
   if (entry === undefined) throw new Error('没有名为 "' + focus + '" 的常数或公式')
-  const lines: string[] = ['═══ 公式网：' + entry.id + '（' + entry.name + '）· ' + (direction === 'down' ? '下游' : direction === 'up' ? '上游' : '上下游') + '（深度 ' + depth + '）═══', '']
+  const lines: string[] = ['═══ 公式网：' + entry.id + '（' + entry.name + '）· ' + (direction === 'down' ? '下游' : direction === 'up' ? '上游' : '上下游') + '（深度 ' + depth + '）═══' + aliasNote, '']
   const collect = (start: string, dir: 'down' | 'up'): WebLayer[] => {
     const layers: WebLayer[] = []
     let frontier = [start]

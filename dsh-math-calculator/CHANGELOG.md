@@ -2,6 +2,27 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.16.0] — 2026-11-19
+
+**真重复折叠 + 公式调用带网上下文**。
+
+### 新增
+
+- **公式调用自动带上下游**：`formula` 成功时返回 `value.web`（上游/下游，含常数上游）与 notice 摘要；
+  `webContext:false` 可关。公式不再只是孤立函数——每次调用都看得到它在网里的位置。
+- **26 组真重复折叠为别名**（28 条）：`projectile_energy→kinetic_energy`、`ram_momentum→momentum`、
+  `thermal_efficiency_carnot→carnot_efficiency`、`rc_time`/`lc_resonance`/`moment_inertia_*` 等；
+  网节点 859 → **831**；查询别名自动指向主节点；调用别名仍可算（兼容）。
+
+### 修复
+
+- `lanchester_linear` 表达式抄成了平方律 → 改回线性律 `N0 − (b/a)M0`；
+- `titration_moles` 缺化学计量比 → `C₁V₁/(nC₂)`，补参数 `n`。
+
+### 测试
+
+- 新增 `r65-formula-web-context` 10 项；`r64-formula-web` 21 → 23 项（别名折叠/别名查询）；
+  全量 **124 套 / 3,040 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.15.0] — 2026-11-19
 
 **公式扩展：工程/地质/社会 +15 条经典公式**（844 → 859）。

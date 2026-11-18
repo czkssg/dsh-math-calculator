@@ -4916,7 +4916,8 @@
     "chapter": "第 20 章 人口、城市化与环境（人口学）"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "exponential_growth"
  },
  {
   "id": "population_logistic",
@@ -4969,7 +4970,8 @@
     "chapter": "第 20 章 人口、城市化与环境（人口学）"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "logistic_growth"
  },
  {
   "id": "r0_basic",
@@ -6944,7 +6946,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "conduction_wall_loss"
  },
  {
   "id": "convection",
@@ -8977,7 +8980,7 @@
   "id": "lanchester_linear",
   "cat": "military/combat",
   "name": "兰彻斯特线性律（古战/近战）",
-  "expr": "sqrt(N0^2 - (b / a) * M0^2)",
+  "expr": "N0 - (b / a) * M0",
   "params": {
    "N0": {
     "value": null,
@@ -9013,7 +9016,7 @@
    }
   },
   "unit": "人",
-  "desc": "逐个交战模型，优势线性累积。结果为我方剩余兵力。",
+  "desc": "逐个交战模型：剩余兵力 = N₀ − (b/a)M₀，优势线性累积。结果为负表示全军覆没。",
   "keys": [
    "lanchester",
    "兰彻斯特",
@@ -9150,7 +9153,8 @@
   "keys": [
    "projectile",
    "弹丸"
-  ]
+  ],
+  "aliasOf": "kinetic_energy"
  },
  {
   "id": "penetration_estimate",
@@ -11558,7 +11562,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "beam_deflection"
  },
  {
   "id": "beam_center_moment",
@@ -12052,7 +12057,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "convection"
  },
  {
   "id": "heat_conduction_slab",
@@ -12532,7 +12538,8 @@
    "抛体",
    "射程"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "aliasOf": "projectile_range"
  },
  {
   "id": "projectile_apex_height",
@@ -12572,7 +12579,8 @@
    "最高点",
    "抛体"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "aliasOf": "projectile_height"
  },
  {
   "id": "stopping_distance",
@@ -12645,7 +12653,8 @@
    "自由落体",
    "落地"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "aliasOf": "free_fall_velocity"
  },
  {
   "id": "growing_degree_days",
@@ -13175,7 +13184,8 @@
    "水塔",
    "水压"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "aliasOf": "hydrostatic_pressure"
  },
  {
   "id": "window_heat_loss",
@@ -13340,7 +13350,8 @@
    "动量",
    "攻城"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "aliasOf": "momentum"
  },
  {
   "id": "trebuchet_range_estimate",
@@ -15504,7 +15515,7 @@
   "id": "titration_moles",
   "cat": "chemistry/solution",
   "name": "滴定所需体积",
-  "expr": "C1 * V1 / C2",
+  "expr": "C1 * V1 / (C2 * n)",
   "params": {
    "C1": {
     "value": null,
@@ -15531,10 +15542,16 @@
      "N": 1,
      "L": -3
     }
+   },
+   "n": {
+    "value": 1,
+    "desc": "化学计量比 n（反应 mol 比）",
+    "quantity": "比率",
+    "dimension": {}
    }
   },
   "unit": "mL",
-  "desc": "C₁V₁ = C₂V₂。1:1 反应的等当点。计量比不是 1:1 时先把 C₁ 除以计量比。",
+  "desc": "C₁V₁ = n·C₂V₂ ⇒ V₂ = C₁V₁/(nC₂)。滴定求体积；n 为计量比。",
   "keys": [
    "titration",
    "滴定",
@@ -16277,7 +16294,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "reynolds"
  },
  {
   "id": "thermal_stress",
@@ -17043,7 +17061,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "electric_power"
  },
  {
   "id": "resistors_mixed_two",
@@ -17226,7 +17245,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "capacitor_charge"
  },
  {
   "id": "rc_time_constant_tau",
@@ -17276,7 +17296,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "rc_time"
  },
  {
   "id": "rc_discharge_voltage_tau",
@@ -17370,7 +17391,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "inductor_energy"
  },
  {
   "id": "lc_resonance_freq_hz",
@@ -17420,7 +17442,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "lc_resonance"
  },
  {
   "id": "magnetic_field_wire",
@@ -17587,7 +17610,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "magnetic_flux"
  },
  {
   "id": "ampere_force_two_wires",
@@ -18184,7 +18208,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "decay_constant"
  },
  {
   "id": "activity_from_atoms",
@@ -18708,7 +18733,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "molarity"
  },
  {
   "id": "beam_section_modulus",
@@ -19188,7 +19214,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "carnot_efficiency"
  },
  {
   "id": "steam_power_output",
@@ -30300,7 +30327,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "diffraction_grating"
  },
  {
   "id": "single_slit_condition",
@@ -31084,7 +31112,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "moment_inertia_sphere"
  },
  {
   "id": "moment_of_inertia_cylinder",
@@ -31136,7 +31165,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "moment_inertia_cylinder"
  },
  {
   "id": "continuity_equation",
@@ -31578,7 +31608,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "critical_angle"
  },
  {
   "id": "tunneling_probability",
@@ -31848,7 +31879,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "buckling_euler"
  },
  {
   "id": "lmtd",
@@ -32664,7 +32696,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "rc_time"
  },
  {
   "id": "lc_oscillation",
@@ -32723,7 +32756,8 @@
     "accessed": "2026-11-13"
    }
   ],
-  "confidence": "exact"
+  "confidence": "exact",
+  "aliasOf": "lc_resonance"
  },
  {
   "id": "poynting_vector",

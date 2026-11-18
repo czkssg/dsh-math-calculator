@@ -79,6 +79,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 后勤/信息时延（疆域上限） | `topology` | `action:"logistics"` + `{mode,distanceKm,maxRoundTripDays}` |
 | **面状绕障（绕山/绕湖/禁飞区）** | `topology` | `action:"avoid"` + `fromPoint/toPoint:{lat,lon}` + `obstacles:[[[lon,lat],…]]`；`gridKm`/`safetyKm`/`planetRadiusKm` |
 | **公式网（常数→公式→公式）** | `formulas` | `query:"web"`（统计）；`formulaFocus` 传常数名/公式 id，`webDepth`/`webDirection`/`webLimit` |
+| **公式调用带上下游** | `formula` | 默认返回 `value.web`（上游/下游）+ notice；`webContext:false` 关闭 |
 
 ### astro：天文与历法
 

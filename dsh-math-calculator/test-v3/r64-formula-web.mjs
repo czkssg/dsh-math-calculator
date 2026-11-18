@@ -28,7 +28,8 @@ console.log('-- 1. 全量统计 --')
   assert('★ 统计输出成功', out.ok === true, String(out.error?.message))
   const v = out.value
   assert('★ 常数节点 ≥ 40', v.constants >= 40, String(v.constants))
-  assert('★ 公式节点 ≥ 800', v.formulas >= 800, String(v.formulas))
+  assert('★ 公式节点 ≥ 800（已折叠别名）', v.formulas >= 800, String(v.formulas))
+  assert('★ 别名已折叠（节点数 = 条目 - 别名）', v.aliasCount >= 20, String(v.aliasCount))
   assert('★ 常数边 ≥ 100', v.constantEdges >= 100, String(v.constantEdges))
   assert('★ 公式边 ≥ 60000（闭合版）', v.formulaEdges >= 60000, String(v.formulaEdges))
   assert('★ 物理量组 ≥ 20', v.groups >= 20, String(v.groups))
@@ -63,6 +64,8 @@ console.log('-- 4. 边界 --')
   assert('★ 未知 focus → unknown_formula', unknown.ok === false && unknown.error?.type === 'unknown_formula', String(unknown.error?.type))
   const limited = await run({ operation: 'formulas', query: 'web', formulaFocus: 'G', webDepth: 2, webLimit: 5 })
   assert('★ webLimit 生效（有截断提示）', String(limited.result).includes('另有'), '')
+  const alias = await run({ operation: 'formulas', query: 'web', formulaFocus: 'projectile_energy', webDepth: 1 })
+  assert('★ 别名查询指向主节点', alias.ok === true && String(alias.result).includes('kinetic_energy') && String(alias.result).includes('别名'), String(alias.result).slice(0, 80))
 }
 
 console.log('\n通过 ' + pass + '，失败 ' + fails.length)
