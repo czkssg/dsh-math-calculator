@@ -2164,7 +2164,7 @@
    "Tc": {
     "value": null,
     "desc": "低温热源 K",
-    "quantity": "低温热源",
+    "quantity": "温度",
     "dimension": {
      "Theta": 1
     }
@@ -2172,7 +2172,7 @@
    "Th": {
     "value": null,
     "desc": "高温热源 K",
-    "quantity": "高温热源",
+    "quantity": "温度",
     "dimension": {
      "Theta": 1
     }
@@ -3962,7 +3962,7 @@
    "N0": {
     "value": null,
     "desc": "初始量",
-    "quantity": "初始量",
+    "quantity": "数量",
     "dimension": {
      "M": 1
     }
@@ -4023,7 +4023,7 @@
    "N0": {
     "value": null,
     "desc": "初始量",
-    "quantity": "初始量",
+    "quantity": "数量",
     "dimension": {
      "M": 1
     }
@@ -16243,7 +16243,7 @@
    "mu": {
     "value": null,
     "desc": "动力黏度 Pa·s（20°C 水约 1e-3）",
-    "quantity": "动力黏度",
+    "quantity": "动力粘度",
     "dimension": {
      "M": 1,
      "L": -1,
@@ -17547,7 +17547,7 @@
    "B": {
     "value": null,
     "desc": "磁通密度 T",
-    "quantity": "密度",
+    "quantity": "磁感应强度",
     "dimension": {
      "M": 1,
      "L": -3
@@ -17975,9 +17975,9 @@
   "id": "luminous_flux_from_intensity_angle",
   "cat": "physics/optics",
   "name": "光通量（发光强度×立体角）",
-  "expr": "I * omega",
+  "expr": "intensity * solid_angle",
   "params": {
-   "I": {
+   "intensity": {
     "value": null,
     "desc": "发光强度 cd",
     "quantity": "发光强度",
@@ -17985,14 +17985,15 @@
      "J": 1
     }
    },
-   "omega": {
+   "solid_angle": {
     "value": null,
     "desc": "立体角 sr",
-    "quantity": "立体角"
+    "quantity": "立体角",
+    "dimension": {}
    }
   },
-  "unit": "lm",
-  "desc": "Φ = I·Ω。整球 4π 时，1 cd 的点光源给出 4π lm ≈ 12.57 lm。",
+  "unit": "lm（流明）",
+  "desc": "光通量 = 发光强度 × 立体角（cd·sr = lm）。与角动量同式不同物理量，不能共用参数。",
   "keys": [
    "luminous flux",
    "光通量",
@@ -19400,7 +19401,7 @@
    "dT": {
     "value": null,
     "desc": "两侧温差 K",
-    "quantity": "两侧温差",
+    "quantity": "温差",
     "dimension": {
      "Theta": 1
     }
@@ -19408,7 +19409,7 @@
    "d": {
     "value": null,
     "desc": "壁厚 m",
-    "quantity": "壁厚",
+    "quantity": "长度",
     "dimension": {
      "L": 1
     }
@@ -30273,7 +30274,7 @@
    "d": {
     "value": 0.000001,
     "desc": "缝距 m",
-    "quantity": "缝距",
+    "quantity": "栅距",
     "dimension": {
      "L": 1
     }
@@ -37199,6 +37200,2014 @@
     "url": "https://press.princeton.edu/books/hardcover/9780691164793/astrophysics-in-a-nutshell",
     "license": "参考引用（未逐字比对）",
     "accessed": "2026-11-18"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "lorentz_transform_x",
+  "cat": "physics/relativity",
+  "name": "洛伦兹变换（坐标）",
+  "expr": "(x - v * t) / sqrt(1 - (v/c)^2)",
+  "unit": "m",
+  "desc": "x′ = γ(x − vt)。同一事件在相对速度 v 的惯性系中的坐标；v→c 时发散。",
+  "keys": [
+   "lorentz",
+   "洛伦兹",
+   "坐标变换"
+  ],
+  "params": {
+   "x": {
+    "value": null,
+    "desc": "原坐标 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "v": {
+    "value": null,
+    "desc": "相对速度 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   },
+   "t": {
+    "value": null,
+    "desc": "时间 s",
+    "quantity": "时间",
+    "dimension": {
+     "T": 1
+    }
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "光速 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "bragg_diffraction",
+  "cat": "physics/optics",
+  "name": "布拉格衍射",
+  "expr": "2 * d * sin(theta) / n",
+  "unit": "m",
+  "desc": "2d sinθ = nλ。晶面间距 d 与掠射角 θ 对应的衍射波长；n 为衍射级。",
+  "keys": [
+   "bragg",
+   "布拉格",
+   "衍射"
+  ],
+  "params": {
+   "d": {
+    "value": null,
+    "desc": "晶面间距 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "theta": {
+    "value": null,
+    "desc": "掠射角 rad",
+    "quantity": "角度",
+    "dimension": {}
+   },
+   "n": {
+    "value": 1,
+    "desc": "衍射级（整数）",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "cyclotron_frequency",
+  "cat": "physics/em",
+  "name": "回旋频率",
+  "expr": "q * B / (2 * pi * m)",
+  "unit": "Hz",
+  "desc": "f = qB/(2πm)。带电粒子在均匀磁场中的回旋频率；回旋加速器与质谱仪的基础。",
+  "keys": [
+   "cyclotron",
+   "回旋",
+   "磁场"
+  ],
+  "params": {
+   "q": {
+    "value": null,
+    "desc": "电荷 C",
+    "quantity": "电荷",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
+   },
+   "B": {
+    "value": null,
+    "desc": "磁感应强度 T",
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
+   },
+   "m": {
+    "value": null,
+    "desc": "质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "hall_voltage",
+  "cat": "physics/em",
+  "name": "霍尔电压",
+  "expr": "I * B / (n * e_charge * t)",
+  "unit": "V",
+  "desc": "V_H = IB/(net)。载流薄板在磁场中的横向电压；霍尔传感器与载流子浓度测量。",
+  "keys": [
+   "hall",
+   "霍尔"
+  ],
+  "params": {
+   "I": {
+    "value": null,
+    "desc": "电流 A",
+    "quantity": "电流",
+    "dimension": {
+     "I": 1
+    }
+   },
+   "B": {
+    "value": null,
+    "desc": "磁感应强度 T",
+    "quantity": "磁感应强度",
+    "dimension": {
+     "M": 1,
+     "T": -2,
+     "I": -1
+    }
+   },
+   "n": {
+    "value": null,
+    "desc": "载流子浓度 1/m³",
+    "quantity": "浓度",
+    "dimension": {
+     "L": -3
+    }
+   },
+   "e_charge": {
+    "value": 1.602176634e-19,
+    "desc": "元电荷 C",
+    "quantity": "电荷",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
+   },
+   "t": {
+    "value": null,
+    "desc": "板厚 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "rms_voltage",
+  "cat": "physics/em",
+  "name": "交流有效值",
+  "expr": "V_peak / sqrt(2)",
+  "unit": "V",
+  "desc": "V_rms = V_peak/√2（正弦波）。市电「220 V」指有效值。",
+  "keys": [
+   "rms",
+   "有效值",
+   "交流"
+  ],
+  "params": {
+   "V_peak": {
+    "value": null,
+    "desc": "峰值电压 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "impedance_series",
+  "cat": "physics/em",
+  "name": "串联 RLC 阻抗",
+  "expr": "sqrt(R^2 + (omega * L - 1 / (omega * C))^2)",
+  "unit": "Ohm",
+  "desc": "Z = √(R² + (ωL − 1/ωC)²)。串联 RLC 的阻抗模；谐振时 ωL = 1/ωC。",
+  "keys": [
+   "impedance",
+   "阻抗",
+   "rlc"
+  ],
+  "params": {
+   "R": {
+    "value": null,
+    "desc": "电阻 Ω",
+    "quantity": "电阻",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -2
+    }
+   },
+   "L": {
+    "value": null,
+    "desc": "电感 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   },
+   "C": {
+    "value": null,
+    "desc": "电容 F",
+    "quantity": "电容",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 4,
+     "I": 2
+    }
+   },
+   "omega": {
+    "value": null,
+    "desc": "角频率 rad/s",
+    "quantity": "频率",
+    "dimension": {
+     "T": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "quality_factor",
+  "cat": "physics/em",
+  "name": "品质因数",
+  "expr": "omega0 * L / R",
+  "unit": "无量纲",
+  "desc": "Q = ω₀L/R。串联谐振回路的品质因数；Q 越高，谐振峰越尖。",
+  "keys": [
+   "quality",
+   "品质因数",
+   "q"
+  ],
+  "params": {
+   "omega0": {
+    "value": null,
+    "desc": "谐振角频率 rad/s",
+    "quantity": "频率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "L": {
+    "value": null,
+    "desc": "电感 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   },
+   "R": {
+    "value": null,
+    "desc": "电阻 Ω",
+    "quantity": "电阻",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "gravitational_potential_energy",
+  "cat": "physics/gravity",
+  "name": "引力势能",
+  "expr": "-G * M * m / r",
+  "unit": "J",
+  "desc": "U = −GMm/r。取无穷远为零；负号表示束缚。",
+  "keys": [
+   "引力势能",
+   "potential"
+  ],
+  "params": {
+   "G": {
+    "value": 6.6743e-11,
+    "desc": "万有引力常数 m³/(kg·s²)",
+    "quantity": "万有引力常数",
+    "dimension": {
+     "M": -1,
+     "L": 3,
+     "T": -2
+    }
+   },
+   "M": {
+    "value": null,
+    "desc": "中心天体质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "m": {
+    "value": null,
+    "desc": "物体质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "r": {
+    "value": null,
+    "desc": "距离 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "orbital_energy",
+  "cat": "physics/gravity",
+  "name": "轨道机械能",
+  "expr": "-G * M * m / (2 * r)",
+  "unit": "J",
+  "desc": "E = −GMm/(2r)。圆轨道的总机械能（动能 + 势能）。",
+  "keys": [
+   "轨道能量",
+   "orbital"
+  ],
+  "params": {
+   "G": {
+    "value": 6.6743e-11,
+    "desc": "万有引力常数",
+    "quantity": "万有引力常数",
+    "dimension": {
+     "M": -1,
+     "L": 3,
+     "T": -2
+    }
+   },
+   "M": {
+    "value": null,
+    "desc": "中心天体质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "m": {
+    "value": null,
+    "desc": "轨道物体质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "r": {
+    "value": null,
+    "desc": "轨道半径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 1",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "bohr_radius",
+  "cat": "physics/quantum",
+  "name": "玻尔半径",
+  "expr": "4 * pi * eps0 * hbar^2 / (m_e * e_charge^2)",
+  "unit": "m",
+  "desc": "a₀ = 4πε₀ħ²/(m_e e²) ≈ 5.29e-11 m。氢原子基态轨道半径。",
+  "keys": [
+   "bohr",
+   "玻尔",
+   "半径"
+  ],
+  "params": {
+   "eps0": {
+    "value": 8.8541878128e-12,
+    "desc": "真空介电常数",
+    "quantity": "真空介电常数",
+    "dimension": {
+     "M": -1,
+     "L": -3,
+     "T": 4,
+     "I": 2
+    }
+   },
+   "hbar": {
+    "value": 1.054571817e-34,
+    "desc": "约化普朗克常数 J·s",
+    "quantity": "约化普朗克常数",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -1
+    }
+   },
+   "m_e": {
+    "value": 9.1093837015e-31,
+    "desc": "电子质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "e_charge": {
+    "value": 1.602176634e-19,
+    "desc": "元电荷 C",
+    "quantity": "电荷",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "rydberg_wavelength",
+  "cat": "physics/quantum",
+  "name": "里德伯波长",
+  "expr": "1 / (R_inf * (1 / n1^2 - 1 / n2^2))",
+  "unit": "m",
+  "desc": "1/λ = R(1/n₁² − 1/n₂²)。氢原子谱线波长；n₂ > n₁。",
+  "keys": [
+   "rydberg",
+   "里德伯",
+   "谱线"
+  ],
+  "params": {
+   "R_inf": {
+    "value": 10973731.56816,
+    "desc": "里德伯常数 1/m",
+    "quantity": "里德伯常数",
+    "dimension": {
+     "L": -1
+    }
+   },
+   "n1": {
+    "value": null,
+    "desc": "低能级 n₁",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "n2": {
+    "value": null,
+    "desc": "高能级 n₂",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "photon_frequency",
+  "cat": "physics/optics",
+  "name": "光子频率",
+  "expr": "c / lambda",
+  "unit": "Hz",
+  "desc": "ν = c/λ。光子频率与波长的关系。",
+  "keys": [
+   "光子",
+   "频率",
+   "photon"
+  ],
+  "params": {
+   "c": {
+    "value": 299792458,
+    "desc": "光速 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   },
+   "lambda": {
+    "value": null,
+    "desc": "波长 m",
+    "quantity": "波长",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 3",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-3",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "electric_potential_energy",
+  "cat": "physics/em",
+  "name": "点电荷势能",
+  "expr": "k_coulomb * q1 * q2 / r",
+  "unit": "J",
+  "desc": "U = kq₁q₂/r。两点电荷的静电势能；同号为正（排斥）。",
+  "keys": [
+   "电势能",
+   "库仑"
+  ],
+  "params": {
+   "k_coulomb": {
+    "value": 8987551792.3,
+    "desc": "库仑常数 N·m²/C²",
+    "quantity": "库仑常数",
+    "dimension": {
+     "M": 1,
+     "L": 3,
+     "T": -4,
+     "I": -2
+    }
+   },
+   "q1": {
+    "value": null,
+    "desc": "电荷 1 C",
+    "quantity": "电荷",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
+   },
+   "q2": {
+    "value": null,
+    "desc": "电荷 2 C",
+    "quantity": "电荷",
+    "dimension": {
+     "T": 1,
+     "I": 1
+    }
+   },
+   "r": {
+    "value": null,
+    "desc": "距离 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "capacitors_series",
+  "cat": "physics/em",
+  "name": "电容串联",
+  "expr": "1 / (1 / C1 + 1 / C2)",
+  "unit": "F",
+  "desc": "1/C = 1/C₁ + 1/C₂。串联电容的等效值（与电阻并联同构）。",
+  "keys": [
+   "电容",
+   "串联"
+  ],
+  "params": {
+   "C1": {
+    "value": null,
+    "desc": "电容 1 F",
+    "quantity": "电容",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 4,
+     "I": 2
+    }
+   },
+   "C2": {
+    "value": null,
+    "desc": "电容 2 F",
+    "quantity": "电容",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 4,
+     "I": 2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "capacitors_parallel",
+  "cat": "physics/em",
+  "name": "电容并联",
+  "expr": "C1 + C2",
+  "unit": "F",
+  "desc": "C = C₁ + C₂。并联电容直接相加。",
+  "keys": [
+   "电容",
+   "并联"
+  ],
+  "params": {
+   "C1": {
+    "value": null,
+    "desc": "电容 1 F",
+    "quantity": "电容",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 4,
+     "I": 2
+    }
+   },
+   "C2": {
+    "value": null,
+    "desc": "电容 2 F",
+    "quantity": "电容",
+    "dimension": {
+     "M": -1,
+     "L": -2,
+     "T": 4,
+     "I": 2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "inductance_series",
+  "cat": "physics/em",
+  "name": "电感串联",
+  "expr": "L1 + L2",
+  "unit": "H",
+  "desc": "L = L₁ + L₂（无互感）。",
+  "keys": [
+   "电感",
+   "串联"
+  ],
+  "params": {
+   "L1": {
+    "value": null,
+    "desc": "电感 1 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   },
+   "L2": {
+    "value": null,
+    "desc": "电感 2 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "inductance_parallel",
+  "cat": "physics/em",
+  "name": "电感并联",
+  "expr": "1 / (1 / L1 + 1 / L2)",
+  "unit": "H",
+  "desc": "1/L = 1/L₁ + 1/L₂（无互感）。",
+  "keys": [
+   "电感",
+   "并联"
+  ],
+  "params": {
+   "L1": {
+    "value": null,
+    "desc": "电感 1 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   },
+   "L2": {
+    "value": null,
+    "desc": "电感 2 H",
+    "quantity": "电感",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2,
+     "I": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "kirchhoff_voltage_sum",
+  "cat": "physics/em",
+  "name": "基尔霍夫电压（闭合回路）",
+  "expr": "V1 + V2 + V3",
+  "unit": "V",
+  "desc": "沿闭合回路电势升降之和为零（KVL）：V₁ + V₂ + V₃ = 0。这里给三项之和。",
+  "keys": [
+   "基尔霍夫",
+   "kvl"
+  ],
+  "params": {
+   "V1": {
+    "value": null,
+    "desc": "电压 1 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   },
+   "V2": {
+    "value": null,
+    "desc": "电压 2 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   },
+   "V3": {
+    "value": null,
+    "desc": "电压 3 V",
+    "quantity": "电压",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -3,
+     "I": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "University Physics Volume 2",
+    "authors": "Moebs, Ling, Sanny",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/university-physics-volume-2",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "dalton_partial_pressure",
+  "cat": "chemistry/gas",
+  "name": "道尔顿分压定律",
+  "expr": "P1 + P2 + P3",
+  "unit": "Pa",
+  "desc": "P = P₁ + P₂ + P₃。混合气体总压等于各分压之和。",
+  "keys": [
+   "道尔顿",
+   "分压"
+  ],
+  "params": {
+   "P1": {
+    "value": null,
+    "desc": "分压 1 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "P2": {
+    "value": null,
+    "desc": "分压 2 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "P3": {
+    "value": null,
+    "desc": "分压 3 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "henry_law",
+  "cat": "chemistry/solution",
+  "name": "亨利定律",
+  "expr": "kH * P",
+  "unit": "mol/m^3",
+  "desc": "C = k_H·P。稀溶液中溶解气体浓度与分压成正比。",
+  "keys": [
+   "henry",
+   "亨利",
+   "溶解"
+  ],
+  "params": {
+   "kH": {
+    "value": null,
+    "desc": "亨利常数 mol/(m³·Pa)",
+    "quantity": "亨利常数",
+    "dimension": {
+     "N": 1,
+     "M": -1,
+     "L": -1,
+     "T": 2
+    }
+   },
+   "P": {
+    "value": null,
+    "desc": "分压 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "langmuir_adsorption",
+  "cat": "chemistry/phase",
+  "name": "朗缪尔吸附等温线",
+  "expr": "K * P / (1 + K * P)",
+  "unit": "无量纲",
+  "desc": "θ = KP/(1 + KP)。单层吸附覆盖度；低压线性、高压饱和。",
+  "keys": [
+   "langmuir",
+   "朗缪尔",
+   "吸附"
+  ],
+  "params": {
+   "K": {
+    "value": null,
+    "desc": "吸附平衡常数 1/Pa",
+    "quantity": "吸附常数",
+    "dimension": {
+     "M": -1,
+     "L": 1,
+     "T": 2
+    }
+   },
+   "P": {
+    "value": null,
+    "desc": "分压 Pa",
+    "quantity": "压强",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "hess_law",
+  "cat": "chemistry/thermo",
+  "name": "赫斯定律",
+  "expr": "dH1 + dH2",
+  "unit": "J",
+  "desc": "ΔH = ΔH₁ + ΔH₂。反应总焓变等于分步焓变之和（盖斯定律）。",
+  "keys": [
+   "hess",
+   "盖斯",
+   "焓"
+  ],
+  "params": {
+   "dH1": {
+    "value": null,
+    "desc": "分步焓变 1 J",
+    "quantity": "能量",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   },
+   "dH2": {
+    "value": null,
+    "desc": "分步焓变 2 J",
+    "quantity": "能量",
+    "dimension": {
+     "M": 1,
+     "L": 2,
+     "T": -2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "freezing_point_depression",
+  "cat": "chemistry/phase",
+  "name": "凝固点降低",
+  "expr": "Kf * m",
+  "unit": "K",
+  "desc": "ΔT = K_f·m。稀溶液的凝固点降低；m 为质量摩尔浓度 mol/kg。",
+  "keys": [
+   "凝固点",
+   "冰点"
+  ],
+  "params": {
+   "Kf": {
+    "value": null,
+    "desc": "凝固点降低常数 K·kg/mol",
+    "quantity": "凝固点常数",
+    "dimension": {
+     "Theta": 1,
+     "N": -1,
+     "M": 1
+    }
+   },
+   "m": {
+    "value": null,
+    "desc": "质量摩尔浓度 mol/kg",
+    "quantity": "质量摩尔浓度",
+    "dimension": {
+     "N": 1,
+     "M": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "boiling_point_elevation",
+  "cat": "chemistry/phase",
+  "name": "沸点升高",
+  "expr": "Kb * m",
+  "unit": "K",
+  "desc": "ΔT = K_b·m。稀溶液的沸点升高；与凝固点降低同构。",
+  "keys": [
+   "沸点"
+  ],
+  "params": {
+   "Kb": {
+    "value": null,
+    "desc": "沸点升高常数 K·kg/mol",
+    "quantity": "沸点常数",
+    "dimension": {
+     "Theta": 1,
+     "N": -1,
+     "M": 1
+    }
+   },
+   "m": {
+    "value": null,
+    "desc": "质量摩尔浓度 mol/kg",
+    "quantity": "质量摩尔浓度",
+    "dimension": {
+     "N": 1,
+     "M": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "beer_lambert",
+  "cat": "chemistry/solution",
+  "name": "比尔-朗伯定律",
+  "expr": "epsilon * c * l",
+  "unit": "无量纲",
+  "desc": "A = εcl。吸光度与浓度、光程成正比；分光光度法的定量基础。",
+  "keys": [
+   "beer",
+   "比尔",
+   "吸光度"
+  ],
+  "params": {
+   "epsilon": {
+    "value": null,
+    "desc": "摩尔吸光系数 m²/mol",
+    "quantity": "摩尔吸光系数",
+    "dimension": {
+     "L": 2,
+     "N": -1
+    }
+   },
+   "c": {
+    "value": null,
+    "desc": "浓度 mol/m³",
+    "quantity": "浓度",
+    "dimension": {
+     "N": 1,
+     "L": -3
+    }
+   },
+   "l": {
+    "value": null,
+    "desc": "光程 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Chemistry 2e",
+    "authors": "Flowers, Theopold, Langley, Robinson",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/chemistry-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "sir_infection_rate",
+  "cat": "biology/epidemiology",
+  "name": "SIR 感染率",
+  "expr": "beta * S * I / N",
+  "unit": "1/s",
+  "desc": "新感染率 = βSI/N。SIR 模型的核心项；β 为接触传播率。",
+  "keys": [
+   "sir",
+   "传染",
+   "感染率"
+  ],
+  "params": {
+   "beta": {
+    "value": null,
+    "desc": "传播率 1/s",
+    "quantity": "传播率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "S": {
+    "value": null,
+    "desc": "易感人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "I": {
+    "value": null,
+    "desc": "感染人数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "N": {
+    "value": null,
+    "desc": "总人数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "lotka_volterra_prey",
+  "cat": "biology/ecology",
+  "name": "洛特卡-沃尔泰拉方程（猎物）",
+  "expr": "r * P - a * P * Q",
+  "unit": "个/s",
+  "desc": "dP/dt = rP − aPQ。猎物增长率；aPQ 是被捕食项。",
+  "keys": [
+   "lotka",
+   "捕食",
+   "猎物"
+  ],
+  "params": {
+   "r": {
+    "value": null,
+    "desc": "内禀增长率 1/s",
+    "quantity": "增长率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "P": {
+    "value": null,
+    "desc": "猎物种群",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "a": {
+    "value": null,
+    "desc": "捕食率系数 1/(个·s)",
+    "quantity": "捕食率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "Q": {
+    "value": null,
+    "desc": "捕食者种群",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "lotka_volterra_predator",
+  "cat": "biology/ecology",
+  "name": "洛特卡-沃尔泰拉方程（捕食者）",
+  "expr": "b * P * Q - m * Q",
+  "unit": "个/s",
+  "desc": "dQ/dt = bPQ − mQ。捕食者增长率；bPQ 是捕食收益，mQ 是死亡。",
+  "keys": [
+   "lotka",
+   "捕食者"
+  ],
+  "params": {
+   "b": {
+    "value": null,
+    "desc": "捕食转化率 1/(个·s)",
+    "quantity": "捕食转化率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "P": {
+    "value": null,
+    "desc": "猎物种群",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "Q": {
+    "value": null,
+    "desc": "捕食者种群",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "m": {
+    "value": null,
+    "desc": "捕食者死亡率 1/s",
+    "quantity": "死亡率",
+    "dimension": {
+     "T": -1
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "monod_growth",
+  "cat": "biology/kinetics",
+  "name": "莫诺方程（微生物生长）",
+  "expr": "mu_max * S / (Ks + S)",
+  "unit": "1/s",
+  "desc": "μ = μ_max·S/(K_s + S)。底物限制下的比生长速率；与米氏方程同构。",
+  "keys": [
+   "monod",
+   "莫诺",
+   "生长"
+  ],
+  "params": {
+   "mu_max": {
+    "value": null,
+    "desc": "最大比生长速率 1/s",
+    "quantity": "生长速率",
+    "dimension": {
+     "T": -1
+    }
+   },
+   "S": {
+    "value": null,
+    "desc": "底物浓度 mol/m³",
+    "quantity": "浓度",
+    "dimension": {
+     "N": 1,
+     "L": -3
+    }
+   },
+   "Ks": {
+    "value": null,
+    "desc": "半饱和常数 mol/m³",
+    "quantity": "浓度",
+    "dimension": {
+     "N": 1,
+     "L": -3
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Biology 2e",
+    "authors": "Clark, Choi, Douglas",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/biology-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "eddington_luminosity",
+  "cat": "astronomy/star",
+  "name": "爱丁顿光度极限",
+  "expr": "4 * pi * G * M * m_p * c / sigma_T",
+  "unit": "W",
+  "desc": "L_Edd = 4πGMm_p c/σ_T。辐射压与引力平衡的亮度上限；超过则外层被吹散。",
+  "keys": [
+   "eddington",
+   "光度",
+   "极限"
+  ],
+  "params": {
+   "G": {
+    "value": 6.6743e-11,
+    "desc": "万有引力常数",
+    "quantity": "万有引力常数",
+    "dimension": {
+     "M": -1,
+     "L": 3,
+     "T": -2
+    }
+   },
+   "M": {
+    "value": null,
+    "desc": "恒星质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "m_p": {
+    "value": 1.67262192369e-27,
+    "desc": "质子质量 kg",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "c": {
+    "value": 299792458,
+    "desc": "光速 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   },
+   "sigma_T": {
+    "value": 6.6524587321e-29,
+    "desc": "汤姆孙截面 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Astronomy 2e",
+    "authors": "Fraknoi, Morrison, Wolff",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/astronomy-2e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "seismic_moment",
+  "cat": "geology/erosion",
+  "name": "地震矩",
+  "expr": "mu * A * D",
+  "unit": "N·m",
+  "desc": "M₀ = μAD。地震矩（能量尺度）；μ 剪切模量，A 破裂面积，D 平均位错。",
+  "keys": [
+   "地震矩",
+   "seismic"
+  ],
+  "params": {
+   "mu": {
+    "value": null,
+    "desc": "剪切模量 Pa",
+    "quantity": "剪切模量",
+    "dimension": {
+     "M": 1,
+     "L": -1,
+     "T": -2
+    }
+   },
+   "A": {
+    "value": null,
+    "desc": "破裂面积 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "D": {
+    "value": null,
+    "desc": "平均位错 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "darcy_groundwater",
+  "cat": "geology/water",
+  "name": "达西定律（地下水）",
+  "expr": "K * A * i",
+  "unit": "m^3/s",
+  "desc": "Q = KAi。地下水渗流量；K 渗透系数，i 水力坡度。",
+  "keys": [
+   "达西",
+   "地下水"
+  ],
+  "params": {
+   "K": {
+    "value": null,
+    "desc": "渗透系数 m/s",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
+    }
+   },
+   "A": {
+    "value": null,
+    "desc": "过水断面 m²",
+    "quantity": "面积",
+    "dimension": {
+     "L": 2
+    }
+   },
+   "i": {
+    "value": null,
+    "desc": "水力坡度",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "manning_velocity",
+  "cat": "geology/river",
+  "name": "曼宁流速公式",
+  "expr": "(1 / n) * R^(2 / 3) * S^(1 / 2)",
+  "unit": "m/s",
+  "desc": "v = (1/n)R^(2/3)S^(1/2)。明渠均匀流平均流速；n 曼宁粗糙系数。",
+  "keys": [
+   "曼宁",
+   "明渠",
+   "流速"
+  ],
+  "params": {
+   "n": {
+    "value": null,
+    "desc": "曼宁粗糙系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "R": {
+    "value": null,
+    "desc": "水力半径 m",
+    "quantity": "长度",
+    "dimension": {
+     "L": 1
+    }
+   },
+   "S": {
+    "value": null,
+    "desc": "水力坡度",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "confidence": "exact"
+ },
+ {
+  "id": "present_value_single",
+  "cat": "econ/finance",
+  "name": "单笔现值",
+  "expr": "FV / (1 + r)^n",
+  "unit": "金额",
+  "desc": "PV = FV/(1+r)ⁿ。未来一笔钱的现值；贴现率 r，期数 n。",
+  "keys": [
+   "现值",
+   "贴现",
+   "pv"
+  ],
+  "params": {
+   "FV": {
+    "value": null,
+    "desc": "未来价值",
+    "quantity": "金额",
+    "dimension": {}
+   },
+   "r": {
+    "value": null,
+    "desc": "贴现率",
+    "quantity": "比率",
+    "dimension": {}
+   },
+   "n": {
+    "value": null,
+    "desc": "期数",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Principles of Economics 3e",
+    "authors": "Shapiro, MacDonald, Greenlaw",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/principles-of-economics-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "real_interest_rate",
+  "cat": "econ/finance",
+  "name": "实际利率（费雪）",
+  "expr": "(1 + nominal) / (1 + inflation) - 1",
+  "unit": "无量纲",
+  "desc": "r ≈ i − π（精确式 (1+i)/(1+π) − 1）。名义利率扣除通胀。",
+  "keys": [
+   "实际利率",
+   "费雪"
+  ],
+  "params": {
+   "nominal": {
+    "value": null,
+    "desc": "名义利率",
+    "quantity": "比率",
+    "dimension": {}
+   },
+   "inflation": {
+    "value": null,
+    "desc": "通胀率",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Principles of Economics 3e",
+    "authors": "Shapiro, MacDonald, Greenlaw",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/principles-of-economics-3e",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "normal_pdf",
+  "cat": "statistics/distribution",
+  "name": "正态分布密度",
+  "expr": "1 / (sigma * sqrt(2 * pi)) * exp(-0.5 * ((x - mu) / sigma)^2)",
+  "unit": "1/单位",
+  "desc": "f(x) = 1/(σ√(2π))·e^(−(x−μ)²/2σ²)。正态分布的概率密度。",
+  "keys": [
+   "正态",
+   "高斯",
+   "密度"
+  ],
+  "params": {
+   "x": {
+    "value": null,
+    "desc": "取值",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "mu": {
+    "value": null,
+    "desc": "均值",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "sigma": {
+    "value": null,
+    "desc": "标准差",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Calculus Volume 1",
+    "authors": "Strang, Herman",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/calculus-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "poisson_pmf",
+  "cat": "statistics/distribution",
+  "name": "泊松分布概率",
+  "expr": "exp(-lambda) * lambda^k / factorial(k)",
+  "unit": "无量纲",
+  "desc": "P(k) = e^(−λ)λᵏ/k!。单位时间内事件数的概率。",
+  "keys": [
+   "泊松",
+   "poisson"
+  ],
+  "params": {
+   "lambda": {
+    "value": null,
+    "desc": "平均发生次数 λ",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "k": {
+    "value": null,
+    "desc": "发生次数 k",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Calculus Volume 1",
+    "authors": "Strang, Herman",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/calculus-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "binomial_pmf",
+  "cat": "statistics/distribution",
+  "name": "二项分布概率",
+  "expr": "factorial(n) / (factorial(k) * factorial(n - k)) * p^k * (1 - p)^(n - k)",
+  "unit": "无量纲",
+  "desc": "P(k) = C(n,k)pᵏ(1−p)^(n−k)。n 次独立试验中成功 k 次的概率。",
+  "keys": [
+   "二项",
+   "binomial"
+  ],
+  "params": {
+   "n": {
+    "value": null,
+    "desc": "试验次数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "k": {
+    "value": null,
+    "desc": "成功次数",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "p": {
+    "value": null,
+    "desc": "单次成功率",
+    "quantity": "比率",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Calculus Volume 1",
+    "authors": "Strang, Herman",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/calculus-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
+   }
+  ],
+  "confidence": "exact"
+ },
+ {
+  "id": "combinations",
+  "cat": "statistics/distribution",
+  "name": "组合数",
+  "expr": "factorial(n) / (factorial(k) * factorial(n - k))",
+  "unit": "个",
+  "desc": "C(n,k) = n!/(k!(n−k)!)。从 n 中取 k 的组合数。",
+  "keys": [
+   "组合",
+   "排列"
+  ],
+  "params": {
+   "n": {
+    "value": null,
+    "desc": "总数 n",
+    "quantity": "数量",
+    "dimension": {}
+   },
+   "k": {
+    "value": null,
+    "desc": "选取数 k",
+    "quantity": "数量",
+    "dimension": {}
+   }
+  },
+  "sources": [
+   {
+    "type": "textbook",
+    "title": "Calculus Volume 1",
+    "authors": "Strang, Herman",
+    "publisher": "OpenStax",
+    "chapter": "相关章节",
+    "url": "https://openstax.org/books/calculus-volume-1",
+    "license": "教材引用（未逐字比对）",
+    "accessed": "2026-11-19"
    }
   ],
   "confidence": "exact"

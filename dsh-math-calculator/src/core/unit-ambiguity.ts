@@ -42,7 +42,7 @@ const SAFE_REPLACEMENTS: Array<[RegExp, string, string]> = [
    * 判据：前后不能紧接**字母或下划线**（避免把 `minimum`、`area_ha` 里的 `min`/`ha` 换掉），
    * 但**可以紧接数字或空格或斜杠**（`5min`、`5 min`、`L/min` 都要换）。
    */
-  [/(?<![A-Za-z_])min(?![A-Za-z_])/g, 'minute', 'min 被拆成 m×in（米×英寸）'],
+  [/(?<![A-Za-z_])min(?![A-Za-z_(])/g, 'minute', 'min 被拆成 m×in（米×英寸）'],
   /**
    * `mins` → `minutes`（复数）。
    */

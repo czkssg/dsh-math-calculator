@@ -552,6 +552,17 @@ export function normalizeUnits(source: string): string {
     for (const [cjk, symbol] of sorted) {
       if (source.startsWith(cjk, i)) {
         /**
+         * ASCII 别名（autoCjkAliases 补进来的英文长名，如 minutes/minutes_per_day）
+         * 必须**整词**匹配：前面或后面紧接字母/数字/下划线时，它只是标识符的一部分。
+         * 实测（2026-11-19）：`minutes_per_page` 被换成 `min_per_page`，公式参数名对不上。
+         */
+        const isAsciiAlias = /^[A-Za-z][A-Za-z0-9_]*$/.test(cjk)
+        if (isAsciiAlias) {
+          const prevAscii = i > 0 ? source[i - 1] : ''
+          const nextAscii = source[i + cjk.length] ?? ''
+          if (/[A-Za-z0-9_]/.test(prevAscii) || /[A-Za-z0-9_]/.test(nextAscii)) continue
+        }
+        /**
          * 只在「前面不是数字、后面不是字母」时才替换吗？
          *
          * 不 —— `1 里` 的「里」前面是空格，`1里` 前面是数字，两种都该换。
