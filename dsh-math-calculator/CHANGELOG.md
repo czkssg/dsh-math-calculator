@@ -2,6 +2,31 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.12.0] — 2026-11-18
+
+**公式网：从物理常数出发的全量依赖网**。
+
+### 新增
+
+- `src/data/formula-web.json` + `formulas query:"web"`：
+  43 个常数节点、805 个公式节点、**144 条常数边**、**8,995 条公式边**；
+  从常数可达 **624** 个公式，孤立公式 161。
+  - 常数边口径：公式参数默认值 ≈ 常数标准值（相对误差 < 1e-6）；
+  - 公式边口径：输出量 identity == 下游参数 quantity **且量纲一致**（受控词表 544 词）。
+- 查询：`formulas query:"web"`（统计）/ `formulaFocus`（常数名或公式 id）/
+  `webDepth`（默认 2）/ `webDirection`（down/up/both）/ `webLimit`（每层显示，默认 20）。
+- 新增 `docs/公式网.md`（结构、口径、查询、局限）。
+
+### 修复（数据标注，48 条）
+
+- g/a 标成「速度」→ 加速度；omega → 角速度；弹簧 k → N/m；应力 → Pa；
+  比潜热 → J/kg；摩尔质量 → kg/mol；换热系数 → W/(m²·K)；
+  `cobb_douglas.A`「功率」→ 全要素生产率（无量纲）。
+
+### 测试
+
+- 新增 `r64-formula-web` 15 项：统计口径、从 G 向下、公式上下游、未知 focus、层限制；
+  全量 **123 套 / 3,021 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.11.0] — 2026-11-18
 
 **公式体系：链的物理量流（dataFlow）** + 单位歧义缺陷修复。

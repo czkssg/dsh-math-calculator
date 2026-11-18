@@ -53,6 +53,7 @@ import { buildRelationIndex, relationReason, type RelationIndex } from './featur
 import { callFormula, findFormula } from './features/formulas/function.js'
 import { runFormulaGraph } from './features/formulas/formula-graph.js'
 import { runChainNumeric } from './features/formulas/chain-run.js'
+import { runFormulaWeb, type FormulaWeb } from './features/formulas/web.js'
 import { runTopology } from './features/topology/ops.js'
 import { backtrace } from './features/formulas/backtrace.js'
 import { buildEpochs, detectCrises } from './features/deduction/history.js'
@@ -770,6 +771,20 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return {
           result: lines.join('\n'),
           value: { focus: entry.id, neighbors: hits },
+        }
+      }
+      /** 公式网：query="web"（无 focus 给统计；focus=常数名或公式 id 给上下游树）。 */
+      if (query === 'web') {
+        const webData = dataOf<FormulaWeb>('formulaWeb', 'formula-web.json', { constants: [], constantEdges: [], formulaEdges: [] })
+        const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : undefined
+        const depth = typeof args['webDepth'] === 'number' ? args['webDepth'] : undefined
+        const rawDirection = args['webDirection']
+        const direction = rawDirection === 'up' || rawDirection === 'both' ? rawDirection : 'down'
+        const limit = typeof args['webLimit'] === 'number' ? args['webLimit'] : undefined
+        try {
+          return toOutcome(runFormulaWeb(webData, formulaEntries().map((item) => ({ id: item.id, name: item.name })), { focus, depth, direction, limit }))
+        } catch (error) {
+          throw new CalcError('unknown_formula', (error as Error).message, '用 formulas query 查公式 id；常数名可查 c、G、h、kB、e_charge 等。')
         }
       }
       if (query === 'graph' || args['formulaGraph'] === true) {

@@ -117,7 +117,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "t": {
@@ -170,7 +170,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "t": {
@@ -223,7 +223,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "s": {
@@ -274,7 +274,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -319,7 +319,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -770,7 +770,10 @@
     "value": null,
     "desc": "劲度系数 N/m",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -2
+    }
    },
    "x": {
     "value": null,
@@ -812,7 +815,10 @@
     "value": null,
     "desc": "劲度系数 N/m",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -2
+    }
    },
    "x": {
     "value": null,
@@ -863,7 +869,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -914,7 +920,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -966,7 +972,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -1886,7 +1892,6 @@
     "desc": "潜热 J/kg",
     "quantity": "能量",
     "dimension": {
-     "M": 1,
      "L": 2,
      "T": -2
     }
@@ -3320,7 +3325,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -3382,7 +3387,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -4466,12 +4471,7 @@
    "A": {
     "value": 1,
     "desc": "全要素生产率",
-    "quantity": "功率",
-    "dimension": {
-     "M": 1,
-     "L": 2,
-     "T": -3
-    }
+    "quantity": "全要素生产率"
    },
    "K": {
     "value": null,
@@ -5178,7 +5178,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -5223,7 +5223,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -5267,7 +5267,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "rho": {
@@ -5588,7 +5588,6 @@
     "desc": "角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    }
@@ -5633,7 +5632,6 @@
     "desc": "角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    }
@@ -5668,7 +5666,10 @@
     "value": null,
     "desc": "劲度系数 N/m",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -2
+    }
    },
    "m": {
     "value": null,
@@ -5718,7 +5719,10 @@
     "value": null,
     "desc": "劲度系数 N/m",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -2
+    }
    }
   },
   "unit": "s",
@@ -5980,7 +5984,7 @@
     "quantity": "力",
     "dimension": {
      "M": 1,
-     "L": 1,
+     "L": -1,
      "T": -2
     }
    },
@@ -6151,7 +6155,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -6952,7 +6956,11 @@
     "value": null,
     "desc": "对流系数 W/(m²·K)",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": null,
@@ -7157,7 +7165,8 @@
     "desc": "摩尔质量 kg/mol",
     "quantity": "质量",
     "dimension": {
-     "M": 1
+     "M": 1,
+     "N": -1
     }
    },
    "R": {
@@ -7212,7 +7221,8 @@
     "desc": "摩尔质量 kg/mol",
     "quantity": "质量",
     "dimension": {
-     "M": 1
+     "M": 1,
+     "N": -1
     }
    },
    "R": {
@@ -9732,7 +9742,6 @@
     "desc": "自转角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    }
@@ -9787,7 +9796,6 @@
     "desc": "自转角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    },
@@ -10131,7 +10139,8 @@
     "desc": "摩尔质量 kg/mol",
     "quantity": "质量",
     "dimension": {
-     "M": 1
+     "M": 1,
+     "N": -1
     }
    },
    "g": {
@@ -10274,7 +10283,8 @@
     "desc": "摩尔质量 kg/mol",
     "quantity": "质量",
     "dimension": {
-     "M": 1
+     "M": 1,
+     "N": -1
     }
    }
   },
@@ -10805,7 +10815,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -11999,7 +12009,11 @@
     "value": null,
     "desc": "对流换热系数 W/(m^2·K)",
     "quantity": "比率",
-    "dimension": {}
+    "dimension": {
+     "M": 1,
+     "T": -3,
+     "Theta": -1
+    }
    },
    "A": {
     "value": null,
@@ -12507,7 +12521,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -12547,7 +12561,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -12587,7 +12601,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -12612,7 +12626,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -13142,7 +13156,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -13257,7 +13271,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -13364,7 +13378,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -18828,7 +18842,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "b": {
@@ -19524,7 +19538,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    }
   },
@@ -19577,7 +19591,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "Q": {
@@ -19659,7 +19673,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "h": {
@@ -19775,7 +19789,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "Q": {
@@ -31349,7 +31363,7 @@
     "quantity": "速度",
     "dimension": {
      "L": 1,
-     "T": -1
+     "T": -2
     }
    },
    "r": {
@@ -31465,7 +31479,6 @@
     "desc": "相变潜热 J/kg（冰融化为 334 kJ/kg）",
     "quantity": "能量",
     "dimension": {
-     "M": 1,
      "L": 2,
      "T": -2
     }
@@ -31899,7 +31912,6 @@
     "desc": "角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    },
@@ -33487,7 +33499,6 @@
     "desc": "地球自转角速度 rad/s",
     "quantity": "速度",
     "dimension": {
-     "L": 1,
      "T": -1
     }
    },
