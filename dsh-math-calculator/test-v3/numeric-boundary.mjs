@@ -352,12 +352,11 @@ console.log('-- 10. ★ 性能红线（不可接受的输入要快速拒绝）--
   assert('20×20 仍给奇异值', midResult.value.singularValues.length === 20,
     String(midResult.value.singularValues.length))
 
-  /** 超长批量。 */
+  /** 超长批量：现在直接拒绝（不再静默截断）。 */
   const many = Array.from({ length: 250 }, (_, i) => String(i))
-  const batch = ev.evaluateBatch(engine, many, {})
-  assert('★ 250 条批量被截到 100', batch.value.items.length === 100,
-    String(batch.value.items.length))
-  assert('★ 截断时给出提示', /只算了前 100 条/.test(batch.result), '')
+  let rejected = null
+  try { ev.evaluateBatch(engine, many, {}) } catch (error) { rejected = error }
+  assert('★ 250 条批量被拒绝（不再截断）', rejected !== null && rejected.type === 'invalid_argument', String(rejected?.type))
 }
 
 rmSync(home, { recursive: true, force: true })

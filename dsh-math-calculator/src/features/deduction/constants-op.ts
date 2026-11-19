@@ -140,6 +140,15 @@ export function runConstants(input: {
     throw new CalcError('invalid_argument', error instanceof Error ? error.message : String(error))
   }
 
+  /** 极端常量会让派生量溢出成 Infinity/NaN（JSON 序列化成 null，静默污染）。 */
+  const nonFinite = [...result.changed, ...result.derived].filter((item) => !Number.isFinite(item.from) || !Number.isFinite(item.to))
+  if (nonFinite.length > 0) {
+    throw new CalcError(
+      'non_finite',
+      '这组常数会让派生量溢出或变成 NaN：' + nonFinite.slice(0, 5).map((item) => item.name).join('、'),
+      '常数改得太极端（例如 c=1e-300）；先检查量级，再决定是否继续。',
+    )
+  }
   const lines: string[] = ['══════ 物理常数推演 ══════', '']
   if (Object.keys(overrides).length === 0) {
     lines.push('未指定改动，列出当前基础旋钮与派生量：', '', '【基础旋钮】（可自由设定）')

@@ -360,6 +360,22 @@ export function evaluateOne(
    *
    * 这是老插件同样踩过的坑（P0-2「批量漏检非有限值」）。
    */
+  /** 裸 number 的 NaN/Infinity（`evaluate('NaN')` 返回 number）也要拦。 */
+  if (typeof raw === 'number' && !Number.isFinite(raw)) {
+    throw new CalcError(
+      'non_finite',
+      '结果不是有限数（表达式：' + expression + '）',
+      '`NaN`/`Infinity` 是符号而不是可用的数值结果；检查表达式是否真的算了东西。',
+    )
+  }
+  /** 字符串形式的 NaN/Infinity 也要拦。 */
+  if (typeof raw === 'string' && /^(NaN|Infinity|-Infinity)$/.test(raw.trim())) {
+    throw new CalcError(
+      'non_finite',
+      '结果不是有限数（表达式：' + expression + '）',
+      '`NaN`/`Infinity` 是符号而不是可用的数值结果；检查表达式是否真的算了东西。',
+    )
+  }
   const unwrapped = unwrapNumeric(raw)
   if (typeof raw === 'object' && raw !== null && !('isUnit' in (raw as object))) {
     if (!Number.isFinite(unwrapped.n)) {
@@ -514,7 +530,10 @@ export function evaluateBatch(
 ): EvaluateOutcome {
   /** 上限 100 条 —— 再多该走数据引用，不是堆表达式撑上下文。 */
   const MAX_BATCH = 100
-  const items = expressions.slice(0, MAX_BATCH)
+  if (expressions.length > MAX_BATCH) {
+    throw new CalcError('invalid_argument', 'expressions 一次最多 ' + MAX_BATCH + ' 条（收到 ' + expressions.length + ' 条）', '拆成多次调用；批量调用用 calls（上限 50）。')
+  }
+  const items = expressions
   /**
    * 批量内**共享作用域**：help 承诺「前一条的赋值对后一条可见」（R56/R61）。
    * 原先每条传 undefined，engine 内部 `scope ?? {}` 每次都新建 → `u=5` 写不回去。

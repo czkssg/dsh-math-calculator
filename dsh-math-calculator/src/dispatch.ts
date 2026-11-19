@@ -383,7 +383,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return { result: record === null ? '没有这条记录：' + id : JSON.stringify(record, null, 1), value: { record } } as never
       }
       if (action === 'search') {
-        const keyword = typeof args['query'] === 'string' ? (args['query'] as string) : ''
+        /** search 的别名：nameContains 也能当关键词（schema 两个都收）。 */
+        const keyword = typeof args['query'] === 'string' && (args['query'] as string).trim() !== '' ? (args['query'] as string) : typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : ''
         const hits = searchRecords(keyword, typeof args['limit'] === 'number' ? (args['limit'] as number) : 10)
         const lines = ['═══ 数据检索「' + keyword + '」（' + hits.length + ' 条）═══']
         for (const hit of hits) lines.push('  ' + hit.record.id + '  [' + hit.record.kind + ']  分数 ' + hit.score.toFixed(2))

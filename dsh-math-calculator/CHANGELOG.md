@@ -2,6 +2,31 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.28.0] — 2026-11-20
+
+**自行压力性测试 + 4 条真问题修复**。
+
+### 修复
+
+- **`evaluate` 的 `NaN`/`Infinity`/`-Infinity`**：此前当字符串结果返回 `ok=true`（AI 会误以为算成功）；
+  现在一律 `non_finite`。
+- **`constants` 极端值溢出**：`c=1e-300` 会让派生量变成 Infinity/NaN，JSON 序列化成 `null` 静默污染；
+  现在检查 `changed/derived`，非有限 → `non_finite`。
+- **`expressions` 超 100 条**：此前静默只算前 100（`ok=true` + 小字提示）；现在 `invalid_argument` 直接拒绝。
+- **`data search` 的 `nameContains`**：此前只认 `query`，别名不生效；现在回退可用。
+
+### 新增
+
+- `r74-stress` **17 项**：批量上限（50/51）、表达式上限（100/300）、NaN/Infinity、极端常数、
+  100 万点 stats（≤5s）、1440×720 地图（≤12s）、空表达式/超长表达式/多斜杠单位。
+- `numeric-boundary` 的「250 条截断」断言改为「250 条拒绝」；
+  全量 **133 套 / 3,140 项全绿**（`test-v3/test-report.json` 已刷新）。
+
+### 压测结论
+
+- 规模：calls 50 219ms、stats 100 万 2.0s、world-map 1440×720 2.7s、查询 156ms——达标；
+- 边界：空/超长/未知单位/参数 NaN 均可读拒绝；
+- 长时/并发留待后续（本轮未做 22 链全跑与 1000 次调用循环）。
 ## [3.27.0] — 2026-11-19
 
 **`output`（输出物理量名）扩到全库**。
