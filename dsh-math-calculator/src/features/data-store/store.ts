@@ -107,7 +107,9 @@ export function putRecord(input: { kind: string; name: string; tags?: string[]; 
   if (typeof input.kind !== 'string' || input.kind.trim() === '') throw new CalcError('invalid_argument', 'kind 不能为空', '例如 kind:"note"。')
   if (typeof input.name !== 'string' || input.name.trim() === '') throw new CalcError('invalid_argument', 'name 不能为空', '例如 name:"北境人口"。')
   const id = recordId(input.kind.trim(), input.name.trim())
-  const existing = readRecords().get(id)
+  /** 用缓存查重：每条 put 都全表重读会让 N 条写入退化成 O(N²)（5000 条曾 52s）。 */
+  const records = readRecordsCached()
+  const existing = records.get(id)
   const now = new Date().toISOString()
   const record: DataRecord = {
     id,
@@ -120,7 +122,11 @@ export function putRecord(input: { kind: string; name: string; tags?: string[]; 
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   }
-  appendFileSync(storeFile(), JSON.stringify(record) + '\n', 'utf8')
+  const file = storeFile()
+  appendFileSync(file, JSON.stringify(record) + '\n', 'utf8')
+  /** 追加后把新记录放进缓存并刷新 mtime，下一次调用不再全表重读。 */
+  records.set(id, record)
+  indexCache = { records, mtimeMs: existsSync(file) ? statSync(file).mtimeMs : 0, dir: storeDir() }
   return record
 }
 

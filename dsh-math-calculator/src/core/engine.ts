@@ -278,6 +278,26 @@ let AUTO_CJK_ALIASES: Array<[string, string]> | null = null
  *
  * @param math - mathjs 实例
  */
+/** 清洗名 → 原名（`raddose` → `rad_dose`），供结果显示还原。 */
+const SANITIZED_UNIT_NAMES = new Map<string, string>()
+
+/**
+ * 把清洗过的单位名还原成数据表原名（整词匹配）。
+ *
+ * @param text - 渲染文本
+ * @returns 替换后的文本
+ */
+export function restoreSanitizedUnitNames(text: string): string {
+  if (SANITIZED_UNIT_NAMES.size === 0) return text
+  let out = text
+  const names = [...SANITIZED_UNIT_NAMES.entries()].sort((a, b) => b[0].length - a[0].length)
+  for (const [safe, name] of names) {
+    const pattern = new RegExp('(?<![A-Za-z0-9])' + safe + '(?![A-Za-z0-9])', 'g')
+    out = out.replace(pattern, name)
+  }
+  return out
+}
+
 function registerDataUnits(math: MathJsInstance): void {
   let list: Array<Record<string, unknown>> = []
   try {
@@ -313,6 +333,7 @@ function registerDataUnits(math: MathJsInstance): void {
     try {
       math.createUnit(safe, factor + ' ' + base)
       existing.add(safe)
+      if (safe !== name) SANITIZED_UNIT_NAMES.set(safe, name)
     } catch {
       /* 单条失败不影响其它 */
     }
@@ -419,6 +440,8 @@ function autoCjkAliases(): Array<[string, string]> {
       }
       /** 目标名可能带下划线（`year_trop`），注册时被清洗过，这里要一致。 */
       const target = sanitizeUnitName(name) || name
+      /** 主名本身含下划线时也要建映射（`rad_dose` → `raddose`）；不只是别名。 */
+      if (target !== name && !manual.has(name)) out.push([name, target])
       for (const alias of aliases) {
         if (manual.has(alias)) continue
         /**

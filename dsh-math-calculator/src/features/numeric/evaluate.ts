@@ -39,6 +39,7 @@
  */
 
 import type { Engine } from '../../core/engine.js'
+import { restoreSanitizedUnitNames } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { tryUcumExpression } from '../../core/ucum.js'
 import { toModernExpression } from '../../core/unit-bridge.js'
@@ -230,6 +231,7 @@ export function formatScalar(
   if (anyValue.isUnit === true) {
     let text = String(value)
     text = restoreCjkUnitNames(text)
+    text = restoreSanitizedUnitNames(text)
     text = restoreCustomUnitNames(text, engine.customUnits)
     /**
      * ## 数值部分按精度截断

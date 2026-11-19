@@ -26,6 +26,7 @@
  */
 
 import type { Engine } from '../../core/engine.js'
+import { restoreSanitizedUnitNames } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { fmtNumber, FMT, trimDecimal, restoreCjkUnitNames, restoreCustomUnitNames } from '../../core/format.js'
 
@@ -133,7 +134,7 @@ export function convertUnits(
   }
 
   const text = cut(restoreCustomUnitNames(
-    restoreCjkUnitNames(String(converted)),
+    restoreSanitizedUnitNames(restoreCjkUnitNames(String(converted))),
     engine.customUnits,
   ))
   const numeric = Number(String(converted).split(' ')[0])
