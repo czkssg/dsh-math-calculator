@@ -854,7 +854,13 @@
     "note": "发光颜色 → 温度（光学高温计的原理，接点自量子链）",
     "chainRef": [
      "sys-quantum"
-    ]
+    ],
+    "crossFlow": {
+     "T": {
+      "chain": "sys-material",
+      "step": 2
+     }
+    }
    },
    {
     "formula": "gear_geometry",
@@ -1696,7 +1702,13 @@
   "steps": [
    {
     "formula": "wien_displacement",
-    "note": "温度 → 发光颜色（越热越蓝）"
+    "note": "温度 → 发光颜色（越热越蓝）",
+    "crossFlow": {
+     "T": {
+      "chain": "sys-material",
+      "step": 2
+     }
+    }
    },
    {
     "formula": "stefan_boltzmann",

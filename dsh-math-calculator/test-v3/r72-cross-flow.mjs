@@ -26,7 +26,9 @@ console.log('-- 1. crossFlow 数据 --')
 {
   const links = []
   for (const chain of chains) for (const [i, step] of (chain.steps || []).entries()) for (const [param, mapping] of Object.entries(step.crossFlow || {})) links.push({ chain: chain.id, step: i + 1, formula: step.formula, param, target: mapping })
-  assert('★ crossFlow ≥ 5 条', links.length >= 5, String(links.length))
+  assert('★ crossFlow ≥ 7 条', links.length >= 7, String(links.length))
+  const wien = links.find((link) => link.chain === 'sys-time' && link.formula === 'wien_displacement' && link.param === 'T')
+  assert('★ 高置信候选已确认（wien.T ← 材料链#2）', wien?.target.chain === 'sys-material' && wien?.target.step === 2, JSON.stringify(wien))
   assert('★ 每条 crossFlow 指向真实链', links.every((link) => chains.some((c) => c.id === link.target.chain)), '')
 }
 console.log('-- 2. 缺 crossValues 时有来源提示 --')

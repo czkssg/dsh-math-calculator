@@ -126,7 +126,7 @@ for (const chain of chains) {
   for (const [index, step] of steps.entries()) {
     const f = formulas.find((x) => x.id === mainOf(step.formula))
     if (f === undefined) continue
-    const used = new Set(Object.keys(step.dataFlow || {}))
+    const used = new Set([...Object.keys(step.dataFlow || {}), ...Object.keys(step.crossFlow || {})])
     for (const [param, spec] of Object.entries(f.params || {})) {
       if (used.has(param)) continue
       const g = paramGroup(spec)
