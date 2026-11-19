@@ -1269,5 +1269,19 @@
    "prng",
    "行为映射"
   ]
+ },
+ {
+  "key": "currency",
+  "tier": "core",
+  "weight": 110,
+  "title": "货币符号库 currency",
+  "summary": "现代/古代/架空货币的中文名、国际符号与缩写（不做汇率/购买力）。",
+  "body": "【货币符号库】只提供中文名/国际符号/缩写，方便写作时直接写单价（$5/t、€3/kg、¥12/斤）。\n  list {operation:\"currency\"}（可加 currencyKind:\"modern\" / \"ancient\" / \"fantasy\"）\n  get  {operation:\"currency\", currencyAction:\"get\", currencyCode:\"USD\"}（也认中文名/缩写）\n  ★ 不做汇率换算，不记录购买力——购买力由 AI 按当时世界自行查询/设定。\n  ★ 架空货币（金/银/铜/信用点）的比例也由世界设定决定，库里只给符号。",
+  "aliases": [
+   "货币",
+   "currency",
+   "金钱",
+   "符号"
+  ]
  }
 ]

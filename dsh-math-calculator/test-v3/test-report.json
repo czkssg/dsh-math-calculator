@@ -1,17 +1,17 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-19T18:39:29.634Z",
+  "generatedAt": "2026-11-19T19:20:34.406Z",
   "project": "dsh-math-calculator",
-  "version": "3.32.1",
-  "summaryText": "142 套 / 3248 项全绿（失败 0）· v3.32.1",
+  "version": "3.33.0",
+  "summaryText": "143 套 / 3263 项全绿（失败 0）· v3.33.0",
   "summary": {
-    "suites": 142,
-    "passed": 3248,
+    "suites": 143,
+    "passed": 3263,
     "failed": 0,
     "allGreen": true,
     "slowest": {
       "name": "r79-perf-units",
-      "ms": 10908
+      "ms": 10583
     }
   },
   "howToRun": {
@@ -40,7 +40,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 2070
+      "ms": 2268
     },
     {
       "name": "astro",
@@ -50,7 +50,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 1988
+      "ms": 1940
     },
     {
       "name": "astrotech",
@@ -60,7 +60,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 1896
+      "ms": 1938
     },
     {
       "name": "backtrace",
@@ -70,7 +70,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1959
+      "ms": 1979
     },
     {
       "name": "balance-cross",
@@ -80,7 +80,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 1929
+      "ms": 1943
     },
     {
       "name": "calendar-logistics",
@@ -90,7 +90,7 @@
       "passed": 14,
       "failed": 0,
       "ok": true,
-      "ms": 1907
+      "ms": 1912
     },
     {
       "name": "calendar",
@@ -100,7 +100,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1955
+      "ms": 1997
     },
     {
       "name": "circulation",
@@ -110,7 +110,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1850
+      "ms": 1977
     },
     {
       "name": "climate-grid",
@@ -120,7 +120,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 2029
+      "ms": 2173
     },
     {
       "name": "climate-model",
@@ -130,7 +130,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 1794
+      "ms": 1955
     },
     {
       "name": "closure",
@@ -140,7 +140,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 1892
+      "ms": 1828
     },
     {
       "name": "conflict",
@@ -150,7 +150,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1931
+      "ms": 1782
     },
     {
       "name": "consistency-cn",
@@ -160,7 +160,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 1823
+      "ms": 1827
     },
     {
       "name": "consistency-fixes",
@@ -170,7 +170,7 @@
       "passed": 6,
       "failed": 0,
       "ok": true,
-      "ms": 1806
+      "ms": 1778
     },
     {
       "name": "core",
@@ -191,7 +191,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 2194
+      "ms": 2254
     },
     {
       "name": "data-store-advanced",
@@ -201,7 +201,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 2105
+      "ms": 2115
     },
     {
       "name": "data-store",
@@ -211,7 +211,7 @@
       "passed": 23,
       "failed": 0,
       "ok": true,
-      "ms": 1862
+      "ms": 1878
     },
     {
       "name": "deduction-bodies",
@@ -221,7 +221,7 @@
       "passed": 47,
       "failed": 0,
       "ok": true,
-      "ms": 115
+      "ms": 136
     },
     {
       "name": "deduction-derivation",
@@ -231,7 +231,7 @@
       "passed": 142,
       "failed": 0,
       "ok": true,
-      "ms": 304
+      "ms": 264
     },
     {
       "name": "deduction-feasibility",
@@ -241,7 +241,7 @@
       "passed": 53,
       "failed": 0,
       "ok": true,
-      "ms": 130
+      "ms": 125
     },
     {
       "name": "deduction-hierarchy-align",
@@ -251,7 +251,7 @@
       "passed": 32,
       "failed": 0,
       "ok": true,
-      "ms": 119
+      "ms": 116
     },
     {
       "name": "deduction-hierarchy-boundary",
@@ -261,7 +261,7 @@
       "passed": 33,
       "failed": 0,
       "ok": true,
-      "ms": 121
+      "ms": 138
     },
     {
       "name": "deduction-new-ops",
@@ -271,7 +271,7 @@
       "passed": 67,
       "failed": 0,
       "ok": true,
-      "ms": 1391
+      "ms": 1430
     },
     {
       "name": "deduction-quick-feasible-align",
@@ -282,7 +282,7 @@
       "passed": 19,
       "failed": 0,
       "ok": true,
-      "ms": 113
+      "ms": 118
     },
     {
       "name": "deduction-quick-feasible-boundary",
@@ -292,7 +292,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 108
+      "ms": 124
     },
     {
       "name": "deduction-world-parity",
@@ -302,7 +302,7 @@
       "passed": 31,
       "failed": 0,
       "ok": true,
-      "ms": 169
+      "ms": 168
     },
     {
       "name": "deduction-world-state-align",
@@ -313,7 +313,7 @@
       "passed": 23,
       "failed": 0,
       "ok": true,
-      "ms": 113
+      "ms": 118
     },
     {
       "name": "deduction-world-state-boundary",
@@ -323,7 +323,7 @@
       "passed": 20,
       "failed": 0,
       "ok": true,
-      "ms": 187
+      "ms": 186
     },
     {
       "name": "deduction-world",
@@ -333,7 +333,7 @@
       "passed": 97,
       "failed": 0,
       "ok": true,
-      "ms": 159
+      "ms": 153
     },
     {
       "name": "dedupe",
@@ -343,7 +343,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 1997
+      "ms": 2018
     },
     {
       "name": "derivation-demo",
@@ -353,7 +353,7 @@
       "passed": 10,
       "failed": 0,
       "ok": true,
-      "ms": 2522
+      "ms": 2322
     },
     {
       "name": "diverge",
@@ -363,7 +363,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 2139
+      "ms": 2030
     },
     {
       "name": "document-pdf",
@@ -373,7 +373,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 2173
+      "ms": 2105
     },
     {
       "name": "enclosure",
@@ -383,7 +383,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1891
+      "ms": 1889
     },
     {
       "name": "error-structure",
@@ -393,7 +393,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 2215
+      "ms": 2205
     },
     {
       "name": "facade",
@@ -403,7 +403,7 @@
       "passed": 10,
       "failed": 0,
       "ok": true,
-      "ms": 2278
+      "ms": 2245
     },
     {
       "name": "feedback-aliases",
@@ -413,7 +413,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 8591
+      "ms": 8653
     },
     {
       "name": "feedback-defects",
@@ -424,7 +424,7 @@
       "passed": 38,
       "failed": 0,
       "ok": true,
-      "ms": 6890
+      "ms": 6813
     },
     {
       "name": "formula-unit-check",
@@ -434,7 +434,7 @@
       "passed": 4,
       "failed": 0,
       "ok": true,
-      "ms": 2573
+      "ms": 2638
     },
     {
       "name": "formulas-align",
@@ -444,7 +444,7 @@
       "passed": 40,
       "failed": 0,
       "ok": true,
-      "ms": 3354
+      "ms": 3115
     },
     {
       "name": "formulas-chain-run",
@@ -455,7 +455,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 2223
+      "ms": 2214
     },
     {
       "name": "formulas-function-relations",
@@ -465,7 +465,7 @@
       "passed": 25,
       "failed": 0,
       "ok": true,
-      "ms": 2294
+      "ms": 2360
     },
     {
       "name": "formulas-solve-graph",
@@ -475,7 +475,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 1986
+      "ms": 2011
     },
     {
       "name": "formulas-static",
@@ -485,7 +485,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 3061
+      "ms": 2411
     },
     {
       "name": "formulas-units-dimensions",
@@ -496,7 +496,7 @@
       "passed": 14,
       "failed": 0,
       "ok": true,
-      "ms": 2502
+      "ms": 2790
     },
     {
       "name": "graph-align",
@@ -506,7 +506,7 @@
       "passed": 52,
       "failed": 0,
       "ok": true,
-      "ms": 1459
+      "ms": 1571
     },
     {
       "name": "graph-extract-numbers-align",
@@ -516,7 +516,7 @@
       "passed": 32,
       "failed": 0,
       "ok": true,
-      "ms": 110
+      "ms": 133
     },
     {
       "name": "graph-extract-numbers-boundary",
@@ -527,7 +527,7 @@
       "passed": 21,
       "failed": 0,
       "ok": true,
-      "ms": 108
+      "ms": 125
     },
     {
       "name": "graph-timeline-check",
@@ -538,7 +538,7 @@
       "passed": 21,
       "failed": 0,
       "ok": true,
-      "ms": 104
+      "ms": 114
     },
     {
       "name": "graph-units-audit",
@@ -549,7 +549,7 @@
       "passed": 20,
       "failed": 0,
       "ok": true,
-      "ms": 114
+      "ms": 117
     },
     {
       "name": "gravity",
@@ -559,7 +559,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 1862
+      "ms": 1865
     },
     {
       "name": "history-prng",
@@ -569,7 +569,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1864
+      "ms": 1870
     },
     {
       "name": "history-sim",
@@ -579,7 +579,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 2002
+      "ms": 1996
     },
     {
       "name": "hydraulic-train",
@@ -589,7 +589,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 1946
+      "ms": 2033
     },
     {
       "name": "mechanism",
@@ -599,7 +599,7 @@
       "passed": 14,
       "failed": 0,
       "ok": true,
-      "ms": 1935
+      "ms": 1962
     },
     {
       "name": "megastructure",
@@ -609,7 +609,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 1920
+      "ms": 1901
     },
     {
       "name": "model-chains",
@@ -619,7 +619,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 1902
+      "ms": 1929
     },
     {
       "name": "moon-calendar",
@@ -629,7 +629,7 @@
       "passed": 5,
       "failed": 0,
       "ok": true,
-      "ms": 1897
+      "ms": 1889
     },
     {
       "name": "numeric-align",
@@ -639,7 +639,7 @@
       "passed": 64,
       "failed": 0,
       "ok": true,
-      "ms": 5932
+      "ms": 5958
     },
     {
       "name": "numeric-boundary",
@@ -649,7 +649,7 @@
       "passed": 72,
       "failed": 0,
       "ok": true,
-      "ms": 2497
+      "ms": 2494
     },
     {
       "name": "optimize",
@@ -659,7 +659,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 1787
+      "ms": 1806
     },
     {
       "name": "orbit",
@@ -669,7 +669,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 1799
+      "ms": 1812
     },
     {
       "name": "output-lossless",
@@ -680,7 +680,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 2324
+      "ms": 2320
     },
     {
       "name": "physical-systems",
@@ -690,7 +690,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 1823
+      "ms": 1831
     },
     {
       "name": "r44-fixes",
@@ -700,7 +700,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 1893
+      "ms": 1951
     },
     {
       "name": "r49-fixes",
@@ -710,7 +710,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1937
+      "ms": 1956
     },
     {
       "name": "r51-boundaries",
@@ -720,7 +720,7 @@
       "passed": 14,
       "failed": 0,
       "ok": true,
-      "ms": 2399
+      "ms": 1908
     },
     {
       "name": "r52-topology-dirty",
@@ -730,7 +730,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 1993
+      "ms": 2253
     },
     {
       "name": "r53-units-pressure",
@@ -740,7 +740,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 2232
+      "ms": 2349
     },
     {
       "name": "r58-r60-fixes",
@@ -761,7 +761,7 @@
       "passed": 27,
       "failed": 0,
       "ok": true,
-      "ms": 2004
+      "ms": 1979
     },
     {
       "name": "r62-declaration",
@@ -772,17 +772,17 @@
       "passed": 27,
       "failed": 0,
       "ok": true,
-      "ms": 2015
+      "ms": 2031
     },
     {
       "name": "r62-doc-consistency",
       "file": "test-v3/r62-doc-consistency.mjs",
       "command": "node test-v3/r62-doc-consistency.mjs",
       "title": "R62 文档一致性：教 AI 用的几份文档（工具描述 / 系统提示 / help / SKILL）必须互相对得上。",
-      "passed": 93,
+      "passed": 94,
       "failed": 0,
       "ok": true,
-      "ms": 2255
+      "ms": 2419
     },
     {
       "name": "r62-formula-matrix",
@@ -793,7 +793,7 @@
       "passed": 65,
       "failed": 0,
       "ok": true,
-      "ms": 2313
+      "ms": 2337
     },
     {
       "name": "r62-formula-units-full",
@@ -804,7 +804,7 @@
       "passed": 2,
       "failed": 0,
       "ok": true,
-      "ms": 5580
+      "ms": 5008
     },
     {
       "name": "r62-quality",
@@ -815,7 +815,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 3214
+      "ms": 3283
     },
     {
       "name": "r62-units-unregistered",
@@ -826,7 +826,7 @@
       "passed": 23,
       "failed": 0,
       "ok": true,
-      "ms": 2149
+      "ms": 2222
     },
     {
       "name": "r63-chain-flow",
@@ -837,7 +837,7 @@
       "passed": 28,
       "failed": 0,
       "ok": true,
-      "ms": 1708
+      "ms": 2771
     },
     {
       "name": "r64-formula-web",
@@ -847,7 +847,7 @@
       "passed": 23,
       "failed": 0,
       "ok": true,
-      "ms": 2408
+      "ms": 2493
     },
     {
       "name": "r65-formula-web-context",
@@ -857,7 +857,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 2109
+      "ms": 2463
     },
     {
       "name": "r66-final",
@@ -868,7 +868,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 9456
+      "ms": 7394
     },
     {
       "name": "r66-formula-constants",
@@ -878,7 +878,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 2860
+      "ms": 2801
     },
     {
       "name": "r67-constant-relations",
@@ -888,7 +888,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 2367
+      "ms": 1792
     },
     {
       "name": "r68-random",
@@ -898,7 +898,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1762
+      "ms": 1750
     },
     {
       "name": "r69-feedback-v2",
@@ -908,7 +908,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1863
+      "ms": 1854
     },
     {
       "name": "r70-chain-web",
@@ -918,7 +918,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 2141
+      "ms": 2210
     },
     {
       "name": "r71-cross-chain",
@@ -928,7 +928,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 2059
+      "ms": 2170
     },
     {
       "name": "r72-cross-flow",
@@ -938,7 +938,7 @@
       "passed": 10,
       "failed": 0,
       "ok": true,
-      "ms": 1945
+      "ms": 1915
     },
     {
       "name": "r73-output-coverage",
@@ -948,7 +948,7 @@
       "passed": 5,
       "failed": 0,
       "ok": true,
-      "ms": 1981
+      "ms": 1994
     },
     {
       "name": "r74-stress",
@@ -958,7 +958,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 5288
+      "ms": 5456
     },
     {
       "name": "r75-batch-label",
@@ -968,7 +968,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 2166
+      "ms": 2190
     },
     {
       "name": "r76-label-chars",
@@ -978,7 +978,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 1741
+      "ms": 1725
     },
     {
       "name": "r77-stress2",
@@ -988,7 +988,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 1945
+      "ms": 1981
     },
     {
       "name": "r78-sys-export",
@@ -998,7 +998,7 @@
       "passed": 6,
       "failed": 0,
       "ok": true,
-      "ms": 1766
+      "ms": 2209
     },
     {
       "name": "r79-perf-units",
@@ -1008,7 +1008,7 @@
       "passed": 6,
       "failed": 0,
       "ok": true,
-      "ms": 10908
+      "ms": 10583
     },
     {
       "name": "r80-symbol-query",
@@ -1018,7 +1018,7 @@
       "passed": 6,
       "failed": 0,
       "ok": true,
-      "ms": 3480
+      "ms": 3597
     },
     {
       "name": "r81-math-engine-service",
@@ -1028,7 +1028,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 1865
+      "ms": 1908
     },
     {
       "name": "r82-namespace-units",
@@ -1038,7 +1038,7 @@
       "passed": 19,
       "failed": 0,
       "ok": true,
-      "ms": 2018
+      "ms": 2019
     },
     {
       "name": "r83-service-third",
@@ -1048,7 +1048,17 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 2041
+      "ms": 2090
+    },
+    {
+      "name": "r84-currency",
+      "file": "test-v3/r84-currency.mjs",
+      "command": "node test-v3/r84-currency.mjs",
+      "title": "货币符号库：list/get，不做汇率与购买力。",
+      "passed": 14,
+      "failed": 0,
+      "ok": true,
+      "ms": 1727
     },
     {
       "name": "run-log",
@@ -1058,7 +1068,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 1935
+      "ms": 1998
     },
     {
       "name": "schema-coverage",
@@ -1069,7 +1079,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 1670
+      "ms": 1643
     },
     {
       "name": "skill-sync",
@@ -1079,7 +1089,7 @@
       "passed": 39,
       "failed": 0,
       "ok": true,
-      "ms": 1690
+      "ms": 1599
     },
     {
       "name": "solar-validation",
@@ -1089,7 +1099,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 1658
+      "ms": 1628
     },
     {
       "name": "sponge",
@@ -1099,7 +1109,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1651
+      "ms": 1634
     },
     {
       "name": "system-dynamics",
@@ -1109,7 +1119,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 2128
+      "ms": 1724
     },
     {
       "name": "system",
@@ -1119,7 +1129,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 2891
+      "ms": 1636
     },
     {
       "name": "terrain-kinds",
@@ -1129,7 +1139,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 2258
+      "ms": 2152
     },
     {
       "name": "tool-batch",
@@ -1139,7 +1149,7 @@
       "passed": 41,
       "failed": 0,
       "ok": true,
-      "ms": 3113
+      "ms": 3163
     },
     {
       "name": "tool-dispatch-numeric",
@@ -1150,7 +1160,7 @@
       "passed": 33,
       "failed": 0,
       "ok": true,
-      "ms": 5142
+      "ms": 4830
     },
     {
       "name": "tool-dispatch-rest",
@@ -1160,7 +1170,7 @@
       "passed": 30,
       "failed": 0,
       "ok": true,
-      "ms": 2689
+      "ms": 2149
     },
     {
       "name": "tool-dispatch",
@@ -1170,7 +1180,7 @@
       "passed": 35,
       "failed": 0,
       "ok": true,
-      "ms": 2114
+      "ms": 2078
     },
     {
       "name": "topology-artifacts",
@@ -1181,7 +1191,7 @@
       "passed": 13,
       "failed": 0,
       "ok": true,
-      "ms": 1964
+      "ms": 1982
     },
     {
       "name": "topology-avoid",
@@ -1192,7 +1202,7 @@
       "passed": 10,
       "failed": 0,
       "ok": true,
-      "ms": 1905
+      "ms": 2018
     },
     {
       "name": "topology-engineering",
@@ -1202,7 +1212,7 @@
       "passed": 15,
       "failed": 0,
       "ok": true,
-      "ms": 1786
+      "ms": 1896
     },
     {
       "name": "topology-entities",
@@ -1212,7 +1222,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 1943
+      "ms": 2385
     },
     {
       "name": "topology-examples",
@@ -1222,7 +1232,7 @@
       "passed": 6,
       "failed": 0,
       "ok": true,
-      "ms": 1850
+      "ms": 2007
     },
     {
       "name": "topology-geometry",
@@ -1232,7 +1242,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 147
+      "ms": 159
     },
     {
       "name": "topology-model",
@@ -1242,7 +1252,7 @@
       "passed": 21,
       "failed": 0,
       "ok": true,
-      "ms": 124
+      "ms": 125
     },
     {
       "name": "topology-ops",
@@ -1252,7 +1262,7 @@
       "passed": 26,
       "failed": 0,
       "ok": true,
-      "ms": 2152
+      "ms": 1977
     },
     {
       "name": "topology-rules",
@@ -1263,7 +1273,7 @@
       "passed": 18,
       "failed": 0,
       "ok": true,
-      "ms": 159
+      "ms": 142
     },
     {
       "name": "topology-structure",
@@ -1273,7 +1283,7 @@
       "passed": 16,
       "failed": 0,
       "ok": true,
-      "ms": 114
+      "ms": 109
     },
     {
       "name": "topology-terrain",
@@ -1284,7 +1294,7 @@
       "passed": 36,
       "failed": 0,
       "ok": true,
-      "ms": 110
+      "ms": 111
     },
     {
       "name": "ucum-compound",
@@ -1294,7 +1304,7 @@
       "passed": 8,
       "failed": 0,
       "ok": true,
-      "ms": 2042
+      "ms": 2112
     },
     {
       "name": "ucum-registry",
@@ -1304,7 +1314,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 1867
+      "ms": 2022
     },
     {
       "name": "unit-bridge",
@@ -1314,7 +1324,7 @@
       "passed": 14,
       "failed": 0,
       "ok": true,
-      "ms": 2105
+      "ms": 2382
     },
     {
       "name": "unit-coverage",
@@ -1324,7 +1334,7 @@
       "passed": 17,
       "failed": 0,
       "ok": true,
-      "ms": 5326
+      "ms": 5148
     },
     {
       "name": "unit-pipeline",
@@ -1334,7 +1344,7 @@
       "passed": 19,
       "failed": 0,
       "ok": true,
-      "ms": 2498
+      "ms": 2538
     },
     {
       "name": "unit-symbols",
@@ -1345,7 +1355,7 @@
       "passed": 11,
       "failed": 0,
       "ok": true,
-      "ms": 2207
+      "ms": 2225
     },
     {
       "name": "units-ancient-4",
@@ -1356,7 +1366,7 @@
       "passed": 67,
       "failed": 0,
       "ok": true,
-      "ms": 1569
+      "ms": 1607
     },
     {
       "name": "units-byzantine-arab",
@@ -1366,7 +1376,7 @@
       "passed": 48,
       "failed": 0,
       "ok": true,
-      "ms": 1530
+      "ms": 1545
     },
     {
       "name": "units-custom",
@@ -1376,7 +1386,7 @@
       "passed": 51,
       "failed": 0,
       "ok": true,
-      "ms": 1706
+      "ms": 1754
     },
     {
       "name": "units-default",
@@ -1386,7 +1396,7 @@
       "passed": 56,
       "failed": 0,
       "ok": true,
-      "ms": 1604
+      "ms": 1590
     },
     {
       "name": "units-era-world",
@@ -1396,7 +1406,7 @@
       "passed": 50,
       "failed": 0,
       "ok": true,
-      "ms": 1539
+      "ms": 1554
     },
     {
       "name": "units-era",
@@ -1406,7 +1416,7 @@
       "passed": 50,
       "failed": 0,
       "ok": true,
-      "ms": 1973
+      "ms": 1542
     },
     {
       "name": "units-extended",
@@ -1416,7 +1426,7 @@
       "passed": 67,
       "failed": 0,
       "ok": true,
-      "ms": 1670
+      "ms": 1624
     },
     {
       "name": "units-extra",
@@ -1426,7 +1436,7 @@
       "passed": 9,
       "failed": 0,
       "ok": true,
-      "ms": 1981
+      "ms": 1972
     },
     {
       "name": "units-imperial",
@@ -1436,7 +1446,7 @@
       "passed": 69,
       "failed": 0,
       "ok": true,
-      "ms": 1598
+      "ms": 1587
     },
     {
       "name": "units-si",
@@ -1446,7 +1456,7 @@
       "passed": 52,
       "failed": 0,
       "ok": true,
-      "ms": 1665
+      "ms": 1627
     },
     {
       "name": "world-build",
@@ -1456,7 +1466,7 @@
       "passed": 12,
       "failed": 0,
       "ok": true,
-      "ms": 1945
+      "ms": 1898
     },
     {
       "name": "world-calendar",
@@ -1466,7 +1476,7 @@
       "passed": 7,
       "failed": 0,
       "ok": true,
-      "ms": 1977
+      "ms": 2482
     },
     {
       "name": "world-map",
@@ -1476,7 +1486,7 @@
       "passed": 22,
       "failed": 0,
       "ok": true,
-      "ms": 4482
+      "ms": 4702
     }
   ],
   "failures": []

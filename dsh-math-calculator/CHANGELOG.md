@@ -2,6 +2,21 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.33.0] — 2026-11-20
+
+**货币符号库（currency）**：现代/古代/架空货币的中文名、国际符号与缩写。
+
+### 新增
+
+- `src/data/currencies.json`：**47 条**（现代 22 / 古代 16 / 架空 9）；
+- `operation:"currency"`：`list`（按类别分组）/ `get`（代码、中文名、缩写均可查）；
+- **不做汇率换算、不记录购买力**（用户口径：购买力由 AI 按当时世界查询/设定）；
+- help 第 65 节、SKILL 行、`docs/货币库.md`。
+
+### 测试
+
+- 新增 `r84-currency` 14 项；
+  全量 **143 套 / 3,263 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.32.1] — 2026-11-20
 
 **服务层压测：单位名规则收紧**。

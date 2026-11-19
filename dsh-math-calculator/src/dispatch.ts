@@ -72,6 +72,7 @@ import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
+import { runCurrency, type CurrencyFile } from './features/currency/currency.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
 import { checkConsistency } from './features/graph/consistency.js'
@@ -741,6 +742,15 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return toOutcome(convertUnits(buildEngine(), value, from, to, args['terse'] === true, displayPrecisionOf(args)))
     }
 
+    case 'currency': {
+      const file = dataOf<CurrencyFile>('currencies', 'currencies.json', { currencies: [] })
+      return toOutcome(runCurrency(file, {
+        action: typeof args['currencyAction'] === 'string' ? (args['currencyAction'] as string) : undefined,
+        kind: typeof args['currencyKind'] === 'string' ? (args['currencyKind'] as string) : undefined,
+        code: typeof args['currencyCode'] === 'string' ? (args['currencyCode'] as string) : undefined,
+      }))
+    }
+
     // ── 公式库（features/formulas）──
     case 'formulas': {
       /** 合并：query:"table" 走公式参数表（原 formula-table）。 */
@@ -1138,6 +1148,7 @@ function relations(): RelationIndex {
 /** 已迁移的 operation 清单（供 help / 测试核对）。 */
 export const MIGRATED_OPERATIONS = [
   'random',
+  'currency',
   // 推演与对账（第 6 步）
   'world',
   'derivation',

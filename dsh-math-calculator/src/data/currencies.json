@@ -1,0 +1,388 @@
+{
+ "meta": {
+  "note": "货币符号库：只提供中文名、国际符号与缩写，方便写作时调用（如 $5/t、€3/kg）。不做汇率换算，也不记录购买力——购买力由 AI 按当时世界自行查询/设定。",
+  "kinds": {
+   "modern": "现代货币",
+   "ancient": "古代/历史货币",
+   "fantasy": "架空世界通用货币"
+  }
+ },
+ "currencies": [
+  {
+   "code": "CNY",
+   "name": "人民币",
+   "symbol": "¥",
+   "abbrev": "元",
+   "kind": "modern",
+   "note": "中国法定货币"
+  },
+  {
+   "code": "USD",
+   "name": "美元",
+   "symbol": "$",
+   "abbrev": "美元",
+   "kind": "modern",
+   "note": "美国法定货币；国际常用结算货币"
+  },
+  {
+   "code": "EUR",
+   "name": "欧元",
+   "symbol": "€",
+   "abbrev": "欧元",
+   "kind": "modern",
+   "note": "欧元区共同货币"
+  },
+  {
+   "code": "GBP",
+   "name": "英镑",
+   "symbol": "£",
+   "abbrev": "镑",
+   "kind": "modern",
+   "note": "英国法定货币"
+  },
+  {
+   "code": "JPY",
+   "name": "日元",
+   "symbol": "¥",
+   "abbrev": "円",
+   "kind": "modern",
+   "note": "日本法定货币"
+  },
+  {
+   "code": "KRW",
+   "name": "韩元",
+   "symbol": "₩",
+   "abbrev": "원",
+   "kind": "modern",
+   "note": "韩国法定货币"
+  },
+  {
+   "code": "HKD",
+   "name": "港元",
+   "symbol": "HK$",
+   "abbrev": "港币",
+   "kind": "modern",
+   "note": "中国香港地区货币"
+  },
+  {
+   "code": "TWD",
+   "name": "新台币",
+   "symbol": "NT$",
+   "abbrev": "元",
+   "kind": "modern",
+   "note": "中国台湾地区货币"
+  },
+  {
+   "code": "SGD",
+   "name": "新加坡元",
+   "symbol": "S$",
+   "abbrev": "新元",
+   "kind": "modern",
+   "note": "新加坡法定货币"
+  },
+  {
+   "code": "THB",
+   "name": "泰铢",
+   "symbol": "฿",
+   "abbrev": "铢",
+   "kind": "modern",
+   "note": "泰国法定货币"
+  },
+  {
+   "code": "VND",
+   "name": "越南盾",
+   "symbol": "₫",
+   "abbrev": "盾",
+   "kind": "modern",
+   "note": "越南法定货币"
+  },
+  {
+   "code": "INR",
+   "name": "印度卢比",
+   "symbol": "₹",
+   "abbrev": "卢比",
+   "kind": "modern",
+   "note": "印度法定货币"
+  },
+  {
+   "code": "RUB",
+   "name": "俄罗斯卢布",
+   "symbol": "₽",
+   "abbrev": "卢布",
+   "kind": "modern",
+   "note": "俄罗斯法定货币"
+  },
+  {
+   "code": "AUD",
+   "name": "澳大利亚元",
+   "symbol": "A$",
+   "abbrev": "澳元",
+   "kind": "modern",
+   "note": "澳大利亚法定货币"
+  },
+  {
+   "code": "CAD",
+   "name": "加拿大元",
+   "symbol": "C$",
+   "abbrev": "加元",
+   "kind": "modern",
+   "note": "加拿大法定货币"
+  },
+  {
+   "code": "CHF",
+   "name": "瑞士法郎",
+   "symbol": "CHF",
+   "abbrev": "法郎",
+   "kind": "modern",
+   "note": "瑞士法定货币"
+  },
+  {
+   "code": "BRL",
+   "name": "巴西雷亚尔",
+   "symbol": "R$",
+   "abbrev": "雷亚尔",
+   "kind": "modern",
+   "note": "巴西法定货币"
+  },
+  {
+   "code": "MXN",
+   "name": "墨西哥比索",
+   "symbol": "MX$",
+   "abbrev": "比索",
+   "kind": "modern",
+   "note": "墨西哥法定货币"
+  },
+  {
+   "code": "TRY",
+   "name": "土耳其里拉",
+   "symbol": "₺",
+   "abbrev": "里拉",
+   "kind": "modern",
+   "note": "土耳其法定货币"
+  },
+  {
+   "code": "AED",
+   "name": "阿联酋迪拉姆",
+   "symbol": "د.إ",
+   "abbrev": "迪拉姆",
+   "kind": "modern",
+   "note": "阿联酋法定货币"
+  },
+  {
+   "code": "SAR",
+   "name": "沙特里亚尔",
+   "symbol": "﷼",
+   "abbrev": "里亚尔",
+   "kind": "modern",
+   "note": "沙特阿拉伯法定货币"
+  },
+  {
+   "code": "ZAR",
+   "name": "南非兰特",
+   "symbol": "R",
+   "abbrev": "兰特",
+   "kind": "modern",
+   "note": "南非法定货币"
+  },
+  {
+   "code": "CN_SHELL",
+   "name": "贝（货贝）",
+   "symbol": "",
+   "abbrev": "贝",
+   "kind": "ancient",
+   "note": "中国最早的一般等价物之一"
+  },
+  {
+   "code": "CN_BANLIANG",
+   "name": "半两（秦）",
+   "symbol": "",
+   "abbrev": "半两",
+   "kind": "ancient",
+   "note": "秦半两，圆形方孔"
+  },
+  {
+   "code": "CN_WUZHU",
+   "name": "五铢（汉）",
+   "symbol": "",
+   "abbrev": "五铢",
+   "kind": "ancient",
+   "note": "汉五铢，行用数百年"
+  },
+  {
+   "code": "CN_KAIYUAN",
+   "name": "开元通宝（唐）",
+   "symbol": "",
+   "abbrev": "文",
+   "kind": "ancient",
+   "note": "唐开元通宝；1 文为基本铜钱单位"
+  },
+  {
+   "code": "CN_GUAN",
+   "name": "贯（宋纸币）",
+   "symbol": "",
+   "abbrev": "贯",
+   "kind": "ancient",
+   "note": "交子/会子等纸币的常见单位"
+  },
+  {
+   "code": "CN_TAEL",
+   "name": "两（银）",
+   "symbol": "",
+   "abbrev": "两",
+   "kind": "ancient",
+   "note": "明清银两；1 两 = 10 钱 = 100 分"
+  },
+  {
+   "code": "CN_COIN",
+   "name": "制钱",
+   "symbol": "",
+   "abbrev": "文",
+   "kind": "ancient",
+   "note": "明清铜钱"
+  },
+  {
+   "code": "CN_SILVER_DOLLAR",
+   "name": "银元",
+   "symbol": "",
+   "abbrev": "元",
+   "kind": "ancient",
+   "note": "晚清/民国通商口岸常见"
+  },
+  {
+   "code": "ROM_DENARIUS",
+   "name": "第纳尔（罗马）",
+   "symbol": "",
+   "abbrev": "第纳尔",
+   "kind": "ancient",
+   "note": "罗马帝国银币"
+  },
+  {
+   "code": "GR_DRACHMA",
+   "name": "德拉克马（希腊）",
+   "symbol": "",
+   "abbrev": "德拉克马",
+   "kind": "ancient",
+   "note": "古希腊银币"
+  },
+  {
+   "code": "GR_TALENT",
+   "name": "塔兰特",
+   "symbol": "",
+   "abbrev": "塔兰特",
+   "kind": "ancient",
+   "note": "古希腊大额单位（1 ≈ 6000 德拉克马）"
+  },
+  {
+   "code": "GB_POUND_OLD",
+   "name": "英镑（旧制）",
+   "symbol": "£",
+   "abbrev": "镑",
+   "kind": "ancient",
+   "note": "旧制：1 镑 = 20 先令 = 240 便士"
+  },
+  {
+   "code": "GB_SHILLING",
+   "name": "先令",
+   "symbol": "s",
+   "abbrev": "先令",
+   "kind": "ancient",
+   "note": "英镑旧制辅币（1 先令 = 12 便士）"
+  },
+  {
+   "code": "FR_FRANC_OLD",
+   "name": "法郎（旧）",
+   "symbol": "F",
+   "abbrev": "法郎",
+   "kind": "ancient",
+   "note": "欧元前法国货币"
+  },
+  {
+   "code": "DE_MARK",
+   "name": "马克（旧）",
+   "symbol": "DM",
+   "abbrev": "马克",
+   "kind": "ancient",
+   "note": "欧元前德国货币"
+  },
+  {
+   "code": "RU_RUBLE_OLD",
+   "name": "卢布（旧）",
+   "symbol": "₽",
+   "abbrev": "卢布",
+   "kind": "ancient",
+   "note": "历史卢布"
+  },
+  {
+   "code": "FANTASY_GOLD",
+   "name": "金币",
+   "symbol": "g",
+   "abbrev": "金",
+   "kind": "fantasy",
+   "note": "架空通用；与银/铜的比例由世界设定决定"
+  },
+  {
+   "code": "FANTASY_SILVER",
+   "name": "银币",
+   "symbol": "s",
+   "abbrev": "银",
+   "kind": "fantasy",
+   "note": "架空通用"
+  },
+  {
+   "code": "FANTASY_COPPER",
+   "name": "铜币",
+   "symbol": "c",
+   "abbrev": "铜",
+   "kind": "fantasy",
+   "note": "架空通用"
+  },
+  {
+   "code": "FANTASY_IRON",
+   "name": "铁币",
+   "symbol": "i",
+   "abbrev": "铁",
+   "kind": "fantasy",
+   "note": "贫金属世界/大额军需铸币"
+  },
+  {
+   "code": "FANTASY_NOTE",
+   "name": "信用券（纸币）",
+   "symbol": "₦",
+   "abbrev": "券",
+   "kind": "fantasy",
+   "note": "面额与信用由发行方定"
+  },
+  {
+   "code": "FANTASY_CREDIT",
+   "name": "信用点",
+   "symbol": "cr",
+   "abbrev": "点",
+   "kind": "fantasy",
+   "note": "电子货币/记账单位（科幻）"
+  },
+  {
+   "code": "FANTASY_ENERGY",
+   "name": "能量币",
+   "symbol": "E",
+   "abbrev": "能",
+   "kind": "fantasy",
+   "note": "能量本位（kJ/MJ 计价）"
+  },
+  {
+   "code": "FANTASY_CRYSTAL",
+   "name": "晶币",
+   "symbol": "◇",
+   "abbrev": "晶",
+   "kind": "fantasy",
+   "note": "魔法/晶石本位"
+  },
+  {
+   "code": "FANTASY_BARTER",
+   "name": "以物易物",
+   "symbol": "",
+   "abbrev": "换",
+   "kind": "fantasy",
+   "note": "基准物：贝/盐/布/谷物（货币失效时的替代）"
+  }
+ ]
+}
