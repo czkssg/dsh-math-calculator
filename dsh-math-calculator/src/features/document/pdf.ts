@@ -138,6 +138,12 @@ export async function runDocument(input: { action?: string; path?: string; text?
   }
 
   if (action === 'extract') {
+    /** 纯文本直通（不经过 PDF 解析）：用户要求 document 也认 text。 */
+    if (typeof input.text === 'string' && input.text.trim() !== '') {
+      const text = input.text
+      const preview = text.length > 12000 ? text.slice(0, 12000) + '\n\n…（已截断，全文 ' + text.length + ' 字符）' : text
+      return { result: '═══ 纯文本（直接输入，非 PDF 解析）═══\n ' + text.length + ' 字符\n\n' + preview, value: { chars: text.length, text, pages: 1, lowText: false, tables: 0 } }
+    }
     const pdf = await extractPdf(input.path as string)
     const preview = pdf.text.length > 12000 ? pdf.text.slice(0, 12000) + '\n\n…（已截断，全文 ' + pdf.text.length + ' 字符）' : pdf.text
     return {
@@ -148,6 +154,12 @@ export async function runDocument(input: { action?: string; path?: string; text?
   }
 
   if (action === 'tables') {
+    /** 纯文本的表格：按制表符/竖线切行（不做 PDF 表格识别）。 */
+    if (typeof input.text === 'string' && input.text.trim() !== '') {
+      const rows = input.text.split(/\r?\n/).filter((line) => line.includes('\t') || line.includes('|'))
+      if (rows.length === 0) return { result: '纯文本里没有检测到表格（无制表符/竖线）', value: { tables: [], count: 0 } }
+      return { result: '═══ 纯文本表格（按制表符/竖线切分，' + rows.length + ' 行）═══\n' + rows.slice(0, 40).join('\n'), value: { tables: rows, count: rows.length } }
+    }
     const pdf = await extractPdf(input.path as string)
     if (pdf.tables.length === 0) return { result: '没有检测到表格（' + pdf.pagesCount + ' 页）', value: { pages: pdf.pagesCount, tables: 0 } }
     return { result: '═══ PDF 表格（' + pdf.tables.length + ' 个）═══\n' + pdf.tables.slice(0, 20).join('\n'), value: { pages: pdf.pagesCount, tables: pdf.tables } }

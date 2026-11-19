@@ -407,6 +407,11 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     '国家 ' + stats.nationCount + ' 个（Voronoi 分区；河流/山脉可作自然边界）',
     '编辑：edits 可改 height/seaLevel/nation（改地形到海陆分布）',
   ]
+  /** 两点距离（给了 mapDistance 才有）——必须进文本，否则用户以为参数没生效。 */
+  if (input.distance !== undefined) {
+    const gridDistanceKm = gridDistance({ topology, width, height, from: input.distance.from, to: input.distance.to, planetRadiusKm: input.planetRadiusKm })
+    notes.push('两点距离：' + gridDistanceKm.km.toFixed(1) + ' km（' + Math.round(gridDistanceKm.cells) + ' 格）')
+  }
   /** 大网格：高度网格量化为 0–255 + base64（1440×720 原始 JSON 约 2 MB，量化后约 700 KB）。 */
   /** 超过 10 万格就量化（否则 JSON 上 MB；量化后高度/地形/国家都是紧凑串）。 */
   const large = width * height > 100000

@@ -519,12 +519,20 @@ function solveMulti(engine: Engine, equation: string): AlgebraOutcome {
   const determinant = Number(engine.evaluate('det(' + JSON.stringify(matrix) + ')'))
   if (Math.abs(determinant) < 1e-12) {
     const rank = Number(engine.evaluate('rank(' + JSON.stringify(matrix) + ')'))
+    /** 增广矩阵：rank(A|b) > rank(A) 才是「矛盾无解」；两者相等才是「无穷多解」。 */
+    const augmented = matrix.map((row, index) => [...row, rhs[index]])
+    const rankAug = Number(engine.evaluate('rank(' + JSON.stringify(augmented) + ')'))
+    if (rankAug > rank) {
+      throw new CalcError(
+        'no_solution',
+        '方程组无解（系数矛盾：增广矩阵秩 ' + rankAug + ' > 系数矩阵秩 ' + rank + '）',
+        '两个方程互相矛盾（如 x+y=3 与 x+y=5）；检查是否抄错。',
+      )
+    }
     throw new CalcError(
-      rank < vars.length ? 'singular' : 'no_solution',
-      rank < vars.length
-        ? '方程组解不唯一（系数矩阵奇异，有 ' + (vars.length - rank) + ' 个自由变量）'
-        : '方程组无解（系数矛盾）',
-      '检查方程之间是否线性相关。',
+      'singular',
+      '方程组解不唯一（系数矩阵奇异，有 ' + (vars.length - rank) + ' 个自由变量）',
+      '补充独立方程，或把自由变量当参数给定。',
     )
   }
 

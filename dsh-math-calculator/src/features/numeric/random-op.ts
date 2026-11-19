@@ -73,7 +73,8 @@ export interface RandomOutcome {
 export function runRandom(input: RandomInput = {}): RandomOutcome {
   const seedText = typeof input.randomSeed === 'string' ? input.randomSeed : ''
   const algorithm = input.algorithm === 'lcg' ? 'lcg' : 'xoshiro256pp'
-  const count = Math.max(1, Math.min(1000, Number.isFinite(input.count ?? NaN) ? (input.count as number) : 10))
+  /** count:0 是合法边界（返回空序列）；负数按 0 处理。 */
+  const count = Math.max(0, Math.min(1000, Number.isFinite(input.count ?? NaN) ? (input.count as number) : 10))
   const min = Number.isFinite(input.min ?? NaN) ? (input.min as number) : 0
   const max = Number.isFinite(input.max ?? NaN) ? (input.max as number) : 1
   if (!Number.isFinite(min) || !Number.isFinite(max)) throw new CalcError('invalid_argument', 'random 的 min/max 必须是有限数', '例如 min:0, max:100。')

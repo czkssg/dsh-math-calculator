@@ -26,6 +26,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { workspaceArtifactDir, workspaceDirectory } from '../../io/workspace-store.js'
+import { CalcError } from '../../core/errors.js'
 import MiniSearch from 'minisearch'
 
 /** 数据类型。 */
@@ -94,8 +95,8 @@ export function readRecords(): Map<string, DataRecord> {
  * @throws {Error} kind/name 为空
  */
 export function putRecord(input: { kind: string; name: string; tags?: string[]; refs?: string[]; payload?: unknown }): DataRecord {
-  if (typeof input.kind !== 'string' || input.kind.trim() === '') throw new Error('kind 不能为空')
-  if (typeof input.name !== 'string' || input.name.trim() === '') throw new Error('name 不能为空')
+  if (typeof input.kind !== 'string' || input.kind.trim() === '') throw new CalcError('invalid_argument', 'kind 不能为空', '例如 kind:"note"。')
+  if (typeof input.name !== 'string' || input.name.trim() === '') throw new CalcError('invalid_argument', 'name 不能为空', '例如 name:"北境人口"。')
   const id = recordId(input.kind.trim(), input.name.trim())
   const existing = readRecords().get(id)
   const now = new Date().toISOString()

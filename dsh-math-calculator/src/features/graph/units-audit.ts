@@ -80,12 +80,16 @@ export interface UnitsAuditOutcome {
 /** 建立单位索引。 */
 function buildIndex(units: UnitEntry[]): Map<string, UnitEntry> {
   const index = new Map<string, UnitEntry>()
+  /** 小写键**不覆盖**已有键：`s`（秒）与 `S`（西门子）只差大小写，覆盖会让秒被认成西门子。 */
+  const setIfAbsent = (key: string, unit: UnitEntry): void => { if (!index.has(key)) index.set(key, unit) }
   for (const unit of units) {
     index.set(unit.name, unit)
-    index.set(unit.name.toLowerCase(), unit)
+    const lower = unit.name.toLowerCase()
+    if (lower !== unit.name) setIfAbsent(lower, unit)
     for (const alias of unit.aliases ?? []) {
       index.set(alias, unit)
-      index.set(alias.toLowerCase(), unit)
+      const lowerAlias = alias.toLowerCase()
+      if (lowerAlias !== alias) setIfAbsent(lowerAlias, unit)
     }
   }
   return index
@@ -93,7 +97,12 @@ function buildIndex(units: UnitEntry[]): Map<string, UnitEntry> {
 
 /** 解析单段单位。 */
 function lookupUnit(index: Map<string, UnitEntry>, token: string): UnitEntry | undefined {
-  return index.get(token) ?? index.get(token.toLowerCase())
+  const exact = index.get(token) ?? index.get(token.toLowerCase())
+  if (exact !== undefined) return exact
+  /** `kg/m3` 的 `m3` 归一到表里的 `m³`（数字指数 → 上标）。 */
+  const withSuperscript = token.replace(/(\d)$/, (_, digit: string) => digit === '3' ? '³' : digit === '2' ? '²' : digit)
+  if (withSuperscript !== token) return index.get(withSuperscript) ?? index.get(withSuperscript.toLowerCase())
+  return undefined
 }
 
 /**

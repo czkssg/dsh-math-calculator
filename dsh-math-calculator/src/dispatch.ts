@@ -178,6 +178,28 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
   if (group !== undefined) {
     const inner = typeof args['op'] === 'string' ? (args['op'] as string) : ''
     if (inner === '') {
+      /** 门面免 op：按参数推断默认子命令（calc→evaluate/solve；derive→derivation/world）。 */
+      let inferred = ''
+      if (operation === 'calc') {
+        if (Array.isArray(args['expressions'])) inferred = 'evaluate'
+        else if (typeof args['expression'] === 'string') inferred = args['expression'].includes('=') ? 'solve' : 'evaluate'
+        else if (Array.isArray(args['equations']) || typeof args['equation'] === 'string') inferred = 'solve'
+      } else if (operation === 'derive') {
+        if (typeof args['derivation'] === 'string') inferred = 'derivation'
+        else if (args['world'] !== undefined || args['planetMass'] !== undefined || args['starMass'] !== undefined || args['orbitAU'] !== undefined) inferred = 'world'
+      }
+      if (inferred !== '') {
+        const rest = { ...args }
+        delete rest['op']
+        /** 门面有时收到 equations 数组；solve 只认 expression 逗号串，这里合流。 */
+        if (inferred === 'solve' && typeof rest['expression'] !== 'string') {
+          const list = Array.isArray(rest['equations'])
+            ? (rest['equations'] as unknown[]).map(String)
+            : typeof rest['equation'] === 'string' ? [rest['equation'] as string] : []
+          if (list.length > 0) rest['expression'] = list.join(', ')
+        }
+        return dispatchNew(inferred, rest)
+      }
       return { result: '门面「' + operation + '」需要 op（子命令）。可用：' + group.join(' / '), value: { facade: operation, operations: group } } as never
     }
     if (!group.includes(inner)) {
@@ -288,7 +310,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return runTopology((args['topology'] ?? args) as never)
 
     case 'world-map': {
-      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false })
+      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false })
       const lines = ['═══ 全球地图（中等精度）═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       if (result.ascii !== undefined) lines.push('', result.ascii)
@@ -340,7 +362,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'optimize': {
       const result = optimize({ objective: typeof args['objective'] === 'string' ? (args['objective'] as string) : undefined, opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
-      const lines = ['═══ 线性规划（' + (result.feasible ? '有解' : '无解') + '）═══']
+      /** 无可行解不是「算不出」，是「约束互相冲突」——按反馈给 no_solution 错误体。 */
+      if (!result.feasible) throw new CalcError('no_solution', '线性规划无可行解：约束互相冲突（如某资源上限低于最低需求）', '检查 constraints 的 min 是否大于 max；放宽或删除冲突约束。')
+      const lines = ['═══ 线性规划（有解）═══']
       for (const note of result.notes) lines.push('  ' + note)
       return { result: lines.join('\n'), value: result } as never
     }

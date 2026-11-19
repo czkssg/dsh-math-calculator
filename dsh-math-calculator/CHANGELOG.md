@@ -2,6 +2,26 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.21.0] — 2026-11-19
+
+**反馈报告 v2 全量的 11 条待修**（3 真 bug + 8 接口）。
+
+### 修复
+
+- **`system` 把无解报成 singular**：改用增广矩阵秩——`rank(A|b) > rank(A)` → `no_solution`，
+  相等才是 `singular`（无穷多解）。
+- **`optimize` 无解**：从 `ok=true` 文本改为 `no_solution` 错误体（无界仍是有解状态，返回 ok=true）。
+- **`data` 空名**：`internal` → `invalid_argument`（kind/name 空都点明）。
+- **`random` count:0**：返回 0 个（此前被 Math.max(1) 兜成 1）。
+- **`audit` 大小写**：小写键不再覆盖精确键（`s` 秒 vs `S` 西门子）；`kg/m3` 归一 `m³` 后可识别（mass/volume）。
+- **`world-map`**：`mapSeed` 生效（回退兼容 `seed`）；`mapDistance` 的结果进文本（此前只在 value 里）。
+- **门面免 op**：`calc` 按表达式是否含 `=` 推断 evaluate/solve；`derive` 推断 derivation/world。
+- **`document` 认 text**：extract 直通纯文本；tables 按制表符/竖线切行。
+
+### 测试
+
+- 新增 `r69-feedback-v2` 13 项（3 真 bug + 8 接口 + 无界仍 ok）；
+  全量 **128 套 / 3,089 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.20.0] — 2026-11-19
 
 **长周期随机数 + 行为映射**（`operation:"random"`）。
