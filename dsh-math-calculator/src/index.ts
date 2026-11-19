@@ -8,6 +8,7 @@
  */
 
 import { mathExecuteTool, bindLegacy, setToolContext } from './tool.js'
+import { createMathEngineService, MATH_ENGINE_SERVICE } from './service.js'
 import { buildSystemPromptSection } from './awareness.js'
 import { buildReminderMessage, detectMathNeed, recordPrompt, shouldPromptNow, type DetectorConfig } from './detector.js'
 
@@ -50,6 +51,16 @@ export function apply(ctx: any): void {
   setToolContext(ctx)
 
   ctx.tools.register(mathExecuteTool)
+
+  /**
+   * 程序化门面：mathEngine 服务（其他插件用 ctx.get('mathEngine') 调用）。
+   * 不经过工具流水线、不写会话；失败不影响工具注册（服务不是核心）。
+   */
+  try {
+    if (typeof ctx.provide === 'function') ctx.provide(MATH_ENGINE_SERVICE, createMathEngineService())
+  } catch {
+    /* 桩环境/旧版 cordis 没有 provide：忽略 */
+  }
 
   // ── 第三层提醒：实时检测模型「思维中的计算需求」──
   //

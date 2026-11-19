@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.30.0] — 2026-11-20
+
+**对外服务化第一期：`mathEngine` cordis 服务**（回应 dsh-canon-memory 提案）。
+
+### 新增
+
+- `ctx.provide("mathEngine", …)`：程序化门面，不经过工具流水线、不写会话；
+- 方法：`describe()`（版本/operations/单位族）、`evaluate()`、`convert()`、`checkDimension()`；
+- 结构化返回（`number` 字符串 / `unit` / `value` / `steps`），值与展示分离；
+- **错误三档**：`input` / `capability` / `internal`（可降级语义）；
+- 与工具一致性由 `r81` 锁住（同输入同数值）。
+- 新增 `docs/服务化接口.md`（API、三档映射、第二三期规划）。
+
+### 测试
+
+- 新增 `r81-math-engine-service` 17 项；
+  全量 **140 套 / 3,214 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.29.3] — 2026-11-20
 
 **压测第六轮：符号查询短路**。
