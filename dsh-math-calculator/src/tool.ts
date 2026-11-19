@@ -608,6 +608,24 @@ const BATCH_INHERITED_KEYS = ['precision', 'displayPrecision'] as const
  * @param self - 单条执行函数（外层包装后的 execute，复用出口清理与运行日志）
  * @returns 汇总结果：result 为分段文本，value.results 为逐条结构化结果
  */
+
+/**
+ * 批量 label 清洗：控制字符/孤立代理项移除、换行与制表压成空格、超长截断到 80 字；
+ * 中文/日文/韩文/俄文/阿拉伯文/泰文/emoji/数学符号原样保留。
+ */
+function sanitizeLabel(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  let text = raw
+    .replace(/[\u0000-\u0008\u000A-\u001F\u007F]/g, ' ')
+    .replace(/[\t\r]+/g, ' ')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (text.length > 80) text = text.slice(0, 80) + '…'
+  return text
+}
+
 async function runBatchCalls(
   outer: Record<string, unknown>,
   ctx: unknown,
@@ -700,9 +718,10 @@ async function runBatchCalls(
     }
     if (one.ok === true) succeeded += 1
     else failed += 1
+    const cleanLabel = sanitizeLabel(item['label'])
     records.push({
       index: index + 1,
-      ...(typeof item['label'] === 'string' && item['label'].trim() !== '' ? { label: item['label'].trim() } : {}),
+      ...(cleanLabel !== '' ? { label: cleanLabel } : {}),
       operation: one.operation,
       ok: one.ok,
       input: one.input,
