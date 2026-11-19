@@ -42,6 +42,7 @@ import { loadStateBook, saveStateBook } from './io/state-store.js'
 import { buildEngine } from './core/engine.js'
 import { CalcError } from './core/errors.js'
 import { evaluateBatch, evaluateOne } from './features/numeric/evaluate.js'
+import { runRandom } from './features/numeric/random-op.js'
 import { findRoots, solveEquation, symbolicOperation } from './features/numeric/algebra.js'
 import { eigenValues, matrixProfile, solveLinearSystem } from './features/numeric/linalg.js'
 import { describe, distribution, regression } from './features/numeric/stats.js'
@@ -555,6 +556,20 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return runTimelineCheck({ events: args['events'] as never, maxSpan: args['maxSpan'] as never, overlapAllowed: args['overlapAllowed'] === true })
 
     // ── 数值计算（features/numeric）──
+    case 'random': {
+      const traitsRaw = asRecord(args['randomTraits'])
+      return toOutcome(runRandom({
+        randomSeed: typeof args['randomSeed'] === 'string' ? args['randomSeed'] : undefined,
+        count: typeof args['count'] === 'number' ? args['count'] : undefined,
+        min: typeof args['min'] === 'number' ? args['min'] : undefined,
+        max: typeof args['max'] === 'number' ? args['max'] : undefined,
+        integer: args['integer'] === true,
+        randomActors: Array.isArray(args['randomActors']) ? (args['randomActors'] as string[]) : undefined,
+        randomTraits: traitsRaw as never,
+        algorithm: args['algorithm'] === 'lcg' ? 'lcg' : undefined,
+      }))
+    }
+
     case 'evaluate': {
       /**
        * 变量注入与精度：
@@ -1083,6 +1098,7 @@ function relations(): RelationIndex {
 
 /** 已迁移的 operation 清单（供 help / 测试核对）。 */
 export const MIGRATED_OPERATIONS = [
+  'random',
   // 推演与对账（第 6 步）
   'world',
   'derivation',

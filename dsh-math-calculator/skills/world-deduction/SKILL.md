@@ -8,7 +8,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 ## 这是什么工具
 
-`math_execute` 一个工具 62 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
+`math_execute` 一个工具 63 个 operation。它的定位是**带约束检查的推演引擎**，不是计算器。
 
 三条不可违反的性质：
 
@@ -82,6 +82,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **公式调用带上下游** | `formula` | 默认返回 `value.web`（上游/下游）+ notice；`webContext:false` 关闭 |
 | **架空常数可改** | formulas | 物理常数是参数（c、G、h_planck、NA、Lsun、rayleigh_factor…），默认现实值，params 里直接覆盖 |
 | **常数联动** | constants | 改基础旋钮会自动重算派生量（hbar/R/mu0/sigma/alpha_fs/g/Lsun…）；不带参调用看「→ 派生」；调和办法见 docs/常数关系网.md |
+| **随机数/行为映射** | random | randomSeed + count/min/max/integer；或 randomActors + randomTraits（子流，顺序无关） |
 
 ### astro：天文与历法
 
@@ -243,7 +244,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（63 节带简介）
+{operation:"help"}                        能力目录（64 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数字段表（20+ 个带默认值）
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）

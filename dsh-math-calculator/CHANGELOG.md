@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.20.0] — 2026-11-19
+
+**长周期随机数 + 行为映射**（`operation:"random"`）。
+
+### 新增
+
+- **xoshiro256++**（周期 **2^256−1**，SHA-256 播种，状态 32 B）：
+  序列模式 `randomSeed + count/min/max/integer`；
+- **行为映射**：`randomActors + randomTraits`（`{min,max}` 或 `{choices}`）——
+  每个实体的子流由 `seed|实体名` 派生，**与排序无关**（同一人任何时候同一值）；
+- 兼容 `algorithm:"lcg"`（旧 2^32，仅序列）；
+- help 第 64 节；`docs/随机数.md`；选型记录进 `docs/推演选型.md`。
+
+### 测试
+
+- 新增 `r68-random` 13 项：序列/复现/行为映射/顺序无关/LCG 兼容/边界；
+  全量 **127 套 / 3,076 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.19.0] — 2026-11-19
 
 **常数关系网（文档式）**：改一个常数会牵动谁、不想牵动怎么调和。

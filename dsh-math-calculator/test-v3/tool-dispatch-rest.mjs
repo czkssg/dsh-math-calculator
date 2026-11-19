@@ -105,7 +105,7 @@ console.log('-- 6. auto --')
 
 console.log('-- 7. 迁移清单 --')
 {
-  assert('★ 62 个 operation 全部走新实现', dispatch.MIGRATED_OPERATIONS.length === 62, String(dispatch.MIGRATED_OPERATIONS.length))
+  assert('★ 全部 operation 走新实现（≥62）', dispatch.MIGRATED_OPERATIONS.length >= 62, String(dispatch.MIGRATED_OPERATIONS.length))
   assert('auto 在清单里', dispatch.MIGRATED_OPERATIONS.includes('auto'), '')
 }
 

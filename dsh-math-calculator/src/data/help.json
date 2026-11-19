@@ -1256,5 +1256,18 @@
    "量纲声明"
   ],
   "body": "【优化 / 模拟 / 对账 / 自创量】\n  optimize   {objective:\"profit\", opType:\"max\", constraints:{资源:{max:100}}, lpVariables:{x:{资源:1,profit:3}}, integers:[\"x\"]}\n  simulate   {stocks:{人口:{initial:100}}, flows:{出生:{to:\"人口\",rate:\"人口*0.02\"}}, dt:1, simSteps:100}\n  crosscheck {checkId:\"escapeVelocity\"}（5 项：逃逸速度/一年天数/排水量/耗氧/人口）\n  custom     {customAction:\"add\", name:\"灵力\", unit:\"J\", expectedDimension:{M:1,L:2,T:-2}}\n  ★ crosscheck 只报差异，不替你选哪边对。"
+ },
+ {
+  "key": "random",
+  "tier": "core",
+  "weight": 120,
+  "title": "随机数 random",
+  "summary": "长周期随机数 + 行为映射（同种子同结果，实体顺序无关）",
+  "body": "【随机数】xoshiro256++，周期 2^256−1；同种子同结果。\n  序列     {operation:\"random\", randomSeed:\"world-a\", count:10, min:0, max:100, integer:true}\n  行为映射  randomActors:[\"甲\",\"乙\"], randomTraits:{\"勇气\":{\"min\":0,\"max\":1},\"出身\":{\"choices\":[\"商人\",\"农民\"]}}\n    ★ 每个实体的子流由 seed|实体名 派生——与排序无关，同一实体任何时候同一值。\n  兼容     algorithm:\"lcg\"（周期 2^32，仅序列；行为映射要求默认算法）\n  ★ 用途：给人物/城市/事件分配倾向值；换 randomSeed 即换世界。",
+  "aliases": [
+   "随机",
+   "prng",
+   "行为映射"
+  ]
  }
 ]
