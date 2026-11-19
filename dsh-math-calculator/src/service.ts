@@ -397,8 +397,8 @@ export function createMathEngineService(): MathEngineService {
       const registered: string[] = []
       for (const spec of units) {
         const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
-        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) {
-          return failRegister('invalid_argument', '单位名必须是字母开头的字母数字：' + JSON.stringify(name), '中文名请走别名；createUnit 只接受 ASCII。')
+        if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name)) {
+          return failRegister('invalid_argument', '单位名必须是字母开头、只含字母数字（不能有下划线）：' + JSON.stringify(name), 'createUnit 不接受下划线/中文名；需要中文请用业务层映射。')
         }
         const factor = Number(spec?.factor)
         if (!Number.isFinite(factor) || factor <= 0) return failRegister('invalid_argument', 'factor 必须是正有限数：' + name, '')

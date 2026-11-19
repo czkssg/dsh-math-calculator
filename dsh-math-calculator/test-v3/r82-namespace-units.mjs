@@ -62,6 +62,8 @@ console.log('-- 6. 冲突 --')
   assert('★ 重复注册被拒绝', dup.ok === false && dup.error?.kind === 'input', JSON.stringify(dup.error))
   const badBase = service.registerUnits('world-c', [{ name: 'foo', factor: 1, base: 'zzz' }])
   assert('非法 base 被拒绝', badBase.ok === false && badBase.error?.kind === 'input', JSON.stringify(badBase.error))
+  const underscore = service.registerUnits('world-c', [{ name: 'bad_name', factor: 1 }])
+  assert('★ 下划线单位名被拒绝（createUnit 限制）', underscore.ok === false && underscore.error?.kind === 'input', JSON.stringify(underscore.error))
 }
 console.log('-- 7. 注销 --')
 {
