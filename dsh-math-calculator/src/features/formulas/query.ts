@@ -265,6 +265,13 @@ export function queryFormulas(
   if (trimmed === '') {
     throw new Error('query 不能为空')
   }
+  /** 纯符号查询（`*`、`(`）没有意义，且会让模糊检索扫全索引（实测 1.1s）。 */
+  if (trimmed.replace(/[^\p{L}\p{N}]+/gu, '') === '') {
+    return {
+      result: '没有匹配「' + trimmed + '」的公式。纯符号查询没有意义；换用名词（如「腐蚀」「动能」）。',
+      value: { query: trimmed, hits: [] },
+    }
+  }
 
   const index = getIndex(formulas)
   const hits = index.search(trimmed).slice(0, limit)
