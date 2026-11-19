@@ -235,7 +235,9 @@ export function runExtractNumbers(
   text: string,
   options: { keepNoise?: boolean; limit?: number } = {},
 ): ExtractOutcome {
-  const items = extractNumbers(text, options)
+  /** 控制字符（保留 \n/\t）先清成空格，避免混进台账上下文。 */
+  const cleanText = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+  const items = extractNumbers(cleanText, options)
   const byUnit = new Map<string, number>()
   for (const item of items) {
     const key = item.unit ?? '（无单位）'

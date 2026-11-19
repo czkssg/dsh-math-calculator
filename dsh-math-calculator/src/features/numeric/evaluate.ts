@@ -376,6 +376,21 @@ export function evaluateOne(
       '`NaN`/`Infinity` 是符号而不是可用的数值结果；检查表达式是否真的算了东西。',
     )
   }
+  /** 复数结果是合法结果（mathjs Complex），不能被 non_finite 吞掉。 */
+  if (typeof raw === 'object' && raw !== null && !('isUnit' in (raw as object)) && 're' in (raw as object) && 'im' in (raw as object)) {
+    const re = Number((raw as { re: unknown }).re)
+    const im = Number((raw as { im: unknown }).im)
+    if (Number.isFinite(re) && Number.isFinite(im)) {
+      const text = im === 0 ? String(re) : re === 0 ? im + 'i' : re + ' + ' + im + 'i'
+      return {
+        result: '复数：' + text,
+        value: { re, im },
+        ok: true,
+        notice: '结果是复数（含虚部）；实部 ' + re + '，虚部 ' + im + '。',
+      }
+    }
+    throw new CalcError('non_finite', '复数结果含非有限分量（表达式：' + expression + '）', '检查实部/虚部是否溢出。')
+  }
   const unwrapped = unwrapNumeric(raw)
   if (typeof raw === 'object' && raw !== null && !('isUnit' in (raw as object))) {
     if (!Number.isFinite(unwrapped.n)) {

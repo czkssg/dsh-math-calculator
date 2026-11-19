@@ -138,6 +138,22 @@ export function convertUnits(
   ))
   const numeric = Number(String(converted).split(' ')[0])
 
+  /** 温度不能低于绝对零度（mathjs 只管单位换行，不管物理下限）。 */
+  if (Number.isFinite(numeric)) {
+    let inKelvin = Number.NaN
+    try {
+      const parsed = engine.evaluate(numeric + ' ' + to) as { to: (target: string) => { toNumber: (target: string) => number } }
+      inKelvin = Number(parsed.to('K').toNumber('K'))
+    } catch { inKelvin = Number.NaN }
+    if (Number.isFinite(inKelvin) && inKelvin < 0) {
+      throw new CalcError(
+        'invalid_argument',
+        '换算结果低于绝对零度（' + inKelvin.toFixed(2) + ' K）：' + value + ' ' + from + ' → ' + to,
+        '温度不能低于 0 K；检查输入值或换算方向。',
+      )
+    }
+  }
+
   if (terse) {
     return {
       result: value + ' ' + from + ' = ' + text,

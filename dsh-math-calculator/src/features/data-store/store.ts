@@ -23,11 +23,13 @@
  * @module dsh-math-calculator/features/data-store/store
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { workspaceArtifactDir, workspaceDirectory } from '../../io/workspace-store.js'
+import { currentWorkspace } from '../workspace.js'
 import { CalcError } from '../../core/errors.js'
 import MiniSearch from 'minisearch'
+import segmentitModule from 'segmentit'
 
 /** 数据类型。 */
 export type DataKind = 'var' | 'constant' | 'formula' | 'entity-type' | 'model' | 'world' | 'history' | 'note'
@@ -47,8 +49,15 @@ export interface DataRecord {
 
 /** 目录。 */
 function storeDir(): string {
-  /** 与其它产物同根：<workspace>/.artifacts/datastore/。 */
-  const dir = join(workspaceDirectory(), '.artifacts', 'datastore')
+  /**
+   * 按工作区隔离：<workspaces>/<name>.artifacts/datastore/。
+   * 旧版所有工作区共用 <workspaces>/.artifacts/datastore（数据串味），首次访问新路径时迁移一次。
+   */
+  const dir = join(workspaceDirectory(), currentWorkspace() + '.artifacts', 'datastore')
+  const legacy = join(workspaceDirectory(), '.artifacts', 'datastore')
+  if (!existsSync(dir) && existsSync(legacy)) {
+    try { cpSync(legacy, dir, { recursive: true }) } catch { /* 迁移失败不阻断：新工作区从空库开始 */ }
+  }
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -211,7 +220,7 @@ export function importRecords(json: string): number {
  *
  * 原实现每次读全文件解析——记录一多就慢。加缓存：文件 mtime 不变则复用。
  */
-let indexCache: { records: Map<string, DataRecord>; mtimeMs: number } | null = null
+let indexCache: { records: Map<string, DataRecord>; mtimeMs: number; dir: string } | null = null
 
 /**
  * 读记录（带缓存）。
@@ -220,14 +229,16 @@ let indexCache: { records: Map<string, DataRecord>; mtimeMs: number } | null = n
  */
 export function readRecordsCached(): Map<string, DataRecord> {
   const file = storeFile()
+  /** 缓存必须带目录：切工作区后文件路径变了，只看 mtime 会读到上一区的记录。 */
+  const dir = storeDir()
   if (!existsSync(file)) {
-    indexCache = { records: new Map(), mtimeMs: 0 }
+    indexCache = { records: new Map(), mtimeMs: 0, dir }
     return indexCache.records
   }
   const mtime = statSync(file).mtimeMs
-  if (indexCache !== null && indexCache.mtimeMs === mtime) return indexCache.records
+  if (indexCache !== null && indexCache.mtimeMs === mtime && indexCache.dir === dir) return indexCache.records
   const records = readRecords()
-  indexCache = { records, mtimeMs: mtime }
+  indexCache = { records, mtimeMs: mtime, dir }
   return records
 }
 
@@ -298,7 +309,39 @@ export function queryRecordsCached(filter: { kind?: string; tag?: string; nameCo
  * 公式检索（features/formulas/query.ts）已在用 minisearch + segmentit；
  * 数据层直接复用同一套中文分词，避免「两套检索语义」。
  */
-let searchCache: { index: unknown; size: number } | null = null
+let searchCache: { index: unknown; size: number; dir: string } | null = null
+
+/** 分词器单例（构造代价不低；与公式检索同款）。 */
+let segmenter: { doSegment: (text: string) => Array<{ w: string }> } | null = null
+
+/**
+ * 中文分词：整串 + 分词结果（segmentit 是 CJS/ESM 双包，必须默认导入后取属性）。
+ *
+ * @param text - 输入
+ * @returns 词列表
+ */
+function tokenizeSearchText(text: string): string[] {
+  if (segmenter === null) {
+    const mod = segmentitModule as unknown as {
+      Segment?: new () => { doSegment: (t: string) => Array<{ w: string }> }
+      useDefault?: (s: unknown) => { doSegment: (t: string) => Array<{ w: string }> }
+      default?: {
+        Segment?: new () => { doSegment: (t: string) => Array<{ w: string }> }
+        useDefault?: (s: unknown) => { doSegment: (t: string) => Array<{ w: string }> }
+      }
+    }
+    const api = (mod.Segment !== undefined ? mod : mod.default) ?? mod
+    const SegmentImpl = api.Segment
+    const useDefault = api.useDefault
+    if (SegmentImpl === undefined || useDefault === undefined) throw new Error('segmentit 的导出形状不认识（找不到 Segment / useDefault）')
+    segmenter = useDefault(new SegmentImpl()) as { doSegment: (t: string) => Array<{ w: string }> }
+  }
+  const raw = text.toLowerCase().trim()
+  const parts = segmenter.doSegment(raw).map((t) => t.w.toLowerCase())
+  const STOP = new Set(['的', '了', '是', '在', '和', '与', '有', '为', '能', '多', '少', '怎么', '多少', '一个'])
+  const meaningful = parts.filter((t) => t.length >= 1 && !STOP.has(t))
+  return [raw, ...meaningful].filter((t) => t !== '')
+}
 
 /**
  * 数据层全文检索。
@@ -309,14 +352,15 @@ let searchCache: { index: unknown; size: number } | null = null
  */
 export function searchRecords(keyword: string, limit = 10): Array<{ record: DataRecord; score: number }> {
   const records = [...readRecordsCached().values()]
-  if (searchCache === null || searchCache.size !== records.length) {
+  const dir = storeDir()
+  if (searchCache === null || searchCache.size !== records.length || searchCache.dir !== dir) {
     const index = new MiniSearch({
       fields: ['name', 'kind', 'tags'],
       storeFields: ['id'],
-      tokenize: (text: string) => text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word !== ''),
+      tokenize: tokenizeSearchText,
     })
     index.addAll(records.map((r) => ({ id: r.id, name: r.name, kind: r.kind, tags: r.tags.join(' ') })))
-    searchCache = { index, size: records.length }
+    searchCache = { index, size: records.length, dir }
   }
   const index = searchCache.index as { search: (query: string, options: Record<string, unknown>) => Array<{ id: string; score: number }> }
   const hits = index.search(keyword, { prefix: true, fuzzy: 0.2 })

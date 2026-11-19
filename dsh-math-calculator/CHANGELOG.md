@@ -2,6 +2,25 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.29.0] — 2026-11-20
+
+**压力测试第二轮：7 条真问题修复**。
+
+### 修复
+
+- **复数结果被误判 non_finite**：`sqrt(-1)` 报「结果不是有限数」；现在返回 `复数：1i`（value `{re,im}`）。
+- **温度换算低于绝对零度**：`-300 degC` 曾给出 `-26.85 K`；现在拒绝（`invalid_argument`），`-273.15 degC = 0 K` 仍允许。
+- **数据层 workspace 未隔离**：所有工作区共用一个 `workspaces/.artifacts/datastore`，w2 能查到 w1 记录；
+  现在每工作区独立目录（`<name>.artifacts/datastore`），旧全局数据首次访问迁移一次。
+- **中文子串检索失效**：索引把「w1记录」当整串 token，查「记录」0 命中；现在用 segmentit 分词（与公式检索同款）。
+- **`params` 传数组**：曾误报「缺必填参数」；现在 `invalid_argument`（params 必须是对象）。
+- **`chain` 的 `initial` 传字符串/数组**：曾误报缺参；现在 `invalid_argument` 并点名键。
+- **`extract_numbers` 控制字符**：曾进台账上下文；现在先清洗。
+
+### 测试
+
+- 新增 `r77-stress2` 15 项（复数/温度/隔离/检索/类型/控制字符）；
+  全量 **136 套 / 3,179 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.28.2] — 2026-11-20
 
 **`label` 字符清洗**：多语言/符号保留，四类异常清洗。

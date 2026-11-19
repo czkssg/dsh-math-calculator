@@ -790,7 +790,14 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       if (query === 'chain') {
         const chainId = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : '')
         if (chainId === '') throw new CalcError('missing_params', 'chain 需要 formulaFocus（链 id，如 sys-material）', '可查：' + formulaSystems().map((item) => item.id).join('、'))
+        if (args['initial'] !== undefined && asRecord(args['initial']) === undefined) {
+          throw new CalcError('invalid_argument', 'initial 必须是对象 {参数名: 数值}', '例如 initial:{b:0.2, h:0.4}。')
+        }
         const initialRaw = asRecord(args['initial']) ?? asRecord(args['params']) ?? {}
+        const badInitial = Object.entries(initialRaw).filter(([, value]) => typeof value !== 'number' || !Number.isFinite(value))
+        if (badInitial.length > 0) {
+          throw new CalcError('invalid_argument', 'initial 的值必须是有限数：' + badInitial.slice(0, 3).map(([key]) => key).join('、'), '字符串「abc」这类值不会被当成数字；改成数值。')
+        }
         return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations(), (asRecord(args['crossValues']) ?? {}) as never))
       }
 
@@ -854,6 +861,10 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const id = typeof args['formula'] === 'string' ? args['formula'] : ''
       if (id === '') {
         throw new CalcError('missing_params', 'formula 需要 formula（公式 id 或名称）', '例如 {operation:"formula", formula:"ideal_gas", params:{n:1,T:300}}；用 formulas query 查可用的公式。')
+      }
+      /** params 传成数组/字符串时会被 asRecord 丢掉，报「缺参」会误导。 */
+      if (args['params'] !== undefined && asRecord(args['params']) === undefined && asRecord(args['overrides']) === undefined) {
+        throw new CalcError('invalid_argument', 'params 必须是对象（{参数名: 数值}）', '例如 params:{m:2, v:3}；收到 ' + (Array.isArray(args['params']) ? '数组' : typeof args['params']) + '。')
       }
       /** 反解：{formula:"ideal_strength", solveFor:"sigma", targetValue:1e8, params:{E:...}} */
       if (typeof args['solveFor'] === 'string' && args['solveFor'].trim() !== '') {

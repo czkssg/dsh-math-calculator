@@ -76,7 +76,8 @@ console.log('-- 5. 文件层：读坏不当空库 --')
   assert('★ 写入已落到数据层（kind=setting）', queryRecords({ kind: 'setting' }).length === 1, String(queryRecords({ kind: 'setting' }).length))
 
   /** 设定库已并入数据层：坏文件场景要先清空数据层，才会回落到读文件。 */
-  const datastore = join(process.env.DSH_MATH_CALC_HOME, 'workspaces', '.artifacts', 'datastore')
+  /** 数据层已按工作区隔离：默认工作区在 default.artifacts 下。 */
+  const datastore = join(process.env.DSH_MATH_CALC_HOME, 'workspaces', 'default.artifacts', 'datastore')
   rmSync(join(datastore, 'records.jsonl'), { force: true })
   writeFileSync(io.stateFilePath('broken', dir), '{ 这不是 JSON', 'utf8')
   const broken = throwsOf(() => io.loadStateBook('broken', dir))
