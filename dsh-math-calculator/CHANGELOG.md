@@ -2,6 +2,21 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.32.0] — 2026-11-20
+
+**服务化第三期：公式代入 / 区间 / 常量**。
+
+### 新增
+
+- `formula(id, params)`：按 id 或中文名代入，返回数值/单位/输出量（`value.output`）；
+- `interval(expr)`：结构化区间（low/high/mid/相对半宽/置信档）；
+- `constant(name)`：读 constants-graph 标准值（`{number, unit, value:{name, meaning}}`）；
+- 三者同样遵守错误三档与「与工具一致」。
+
+### 测试
+
+- 新增 `r83-service-third` 15 项；`r81` methods 断言 7 → 10；
+  全量 **142 套 / 3,247 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.31.0] — 2026-11-20
 
 **服务化第二期：自定义单位命名空间**。

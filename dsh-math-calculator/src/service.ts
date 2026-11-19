@@ -106,6 +106,12 @@ export interface MathEngineService {
   evaluate(expression: string, options?: { variables?: Record<string, number>; namespace?: string }): EngineServiceResult
   convert(value: number, from: string, to: string, options?: { namespace?: string }): EngineServiceResult
   checkDimension(unit: string, options?: { namespace?: string }): EngineServiceResult
+  /** 公式代入（第三期）：返回数值、单位与公式元信息。 */
+  formula(id: string, params?: Record<string, number>, options?: { namespace?: string }): EngineServiceResult
+  /** 区间运算（第三期）：返回 low/high/置信档。 */
+  interval(expr: string): EngineServiceResult
+  /** 常量查询（第三期）：按 constants-graph 的标准值。 */
+  constant(name: string): EngineServiceResult
   /** 注册按命名空间隔离的自定义单位。 */
   registerUnits(namespace: string, units: RegisteredUnitSpec[]): RegisterUnitsResult
   /** 列出已注册单位（不传 namespace 列出全部）。 */
@@ -184,6 +190,31 @@ function extractValue(operation: string, value: unknown): EngineServiceResult {
     }
     return { ok: true, ...(typeof record['unit'] === 'string' ? { unit: record['unit'] as string } : {}), value: record['base'] ?? null }
   }
+  if (operation === 'formula') {
+    const record = value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+    const web = record['web'] !== null && typeof record['web'] === 'object' ? (record['web'] as Record<string, unknown>) : undefined
+    return {
+      ok: true,
+      number: String(record['result'] ?? ''),
+      ...(typeof record['unit'] === 'string' ? { unit: record['unit'] as string } : {}),
+      value: {
+        id: record['id'],
+        name: record['name'],
+        expr: record['expr'],
+        unitValid: record['unitValid'],
+        ...(web !== undefined && typeof web['output'] === 'string' ? { output: web['output'] as string } : {}),
+        ...(web !== undefined && Array.isArray(web['chains']) ? { chains: web['chains'] } : {}),
+      },
+    }
+  }
+  if (operation === 'interval') {
+    const record = value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+    return {
+      ok: true,
+      ...(typeof record['mid'] === 'number' ? { number: String(record['mid']) } : {}),
+      value: record,
+    }
+  }
   if (typeof value === 'number') return { ok: true, number: String(value) }
   if (typeof value === 'string') {
     const matched = /^(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s+(.+)$/i.exec(value.trim())
@@ -213,6 +244,26 @@ function callDispatch(operation: string, args: Record<string, unknown>): EngineS
 /** 命名空间名合法（字母数字中文下划线连字符，1–40）。 */
 function isValidNamespace(name: unknown): name is string {
   return typeof name === 'string' && /^[\w\u4e00-\u9fa5-]{1,40}$/.test(name)
+}
+
+/** 常数表（懒加载一次）。 */
+let constantTable: Array<{ name: string; standard: number; unit: string; meaning?: string }> | null = null
+
+/** 读 constants-graph.json。 */
+function readConstants(): Array<{ name: string; standard: number; unit: string; meaning?: string }> {
+  if (constantTable !== null) return constantTable
+  try {
+    const data = JSON.parse(readFileSync(join(HERE, '..', 'src', 'data', 'constants-graph.json'), 'utf8')) as Array<Record<string, unknown>>
+    constantTable = data.map((item) => ({
+      name: String(item['name'] ?? ''),
+      standard: Number(item['standard'] ?? 0),
+      unit: String(item['unit'] ?? ''),
+      ...(typeof item['meaning'] === 'string' ? { meaning: item['meaning'] as string } : {}),
+    })).filter((item) => item.name !== '' && Number.isFinite(item.standard))
+  } catch {
+    constantTable = []
+  }
+  return constantTable
 }
 
 /**
@@ -250,7 +301,7 @@ export function createMathEngineService(): MathEngineService {
         operations: [...MIGRATED_OPERATIONS],
         unitFamilies,
         supportsCustomUnits: true,
-        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'registerUnits', 'listUnits', 'unregisterUnits'],
+        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'registerUnits', 'listUnits', 'unregisterUnits'],
       }
     },
     evaluate(expression, options = {}) {
@@ -286,6 +337,42 @@ export function createMathEngineService(): MathEngineService {
       } catch (error) {
         const type = (error as { type?: string }).type ?? 'internal'
         return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
+    },
+    formula(id, params = {}, options = {}) {
+      if (typeof id !== 'string' || id.trim() === '') return fail('missing_params', 'formula 需要公式 id 或名称', '例如 formula("kinetic_energy", { m: 2, v: 3 })。')
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '')
+      }
+      /** 公式代入允许用命名空间单位（其引擎内已注册）。 */
+      if (options.namespace === undefined) return callDispatch('formula', { formula: id.trim(), params })
+      const engine = engineOf(options.namespace)
+      if (engine === undefined) return fail('unknown_namespace', '命名空间未注册', '')
+      try {
+        const out = dispatchNew('formula', { formula: id.trim(), params })
+        if (out === null) return fail('unknown_op', '不支持 formula', '')
+        return extractValue('formula', out.value)
+      } catch (error) {
+        const type = (error as { type?: string }).type ?? 'internal'
+        return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
+    },
+    interval(expr) {
+      if (typeof expr !== 'string' || expr.trim() === '') return fail('missing_params', 'interval 需要表达式', '例如 interval("20-50")。')
+      return callDispatch('interval', { interval: { expr: expr.trim() } })
+    },
+    constant(name) {
+      if (typeof name !== 'string' || name.trim() === '') return fail('missing_params', 'constant 需要常数名', '例如 constant("c")。')
+      const table = readConstants()
+      const hit = table.find((item) => item.name === name.trim())
+      if (hit === undefined) {
+        return fail('unknown_symbol', '没有名为「' + name + '」的常数', '可用：' + table.slice(0, 10).map((item) => item.name).join('、') + '…')
+      }
+      return {
+        ok: true,
+        number: String(hit.standard),
+        ...(hit.unit !== '' ? { unit: hit.unit } : {}),
+        value: { name: hit.name, ...(hit.meaning !== undefined ? { meaning: hit.meaning } : {}) },
       }
     },
     checkDimension(unit, options = {}) {
