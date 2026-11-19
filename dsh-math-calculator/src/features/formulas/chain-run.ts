@@ -30,6 +30,8 @@ export interface ChainStep {
   note?: string
   /** 参数 ← 前序步骤输出（用 dataFlow 以免与 systems.ts 的 inputs 冲突）。 */
   dataFlow?: Record<string, { fromStep: number; note?: string }>
+  /** 跨链接点：本步需要哪条链的输出（由 note 的「接点自 X 链」解析而来）。 */
+  chainRef?: string[]
 }
 
 /** 一条链。 */
@@ -153,15 +155,24 @@ export function runChainNumeric(
 
   const lines: string[] = ['═══ 链数值传导：' + system.name + ' ═══', '']
   lines.push('  说明：只走显式声明的数据流；其余步骤用默认值或 initial 参数。', '')
-  lines.push('  步  公式                        结果        单位            来自前序')
+  /** 链 id → 显示名（去掉括号里的说明）。 */
+  const chainName = (id: string): string => {
+    const hit = systems.find((item) => item.id === id)
+    return hit !== undefined ? String(hit.name ?? hit.id).replace(/[（(].*$/, '').trim() : id
+  }
+  lines.push('  步  公式                        结果        单位            来自前序        接点')
   for (const item of results) {
     const linkedText = Object.entries(item.linked).map(([param, source]) => param + '←第' + source.fromStep + '步').join(',')
-    lines.push('  ' + String(item.step).padEnd(3) + item.formula.padEnd(28) + String(Number(item.value.toPrecision(8))).padEnd(12) + item.unit.padEnd(16) + linkedText)
+    const refIds = system.steps[item.step - 1]?.chainRef
+    const refText = Array.isArray(refIds) && refIds.length > 0 ? refIds.map(chainName).join('、') : ''
+    lines.push('  ' + String(item.step).padEnd(3) + item.formula.padEnd(28) + String(Number(item.value.toPrecision(8))).padEnd(12) + item.unit.padEnd(16) + linkedText.padEnd(16) + refText)
   }
   const last = results[results.length - 1]
   lines.push('', '末端：' + last.name + ' = ' + Number(last.value.toPrecision(8)) + ' ' + last.unit)
   const linkedSteps = results.filter((item) => Object.keys(item.linked).length > 0).map((item) => item.step)
   if (linkedSteps.length > 0) lines.push('数据流步骤：' + linkedSteps.map((step) => '第' + step + '步').join('、') + '（其余是并列主题，不是依赖）')
+  const refSteps = system.steps.filter((step) => Array.isArray(step.chainRef) && step.chainRef.length > 0).length
+  if (refSteps > 0) lines.push('跨链接点：' + refSteps + ' 步需要其他链的输出（见「接点」列；具体数值仍需手工带入）')
 
   return {
     result: lines.join('\n'),

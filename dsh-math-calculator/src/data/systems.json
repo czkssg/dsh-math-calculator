@@ -22,7 +22,10 @@
    },
    {
     "formula": "thermal_expansion",
-    "note": "热膨胀系数（温差变形与热应力来源，接点自时间链）"
+    "note": "热膨胀系数（温差变形与热应力来源，接点自时间链）",
+    "chainRef": [
+     "sys-time"
+    ]
    },
    {
     "formula": "ideal_strength",
@@ -118,7 +121,10 @@
    },
    {
     "formula": "hooke_law",
-    "note": "材料本构：应变 ↔ 应力（接点自材料链）"
+    "note": "材料本构：应变 ↔ 应力（接点自材料链）",
+    "chainRef": [
+     "sys-material"
+    ]
    },
    {
     "formula": "rect_inertia",
@@ -192,15 +198,24 @@
    },
    {
     "formula": "wall_heat_loss",
-    "note": "围护热损也算一种「荷载」：R 值与截面一样是被查的约束（接点自能源链）"
+    "note": "围护热损也算一种「荷载」：R 值与截面一样是被查的约束（接点自能源链）",
+    "chainRef": [
+     "sys-energy"
+    ]
    },
    {
     "formula": "column_axial_capacity",
-    "note": "墙柱轴压承载（接点自建筑链）"
+    "note": "墙柱轴压承载（接点自建筑链）",
+    "chainRef": [
+     "sys-building"
+    ]
    },
    {
     "formula": "impact_speed_freefall",
-    "note": "落地冲击速度（抗冲击设计要接住它，接点自交通链）"
+    "note": "落地冲击速度（抗冲击设计要接住它，接点自交通链）",
+    "chainRef": [
+     "sys-travel"
+    ]
    }
   ]
  },
@@ -269,15 +284,24 @@
    },
    {
     "formula": "heat_conduction_slab",
-    "note": "板材导热（接点自气候链）"
+    "note": "板材导热（接点自气候链）",
+    "chainRef": [
+     "sys-climate"
+    ]
    },
    {
     "formula": "pump_power",
-    "note": "泵功耗（灌溉的隐藏能耗，接点自水利链）"
+    "note": "泵功耗（灌溉的隐藏能耗，接点自水利链）",
+    "chainRef": [
+     "sys-water"
+    ]
    },
    {
     "formula": "fick_diffusion",
-    "note": "扩散通量（与燃烧供能同一类输运上限，接点自生物链）"
+    "note": "扩散通量（与燃烧供能同一类输运上限，接点自生物链）",
+    "chainRef": [
+     "sys-body"
+    ]
    },
    {
     "formula": "steam_power_output",
@@ -289,11 +313,17 @@
    },
    {
     "formula": "stefan_boltzmann",
-    "note": "高温端的辐射散热（T⁴，窑炉与炉膛都逃不掉；接点自量子链）"
+    "note": "高温端的辐射散热（T⁴，窑炉与炉膛都逃不掉；接点自量子链）",
+    "chainRef": [
+     "sys-quantum"
+    ]
    },
    {
     "formula": "rc_cutoff_frequency",
-    "note": "控制/滤波电路的带宽（电子时代的能耗项，接点自信息控制链）"
+    "note": "控制/滤波电路的带宽（电子时代的能耗项，接点自信息控制链）",
+    "chainRef": [
+     "sys-info-control"
+    ]
    },
    {
     "formula": "wind_power_available",
@@ -414,7 +444,10 @@
    },
    {
     "formula": "thermal_efficiency_carnot",
-    "note": "热机效率上限（决定动力产能的天花板，接点自能源链）"
+    "note": "热机效率上限（决定动力产能的天花板，接点自能源链）",
+    "chainRef": [
+     "sys-energy"
+    ]
    },
    {
     "formula": "rankine_efficiency",
@@ -434,11 +467,17 @@
    },
    {
     "formula": "labor_force",
-    "note": "劳力 = 人口 × 参与率（接点自食物链）"
+    "note": "劳力 = 人口 × 参与率（接点自食物链）",
+    "chainRef": [
+     "sys-food"
+    ]
    },
    {
     "formula": "food_surplus_ratio",
-    "note": "食物剩余率（决定多少人能脱产做工，接点自食物链）"
+    "note": "食物剩余率（决定多少人能脱产做工，接点自食物链）",
+    "chainRef": [
+     "sys-food"
+    ]
    },
    {
     "formula": "feed_conversion_ratio",
@@ -460,27 +499,45 @@
    },
    {
     "formula": "eoq",
-    "note": "备料批量（库存资金占用，接点自排队链）"
+    "note": "备料批量（库存资金占用，接点自排队链）",
+    "chainRef": [
+     "sys-queue"
+    ]
    },
    {
     "formula": "reliability_series",
-    "note": "多环节良率相乘 → 总成品率（工序越多越脆，接点自决策链）"
+    "note": "多环节良率相乘 → 总成品率（工序越多越脆，接点自决策链）",
+    "chainRef": [
+     "sys-decision"
+    ]
    },
    {
     "formula": "mtbf_availability",
-    "note": "设备可用度（直接折损年产量，接点自排队链）"
+    "note": "设备可用度（直接折损年产量，接点自排队链）",
+    "chainRef": [
+     "sys-queue"
+    ]
    },
    {
     "formula": "spares_required",
-    "note": "备件年需求（隐性产能成本，接点自决策链）"
+    "note": "备件年需求（隐性产能成本，接点自决策链）",
+    "chainRef": [
+     "sys-decision"
+    ]
    },
    {
     "formula": "channel_capacity",
-    "note": "通信上限（能协调多大生产组织，接点自信息控制链）"
+    "note": "通信上限（能协调多大生产组织，接点自信息控制链）",
+    "chainRef": [
+     "sys-info-control"
+    ]
    },
    {
     "formula": "fission_energy_per_mass",
-    "note": "若有核燃料，能源约束彻底改写（接点自量子链）"
+    "note": "若有核燃料，能源约束彻底改写（接点自量子链）",
+    "chainRef": [
+     "sys-quantum"
+    ]
    }
   ],
   "bridges": [
@@ -611,11 +668,17 @@
    },
    {
     "formula": "basal_metabolic_rate",
-    "note": "每人的口粮下限（代谢决定吃多少，接点自生物链）"
+    "note": "每人的口粮下限（代谢决定吃多少，接点自生物链）",
+    "chainRef": [
+     "sys-body"
+    ]
    },
    {
     "formula": "metabolic_generic",
-    "note": "代谢率（可换系数，接点自生理链）"
+    "note": "代谢率（可换系数，接点自生理链）",
+    "chainRef": [
+     "sys-physiology"
+    ]
    },
    {
     "formula": "grazing_capacity",
@@ -623,7 +686,10 @@
    },
    {
     "formula": "irrigation_volume",
-    "note": "灌溉需水量（决定单产上限，接点自水利链）"
+    "note": "灌溉需水量（决定单产上限，接点自水利链）",
+    "chainRef": [
+     "sys-water"
+    ]
    },
    {
     "formula": "soil_nutrient_balance",
@@ -767,7 +833,10 @@
    },
    {
     "formula": "wien_displacement",
-    "note": "发光颜色 → 温度（光学高温计的原理，接点自量子链）"
+    "note": "发光颜色 → 温度（光学高温计的原理，接点自量子链）",
+    "chainRef": [
+     "sys-quantum"
+    ]
    },
    {
     "formula": "gear_geometry",
@@ -803,7 +872,11 @@
   "steps": [
    {
     "formula": "labor_force",
-    "note": "劳力 = 人口 × 参与率（接点自食物链/产能链）"
+    "note": "劳力 = 人口 × 参与率（接点自食物链/产能链）",
+    "chainRef": [
+     "sys-food",
+     "sys-capacity"
+    ]
    },
    {
     "formula": "gdp_from_labor",
@@ -827,7 +900,10 @@
    },
    {
     "formula": "growth_accounting",
-    "note": "增长率（债务可持续判据的 g 参数，接点自增长链）"
+    "note": "增长率（债务可持续判据的 g 参数，接点自增长链）",
+    "chainRef": [
+     "sys-growth"
+    ]
    },
    {
     "formula": "fiscal_balance",
@@ -851,23 +927,38 @@
    },
    {
     "formula": "population_fed_by_grain",
-    "note": "人口规模（税源基础，接点自食物链）"
+    "note": "人口规模（税源基础，接点自食物链）",
+    "chainRef": [
+     "sys-food"
+    ]
    },
    {
     "formula": "fiscal_burden_ratio",
-    "note": "军费/财政收入（历史上最常见的崩溃触发点，接点自军事链）"
+    "note": "军费/财政收入（历史上最常见的崩溃触发点，接点自军事链）",
+    "chainRef": [
+     "sys-military"
+    ]
    },
    {
     "formula": "nash_bargaining_split",
-    "note": "停战议和/税收谈判的分成（接点自决策链）"
+    "note": "停战议和/税收谈判的分成（接点自决策链）",
+    "chainRef": [
+     "sys-decision"
+    ]
    },
    {
     "formula": "admin_radius_from_info",
-    "note": "行政半径（决定征管成本，接点自信息链）"
+    "note": "行政半径（决定征管成本，接点自信息链）",
+    "chainRef": [
+     "sys-info"
+    ]
    },
    {
     "formula": "simple_interest",
-    "note": "国债利息（财政刚性支出项，接点自金融链）"
+    "note": "国债利息（财政刚性支出项，接点自金融链）",
+    "chainRef": [
+     "sys-finance"
+    ]
    }
   ],
   "bridges": [
@@ -899,7 +990,11 @@
   "steps": [
    {
     "formula": "gdp_from_labor",
-    "note": "劳力 × 人均产出 → 总产出（增长的起点，也是税基；接点自财政/产能链）"
+    "note": "劳力 × 人均产出 → 总产出（增长的起点，也是税基；接点自财政/产能链）",
+    "chainRef": [
+     "sys-fiscal",
+     "sys-capacity"
+    ]
    },
    {
     "formula": "gdp_expenditure",
@@ -935,7 +1030,10 @@
    },
    {
     "formula": "seigniorage",
-    "note": "铸币税（印钱补赤字，其代价是通胀，接点自财政链）"
+    "note": "铸币税（印钱补赤字，其代价是通胀，接点自财政链）",
+    "chainRef": [
+     "sys-fiscal"
+    ]
    }
   ],
   "bridges": [
@@ -1055,7 +1153,10 @@
    },
    {
     "formula": "inverse_square_flux",
-    "note": "恒星辐射通量（地表温度的第一驱动，接点自天文链）"
+    "note": "恒星辐射通量（地表温度的第一驱动，接点自天文链）",
+    "chainRef": [
+     "sys-astronomy"
+    ]
    }
   ],
   "bridges": [
@@ -1137,7 +1238,10 @@
    },
    {
     "formula": "ram_momentum",
-    "note": "撞击动量（撞木等攻城器械，接点自军事链）"
+    "note": "撞击动量（撞木等攻城器械，接点自军事链）",
+    "chainRef": [
+     "sys-military"
+    ]
    }
   ],
   "bridges": [
@@ -1191,7 +1295,10 @@
    },
    {
     "formula": "bayes_posterior",
-    "note": "情报判读：看到这个迹象后敌人真来的概率（接点自决策链）"
+    "note": "情报判读：看到这个迹象后敌人真来的概率（接点自决策链）",
+    "chainRef": [
+     "sys-decision"
+    ]
    }
   ],
   "bridges": [
@@ -1326,7 +1433,10 @@
    },
    {
     "formula": "expected_value_decision",
-    "note": "这笔投资的期望净收益（接点自决策链）"
+    "note": "这笔投资的期望净收益（接点自决策链）",
+    "chainRef": [
+     "sys-decision"
+    ]
    }
   ],
   "bridges": [
@@ -1390,7 +1500,10 @@
    },
    {
     "formula": "band_gap_wavelength",
-    "note": "光电器件的收发波长（接点自量子链）"
+    "note": "光电器件的收发波长（接点自量子链）",
+    "chainRef": [
+     "sys-quantum"
+    ]
    },
    {
     "formula": "rc_cutoff_frequency",
@@ -1681,7 +1794,10 @@
    },
    {
     "formula": "labor_force",
-    "note": "多少人能干活（接点自食物链）"
+    "note": "多少人能干活（接点自食物链）",
+    "chainRef": [
+     "sys-food"
+    ]
    }
   ],
   "bridges": [
@@ -1770,7 +1886,10 @@
    },
    {
     "formula": "shielding_attenuation",
-    "note": "辐射穿透多厚才降到安全（接点自量子链）"
+    "note": "辐射穿透多厚才降到安全（接点自量子链）",
+    "chainRef": [
+     "sys-quantum"
+    ]
    }
   ],
   "bridges": [

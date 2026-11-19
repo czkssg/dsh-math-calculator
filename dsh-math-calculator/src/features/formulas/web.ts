@@ -38,6 +38,7 @@ export interface FormulaWeb {
     aliasCount?: number
     chainCount?: number
     chainEdges?: number
+    crossCandidates?: number
     cycleEdges?: number
     isolatedNoIn?: number
     sources?: number
@@ -54,6 +55,8 @@ export interface FormulaWeb {
   chainIndex?: Record<string, Array<{ chain: string; step: number; role: 'upstream' | 'downstream' }>>
   /** 链 id → 显示名。 */
   chainNames?: Record<string, string>
+  /** 跨链自动候选：[链 id, 步号, 公式, 参数, 组, [[其他链, 步号, 公式], …]]。 */
+  crossCandidates?: Array<[string, number, string, string, string, Array<[string, number, string]>]>
   constants: WebConstant[]
   constantEdges: WebConstantEdge[]
   formulaEdges: WebFormulaEdge[]
@@ -169,6 +172,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       '',
       '  节点：常数 ' + web.constants.length + ' · 公式 ' + (web.meta?.formulas ?? formulas.length) + ' · 物理量组 ' + groups.size,
       '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length + ' · 链边 ' + (web.meta?.chainEdges ?? 0) + '（' + (web.meta?.chainCount ?? 0) + ' 条链）',
+      '  跨链接点：声明步 ' + (web.meta?.chainEdges ?? 0) + ' 条边、自动候选 ' + (web.meta?.crossCandidates ?? 0) + ' 条',
       '  从常数可达的公式：' + seen.size,
       '  直接使用常数的公式：' + first.size,
       '  无入边（源/孤立）：' + (web.meta?.sources ?? 0) + ' · 无出边（汇）：' + (web.meta?.sinks ?? 0),
@@ -190,6 +194,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
         reachable: seen.size,
         sources: web.meta?.sources ?? 0,
         sinks: web.meta?.sinks ?? 0,
+        crossCandidates: web.meta?.crossCandidates ?? 0,
         cycleEdges: web.meta?.cycleEdges ?? 0,
       },
     }

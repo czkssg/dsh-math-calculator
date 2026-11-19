@@ -119,6 +119,35 @@ for (const chain of chains) {
     }
   })
 }
+/** 跨链自动候选：链 A 某步的参数组 == 链 B 某步的输出组（不依赖 note 的人工声明）。 */
+const crossCandidates = []
+for (const chain of chains) {
+  const steps = chain.steps || []
+  for (const [index, step] of steps.entries()) {
+    const f = formulas.find((x) => x.id === mainOf(step.formula))
+    if (f === undefined) continue
+    const used = new Set(Object.keys(step.dataFlow || {}))
+    for (const [param, spec] of Object.entries(f.params || {})) {
+      if (used.has(param)) continue
+      const g = paramGroup(spec)
+      if (g === null) continue
+      const cands = []
+      for (const other of chains) {
+        if (other.id === chain.id) continue
+        for (const [j, s2] of (other.steps || []).entries()) {
+          const f2 = formulas.find((x) => x.id === mainOf(s2.formula))
+          if (f2 === undefined) continue
+          if (outGroup(f2) !== g) continue
+          cands.push([other.id, j + 1, f2.id])
+        }
+      }
+      if (cands.length > 0) crossCandidates.push([chain.id, index + 1, f.id, param, g, cands.slice(0, 2)])
+      if (crossCandidates.length >= 4000) break
+    }
+    if (crossCandidates.length >= 4000) break
+  }
+  if (crossCandidates.length >= 4000) break
+}
 const constEdges = []
 for (const c of constants) {
   if (typeof c.standard !== 'number' || !Number.isFinite(c.standard) || c.standard === 0) continue
@@ -160,7 +189,7 @@ const web = {
   meta: {
     builtAt: '2026-11-19', formulas: mains.length, constants: constants.length, aliasCount: aliasMap.size,
     constantEdges: constEdges.length, formulaEdges: formulaEdges.length, groups: GROUPS.length,
-    chainCount: chains.length, chainEdges: chainEdges.length,
+    chainCount: chains.length, chainEdges: chainEdges.length, crossCandidates: crossCandidates.length,
     cycleEdges, isolatedNoIn: mains.filter((f) => !withIn.has(f.id)).length,
     sources: mains.filter((f) => !withIn.has(f.id)).length,
     sinks: mains.filter((f) => !withOut.has(f.id)).length,
@@ -178,9 +207,11 @@ const web = {
   chainIndex,
   /** 链 id → 显示名。 */
   chainNames: Object.fromEntries(chains.map((chain) => [chain.id, chain.name ?? chain.label ?? chain.id])),
+  /** 跨链自动候选：[链 id, 步号, 公式, 参数, 组, [[其他链, 步号, 公式], …]]。 */
+  crossCandidates,
 }
 writeFileSync(ROOT + '/src/data/formula-web.json', JSON.stringify(web))
 const bytes = JSON.stringify(web).length
-console.log('formulaEdges', formulaEdges.length, '| constantEdges', constEdges.length, '| chainEdges', chainEdges.length, '| cycleEdges', cycleEdges)
+console.log('formulaEdges', formulaEdges.length, '| constantEdges', constEdges.length, '| chainEdges', chainEdges.length, '| crossCandidates', crossCandidates.length, '| cycleEdges', cycleEdges)
 console.log('无入边', web.meta.sources, '| 无出边', web.meta.sinks, '| 文件字节', bytes)
 console.log('样例环:', sampleCycles.slice(0, 3).map((c) => c.join('→')).join(' | '))
