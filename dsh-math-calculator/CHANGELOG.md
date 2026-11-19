@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.22.0] — 2026-11-19
+
+**跨链打通 + 经验系数参数化 + 最后一组重复折叠**。
+
+### 新增
+
+- **链与公式网打通**：`systems.json` 的 `dataFlow` 生成为 `chainEdges`（16 条，其中 9 条是组匹配没有的边）；
+  `chainIndex` 记录公式参与的链与步骤；查询树里链边**优先显示**并标注 `（链:材料链 第5→9步）`；
+  公式调用返回 `value.web.chains` 与 notice 链摘要。
+- **经验系数参数化 26 条**：Mifflin（4）、Du Bois（3）、Kleiber 70、每日需水 35、Widmark 0.015、
+  Clark 70、血容量 70、Fox 心率 220、Naegele 280、发热代谢 0.13、洛希 2.44、里德伯 13.6 eV、
+  宜居带 1.1、主序指数 −2.5、太阳常数 1361、声速 343、A4 440/69、兴波 1.34/1.944、
+  Magnus 243.04/17.625、收后损耗 0.9、年天数 365、STP 摩尔体积 22.414、氧气占比 0.21。
+
+### 修复
+
+- `avogadro_molecules` 与 `particles_from_moles` 完全同式 → 归入后者（第 29 组重复折叠）。
+
+### 测试
+
+- 新增 `r70-chain-web` 7 项；`r65` 14→16、`r66` 9→12；
+  全量 **129 套 / 3,101 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.21.0] — 2026-11-19
 
 **反馈报告 v2 全量的 11 条待修**（3 真 bug + 8 接口）。

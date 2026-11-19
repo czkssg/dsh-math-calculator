@@ -36,6 +36,8 @@ export interface WebContext {
   output?: string
   upstream: WebNeighbor[]
   downstream: WebNeighbor[]
+  /** 该公式参与的链（chain/step/role）。 */
+  chains: Array<{ chain: string; name: string; step: number; role: 'upstream' | 'downstream' }>
 }
 
 /**
@@ -80,7 +82,8 @@ export function webContextOf(web: FormulaWeb, formulas: WebFormula[], id: string
       }
     }
   }
-  return { focus: id, canonical, ...(output !== undefined ? { output } : {}), upstream, downstream }
+  const chains = (web.chainIndex?.[canonical] ?? []).map((item) => ({ ...item, name: web.chainNames?.[item.chain] ?? item.chain }))
+  return { focus: id, canonical, ...(output !== undefined ? { output } : {}), upstream, downstream, chains }
 }
 
 /**
@@ -103,6 +106,7 @@ export function webContextSummary(context: WebContext): string {
   const parts: string[] = []
   if (up.length > 0) parts.push('上游 ' + context.upstream.length + '：' + up.join('；'))
   if (down.length > 0) parts.push('下游 ' + context.downstream.length + '：' + down.join('；'))
+  if (context.chains.length > 0) parts.push('链：' + context.chains.slice(0, 2).map((item) => item.name + ' 第' + item.step + '步').join('、'))
   if (parts.length === 0) return '网：无上下游（它是孤立公式）'
   return '网：' + parts.join('。') + '。查完整上下游用 formulas query:"web"'
 }

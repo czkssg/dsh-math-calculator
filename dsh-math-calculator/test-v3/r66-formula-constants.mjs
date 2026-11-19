@@ -54,5 +54,18 @@ console.log('-- 5. 瑞利系数可改 --')
   assert('★ 默认 1.22', base.ok === true && Math.abs(num(base) - 1.22 * 5e-6) < 1e-12, String(num(base)))
   assert('★ 改 1.0 生效', Math.abs(num(ideal) - 5e-6) < 1e-12, String(num(ideal)))
 }
+console.log('-- 6. 经验系数可改 --')
+{
+  const base = await run({ operation: 'formula', formula: 'grain_yield_total', params: { area_hectare: 100, kg_per_hectare: 3000 } })
+  const lossless = await run({ operation: 'formula', formula: 'grain_yield_total', params: { area_hectare: 100, kg_per_hectare: 3000, harvest_loss_factor: 1 } })
+  assert('★ 收后损耗系数可改（0.9 → 1.0）', base.ok && lossless.ok && Math.abs(num(lossless) / num(base) - 1 / 0.9) < 0.02, num(base) + ' / ' + num(lossless))
+  const kleiber = await run({ operation: 'formula', formula: 'basal_metabolic_rate', params: { W: 100 } })
+  const doubled = await run({ operation: 'formula', formula: 'basal_metabolic_rate', params: { W: 100, kleiber_coefficient: 140 } })
+  assert('★ Kleiber 系数可改（70 → 140 翻倍）', Math.abs(num(doubled) / num(kleiber) - 2) < 0.01, num(kleiber) + ' / ' + num(doubled))
+  const water = await run({ operation: 'formula', formula: 'daily_water_need', params: { W: 70 } })
+  const water2 = await run({ operation: 'formula', formula: 'daily_water_need', params: { W: 70, water_ml_per_kg: 50 } })
+  assert('每日需水系数可改', Math.abs(num(water2) / num(water) - 50 / 35) < 0.01, '')
+}
+
 console.log('\n通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const item of fails) console.log('  - ' + item); process.exitCode = 1 }

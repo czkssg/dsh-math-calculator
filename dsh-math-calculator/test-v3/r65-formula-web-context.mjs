@@ -55,5 +55,13 @@ console.log('-- 5. 量纲错误仍先拦 --')
   const out = await run({ operation: 'formula', formula: 'kinetic_energy', params: { m: '2 kg', v: '3 s' } })
   assert('★ 量纲错误优先于网上下文', out.ok === false && out.error?.type === 'unit_mismatch', String(out.error?.type))
 }
+console.log('-- 6. 链信息 --')
+{
+  const out = await run({ operation: 'formula', formula: 'safety_factor_check', params: { yield_strength: 2e8, safety_factor: 1.5 } })
+  const chains = out.value?.web?.chains ?? []
+  assert('★ value.web.chains 含材料链第 9 步', chains.some((c) => c.chain === 'sys-material' && c.step === 9), JSON.stringify(chains))
+  assert('★ notice 有链摘要', String(out.notice || '').includes('链：'), String(out.notice || '').slice(-70))
+}
+
 console.log('\n通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const item of fails) console.log('  - ' + item); process.exitCode = 1 }

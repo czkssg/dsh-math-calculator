@@ -1405,7 +1405,7 @@
   "id": "roche_limit",
   "cat": "physics/gravity",
   "name": "洛希极限（流体卫星）",
-  "expr": "2.44 * R * (rhoM / rhom)^(1/3)",
+  "expr": "roche_factor * R * (rhoM / rhom)^(1/3)",
   "params": {
    "R": {
     "value": null,
@@ -1432,6 +1432,12 @@
      "M": 1,
      "L": -3
     }
+   },
+   "roche_factor": {
+    "value": 2.44,
+    "desc": "洛希极限系数（流体卫星 2.44）",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "m",
@@ -3266,12 +3272,18 @@
   "id": "hydrogen_levels",
   "cat": "physics/quantum",
   "name": "氢原子能级",
-  "expr": "-13.6 / n^2",
+  "expr": "-rydberg_energy_ev / n^2",
   "params": {
    "n": {
     "value": null,
     "desc": "主量子数 n",
     "quantity": "主量子数"
+   },
+   "rydberg_energy_ev": {
+    "value": 13.6,
+    "desc": "氢基态能量 eV（里德伯能量）",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "eV",
@@ -7907,7 +7919,7 @@
   "id": "habitable_zone",
   "cat": "physics/astronomy",
   "name": "宜居带内边界（简化）",
-  "expr": "sqrt(L / 1.1)",
+  "expr": "sqrt(L / habitable_factor)",
   "params": {
    "L": {
     "value": null,
@@ -7916,6 +7928,12 @@
     "dimension": {
      "J": 1
     }
+   },
+   "habitable_factor": {
+    "value": 1.1,
+    "desc": "宜居带内边界经验系数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "AU",
@@ -8053,7 +8071,7 @@
   "id": "bmr_mifflin",
   "cat": "biology/physiology",
   "name": "基础代谢率（Mifflin-St Jeor，男性）",
-  "expr": "10 * m + 6.25 * h - 5 * age + 5",
+  "expr": "coef_mass * m + coef_height * h - coef_age * age + const_offset",
   "params": {
    "m": {
     "value": null,
@@ -8075,6 +8093,30 @@
     "value": null,
     "desc": "年龄 岁",
     "quantity": "年龄"
+   },
+   "coef_mass": {
+    "value": 10,
+    "desc": "Mifflin 体重系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "coef_height": {
+    "value": 6.25,
+    "desc": "身高系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "coef_age": {
+    "value": 5,
+    "desc": "年龄系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "const_offset": {
+    "value": 5,
+    "desc": "常数项",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kcal/day",
@@ -8101,7 +8143,7 @@
   "id": "body_surface_area",
   "cat": "biology/physiology",
   "name": "体表面积（Du Bois）",
-  "expr": "0.007184 * m^0.425 * h^0.725",
+  "expr": "du_bois_coeff * m^mass_exp * h^height_exp",
   "params": {
    "m": {
     "value": null,
@@ -8118,6 +8160,24 @@
     "dimension": {
      "L": 1
     }
+   },
+   "du_bois_coeff": {
+    "value": 0.007184,
+    "desc": "Du Bois 系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "mass_exp": {
+    "value": 0.425,
+    "desc": "体重指数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "height_exp": {
+    "value": 0.725,
+    "desc": "身高指数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "m²",
@@ -8930,7 +8990,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "aliasOf": "particles_from_moles"
  },
  {
   "id": "molar_mass_density",
@@ -9229,7 +9290,7 @@
   "id": "oxygen_depletion",
   "cat": "military/combat",
   "name": "密闭空间耗氧时间",
-  "expr": "V * 0.21 / (n * consumption) / 60",
+  "expr": "V * oxygen_fraction / (n * consumption) / 60",
   "params": {
    "V": {
     "value": null,
@@ -9253,6 +9314,12 @@
      "L": 3,
      "T": -1
     }
+   },
+   "oxygen_fraction": {
+    "value": 0.21,
+    "desc": "空气中氧气体积分数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "min",
@@ -10576,7 +10643,7 @@
   "id": "crop_yield_area",
   "cat": "perception/agriculture",
   "name": "所需耕地面积",
-  "expr": "people * kcal_per_day * 365 / (yield_per_m2 * kcal_per_kg)",
+  "expr": "people * kcal_per_day * days_per_year / (yield_per_m2 * kcal_per_kg)",
   "params": {
    "people": {
     "value": null,
@@ -10611,6 +10678,12 @@
      "L": 2,
      "T": -2
     }
+   },
+   "days_per_year": {
+    "value": 365,
+    "desc": "一年天数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "m²",
@@ -10650,7 +10723,7 @@
   "id": "population_density_limit",
   "cat": "perception/agriculture",
   "name": "土地承载力",
-  "expr": "area * yield_per_m2 / (kcal_per_day * 365)",
+  "expr": "area * yield_per_m2 / (kcal_per_day * days_per_year)",
   "params": {
    "area": {
     "value": null,
@@ -10677,6 +10750,12 @@
      "L": 2,
      "T": -2
     }
+   },
+   "days_per_year": {
+    "value": 365,
+    "desc": "一年天数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "人",
@@ -11930,7 +12009,7 @@
   "id": "dew_point_magnus",
   "cat": "perception/weather",
   "name": "露点温度（Magnus）",
-  "expr": "243.04*(log(RH/100) + 17.625*T/(243.04+T)) / (17.625 - log(RH/100) - 17.625*T/(243.04+T))",
+  "expr": "magnus_a*(log(RH/100) + magnus_b*T/(magnus_a+T)) / (magnus_b - log(RH/100) - magnus_b*T/(magnus_a+T))",
   "params": {
    "T": {
     "value": null,
@@ -11944,6 +12023,18 @@
     "value": null,
     "desc": "相对湿度 %",
     "quantity": "比率",
+    "dimension": {}
+   },
+   "magnus_a": {
+    "value": 243.04,
+    "desc": "Magnus 常数 A（℃）",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "magnus_b": {
+    "value": 17.625,
+    "desc": "Magnus 常数 B",
+    "quantity": "系数",
     "dimension": {}
    }
   },
@@ -12226,7 +12317,7 @@
   "id": "lightning_distance",
   "cat": "perception/senses",
   "name": "闪电距离",
-  "expr": "t * 343 / 1000",
+  "expr": "t * sound_speed / 1000",
   "params": {
    "t": {
     "value": null,
@@ -12234,6 +12325,15 @@
     "quantity": "看到闪电到听到雷声的秒数",
     "dimension": {
      "T": 1
+    }
+   },
+   "sound_speed": {
+    "value": 343,
+    "desc": "声速 m/s（干燥空气 20℃）",
+    "quantity": "速度",
+    "dimension": {
+     "L": 1,
+     "T": -1
     }
    }
   },
@@ -12250,11 +12350,23 @@
   "id": "music_note_frequency",
   "cat": "perception/senses",
   "name": "音符频率（十二平均律）",
-  "expr": "440 * 2^((n - 69) / 12)",
+  "expr": "a4_hz * 2^((n - a4_note) / 12)",
   "params": {
    "n": {
     "value": null,
     "desc": "MIDI 音高（A4=69）"
+   },
+   "a4_hz": {
+    "value": 440,
+    "desc": "A4 基准频率 Hz",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "a4_note": {
+    "value": 69,
+    "desc": "A4 的 MIDI 编号",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "Hz",
@@ -12452,7 +12564,7 @@
   "id": "hull_speed",
   "cat": "perception/travel",
   "name": "船舶理论航速",
-  "expr": "1.34 * sqrt(L)",
+  "expr": "froude_hull_coefficient * sqrt(L)",
   "params": {
    "L": {
     "value": null,
@@ -12461,6 +12573,12 @@
     "dimension": {
      "L": 1
     }
+   },
+   "froude_hull_coefficient": {
+    "value": 1.34,
+    "desc": "排水船兴波极限系数（kn/√m）",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kn",
@@ -12764,7 +12882,7 @@
   "id": "human_body_surface_area",
   "cat": "biology/physiology",
   "name": "人体表面积（Du Bois）",
-  "expr": "0.007184 * W^0.425 * H^0.725",
+  "expr": "du_bois_coeff * W^mass_exp * H^height_exp",
   "params": {
    "W": {
     "value": null,
@@ -12781,6 +12899,24 @@
     "dimension": {
      "L": 1
     }
+   },
+   "du_bois_coeff": {
+    "value": 0.007184,
+    "desc": "Du Bois 系数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "mass_exp": {
+    "value": 0.425,
+    "desc": "体重指数",
+    "quantity": "系数",
+    "dimension": {}
+   },
+   "height_exp": {
+    "value": 0.725,
+    "desc": "身高指数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "m^2",
@@ -12808,7 +12944,7 @@
   "id": "basal_metabolic_rate",
   "cat": "biology/physiology",
   "name": "基础代谢率（Kleiber）",
-  "expr": "70 * W^0.75",
+  "expr": "kleiber_coefficient * W^0.75",
   "params": {
    "W": {
     "value": null,
@@ -12817,6 +12953,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "kleiber_coefficient": {
+    "value": 70,
+    "desc": "Kleiber 系数 kcal/日/kg^0.75",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kcal/日",
@@ -12845,7 +12987,7 @@
   "id": "daily_water_need",
   "cat": "biology/physiology",
   "name": "每日需水量（经验）",
-  "expr": "35 * W",
+  "expr": "water_ml_per_kg * W",
   "params": {
    "W": {
     "value": null,
@@ -12854,6 +12996,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "water_ml_per_kg": {
+    "value": 35,
+    "desc": "每公斤体重每日需水 ml",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "ml/日",
@@ -12882,7 +13030,7 @@
   "id": "widmark_bac",
   "cat": "biology/physiology",
   "name": "血液酒精浓度（Widmark）",
-  "expr": "A * 100 / (W * r) - 0.015 * t",
+  "expr": "A * 100 / (W * r) - metabolism_rate * t",
   "params": {
    "A": {
     "value": null,
@@ -12913,6 +13061,12 @@
     "dimension": {
      "T": 1
     }
+   },
+   "metabolism_rate": {
+    "value": 0.015,
+    "desc": "酒精代谢率 g/L/h（Widmark）",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "g/L",
@@ -13927,7 +14081,7 @@
   "id": "clark_child_dose",
   "cat": "biology/physiology",
   "name": "儿童剂量（Clark 法则）",
-  "expr": "adult_dose * weight / 70",
+  "expr": "adult_dose * weight / reference_adult_weight",
   "params": {
    "adult_dose": {
     "value": null,
@@ -13944,6 +14098,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "reference_adult_weight": {
+    "value": 70,
+    "desc": "Clark 法则参考成人体重 kg",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "mg",
@@ -13972,7 +14132,7 @@
   "id": "blood_volume_estimate",
   "cat": "biology/physiology",
   "name": "血量估算",
-  "expr": "70 * weight",
+  "expr": "blood_ml_per_kg * weight",
   "params": {
    "weight": {
     "value": null,
@@ -13981,6 +14141,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "blood_ml_per_kg": {
+    "value": 70,
+    "desc": "成人每公斤血容量 ml",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "ml",
@@ -14093,12 +14259,18 @@
   "id": "max_heart_rate",
   "cat": "biology/physiology",
   "name": "最大心率（估算）",
-  "expr": "220 - age",
+  "expr": "max_hr_coefficient - age",
   "params": {
    "age": {
     "value": null,
     "desc": "年龄 岁",
     "quantity": "年龄"
+   },
+   "max_hr_coefficient": {
+    "value": 220,
+    "desc": "Fox 最大心率系数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "bpm",
@@ -14126,12 +14298,18 @@
   "id": "pregnancy_days_remaining",
   "cat": "biology/physiology",
   "name": "孕期剩余天数（Naegele）",
-  "expr": "280 - days_since_lmp",
+  "expr": "gestation_days - days_since_lmp",
   "params": {
    "days_since_lmp": {
     "value": null,
     "desc": "末次月经至今的天数",
     "quantity": "末次月经至今的天数"
+   },
+   "gestation_days": {
+    "value": 280,
+    "desc": "Naegele 预产期天数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "天",
@@ -14160,7 +14338,7 @@
   "id": "fever_energy_cost",
   "cat": "biology/physiology",
   "name": "发热额外耗能",
-  "expr": "base_kcal * 0.13 * fever_delta",
+  "expr": "base_kcal * fever_metabolism_rate * fever_delta",
   "params": {
    "base_kcal": {
     "value": null,
@@ -14174,6 +14352,12 @@
     "dimension": {
      "Theta": 1
     }
+   },
+   "fever_metabolism_rate": {
+    "value": 0.13,
+    "desc": "体温每升 1℃ 代谢增幅",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kcal/日",
@@ -14351,7 +14535,7 @@
   "id": "grain_yield_total",
   "cat": "power/food",
   "name": "粮食总产",
-  "expr": "area_hectare * kg_per_hectare * 0.9",
+  "expr": "area_hectare * kg_per_hectare * harvest_loss_factor",
   "params": {
    "area_hectare": {
     "value": null,
@@ -14368,6 +14552,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "harvest_loss_factor": {
+    "value": 0.9,
+    "desc": "收后损耗与留种后比例",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kg/年",
@@ -15732,7 +15922,7 @@
   "id": "gas_volume_stp",
   "cat": "chemistry/mole",
   "name": "标准状况气体体积",
-  "expr": "moles * 22.414",
+  "expr": "moles * stp_molar_volume",
   "params": {
    "moles": {
     "value": null,
@@ -15741,6 +15931,12 @@
     "dimension": {
      "N": 1
     }
+   },
+   "stp_molar_volume": {
+    "value": 22.414,
+    "desc": "STP 摩尔体积 L/mol",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "L",
@@ -16460,7 +16656,7 @@
   "id": "main_sequence_lifetime",
   "cat": "physics/astronomy",
   "name": "主序星寿命",
-  "expr": "10 * M^(-2.5)",
+  "expr": "10 * M^mass_lifetime_exponent",
   "params": {
    "M": {
     "value": null,
@@ -16469,6 +16665,12 @@
     "dimension": {
      "M": 1
     }
+   },
+   "mass_lifetime_exponent": {
+    "value": -2.5,
+    "desc": "主序寿命质量指数",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "Gyr（十亿年）",
@@ -16488,7 +16690,7 @@
   "id": "hull_speed_generic",
   "cat": "perception/travel",
   "name": "船舶极限航速（普适版，可换重力）",
-  "expr": "froude * sqrt(g * length) * 1.944",
+  "expr": "froude * sqrt(g * length) * knots_per_mps",
   "params": {
    "froude": {
     "value": 0.4,
@@ -16512,6 +16714,12 @@
     "dimension": {
      "L": 1
     }
+   },
+   "knots_per_mps": {
+    "value": 1.944,
+    "desc": "1 m/s = 1.944 kn",
+    "quantity": "系数",
+    "dimension": {}
    }
   },
   "unit": "kn（节）",
@@ -16629,7 +16837,7 @@
   "id": "solar_flux_at_1au",
   "cat": "physics/astronomy",
   "name": "太阳常数（由光度与距离推出）",
-  "expr": "luminosity * 1361",
+  "expr": "luminosity * solar_constant",
   "params": {
    "luminosity": {
     "value": 1,
@@ -16637,6 +16845,15 @@
     "quantity": "光度",
     "dimension": {
      "J": 1
+    }
+   },
+   "solar_constant": {
+    "value": 1361,
+    "desc": "太阳常数 W/m²",
+    "quantity": "功率密度",
+    "dimension": {
+     "M": 1,
+     "T": -3
     }
    }
   },

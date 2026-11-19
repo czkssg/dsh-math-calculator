@@ -36,6 +36,8 @@ export interface FormulaWeb {
     formulaEdges?: number
     groups?: number
     aliasCount?: number
+    chainCount?: number
+    chainEdges?: number
     cycleEdges?: number
     isolatedNoIn?: number
     sources?: number
@@ -46,6 +48,12 @@ export interface FormulaWeb {
   groupNames?: string[]
   /** 同式重复条 → 主节点（查询别名时自动指向主）。 */
   aliases?: Record<string, string>
+  /** 链边：[链 id, 步号, 上游公式, 下游公式, 下游参数, 上游步号]。 */
+  chainEdges?: Array<[string, number, string, string, string, number]>
+  /** 公式 → 参与的链（chain/step/role）。 */
+  chainIndex?: Record<string, Array<{ chain: string; step: number; role: 'upstream' | 'downstream' }>>
+  /** 链 id → 显示名。 */
+  chainNames?: Record<string, string>
   constants: WebConstant[]
   constantEdges: WebConstantEdge[]
   formulaEdges: WebFormulaEdge[]
@@ -96,9 +104,25 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
   const constantByName = new Map(web.constants.map((item) => [item[0], item]))
   const constantEdges = web.constantEdges ?? []
   const formulaEdges = web.formulaEdges ?? []
+  /** 查询邻接 = 组匹配网边 + 链边（链边即使没被量纲组匹配，也要出现在上下游里）。 */
+  const allEdges: WebFormulaEdge[] = []
+  const edgeKeys = new Set<string>()
+  /** 链边优先：它们是人工确认的确定性路径，不该被组匹配的泛边挤出显示上限。 */
+  for (const [, , from, to, param] of web.chainEdges ?? []) {
+    const key = from + '>' + to + '>' + param
+    if (edgeKeys.has(key)) continue
+    edgeKeys.add(key)
+    allEdges.push([from, to, param, '链'])
+  }
+  for (const edge of formulaEdges) {
+    const key = edge[0] + '>' + edge[1] + '>' + edge[2]
+    if (edgeKeys.has(key)) continue
+    edgeKeys.add(key)
+    allEdges.push(edge)
+  }
   const outByFrom = new Map<string, WebFormulaEdge[]>()
   const inByTo = new Map<string, WebFormulaEdge[]>()
-  for (const edge of formulaEdges) {
+  for (const edge of allEdges) {
     if (outByFrom.get(edge[0]) === undefined) outByFrom.set(edge[0], [])
     outByFrom.get(edge[0])?.push(edge)
     if (inByTo.get(edge[1]) === undefined) inByTo.set(edge[1], [])
@@ -110,6 +134,12 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
     constToFormula.get(edge[0])?.push(edge)
   }
   const groups = new Set(formulaEdges.map((edge) => edge[3]))
+  /** 链边索引：from>to>param → 链显示名与步号。 */
+  const chainTags = new Map<string, string>()
+  for (const [chainId, toStep, from, to, param, fromStep] of web.chainEdges ?? []) {
+    const name = web.chainNames?.[chainId] ?? chainId
+    chainTags.set(from + '>' + to + '>' + param, name + ' 第' + fromStep + '→' + toStep + '步')
+  }
 
   const rawFocus = typeof query.focus === 'string' ? query.focus.trim() : ''
   const aliases = web.aliases ?? {}
@@ -138,7 +168,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       '═══ 公式网（物理常数 → 公式 → 公式）═══',
       '',
       '  节点：常数 ' + web.constants.length + ' · 公式 ' + (web.meta?.formulas ?? formulas.length) + ' · 物理量组 ' + groups.size,
-      '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length,
+      '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length + ' · 链边 ' + (web.meta?.chainEdges ?? 0) + '（' + (web.meta?.chainCount ?? 0) + ' 条链）',
       '  从常数可达的公式：' + seen.size,
       '  直接使用常数的公式：' + first.size,
       '  无入边（源/孤立）：' + (web.meta?.sources ?? 0) + ' · 无出边（汇）：' + (web.meta?.sinks ?? 0),
@@ -188,7 +218,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
         for (const edge of outByFrom.get(id) ?? []) {
           if (seen.has(edge[1])) continue
           if (nextMap.get(edge[1]) === undefined) nextMap.set(edge[1], [])
-          nextMap.get(edge[1])?.push(edge[0] + ' 输出「' + edge[3] + '」→ ' + edge[1] + '.' + edge[2])
+          nextMap.get(edge[1])?.push(edge[0] + ' ' + (edge[3] === '链' ? '链边' : '输出「' + edge[3] + '」') + ' → ' + edge[1] + '.' + edge[2] + (chainTags.get(edge[0] + '>' + edge[1] + '>' + edge[2]) !== undefined ? '（链:' + chainTags.get(edge[0] + '>' + edge[1] + '>' + edge[2]) + '）' : ''))
         }
       }
       if (nextMap.size === 0) break
@@ -218,7 +248,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
           const other = dir === 'down' ? edge[1] : edge[0]
           if (seen.has(other)) continue
           if (nextMap.get(other) === undefined) nextMap.set(other, [])
-          nextMap.get(other)?.push(edge[0] + ' 输出「' + edge[3] + '」→ ' + edge[1] + '.' + edge[2])
+          nextMap.get(other)?.push(edge[0] + ' ' + (edge[3] === '链' ? '链边' : '输出「' + edge[3] + '」') + ' → ' + edge[1] + '.' + edge[2] + (chainTags.get(edge[0] + '>' + edge[1] + '>' + edge[2]) !== undefined ? '（链:' + chainTags.get(edge[0] + '>' + edge[1] + '>' + edge[2]) + '）' : ''))
         }
       }
       if (nextMap.size === 0) break
