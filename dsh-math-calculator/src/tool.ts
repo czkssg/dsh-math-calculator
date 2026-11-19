@@ -264,6 +264,7 @@ const PARAMETER_SPEC = {
   actors: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'conflict：行动者 [{id,wealth}]' },
   seed: { type: 'number', description: '确定性随机种子（conflict 等，同 seed 同结果）' },
   randomSeed: { type: 'string', description: 'random：世界种子文本（同种子同结果）' },
+  label: { type: 'string', description: 'calls 条目 / expressions：给这条结果打标签（仅展示）' },
   count: { type: 'number', description: 'random：序列长度（默认 10，上限 1000）' },
   min: { type: 'number', description: 'random：下界（默认 0）' },
   max: { type: 'number', description: 'random：上界（默认 1）' },
@@ -701,6 +702,7 @@ async function runBatchCalls(
     else failed += 1
     records.push({
       index: index + 1,
+      ...(typeof item['label'] === 'string' && item['label'].trim() !== '' ? { label: item['label'].trim() } : {}),
       operation: one.operation,
       ok: one.ok,
       input: one.input,
@@ -717,7 +719,8 @@ async function runBatchCalls(
     const okEntry = record['ok'] === true
     const error = record['error'] as { type?: string; message?: string; hint?: string } | undefined
     lines.push('')
-    lines.push('── [' + String(record['index']) + '] ' + String(record['operation']) + (okEntry ? '' : ' ✗ ' + (error?.type ?? 'error')) + ' ──')
+    const recordLabel = typeof record['label'] === 'string' && record['label'] !== '' ? '（' + record['label'] + '）' : ''
+    lines.push('── [' + String(record['index']) + '] ' + String(record['operation']) + recordLabel + (okEntry ? '' : ' ✗ ' + (error?.type ?? 'error')) + ' ──')
     lines.push(
       okEntry
         ? String(record['result'])

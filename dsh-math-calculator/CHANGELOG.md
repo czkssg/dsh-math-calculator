@@ -2,6 +2,21 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.28.1] — 2026-11-20
+
+**批量 `calls` 支持 `label` 标签**（用户实测：17 条全部报警「参数名认不出来」）。
+
+### 修复
+
+- `calls` 条目可带 `label`：结果显示在每条头部（`── [1] evaluate（电解·耗电）──`），
+  并写进 `value.results[].label`；不再触发「认不出来」提示；
+- `expressions` 的 `{label, expr}` 标签同步可用（此前已支持，补断言）；
+- 单条调用带 `label` 也不报警（仅忽略）。
+
+### 测试
+
+- 新增 `r75-batch-label` 8 项；
+  全量 **134 套 / 3,148 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.28.0] — 2026-11-20
 
 **自行压力性测试 + 4 条真问题修复**。
