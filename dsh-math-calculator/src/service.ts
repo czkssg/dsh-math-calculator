@@ -5,12 +5,15 @@
  *
  * `math_execute` 是「给模型看的」：结果里混排版文本、走工具流水线、记会话历史。
  * 服务消费者（其他插件）要的是**结构化值 + 稳定形状**——两者不能混。
- * 这里只调 `dispatchNew`（纯分发），不经过工具包装、不写会话。
  *
  * ## 与工具的一致性
  *
- * 同一输入经服务与工具应得到相同数值（r81 回归锁住）。因为底层是同一个
- * `dispatchNew`/引擎，差异只可能在「提取规范值」这一步。
+ * 同一输入经服务与工具应得到相同数值（r81 回归锁住）。底层同一个引擎。
+ *
+ * ## 自定义单位命名空间（第二期）
+ *
+ * 每个 namespace 一个**独立引擎**（`createEngine()`）：注册的单位只在该世界内生效，
+ * 注销即丢弃实例——不污染全局 `buildEngine`，也不受「engine 缓存」影响。
  *
  * ## 错误三档（提案 3.6）
  *
@@ -25,6 +28,9 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { MIGRATED_OPERATIONS, dispatchNew } from './dispatch.js'
+import { buildEngine, createEngine, type Engine } from './core/engine.js'
+import { evaluateOne } from './features/numeric/evaluate.js'
+import { convertUnits, describeUnit } from './features/numeric/units.js'
 
 /** 服务名（cordis 服务键）。 */
 export const MATH_ENGINE_SERVICE = 'mathEngine'
@@ -58,25 +64,58 @@ export interface EngineServiceResult {
 export interface EngineServiceDescribe {
   version: string
   operations: string[]
-  /** 单位族与数量概览。 */
   unitFamilies: Array<{ dimension: string; count: number }>
-  /** 是否支持自定义单位注册（第二期）。 */
   supportsCustomUnits: boolean
-  /** 服务直接提供的方法名。 */
   methods: string[]
+}
+
+/** 一个自定义单位（命名空间内）。 */
+export interface NamespaceUnit {
+  name: string
+  factor: number
+  /** SI 基准单位；空串表示无量纲（如货币、计件）。 */
+  base: string
+}
+
+/** 注册单位的入参形状。 */
+export interface RegisteredUnitSpec {
+  name: string
+  factor: number
+  base?: string
+}
+
+/** 注册结果。 */
+export interface RegisterUnitsResult {
+  ok: boolean
+  namespace?: string
+  registered?: string[]
+  error?: EngineServiceError
+}
+
+/** 列表结果。 */
+export interface ListUnitsResult {
+  ok: boolean
+  units?: Array<{ namespace: string; units: NamespaceUnit[] }>
+  error?: EngineServiceError
 }
 
 /** 服务接口。 */
 export interface MathEngineService {
   readonly version: string
   describe(): EngineServiceDescribe
-  evaluate(expression: string, options?: { variables?: Record<string, number> }): EngineServiceResult
-  convert(value: number, from: string, to: string): EngineServiceResult
-  checkDimension(unit: string): EngineServiceResult
+  evaluate(expression: string, options?: { variables?: Record<string, number>; namespace?: string }): EngineServiceResult
+  convert(value: number, from: string, to: string, options?: { namespace?: string }): EngineServiceResult
+  checkDimension(unit: string, options?: { namespace?: string }): EngineServiceResult
+  /** 注册按命名空间隔离的自定义单位。 */
+  registerUnits(namespace: string, units: RegisteredUnitSpec[]): RegisterUnitsResult
+  /** 列出已注册单位（不传 namespace 列出全部）。 */
+  listUnits(namespace?: string): ListUnitsResult
+  /** 注销整个命名空间（丢弃其引擎）。 */
+  unregisterUnits(namespace: string): { ok: boolean; removed?: boolean }
 }
 
 /** 能力缺失类错误（可降级）。 */
-const CAPABILITY_TYPES = new Set(['unknown_formula', 'unknown_argument', 'unknown_subcommand', 'unknown_op', 'not_supported', 'unknown_symbol', 'unknown_unit'])
+const CAPABILITY_TYPES = new Set(['unknown_formula', 'unknown_argument', 'unknown_subcommand', 'unknown_op', 'not_supported', 'unknown_symbol', 'unknown_unit', 'unknown_namespace'])
 /** 输入类错误（修正后重试）。 */
 const INPUT_TYPES = new Set(['invalid_argument', 'missing_params', 'unit_mismatch', 'non_finite', 'out_of_range'])
 
@@ -125,6 +164,11 @@ function fail(type: string, message: string, hint?: string): EngineServiceResult
   return { ok: false, error: { type, kind: classifyError(type), message, ...(hint !== undefined ? { hint } : {}) } }
 }
 
+/** 注册/列表失败。 */
+function failRegister(type: string, message: string, hint?: string): RegisterUnitsResult {
+  return { ok: false, error: { type, kind: classifyError(type), message, ...(hint !== undefined ? { hint } : {}) } }
+}
+
 /** 从 dispatch 的 value 提取规范值。 */
 function extractValue(operation: string, value: unknown): EngineServiceResult {
   if (operation === 'units') {
@@ -166,6 +210,11 @@ function callDispatch(operation: string, args: Record<string, unknown>): EngineS
   }
 }
 
+/** 命名空间名合法（字母数字中文下划线连字符，1–40）。 */
+function isValidNamespace(name: unknown): name is string {
+  return typeof name === 'string' && /^[\w\u4e00-\u9fa5-]{1,40}$/.test(name)
+}
+
 /**
  * 创建服务实例（纯工厂：测试可直接调用，不依赖 cordis 上下文）。
  *
@@ -174,6 +223,25 @@ function callDispatch(operation: string, args: Record<string, unknown>): EngineS
 export function createMathEngineService(): MathEngineService {
   const version = readVersion()
   const unitFamilies = readUnitFamilies()
+  /** 命名空间 → 独立引擎与已注册单位。 */
+  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[] }>()
+
+  /** 取引擎：命名空间优先（不存在时回 undefined）。 */
+  const engineOf = (namespace: string | undefined): Engine | undefined => {
+    if (namespace === undefined) return buildEngine()
+    return namespaces.get(namespace)?.engine
+  }
+
+  /** 扫描单位名是否已存在（内置或已注册）。 */
+  const unitExists = (engine: Engine, name: string): boolean => {
+    try {
+      engine.evaluate('1 ' + name)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return {
     version,
     describe() {
@@ -181,28 +249,96 @@ export function createMathEngineService(): MathEngineService {
         version,
         operations: [...MIGRATED_OPERATIONS],
         unitFamilies,
-        supportsCustomUnits: false,
-        methods: ['describe', 'evaluate', 'convert', 'checkDimension'],
+        supportsCustomUnits: true,
+        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'registerUnits', 'listUnits', 'unregisterUnits'],
       }
     },
     evaluate(expression, options = {}) {
       if (typeof expression !== 'string' || expression.trim() === '') {
         return fail('missing_params', 'expression 不能为空', '例如 evaluate("1 m + 1 ft")。')
       }
-      const args: Record<string, unknown> = { expression: expression.trim(), terse: true }
-      if (options.variables !== undefined) args['variables'] = options.variables
-      return callDispatch('evaluate', args)
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '先 registerUnits(namespace, units)。')
+      }
+      const engine = engineOf(options.namespace)
+      if (engine === undefined) return fail('unknown_namespace', '命名空间未注册', '')
+      try {
+        const outcome = evaluateOne(engine, expression.trim(), { terse: true, displayPrecision: 8 }, options.variables as never)
+        return extractValue('evaluate', outcome.value)
+      } catch (error) {
+        const type = (error as { type?: string }).type ?? 'internal'
+        return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
     },
-    convert(value, from, to) {
+    convert(value, from, to, options = {}) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return fail('invalid_argument', 'value 必须是有限数', '')
       if (typeof from !== 'string' || typeof to !== 'string' || from === '' || to === '') {
         return fail('missing_params', 'convert 需要 from 与 to', '例如 convert(1, "m", "ft")。')
       }
-      return callDispatch('units', { unitValue: value, unitFrom: from, unitTo: to })
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '')
+      }
+      const engine = engineOf(options.namespace)
+      if (engine === undefined) return fail('unknown_namespace', '命名空间未注册', '')
+      try {
+        const outcome = convertUnits(engine, value, from, to, false, 8)
+        return extractValue('units', outcome.value)
+      } catch (error) {
+        const type = (error as { type?: string }).type ?? 'internal'
+        return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
     },
-    checkDimension(unit) {
+    checkDimension(unit, options = {}) {
       if (typeof unit !== 'string' || unit.trim() === '') return fail('missing_params', 'checkDimension 需要 unit', '例如 checkDimension("kg/m3")。')
-      return callDispatch('units', { unitFrom: unit.trim() })
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '')
+      }
+      const engine = engineOf(options.namespace)
+      if (engine === undefined) return fail('unknown_namespace', '命名空间未注册', '')
+      try {
+        const outcome = describeUnit(engine, unit.trim())
+        return extractValue('units', outcome.value)
+      } catch (error) {
+        const type = (error as { type?: string }).type ?? 'internal'
+        return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
+    },
+    registerUnits(namespace, units) {
+      if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '字母/数字/中文/下划线/连字符，1–40 字符。')
+      if (!Array.isArray(units) || units.length === 0) return failRegister('missing_params', 'units 不能为空', '形如 [{name:"credit", factor:1, base:""}]。')
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [] }
+      const registered: string[] = []
+      for (const spec of units) {
+        const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
+        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) {
+          return failRegister('invalid_argument', '单位名必须是字母开头的字母数字：' + JSON.stringify(name), '中文名请走别名；createUnit 只接受 ASCII。')
+        }
+        const factor = Number(spec?.factor)
+        if (!Number.isFinite(factor) || factor <= 0) return failRegister('invalid_argument', 'factor 必须是正有限数：' + name, '')
+        const base = typeof spec?.base === 'string' ? spec.base.trim() : ''
+        if (unitExists(entry.engine, name) || entry.units.some((item) => item.name === name)) {
+          return failRegister('invalid_argument', '单位名「' + name + '」已存在（内置或已注册）', '标准单位与自定义单位不能同名。')
+        }
+        try {
+          entry.engine.math.createUnit(name, base === '' ? String(factor) : factor + ' ' + base)
+        } catch (error) {
+          return failRegister('invalid_argument', 'createUnit 失败：' + name + '（' + (error instanceof Error ? error.message : String(error)) + '）', 'base 必须是已知单位（m/kg/s/…），无量纲请留空。')
+        }
+        entry.units.push({ name, factor, base })
+        registered.push(name)
+      }
+      namespaces.set(namespace, entry)
+      return { ok: true, namespace, registered }
+    },
+    listUnits(namespace) {
+      if (namespace !== undefined) {
+        const entry = namespaces.get(namespace)
+        return { ok: true, units: entry === undefined ? [] : [{ namespace, units: [...entry.units] }] }
+      }
+      return { ok: true, units: [...namespaces.entries()].map(([key, entry]) => ({ namespace: key, units: [...entry.units] })) }
+    },
+    unregisterUnits(namespace) {
+      return { ok: true, removed: namespaces.delete(namespace) }
     },
   }
 }

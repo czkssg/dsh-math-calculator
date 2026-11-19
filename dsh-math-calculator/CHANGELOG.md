@@ -2,6 +2,22 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.31.0] — 2026-11-20
+
+**服务化第二期：自定义单位命名空间**。
+
+### 新增
+
+- `registerUnits(namespace, units)` / `listUnits(namespace?)` / `unregisterUnits(namespace)`；
+- **每个命名空间独立引擎**（`createEngine()` 无缓存工厂）：注册单位只在该世界生效，注销即丢弃实例；
+- `evaluate`/`convert`/`checkDimension` 支持 `namespace` 选项；
+- 注册校验：字母名、正 factor、base 必须已知、与内置/已注册同名拒绝；
+- `describe().supportsCustomUnits` 改为 `true`。
+
+### 测试
+
+- 新增 `r82-namespace-units` 18 项；`r81` 更新 methods 断言（17 项）；
+  全量 **141 套 / 3,232 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.30.0] — 2026-11-20
 
 **对外服务化第一期：`mathEngine` cordis 服务**（回应 dsh-canon-memory 提案）。

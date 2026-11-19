@@ -939,7 +939,19 @@ export function rebuildEngine(): Engine {
  */
 export function buildEngine(): Engine {
   if (cached !== null) return cached
+  cached = createEngine()
+  return cached
+}
 
+/**
+ * 新建一个**独立**引擎实例（不共享缓存）。
+ *
+ * 服务层的「自定义单位命名空间」用它：每个世界一个引擎，注册的单位只在该引擎内生效，
+ * 注销即丢弃实例——不会污染全局 buildEngine。
+ *
+ * @returns 引擎
+ */
+export function createEngine(): Engine {
   /**
    * ## ★ 默认数值类型必须是 BigNumber，不能是 Number
    *
@@ -1279,6 +1291,5 @@ const evaluate = (source: string, scope?: Record<string, unknown>): unknown => {
     return out
   }
 
-  cached = { math, evaluate, evaluateNumber, customUnits, customUnitsError }
-  return cached
+  return { math, evaluate, evaluateNumber, customUnits, customUnitsError }
 }

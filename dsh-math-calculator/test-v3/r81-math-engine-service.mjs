@@ -25,7 +25,7 @@ console.log('-- 1. 自述 --')
   assert('★ version 与 package.json 一致', describe.version === JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version, describe.version)
   assert('★ operations ≥ 60 且含 evaluate/formulas', describe.operations.length >= 60 && describe.operations.includes('evaluate') && describe.operations.includes('formulas'), String(describe.operations.length))
   assert('★ unitFamilies 非空', describe.unitFamilies.length >= 10 && describe.unitFamilies.every((item) => item.count > 0), String(describe.unitFamilies.length))
-  assert('methods 声明 4 个', Array.isArray(describe.methods) && describe.methods.length === 4, JSON.stringify(describe.methods))
+  assert('methods 声明 7 个（含命名空间三件套）', Array.isArray(describe.methods) && describe.methods.length === 7 && describe.methods.includes('registerUnits'), JSON.stringify(describe.methods))
 }
 console.log('-- 2. 求值 --')
 {
