@@ -42,7 +42,7 @@ console.log('-- 3. 公式网自动候选 --')
   const out = await run({ operation: 'formulas', query: 'web' })
   assert('★ 统计含跨链候选', String(out.result).includes('跨链') && out.value?.crossCandidates >= 50, String(out.value?.crossCandidates))
   const candidates = web.crossCandidates ?? []
-  assert('★ 候选结构完整', candidates.every((item) => Array.isArray(item) && item.length === 6 && Array.isArray(item[5])), String(candidates.length))
+  assert('★ 候选结构完整（7 字段含语义标记）', candidates.every((item) => Array.isArray(item) && item.length === 7 && Array.isArray(item[5])), String(candidates.length))
   const sample = candidates[0]
   assert('候选指向真实链与步', sample !== undefined && Array.isArray(sample[5]) && sample[5].every((c) => chains.some((x) => x.id === c[0]) && typeof c[1] === 'number'), JSON.stringify(sample).slice(0, 100))
 }

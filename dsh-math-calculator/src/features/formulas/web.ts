@@ -39,6 +39,7 @@ export interface FormulaWeb {
     chainCount?: number
     chainEdges?: number
     crossCandidates?: number
+    semanticCandidates?: number
     cycleEdges?: number
     isolatedNoIn?: number
     sources?: number
@@ -172,7 +173,7 @@ export function runFormulaWeb(web: FormulaWeb, formulas: WebFormula[], query: We
       '',
       '  节点：常数 ' + web.constants.length + ' · 公式 ' + (web.meta?.formulas ?? formulas.length) + ' · 物理量组 ' + groups.size,
       '  边：常数边 ' + constantEdges.length + ' · 公式边 ' + formulaEdges.length + ' · 链边 ' + (web.meta?.chainEdges ?? 0) + '（' + (web.meta?.chainCount ?? 0) + ' 条链）',
-      '  跨链接点：声明步 ' + (web.meta?.chainEdges ?? 0) + ' 条边、自动候选 ' + (web.meta?.crossCandidates ?? 0) + ' 条',
+      '  跨链接点：声明步 ' + (web.meta?.chainEdges ?? 0) + ' 条边、自动候选 ' + (web.meta?.crossCandidates ?? 0) + ' 条（语义 ' + (web.meta?.semanticCandidates ?? 0) + ' 条）',
       '  从常数可达的公式：' + seen.size,
       '  直接使用常数的公式：' + first.size,
       '  无入边（源/孤立）：' + (web.meta?.sources ?? 0) + ' · 无出边（汇）：' + (web.meta?.sinks ?? 0),

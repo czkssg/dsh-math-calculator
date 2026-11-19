@@ -1093,7 +1093,13 @@
    },
    {
     "formula": "column_axial_capacity",
-    "note": "墙/柱截面 → 抗压承载"
+    "note": "墙/柱截面 → 抗压承载",
+    "crossFlow": {
+     "sigma_y": {
+      "chain": "sys-material",
+      "step": 5
+     }
+    }
    },
    {
     "formula": "window_heat_loss",

@@ -529,7 +529,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "动量"
  },
  {
   "id": "impulse",
@@ -891,7 +892,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "单摆周期"
  },
  {
   "id": "projectile_range",
@@ -943,7 +945,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "抛射射程"
  },
  {
   "id": "projectile_height",
@@ -994,7 +997,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "抛射最大高度"
  },
  {
   "id": "torque",
@@ -2039,7 +2043,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "线膨胀"
  },
  {
   "id": "stefan_boltzmann",
@@ -2108,7 +2113,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "辐射功率"
  },
  {
   "id": "wien_displacement",
@@ -2159,7 +2165,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "峰值波长"
  },
  {
   "id": "carnot_efficiency",
@@ -2203,7 +2210,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "卡诺效率"
  },
  {
   "id": "ohm",
@@ -5259,7 +5267,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "自由落体末速度"
  },
  {
   "id": "terminal_velocity",
@@ -6091,7 +6100,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "中点挠度"
  },
  {
   "id": "buckling_load",
@@ -6199,7 +6209,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "静水压"
  },
  {
   "id": "resistors_series",
@@ -7012,7 +7023,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "对流散热"
  },
  {
   "id": "entropy_change",
@@ -10717,7 +10729,8 @@
    "surplus",
    "剩余",
    "城市化"
-  ]
+  ],
+  "output": "农业剩余率"
  },
  {
   "id": "population_density_limit",
@@ -11335,7 +11348,8 @@
    "combustion",
    "燃烧",
    "燃料"
-  ]
+  ],
+  "output": "燃烧热量"
  },
  {
   "id": "smelting_temperature",
@@ -11518,7 +11532,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "临界载荷"
  },
  {
   "id": "hoop_stress",
@@ -11574,7 +11589,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "环向应力"
  },
  {
   "id": "beam_center_deflection",
@@ -11688,7 +11704,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "跨中弯矩"
  },
  {
   "id": "wood_beam_moment_capacity",
@@ -11743,7 +11760,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "抗弯承载力"
  },
  {
   "id": "column_axial_capacity",
@@ -11790,7 +11808,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "轴压承载力"
  },
  {
   "id": "arch_thrust",
@@ -11973,7 +11992,8 @@
    "风寒",
    "体感温度"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "风寒指数"
  },
  {
   "id": "heat_index",
@@ -12003,7 +12023,8 @@
    "酷热",
    "体感温度"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "酷热指数"
  },
  {
   "id": "dew_point_magnus",
@@ -12045,7 +12066,8 @@
    "露点",
    "结露"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "露点温度"
  },
  {
   "id": "wind_power_density",
@@ -12213,7 +12235,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "一维导热"
  },
  {
   "id": "thermal_time_constant",
@@ -12278,7 +12301,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "物体升降温时间"
  },
  {
   "id": "echo_distance",
@@ -12588,7 +12612,8 @@
    "船速",
    "航速"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "船舶理论航速"
  },
  {
   "id": "mach_number",
@@ -12622,7 +12647,8 @@
    "马赫",
    "超音速"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "马赫数"
  },
  {
   "id": "projectile_range_vacuum",
@@ -12744,7 +12770,8 @@
    "刹车",
    "制动"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "刹车距离"
  },
  {
   "id": "impact_speed_freefall",
@@ -12818,7 +12845,8 @@
    "积温",
    "生长度日"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "生长度日"
  },
  {
   "id": "reference_evapotranspiration",
@@ -12981,7 +13009,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "基础代谢率"
  },
  {
   "id": "daily_water_need",
@@ -13024,7 +13053,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "每日需水量"
  },
  {
   "id": "widmark_bac",
@@ -13236,7 +13266,8 @@
    "砖",
    "砌墙"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "砖墙用砖量"
  },
  {
   "id": "roof_load",
@@ -13270,7 +13301,8 @@
    "屋顶",
    "载荷"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "屋顶总载荷"
  },
  {
   "id": "stair_comfort_rule",
@@ -13384,7 +13416,8 @@
    "热损失",
    "取暖"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "窗户热损失"
  },
  {
   "id": "lighting_lumen_need",
@@ -13476,7 +13509,8 @@
    "烟囱",
    "抽力"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "烟囱抽力"
  },
  {
   "id": "ram_momentum",
@@ -13560,7 +13594,8 @@
    "投石机",
    "射程"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "配重投石机射程"
  },
  {
   "id": "wall_breach_energy",
@@ -13636,7 +13671,8 @@
    "阵型",
    "正面"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "阵型正面宽度"
  },
  {
   "id": "army_supply_days",
@@ -13674,7 +13710,8 @@
    "补给",
    "粮草"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "军队补给可支撑天数"
  },
  {
   "id": "march_days",
@@ -13712,7 +13749,8 @@
    "行军",
    "天数"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "行军天数"
  },
  {
   "id": "crop_total_yield",
@@ -13745,7 +13783,8 @@
    "产量",
    "收成"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "作物总产量"
  },
  {
   "id": "food_energy_supply",
@@ -13778,7 +13817,8 @@
    "热量",
    "食物"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "食物总能量"
  },
  {
   "id": "population_fed",
@@ -13814,7 +13854,8 @@
    "养活",
    "口粮"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "能养活多少人·日"
  },
  {
   "id": "seed_rate",
@@ -13921,7 +13962,8 @@
    "灌溉",
    "用水"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "灌溉水量"
  },
  {
   "id": "livestock_feed_need",
@@ -13955,7 +13997,8 @@
    "饲料",
    "牲畜"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "牲畜饲料需求"
  },
  {
   "id": "pasture_carrying_capacity",
@@ -14030,7 +14073,8 @@
    "收割",
    "农忙"
   ],
-  "frequency": "high"
+  "frequency": "high",
+  "output": "收割所需工日"
  },
  {
   "id": "drug_dose_by_weight",
@@ -14075,7 +14119,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "按体重给药"
  },
  {
   "id": "clark_child_dose",
@@ -14169,7 +14214,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "血量估算"
  },
  {
   "id": "fluid_deficit",
@@ -14211,7 +14257,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "脱水缺口"
  },
  {
   "id": "infusion_rate",
@@ -14572,7 +14619,8 @@
   "layer": "phenomenological",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "粮食总产"
  },
  {
   "id": "population_fed_by_grain",
@@ -14621,7 +14669,8 @@
   "layer": "phenomenological",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "可养人口"
  },
  {
   "id": "arable_land_needed",
@@ -14746,7 +14795,8 @@
   "layer": "phenomenological",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "军饷与给养成本"
  },
  {
   "id": "fiscal_burden_ratio",
@@ -14777,7 +14827,8 @@
   "layer": "derived",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "军费占财政比例"
  },
  {
   "id": "diffusion_s_curve",
@@ -14821,7 +14872,8 @@
   "layer": "phenomenological",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "技术扩散 S 曲线"
  },
  {
   "id": "diffusion_half_life",
@@ -14888,7 +14940,8 @@
   "layer": "phenomenological",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "信息传递耗时"
  },
  {
   "id": "admin_radius_from_info",
@@ -14925,7 +14978,8 @@
   "layer": "derived",
   "domains": [
    "society"
-  ]
+  ],
+  "output": "可有效统治的半径"
  },
  {
   "id": "loan_payment",
@@ -14964,7 +15018,8 @@
   "layer": "engineering",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "等额本息月供"
  },
  {
   "id": "simple_interest",
@@ -15004,7 +15059,8 @@
   "layer": "engineering",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "单利终值"
  },
  {
   "id": "annuity_present_value",
@@ -15088,7 +15144,8 @@
   "layer": "engineering",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "净现值 NPV"
  },
  {
   "id": "depreciation_straight_line",
@@ -15257,7 +15314,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "复利翻倍所需年数"
  },
  {
   "id": "purchasing_power",
@@ -15309,7 +15367,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "通胀后的购买力"
  },
  {
   "id": "markup_margin",
@@ -16562,7 +16621,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "热应力"
  },
  {
   "id": "hydraulic_force",
@@ -16684,7 +16744,8 @@
   "layer": "phenomenological",
   "domains": [
    "astronomy"
-  ]
+  ],
+  "output": "主序星寿命"
  },
  {
   "id": "hull_speed_generic",
@@ -16831,7 +16892,8 @@
   "layer": "derived",
   "domains": [
    "astronomy"
-  ]
+  ],
+  "output": "宜居带边界"
  },
  {
   "id": "solar_flux_at_1au",
@@ -16914,7 +16976,8 @@
   "domains": [
    "physics",
    "astronomy"
-  ]
+  ],
+  "output": "辐照随距离的平方反比"
  },
  {
   "id": "hardness_yield_generic",
@@ -17014,7 +17077,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "代谢率"
  },
  {
   "id": "convective_cooling_generic",
@@ -19016,7 +19080,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "矩形截面抗弯截面系数"
  },
  {
   "id": "beam_bending_stress",
@@ -19077,7 +19142,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "梁的最大弯曲应力"
  },
  {
   "id": "beam_self_weight_moment",
@@ -19154,7 +19220,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "跨中弯矩"
  },
  {
   "id": "beam_uniform_load_deflection",
@@ -19225,7 +19292,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "跨中挠度"
  },
  {
   "id": "rect_inertia",
@@ -19275,7 +19343,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "矩形截面惯性矩"
  },
  {
   "id": "bolt_shear_capacity",
@@ -19333,7 +19402,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "抗剪承载力"
  },
  {
   "id": "weld_throat_capacity",
@@ -19505,7 +19575,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "蒸汽机功率"
  },
  {
   "id": "boiler_coal_rate",
@@ -19565,7 +19636,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "煤耗率"
  },
  {
   "id": "heat_exchanger_duty",
@@ -19700,7 +19772,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "平壁导热损失"
  },
  {
   "id": "pipe_flow_rate",
@@ -19752,7 +19825,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "管道流量"
  },
  {
   "id": "darcy_head_loss",
@@ -19827,7 +19901,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "管道沿程水头损失"
  },
  {
   "id": "pump_power",
@@ -19904,7 +19979,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "水泵轴功率"
  },
  {
   "id": "orifice_discharge",
@@ -20025,7 +20101,8 @@
   "domains": [
    "engineering",
    "physics"
-  ]
+  ],
+  "output": "风功率"
  },
  {
   "id": "water_turbine_power",
@@ -20089,7 +20166,8 @@
   "domains": [
    "engineering",
    "power"
-  ]
+  ],
+  "output": "水轮机功率"
  },
  {
   "id": "grazing_capacity",
@@ -20157,7 +20235,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "草地载畜量"
  },
  {
   "id": "livestock_growth_time",
@@ -20214,7 +20293,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "畜禽出栏时间"
  },
  {
   "id": "feed_conversion_ratio",
@@ -20265,7 +20345,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "饲料转化率"
  },
  {
   "id": "crop_yield_npp",
@@ -20325,7 +20406,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "农田可收获能量"
  },
  {
   "id": "trophic_chain_support",
@@ -20379,7 +20461,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "营养级可支撑的生物量"
  },
  {
   "id": "labor_force",
@@ -20412,7 +20495,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "劳动力人口"
  },
  {
   "id": "gdp_from_labor",
@@ -20457,7 +20541,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "总产出"
  },
  {
   "id": "macro_savings_rate",
@@ -20502,7 +20587,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "储蓄率与投资能力"
  },
  {
   "id": "capital_output_ratio",
@@ -20548,7 +20634,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "资本产出比"
  },
  {
   "id": "money_supply_from_base",
@@ -20593,7 +20680,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "货币供应量"
  },
  {
   "id": "inflation_from_money_growth",
@@ -20639,7 +20727,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "货币增长与产出增长之差"
  },
  {
   "id": "gdp_expenditure",
@@ -20700,7 +20789,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "支出法总产出"
  },
  {
   "id": "growth_accounting",
@@ -20757,7 +20847,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "增长核算"
  },
  {
   "id": "convergence_speed",
@@ -20800,7 +20891,8 @@
   "layer": "derived",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "趋同速度"
  },
  {
   "id": "fisher_money",
@@ -20836,7 +20928,8 @@
   "layer": "fundamental",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "货币数量方程"
  },
  {
   "id": "fiscal_balance",
@@ -20870,7 +20963,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "财政收支余额"
  },
  {
   "id": "primary_balance",
@@ -20909,7 +21003,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "基本余额"
  },
  {
   "id": "fiscal_sustainability",
@@ -20957,7 +21052,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "财政可持续性判据"
  },
  {
   "id": "seigniorage",
@@ -20990,7 +21086,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "铸币税"
  },
  {
   "id": "effective_tax_rate",
@@ -21023,7 +21120,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "有效税率"
  },
  {
   "id": "fiscal_autonomy",
@@ -21051,7 +21149,8 @@
   "domains": [
    "economics",
    "society"
-  ]
+  ],
+  "output": "财政自由度"
  },
  {
   "id": "hooke_law",
@@ -21102,7 +21201,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "应力"
  },
  {
   "id": "safety_factor_check",
@@ -21153,7 +21253,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "安全系数"
  },
  {
   "id": "fracture_kic",
@@ -21200,7 +21301,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "断裂韧性"
  },
  {
   "id": "ashby_index",
@@ -21263,7 +21365,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "性能指数"
  },
  {
   "id": "ideal_strength",
@@ -21301,7 +21404,8 @@
   "layer": "derived",
   "domains": [
    "materials"
-  ]
+  ],
+  "output": "理论强度"
  },
  {
   "id": "melting_from_cohesive",
@@ -21339,7 +21443,8 @@
   "layer": "phenomenological",
   "domains": [
    "materials"
-  ]
+  ],
+  "output": "熔点与结合能"
  },
  {
   "id": "pugh_ductility",
@@ -21379,7 +21484,8 @@
   "layer": "phenomenological",
   "domains": [
    "materials"
-  ]
+  ],
+  "output": "Pugh 比值"
  },
  {
   "id": "gruneisen_expansion",
@@ -21480,7 +21586,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "屈服强度"
  },
  {
   "id": "wiedemann_franz",
@@ -21576,7 +21683,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "表面积-体积比"
  },
  {
   "id": "fick_diffusion",
@@ -21646,7 +21754,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "扩散通量"
  },
  {
   "id": "diffusion_time",
@@ -21685,7 +21794,8 @@
   "layer": "derived",
   "domains": [
    "biology"
-  ]
+  ],
+  "output": "扩散时间标度"
  },
  {
   "id": "peclet_number",
@@ -21734,7 +21844,8 @@
   "domains": [
    "biology",
    "physics"
-  ]
+  ],
+  "output": "佩克莱数"
  },
  {
   "id": "hardy_weinberg",
@@ -21855,7 +21966,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "生长值"
  },
  {
   "id": "michaelis_menten",
@@ -21916,7 +22028,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "米氏方程"
  },
  {
   "id": "q10_temperature",
@@ -21980,7 +22093,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "Q₁₀ 温度系数"
  },
  {
   "id": "logistic_growth_rate",
@@ -22039,7 +22153,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "增长量"
  },
  {
   "id": "sustainable_harvest",
@@ -22088,7 +22203,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "可持续产量"
  },
  {
   "id": "kiln_heat_balance",
@@ -22143,7 +22259,8 @@
   "domains": [
    "engineering",
    "materials"
-  ]
+  ],
+  "output": "热平衡热量"
  },
  {
   "id": "kiln_firing_time",
@@ -22184,7 +22301,8 @@
   "domains": [
    "engineering",
    "materials"
-  ]
+  ],
+  "output": "烧成时间"
  },
  {
   "id": "wall_heat_loss",
@@ -22243,7 +22361,8 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "热损功率"
  },
  {
   "id": "metallurgy_yield",
@@ -22285,7 +22404,8 @@
   "domains": [
    "engineering",
    "materials"
-  ]
+  ],
+  "output": "收得率"
  },
  {
   "id": "case_depth",
@@ -22356,7 +22476,8 @@
   "domains": [
    "engineering",
    "materials"
-  ]
+  ],
+  "output": "渗碳层深"
  },
  {
   "id": "gear_bending_strength",
@@ -22410,7 +22531,8 @@
   "layer": "phenomenological",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "齿轮齿根弯曲强度"
  },
  {
   "id": "gear_geometry",
@@ -22445,7 +22567,8 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "齿轮几何"
  },
  {
   "id": "pendulum_clock_drift",
@@ -22488,7 +22611,8 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "摆钟走时精度"
  },
  {
   "id": "gravity_storage_discharge",
@@ -22609,7 +22733,8 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "水轮输出"
  },
  {
   "id": "gdd_accumulated",
@@ -22646,7 +22771,8 @@
   "domains": [
    "agriculture",
    "biology"
-  ]
+  ],
+  "output": "累计生长度日"
  },
  {
   "id": "leaching_residue",
@@ -22858,7 +22984,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "烧结致密度"
  },
  {
   "id": "quench_hardness",
@@ -22906,7 +23033,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "淬火硬度"
  },
  {
   "id": "furnace_efficiency",
@@ -22944,7 +23072,8 @@
   "layer": "phenomenological",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "炉膛热效率"
  },
  {
   "id": "distillation_enrichment",
@@ -22978,7 +23107,8 @@
   "domains": [
    "engineering",
    "chemistry"
-  ]
+  ],
+  "output": "一次蒸馏的富集倍数"
  },
  {
   "id": "crystallization_yield",
@@ -23020,7 +23150,8 @@
   "domains": [
    "engineering",
    "chemistry"
-  ]
+  ],
+  "output": "冷却结晶收率"
  },
  {
   "id": "drying_shrinkage",
@@ -23053,7 +23184,8 @@
   "domains": [
    "materials",
    "engineering"
-  ]
+  ],
+  "output": "坯体总收缩"
  },
  {
   "id": "error_propagation",
@@ -23170,7 +23302,8 @@
   "domains": [
    "agriculture",
    "biology"
-  ]
+  ],
+  "output": "养分净变化"
  },
  {
   "id": "nutrient_sustainable_input",
@@ -23212,7 +23345,8 @@
   "layer": "derived",
   "domains": [
    "agriculture"
-  ]
+  ],
+  "output": "可持续所需的年投入"
  },
  {
   "id": "payback_period",
@@ -23244,7 +23378,8 @@
   "layer": "conventional",
   "domains": [
    "economics"
-  ]
+  ],
+  "output": "回本期"
  },
  {
   "id": "storage_loss",
@@ -23290,7 +23425,8 @@
   "domains": [
    "agriculture",
    "engineering"
-  ]
+  ],
+  "output": "剩余粮食"
  },
  {
   "id": "drying_time",
@@ -23339,7 +23475,8 @@
   "domains": [
    "agriculture",
    "engineering"
-  ]
+  ],
+  "output": "干燥时间"
  },
  {
   "id": "tolerance_stack",
@@ -23374,7 +23511,8 @@
   "layer": "derived",
   "domains": [
    "engineering"
-  ]
+  ],
+  "output": "公差叠加"
  },
  {
   "id": "open_loop_error",
@@ -23413,7 +23551,8 @@
   "domains": [
    "engineering",
    "cybernetics"
-  ]
+  ],
+  "output": "开环残差"
  },
  {
   "id": "loop_stability_limit",
@@ -23454,7 +23593,8 @@
   "domains": [
    "engineering",
    "cybernetics"
-  ]
+  ],
+  "output": "反馈稳定性上限"
  },
  {
   "id": "second_order_settling",
@@ -23491,7 +23631,8 @@
   "domains": [
    "engineering",
    "cybernetics"
-  ]
+  ],
+  "output": "二阶系统建立时间"
  },
  {
   "id": "overshoot_from_damping",
@@ -23520,7 +23661,8 @@
   "domains": [
    "engineering",
    "cybernetics"
-  ]
+  ],
+  "output": "超调量"
  },
  {
   "id": "channel_capacity",
@@ -23577,7 +23719,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "信道容量"
  },
  {
   "id": "nyquist_rate",
@@ -23622,7 +23765,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "奈奎斯特采样率"
  },
  {
   "id": "quantization_snr",
@@ -23664,7 +23808,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "量化信噪比"
  },
  {
   "id": "shannon_hartley_bits",
@@ -23712,7 +23857,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "每符号信息量"
  },
  {
   "id": "redundancy_ratio",
@@ -23764,7 +23910,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "冗余度"
  },
  {
   "id": "shannon_limit_min_snr",
@@ -23806,7 +23953,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "香农极限"
  },
  {
   "id": "rc_cutoff_frequency",
@@ -23865,7 +24013,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "截止频率"
  },
  {
   "id": "signal_to_noise_db",
@@ -23928,7 +24077,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "信噪比换算"
  },
  {
   "id": "path_loss_freespace",
@@ -23987,7 +24137,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "自由空间路径损耗"
  },
  {
   "id": "fresnel_zone_radius",
@@ -24048,7 +24199,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "菲涅尔区半径"
  },
  {
   "id": "little_law",
@@ -24086,7 +24238,8 @@
   "domains": [
    "operations",
    "cybernetics"
-  ]
+  ],
+  "output": "利特尔定律"
  },
  {
   "id": "queue_utilization",
@@ -24126,7 +24279,8 @@
   "domains": [
    "operations",
    "cybernetics"
-  ]
+  ],
+  "output": "服务强度"
  },
  {
   "id": "mm1_wait_time",
@@ -24162,7 +24316,8 @@
   "layer": "derived",
   "domains": [
    "operations"
-  ]
+  ],
+  "output": "M/M/1 平均等待时间"
  },
  {
   "id": "mmc_queue_length",
@@ -24199,7 +24354,8 @@
   "layer": "phenomenological",
   "domains": [
    "operations"
-  ]
+  ],
+  "output": "多服务台平均队长"
  },
  {
   "id": "eoq",
@@ -24241,7 +24397,8 @@
   "domains": [
    "operations",
    "economics"
-  ]
+  ],
+  "output": "经济订货批量"
  },
  {
   "id": "safety_stock",
@@ -24280,7 +24437,8 @@
   "layer": "derived",
   "domains": [
    "operations"
-  ]
+  ],
+  "output": "安全库存"
  },
  {
   "id": "reliability_series",
@@ -24320,7 +24478,8 @@
   "domains": [
    "systems",
    "engineering"
-  ]
+  ],
+  "output": "串联可靠度"
  },
  {
   "id": "reliability_parallel",
@@ -24359,7 +24518,8 @@
   "domains": [
    "systems",
    "engineering"
-  ]
+  ],
+  "output": "并联可靠度"
  },
  {
   "id": "mtbf_availability",
@@ -24399,7 +24559,8 @@
   "domains": [
    "systems",
    "engineering"
-  ]
+  ],
+  "output": "可用度"
  },
  {
   "id": "spares_required",
@@ -24445,7 +24606,8 @@
   "domains": [
    "systems",
    "engineering"
-  ]
+  ],
+  "output": "备件数量"
  },
  {
   "id": "expected_value_decision",
@@ -24486,7 +24648,8 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "output": "期望收益"
  },
  {
   "id": "breakeven_probability",
@@ -24520,7 +24683,8 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "output": "保本成功率"
  },
  {
   "id": "winner_curse_markup",
@@ -24555,7 +24719,8 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "output": "赢家的诅咒"
  },
  {
   "id": "nash_bargaining_split",
@@ -24600,7 +24765,8 @@
   "domains": [
    "social",
    "economics"
-  ]
+  ],
+  "output": "纳什议价分配"
  },
  {
   "id": "bayes_posterior",
@@ -24642,7 +24808,8 @@
    "social",
    "mathematics",
    "medicine"
-  ]
+  ],
+  "output": "贝叶斯更新"
  },
  {
   "id": "bayes_evidence_strength",
@@ -24676,7 +24843,8 @@
   "domains": [
    "social",
    "mathematics"
-  ]
+  ],
+  "output": "证据强度"
  },
  {
   "id": "base_rate_neglect_error",
@@ -24714,7 +24882,8 @@
   "domains": [
    "social",
    "mathematics"
-  ]
+  ],
+  "output": "基础率忽视"
  },
  {
   "id": "photoelectric_threshold",
@@ -24765,7 +24934,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "光电效应阈频"
  },
  {
   "id": "compton_shift",
@@ -24833,7 +25003,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "康普顿位移"
  },
  {
   "id": "heisenberg_uncertainty",
@@ -24887,7 +25058,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "海森堡不确定度"
  },
  {
   "id": "fermi_energy",
@@ -24952,7 +25124,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "费米能"
  },
  {
   "id": "debye_temperature_heat_capacity",
@@ -25018,7 +25191,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "德拜比热"
  },
  {
   "id": "band_gap_wavelength",
@@ -25085,7 +25259,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "带隙对应的光波长"
  },
  {
   "id": "pn_junction_builtin_voltage",
@@ -25150,7 +25325,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "PN 结内建电势"
  },
  {
   "id": "drift_velocity_mobility",
@@ -25209,7 +25385,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "漂移速度"
  },
  {
   "id": "fission_energy_per_mass",
@@ -25272,7 +25449,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "能量密度"
  },
  {
   "id": "critical_mass_sphere",
@@ -25384,7 +25562,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "比结合能估算"
  },
  {
   "id": "fusion_lawson_criterion",
@@ -25511,7 +25690,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "辐射屏蔽衰减"
  },
  {
   "id": "doubling_time_population",
@@ -26181,7 +26361,8 @@
   "domains": [
    "engineering",
    "mathematics"
-  ]
+  ],
+  "output": "Weibull 失效率"
  },
  {
   "id": "weibull_reliability",
@@ -26236,7 +26417,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "Weibull 可靠度"
  },
  {
   "id": "lognormal_mean",
@@ -26421,7 +26603,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "泊松分布的均值与方差"
  },
  {
   "id": "binomial_mean_variance",
@@ -26601,7 +26784,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "变异系数"
  },
  {
   "id": "rankine_efficiency",
@@ -26665,7 +26849,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "循环效率"
  },
  {
   "id": "rankine_reheat_gain",
@@ -26842,7 +27027,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "Otto 循环效率"
  },
  {
   "id": "diesel_efficiency",
@@ -26946,7 +27132,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "Brayton 循环效率"
  },
  {
   "id": "combined_cycle_efficiency",
@@ -26995,7 +27182,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "联合循环效率"
  },
  {
   "id": "refrigeration_cop_real",
@@ -27044,7 +27232,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "制冷 COP"
  },
  {
   "id": "heat_pump_cop",
@@ -27086,7 +27275,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "供暖 COP"
  },
  {
   "id": "cooling_load",
@@ -27213,7 +27403,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "蓄热能力"
  },
  {
   "id": "bernoulli_pressure",
@@ -27401,7 +27592,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "压差阻力"
  },
  {
   "id": "viscous_drag_stokes",
@@ -27465,7 +27657,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "Stokes 粘性阻力"
  },
  {
   "id": "terminal_velocity_sphere",
@@ -27616,7 +27809,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "升力"
  },
  {
   "id": "lift_to_drag_ratio",
@@ -27665,7 +27859,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "升阻比"
  },
  {
   "id": "induced_drag",
@@ -27782,7 +27977,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "失速速度"
  },
  {
   "id": "boundary_layer_thickness",
@@ -27874,7 +28070,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "马赫角"
  },
  {
   "id": "wave_drag_coefficient",
@@ -27921,7 +28118,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "波阻"
  },
  {
   "id": "reynolds_transition",
@@ -27984,7 +28182,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "临界雷诺数"
  },
  {
   "id": "reactor_residence_time",
@@ -28038,7 +28237,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "停留时间"
  },
  {
   "id": "reactor_conversion_first_order",
@@ -28079,7 +28279,8 @@
   "domains": [
    "chemistry",
    "engineering"
-  ]
+  ],
+  "output": "转化率"
  },
  {
   "id": "cstr_conversion",
@@ -28286,7 +28487,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "理论板数"
  },
  {
   "id": "adsorption_breakthrough",
@@ -28410,7 +28612,8 @@
   "domains": [
    "chemistry",
    "engineering"
-  ]
+  ],
+  "output": "传质速率"
  },
  {
   "id": "drying_rate_constant",
@@ -28526,7 +28729,8 @@
     "accessed": "2026-11-18"
    }
   ],
-  "confidence": "scaling"
+  "confidence": "scaling",
+  "output": "过饱和度"
  },
  {
   "id": "heat_exchanger_area_chemical",
@@ -29242,7 +29446,8 @@
   "domains": [
    "craft",
    "economics"
-  ]
+  ],
+  "output": "纺纱用工"
  },
  {
   "id": "weaving_labor_per_meter",
@@ -29284,7 +29489,8 @@
   "domains": [
    "craft",
    "economics"
-  ]
+  ],
+  "output": "织布用工"
  },
  {
   "id": "salt_preservation_need",
@@ -29321,7 +29527,8 @@
   "domains": [
    "craft",
    "agriculture"
-  ]
+  ],
+  "output": "腌制用盐量"
  },
  {
   "id": "smoking_drying_capacity",
@@ -29366,7 +29573,8 @@
   "domains": [
    "craft",
    "agriculture"
-  ]
+  ],
+  "output": "熏干产能"
  },
  {
   "id": "paper_labor_per_sheet",
@@ -29444,7 +29652,8 @@
   "domains": [
    "craft",
    "information"
-  ]
+  ],
+  "output": "抄写用工"
  },
  {
   "id": "brick_firing_fuel",
@@ -29481,7 +29690,8 @@
   "domains": [
    "craft",
    "engineering"
-  ]
+  ],
+  "output": "烧砖燃料"
  },
  {
   "id": "lime_plaster_need",
@@ -29535,7 +29745,8 @@
   "domains": [
    "craft",
    "engineering"
-  ]
+  ],
+  "output": "石灰用量"
  },
  {
   "id": "erosion_rate_denudation",

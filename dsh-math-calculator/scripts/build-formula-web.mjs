@@ -138,10 +138,15 @@ for (const chain of chains) {
           const f2 = formulas.find((x) => x.id === mainOf(s2.formula))
           if (f2 === undefined) continue
           if (outGroup(f2) !== g) continue
-          cands.push([other.id, j + 1, f2.id])
+          /** 语义精确：源公式声明的输出量名与目标参数量名互相包含（212 条链上公式已标 output）。 */
+          const targetQuantity = String(spec.quantity ?? '')
+          const sourceOutput = String(f2.output ?? '')
+          /** 量名 ≥3 字才算语义（「力」「时间」这类短名会与长词撞车）；相等或互为词段。 */
+          const semantic = sourceOutput.length >= 3 && targetQuantity.length >= 3 && (targetQuantity === sourceOutput || targetQuantity.includes(sourceOutput) || sourceOutput.includes(targetQuantity))
+          cands.push([other.id, j + 1, f2.id, semantic])
         }
       }
-      if (cands.length > 0) crossCandidates.push([chain.id, index + 1, f.id, param, g, cands.slice(0, 2)])
+      if (cands.length > 0) crossCandidates.push([chain.id, index + 1, f.id, param, g, cands.slice(0, 2), cands.some((item) => item[3] === true)])
       if (crossCandidates.length >= 4000) break
     }
     if (crossCandidates.length >= 4000) break
@@ -190,6 +195,7 @@ const web = {
     builtAt: '2026-11-19', formulas: mains.length, constants: constants.length, aliasCount: aliasMap.size,
     constantEdges: constEdges.length, formulaEdges: formulaEdges.length, groups: GROUPS.length,
     chainCount: chains.length, chainEdges: chainEdges.length, crossCandidates: crossCandidates.length,
+    semanticCandidates: crossCandidates.filter((item) => item[6] === true).length,
     cycleEdges, isolatedNoIn: mains.filter((f) => !withIn.has(f.id)).length,
     sources: mains.filter((f) => !withIn.has(f.id)).length,
     sinks: mains.filter((f) => !withOut.has(f.id)).length,
