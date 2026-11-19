@@ -790,7 +790,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         const chainId = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : '')
         if (chainId === '') throw new CalcError('missing_params', 'chain 需要 formulaFocus（链 id，如 sys-material）', '可查：' + formulaSystems().map((item) => item.id).join('、'))
         const initialRaw = asRecord(args['initial']) ?? asRecord(args['params']) ?? {}
-        return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations()))
+        return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations(), (asRecord(args['crossValues']) ?? {}) as never))
       }
 
       /** 相邻公式：query="neighbors" + formulaFocus / formula。 */

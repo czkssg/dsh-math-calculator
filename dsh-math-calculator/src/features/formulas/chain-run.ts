@@ -32,6 +32,8 @@ export interface ChainStep {
   dataFlow?: Record<string, { fromStep: number; note?: string }>
   /** 跨链接点：本步需要哪条链的输出（由 note 的「接点自 X 链」解析而来）。 */
   chainRef?: string[]
+  /** 跨链取值：参数 ← 其他链某步的输出（需调用方给 crossValues）。 */
+  crossFlow?: Record<string, { chain: string; step: number }>
 }
 
 /** 一条链。 */
@@ -62,6 +64,8 @@ export interface ChainStepResult {
   params: Record<string, number>
   /** 其中来自前序步骤的参数。 */
   linked: Record<string, { fromStep: number; value: number }>
+  /** 其中来自其他链的参数。 */
+  crossLinked?: Record<string, { chain: string; step: number; value: number }>
 }
 
 /**
@@ -83,6 +87,7 @@ export function runChainNumeric(
   engine: Engine,
   initial: Record<string, number | string> = {},
   index?: RelationIndex,
+  crossValues: Record<string, Record<number, number>> = {},
 ): ChainRunOutcome {
   const system = systems.find((item) => item.id === chainId || item.name === chainId)
   if (system === undefined) {
@@ -92,8 +97,14 @@ export function runChainNumeric(
     throw new CalcError('invalid_argument', '这条链没有步骤：' + chainId, '')
   }
 
+  /** 链 id → 显示名（去掉括号里的说明）。 */
+  const chainName = (id: string): string => {
+    const hit = systems.find((item) => item.id === id)
+    return hit !== undefined ? String(hit.name ?? hit.id).replace(/[（(].*$/, '').trim() : id
+  }
   const results: ChainStepResult[] = []
-  const missingList: Array<{ step: number; formula: string; param: string }> = []
+  const missingList: Array<{ step: number; formula: string; param: string; cross?: { chain: string; step: number } }> = []
+  const crossFallbacks: Array<{ step: number; formula: string; param: string; cross: { chain: string; step: number } }> = []
 
   for (let indexStep = 0; indexStep < system.steps.length; indexStep += 1) {
     const step = system.steps[indexStep]
@@ -101,9 +112,10 @@ export function runChainNumeric(
     if (entry === undefined) {
       throw new CalcError('unknown_formula', '链第 ' + (indexStep + 1) + ' 步引用了不存在的公式：' + step.formula, '')
     }
-    /** 参数取值：显式映射 > initial > 默认值。 */
+    /** 参数取值：同链 dataFlow > 跨链 crossFlow > initial > 默认值。 */
     const values: Record<string, number | string> = {}
     const linked: Record<string, { fromStep: number; value: number }> = {}
+    const crossLinked: Record<string, { chain: string; step: number; value: number }> = {}
     for (const [param, mapping] of Object.entries(step.dataFlow ?? {})) {
       const source = results[mapping.fromStep - 1]
       if (source === undefined) {
@@ -116,14 +128,27 @@ export function runChainNumeric(
       values[param] = source.value
       linked[param] = { fromStep: mapping.fromStep, value: source.value }
     }
+    /** 跨链声明但本次没给值的参数：有默认值就回退默认（并提示），没有才算缺参。 */
+    const crossUnavailable = new Map<string, { chain: string; step: number }>()
+    for (const [param, mapping] of Object.entries(step.crossFlow ?? {})) {
+      const source = crossValues[mapping.chain]?.[mapping.step]
+      if (source === undefined) {
+        crossUnavailable.set(param, { chain: mapping.chain, step: mapping.step })
+        continue
+      }
+      values[param] = source
+      crossLinked[param] = { chain: mapping.chain, step: mapping.step, value: source }
+    }
     for (const [param, spec] of Object.entries(entry.params ?? {})) {
       if (values[param] !== undefined) continue
+      const pending = crossUnavailable.get(param)
       if (initial[param] !== undefined) {
         values[param] = initial[param]
       } else if (spec.value !== null) {
         values[param] = spec.value
+        if (pending !== undefined) crossFallbacks.push({ step: indexStep + 1, formula: entry.id, param, cross: pending })
       } else {
-        missingList.push({ step: indexStep + 1, formula: entry.id, param })
+        missingList.push({ step: indexStep + 1, formula: entry.id, param, ...(pending !== undefined ? { cross: pending } : {}) })
       }
     }
     if (missingList.length > 0) break
@@ -142,30 +167,28 @@ export function runChainNumeric(
       unit: entry.unit,
       params: Object.fromEntries(Object.entries(call.substituted)),
       linked,
+      ...(Object.keys(crossLinked).length > 0 ? { crossLinked } : {}),
     })
   }
 
   if (missingList.length > 0) {
     throw new CalcError(
       'missing_params',
-      '这条链还缺 ' + missingList.length + ' 个初始参数：' + missingList.map((item) => item.param + '（第 ' + item.step + ' 步 ' + item.formula + '）').join('、'),
-      '用 initial 按参数名补，例如 {' + missingList.slice(0, 3).map((item) => item.param + ':1').join(', ') + '}。',
+      '这条链还缺 ' + missingList.length + ' 个初始参数：' + missingList.map((item) => item.param + '（第 ' + item.step + ' 步 ' + item.formula + '）' + (item.cross !== undefined ? '，来自 ' + chainName(item.cross.chain) + ' 第 ' + item.cross.step + ' 步' : '')).join('、'),
+      '用 initial 按参数名补' + (missingList.some((item) => item.cross !== undefined) ? '；跨链参数用 crossValues:{链 id:{步号:数值}} 给，例如 {"sys-material":{5: 5e8}}' : '') + '。',
     )
   }
 
   const lines: string[] = ['═══ 链数值传导：' + system.name + ' ═══', '']
   lines.push('  说明：只走显式声明的数据流；其余步骤用默认值或 initial 参数。', '')
-  /** 链 id → 显示名（去掉括号里的说明）。 */
-  const chainName = (id: string): string => {
-    const hit = systems.find((item) => item.id === id)
-    return hit !== undefined ? String(hit.name ?? hit.id).replace(/[（(].*$/, '').trim() : id
-  }
   lines.push('  步  公式                        结果        单位            来自前序        接点')
   for (const item of results) {
     const linkedText = Object.entries(item.linked).map(([param, source]) => param + '←第' + source.fromStep + '步').join(',')
+    const crossText = Object.entries(item.crossLinked ?? {}).map(([param, source]) => param + '←' + chainName(source.chain) + '第' + source.step + '步').join(',')
+    const fromText = linkedText + (crossText !== '' ? (linkedText !== '' ? ',' : '') + crossText : '')
     const refIds = system.steps[item.step - 1]?.chainRef
     const refText = Array.isArray(refIds) && refIds.length > 0 ? refIds.map(chainName).join('、') : ''
-    lines.push('  ' + String(item.step).padEnd(3) + item.formula.padEnd(28) + String(Number(item.value.toPrecision(8))).padEnd(12) + item.unit.padEnd(16) + linkedText.padEnd(16) + refText)
+    lines.push('  ' + String(item.step).padEnd(3) + item.formula.padEnd(28) + String(Number(item.value.toPrecision(8))).padEnd(12) + item.unit.padEnd(16) + fromText.padEnd(18) + refText)
   }
   const last = results[results.length - 1]
   lines.push('', '末端：' + last.name + ' = ' + Number(last.value.toPrecision(8)) + ' ' + last.unit)
@@ -176,6 +199,7 @@ export function runChainNumeric(
 
   return {
     result: lines.join('\n'),
-    value: { chain: system.id, steps: results, terminal: last, linkedSteps },
+    value: { chain: system.id, steps: results, terminal: last, linkedSteps, ...(crossFallbacks.length > 0 ? { crossFallbacks } : {}) },
+    ...(crossFallbacks.length > 0 ? { notice: '跨链未接：' + crossFallbacks.map((item) => item.param + ' 用了默认值（' + chainName(item.cross.chain) + '第' + item.cross.step + '步）').join('；') + '。要跨链取值请传 crossValues。' } : {}),
   }
 }

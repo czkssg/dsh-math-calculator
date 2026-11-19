@@ -208,7 +208,13 @@
     "note": "墙柱轴压承载（接点自建筑链）",
     "chainRef": [
      "sys-building"
-    ]
+    ],
+    "crossFlow": {
+     "sigma_y": {
+      "chain": "sys-material",
+      "step": 5
+     }
+    }
    },
    {
     "formula": "impact_speed_freefall",
@@ -301,7 +307,13 @@
     "note": "扩散通量（与燃烧供能同一类输运上限，接点自生物链）",
     "chainRef": [
      "sys-body"
-    ]
+    ],
+    "crossFlow": {
+     "area": {
+      "chain": "sys-body",
+      "step": 1
+     }
+    }
    },
    {
     "formula": "steam_power_output",
@@ -470,7 +482,13 @@
     "note": "劳力 = 人口 × 参与率（接点自食物链）",
     "chainRef": [
      "sys-food"
-    ]
+    ],
+    "crossFlow": {
+     "population": {
+      "chain": "sys-food",
+      "step": 9
+     }
+    }
    },
    {
     "formula": "food_surplus_ratio",
@@ -876,7 +894,13 @@
     "chainRef": [
      "sys-food",
      "sys-capacity"
-    ]
+    ],
+    "crossFlow": {
+     "population": {
+      "chain": "sys-food",
+      "step": 9
+     }
+    }
    },
    {
     "formula": "gdp_from_labor",
@@ -1797,7 +1821,13 @@
     "note": "多少人能干活（接点自食物链）",
     "chainRef": [
      "sys-food"
-    ]
+    ],
+    "crossFlow": {
+     "population": {
+      "chain": "sys-food",
+      "step": 9
+     }
+    }
    }
   ],
   "bridges": [

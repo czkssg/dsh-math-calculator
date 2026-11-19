@@ -2,6 +2,22 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.24.0] — 2026-11-19
+
+**跨链取值**：链的步骤可以直接接另一条链某步的输出。
+
+### 新增
+
+- `crossFlow`：步骤参数 ← 其他链某步（当前声明 5 条：结构链 sigma_y←材料链5、
+  产能/财政/排队 labor_force.population←食物链9、能源链 fick.area←生物链1）；
+- `crossValues` 参数：调用时传 `{链 id: {步号: 数值}}`；
+- 链渲染显示 `sigma_y←材料链第5步`；缺值报 `missing_params` 并**指明来源链与步**；
+- hint 给 crossValues 示例。
+
+### 测试
+
+- 新增 `r72-cross-flow` 9 项：数据、来源提示、取值跑通、渲染；
+  全量 **131 套 / 3,118 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.23.0] — 2026-11-19
 
 **跨链自动接点**：note 的人工声明结构化 + 公式网自动候选。
