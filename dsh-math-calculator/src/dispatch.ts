@@ -405,7 +405,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return { result: lines.join('\n'), value: result } as never
       }
       if (action === 'export') {
-        return { result: exportRecords(), value: { exported: true } } as never
+        const json = exportRecords()
+        return { result: json, value: { exported: true, json } } as never
       }
       if (action === 'import') {
         const count = importRecords(String(args['dataJson'] ?? '[]'))
@@ -843,7 +844,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         throw new CalcError('missing_params', 'formulas 需要 query（检索词、公式 id、"sys:链id" 或 "graph"/"neighbors"/"chain"）', '例如 {operation:"formulas", query:"克莱伯"}。')
       }
       if (query.startsWith('sys')) {
-        const system = formulaSystems().find((item) => item.id === query || item.id === query.replace(/^sys:?/, ''))
+        /** `sys:material` / `sys-material` / `material` 都指向同一条链。 */
+        const base = query.replace(/^sys[:\-]?/, '')
+        const system = formulaSystems().find((item) => item.id === query || item.id === base || item.id === 'sys-' + base)
         if (system === undefined) {
           throw new CalcError('unknown_symbol', '没有 id 为 "' + query + '" 的体系链', '可查：' + formulaSystems().map((item) => item.id).join('、'))
         }

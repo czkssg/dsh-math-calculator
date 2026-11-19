@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.29.1] — 2026-11-20
+
+**压测第三轮：`sys:` 链归一 + `data export` 内容字段**。
+
+### 修复
+
+- **`formulas query:"sys:material"` 用不了**：实现只认 `sys-material`，文档说的 `sys:链id` 报 unknown_symbol；
+  现在 `sys:material` / `sys-material` / `material`（带 sys 前缀时）都归一。
+- **`data export` 的 value 没有内容**：只有 `{exported:true}`，程序化拿不到 JSON；现在 `value.json` 带完整导出串。
+
+### 测试
+
+- 新增 `r78-sys-export` 6 项；
+  全量 **137 套 / 3,185 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.29.0] — 2026-11-20
 
 **压力测试第二轮：7 条真问题修复**。
