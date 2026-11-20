@@ -84,6 +84,26 @@ export interface RegisteredUnitSpec {
   base?: string
 }
 
+/** 命名空间级自定义货币（符号库扩展）。 */
+export interface RegisteredCurrencySpec {
+  code: string
+  name: string
+  symbol?: string
+  abbrev?: string
+  kind?: 'modern' | 'ancient' | 'fantasy'
+  note?: string
+}
+
+/** 命名空间级自定义公式。 */
+export interface RegisteredFormulaSpec {
+  id: string
+  name?: string
+  expr: string
+  /** 参数默认值（expr 里用参数名）。 */
+  params?: Record<string, number>
+  unit?: string
+}
+
 /** 注册结果。 */
 export interface RegisterUnitsResult {
   ok: boolean
@@ -112,12 +132,26 @@ export interface MathEngineService {
   interval(expr: string): EngineServiceResult
   /** 常量查询（第三期）：按 constants-graph 的标准值。 */
   constant(name: string): EngineServiceResult
+  /** 货币符号库（可带命名空间自定义货币）。 */
+  currency(action: string, options?: { kind?: string; code?: string; namespace?: string }): EngineServiceResult
   /** 注册按命名空间隔离的自定义单位。 */
   registerUnits(namespace: string, units: RegisteredUnitSpec[]): RegisterUnitsResult
   /** 列出已注册单位（不传 namespace 列出全部）。 */
   listUnits(namespace?: string): ListUnitsResult
   /** 注销整个命名空间（丢弃其引擎）。 */
   unregisterUnits(namespace: string): { ok: boolean; removed?: boolean }
+  /** 注册按命名空间隔离的自定义货币（扩展符号库）。 */
+  registerCurrencies(namespace: string, items: RegisteredCurrencySpec[]): RegisterUnitsResult
+  /** 列出自定义货币（不传 namespace 列出全部）。 */
+  listCurrencies(namespace?: string): ListUnitsResult
+  /** 注销命名空间的全部自定义货币。 */
+  unregisterCurrencies(namespace: string): { ok: boolean; removed?: boolean }
+  /** 注册按命名空间隔离的自定义公式。 */
+  registerFormulas(namespace: string, items: RegisteredFormulaSpec[]): RegisterUnitsResult
+  /** 列出自定义公式（不传 namespace 列出全部）。 */
+  listFormulas(namespace?: string): ListUnitsResult
+  /** 注销命名空间的全部自定义公式。 */
+  unregisterFormulas(namespace: string): { ok: boolean; removed?: boolean }
 }
 
 /** 能力缺失类错误（可降级）。 */
@@ -266,6 +300,28 @@ function readConstants(): Array<{ name: string; standard: number; unit: string; 
   return constantTable
 }
 
+/** 内置货币（懒加载一次）。 */
+let currencyCache: Array<{ code: string; name: string; symbol?: string; abbrev?: string; kind: string; note?: string }> | null = null
+
+/** 读 currencies.json 的内置条目。 */
+function readCurrencies(): Array<{ code: string; name: string; symbol?: string; abbrev?: string; kind: string; note?: string }> {
+  if (currencyCache !== null) return currencyCache
+  try {
+    const data = JSON.parse(readFileSync(join(HERE, '..', 'src', 'data', 'currencies.json'), 'utf8')) as { currencies?: Array<Record<string, unknown>> }
+    currencyCache = (data.currencies ?? []).map((item) => ({
+      code: String(item['code'] ?? ''),
+      name: String(item['name'] ?? ''),
+      kind: String(item['kind'] ?? 'modern'),
+      ...(typeof item['symbol'] === 'string' ? { symbol: item['symbol'] as string } : {}),
+      ...(typeof item['abbrev'] === 'string' ? { abbrev: item['abbrev'] as string } : {}),
+      ...(typeof item['note'] === 'string' ? { note: item['note'] as string } : {}),
+    })).filter((item) => item.code !== '')
+  } catch {
+    currencyCache = []
+  }
+  return currencyCache
+}
+
 /**
  * 创建服务实例（纯工厂：测试可直接调用，不依赖 cordis 上下文）。
  *
@@ -274,8 +330,8 @@ function readConstants(): Array<{ name: string; standard: number; unit: string; 
 export function createMathEngineService(): MathEngineService {
   const version = readVersion()
   const unitFamilies = readUnitFamilies()
-  /** 命名空间 → 独立引擎与已注册单位。 */
-  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[] }>()
+  /** 命名空间 → 独立引擎、已注册单位/货币/公式。 */
+  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[]; currencies: RegisteredCurrencySpec[]; formulas: RegisteredFormulaSpec[] }>()
 
   /** 取引擎：命名空间优先（不存在时回 undefined）。 */
   const engineOf = (namespace: string | undefined): Engine | undefined => {
@@ -301,7 +357,7 @@ export function createMathEngineService(): MathEngineService {
         operations: [...MIGRATED_OPERATIONS],
         unitFamilies,
         supportsCustomUnits: true,
-        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'registerUnits', 'listUnits', 'unregisterUnits'],
+        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'currency', 'registerUnits', 'listUnits', 'unregisterUnits', 'registerCurrencies', 'listCurrencies', 'unregisterCurrencies', 'registerFormulas', 'listFormulas', 'unregisterFormulas'],
       }
     },
     evaluate(expression, options = {}) {
@@ -343,6 +399,29 @@ export function createMathEngineService(): MathEngineService {
       if (typeof id !== 'string' || id.trim() === '') return fail('missing_params', 'formula 需要公式 id 或名称', '例如 formula("kinetic_energy", { m: 2, v: 3 })。')
       if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
         return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '')
+      }
+      /** 命名空间自定义公式优先（扩展接口注册的）。 */
+      const nsEntry = options.namespace !== undefined ? namespaces.get(options.namespace) : undefined
+      const customFormula = nsEntry?.formulas.find((item) => item.id === id.trim() || item.name === id.trim())
+      if (customFormula !== undefined && nsEntry !== undefined) {
+        const scope: Record<string, number> = { ...(customFormula.params ?? {}), ...params }
+        try {
+          const outcome = evaluateOne(nsEntry.engine, customFormula.expr, { terse: true, displayPrecision: 8 }, scope)
+          const extracted = extractValue('evaluate', outcome.value)
+          return {
+            ...extracted,
+            value: {
+              ...(typeof extracted.value === 'object' && extracted.value !== null ? extracted.value : {}),
+              id: customFormula.id,
+              name: customFormula.name ?? customFormula.id,
+              expr: customFormula.expr,
+              custom: true,
+            },
+          }
+        } catch (error) {
+          const type = (error as { type?: string }).type ?? 'internal'
+          return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+        }
       }
       /** 公式代入允许用命名空间单位（其引擎内已注册）。 */
       if (options.namespace === undefined) return callDispatch('formula', { formula: id.trim(), params })
@@ -393,7 +472,7 @@ export function createMathEngineService(): MathEngineService {
     registerUnits(namespace, units) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '字母/数字/中文/下划线/连字符，1–40 字符。')
       if (!Array.isArray(units) || units.length === 0) return failRegister('missing_params', 'units 不能为空', '形如 [{name:"credit", factor:1, base:""}]。')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [] }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
       const registered: string[] = []
       for (const spec of units) {
         const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
@@ -426,6 +505,113 @@ export function createMathEngineService(): MathEngineService {
     },
     unregisterUnits(namespace) {
       return { ok: true, removed: namespaces.delete(namespace) }
+    },
+    currency(action, options = {}) {
+      const act = typeof action === 'string' && action.trim() !== '' ? action.trim().toLowerCase() : 'list'
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '先 registerCurrencies(namespace, items)。')
+      }
+      const custom = options.namespace !== undefined ? namespaces.get(options.namespace)?.currencies ?? [] : []
+      const all = [...readCurrencies(), ...custom]
+      if (act === 'list') {
+        const kinds = ['modern', 'ancient', 'fantasy']
+        const filter = typeof options.kind === 'string' && options.kind.trim() !== '' ? options.kind.trim().toLowerCase() : ''
+        if (filter !== '' && !kinds.includes(filter)) return fail('invalid_argument', 'kind 只支持 modern / ancient / fantasy', '')
+        const listed = all.filter((item) => filter === '' || item.kind === filter)
+        return { ok: true, value: { kind: filter === '' ? 'all' : filter, currencies: listed } }
+      }
+      if (act === 'get') {
+        const key = typeof options.code === 'string' ? options.code : ''
+        const hit = all.find((item) => item.code.toLowerCase() === key.toLowerCase() || item.name === key || item.abbrev === key || item.symbol === key)
+        if (hit === undefined) return fail('unknown_symbol', '货币库里没有「' + key + '」', '用 currency("list") 看全部。')
+        return { ok: true, value: hit }
+      }
+      return fail('unknown_argument', '不认识的 currency 动作「' + act + '」', '可用：list / get。')
+    },
+    registerCurrencies(namespace, items) {
+      if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
+      if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
+      const registered: string[] = []
+      const builtinCodes = new Set(readCurrencies().map((item) => item.code.toLowerCase()))
+      for (const spec of items) {
+        const code = typeof spec?.code === 'string' ? spec.code.trim() : ''
+        const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
+        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(code)) return failRegister('invalid_argument', '货币 code 必须字母开头（可含下划线）：' + JSON.stringify(code), '')
+        if (name === '') return failRegister('invalid_argument', '货币 name 不能为空（' + code + '）', '')
+        if (builtinCodes.has(code.toLowerCase()) || entry.currencies.some((item) => item.code.toLowerCase() === code.toLowerCase())) {
+          return failRegister('invalid_argument', '货币 code「' + code + '」已存在（内置或已注册）', '不能覆盖内置货币。')
+        }
+        const kind = spec?.kind === 'ancient' || spec?.kind === 'fantasy' ? spec.kind : 'modern'
+        entry.currencies.push({
+          code,
+          name,
+          kind,
+          ...(typeof spec?.symbol === 'string' ? { symbol: spec.symbol } : {}),
+          ...(typeof spec?.abbrev === 'string' ? { abbrev: spec.abbrev } : {}),
+          ...(typeof spec?.note === 'string' ? { note: spec.note } : {}),
+        })
+        registered.push(code)
+      }
+      namespaces.set(namespace, entry)
+      return { ok: true, namespace, registered }
+    },
+    listCurrencies(namespace) {
+      if (namespace !== undefined) {
+        const entry = namespaces.get(namespace)
+        return { ok: true, units: entry === undefined ? [] : [{ namespace, units: entry.currencies as never }] }
+      }
+      return { ok: true, units: [...namespaces.entries()].map(([key, entry]) => ({ namespace: key, units: entry.currencies as never })) }
+    },
+    unregisterCurrencies(namespace) {
+      const entry = namespaces.get(namespace)
+      if (entry === undefined) return { ok: true, removed: false }
+      const had = entry.currencies.length > 0
+      entry.currencies = []
+      return { ok: true, removed: had }
+    },
+    registerFormulas(namespace, items) {
+      if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
+      if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
+      const registered: string[] = []
+      for (const spec of items) {
+        const id = typeof spec?.id === 'string' ? spec.id.trim() : ''
+        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(id)) return failRegister('invalid_argument', '公式 id 必须字母开头（可含下划线）：' + JSON.stringify(id), '')
+        if (typeof spec?.expr !== 'string' || spec.expr.trim() === '') return failRegister('invalid_argument', '公式「' + id + '」缺 expr', '')
+        if (entry.formulas.some((item) => item.id === id)) return failRegister('invalid_argument', '公式 id「' + id + '」已存在', '')
+        const params = spec?.params
+        if (params !== undefined && (typeof params !== 'object' || params === null || Array.isArray(params))) {
+          return failRegister('invalid_argument', 'params 必须是对象（' + id + '）', '')
+        }
+        for (const [key, value] of Object.entries(params ?? {})) {
+          if (typeof value !== 'number' || !Number.isFinite(value)) return failRegister('invalid_argument', '参数「' + key + '」必须是有限数（' + id + '）', '')
+        }
+        entry.formulas.push({
+          id,
+          expr: spec.expr.trim(),
+          ...(typeof spec.name === 'string' ? { name: spec.name } : {}),
+          ...(typeof spec.unit === 'string' ? { unit: spec.unit } : {}),
+          ...(params !== undefined ? { params: params as Record<string, number> } : {}),
+        })
+        registered.push(id)
+      }
+      namespaces.set(namespace, entry)
+      return { ok: true, namespace, registered }
+    },
+    listFormulas(namespace) {
+      if (namespace !== undefined) {
+        const entry = namespaces.get(namespace)
+        return { ok: true, units: entry === undefined ? [] : [{ namespace, units: entry.formulas as never }] }
+      }
+      return { ok: true, units: [...namespaces.entries()].map(([key, entry]) => ({ namespace: key, units: entry.formulas as never })) }
+    },
+    unregisterFormulas(namespace) {
+      const entry = namespaces.get(namespace)
+      if (entry === undefined) return { ok: true, removed: false }
+      const had = entry.formulas.length > 0
+      entry.formulas = []
+      return { ok: true, removed: had }
     },
   }
 }

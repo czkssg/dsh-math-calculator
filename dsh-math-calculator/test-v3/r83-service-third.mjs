@@ -22,7 +22,7 @@ function assert(name, cond, detail) {
 console.log('-- 1. 自述 --')
 {
   const describe = service.describe()
-  assert('★ methods 10 个（含 formula/interval/constant）', describe.methods.length === 10 && describe.methods.includes('formula') && describe.methods.includes('interval') && describe.methods.includes('constant'), JSON.stringify(describe.methods))
+  assert('★ methods 17 个（含 formula/interval/constant/扩展）', describe.methods.length === 17 && describe.methods.includes('formula') && describe.methods.includes('interval') && describe.methods.includes('constant'), JSON.stringify(describe.methods))
 }
 console.log('-- 2. 公式代入 --')
 {

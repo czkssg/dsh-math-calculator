@@ -2,6 +2,34 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.34.0] — 2026-11-20
+
+**mathEngine 扩展接口：命名空间级自定义货币 / 公式**。
+
+### 新增
+
+- `currency(action)` 服务方法（list/get，合并内置符号库与命名空间自定义货币）；
+- `registerCurrencies` / `listCurrencies` / `unregisterCurrencies`；
+- `registerFormulas` / `listFormulas` / `unregisterFormulas`（自定义公式支持 params 默认值与 unit）；
+- `formula()` 优先查命名空间自定义公式；
+- 注册校验：code/id 字母开头、与内置同名拒绝、expr 非空、params 有限数。
+
+### 测试
+
+- 新增 `r85-extensions` 18 项；
+  全量 **144 套 / 3,281 项全绿**（`test-v3/test-report.json` 已刷新）。
+
+### 压测（扩展接口）
+
+| 项 | 结果 |
+|---|---|
+| 10 命名空间 × 100 货币 | 1.3s |
+| 10 命名空间 × 20 公式 | 2ms |
+| 1000 次 currency get | 13ms |
+| 1000 次自定义公式求值 | 2.5s（2.5ms/次） |
+| 1000 次货币列表（合并 147 条） | 14ms |
+| 50 并发 currency get | 50/50 |
+| 注销 10 命名空间 | 10/10，注销后 capability |
 ## [3.33.0] — 2026-11-20
 
 **货币符号库（currency）**：现代/古代/架空货币的中文名、国际符号与缩写。
