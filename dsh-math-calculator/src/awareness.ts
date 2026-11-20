@@ -238,6 +238,10 @@ export function buildSystemPromptSection(): string {
       '**精度分两层**：`precision`（计算，默认 64）调低会算错大数，不要为好看动它；',
       '`displayPrecision`（**小数点后几位**，默认 8）只截小数，整数永远完整，可单次传或工作区固化。',
       '',
+      '**现实数据验证**：本工具不联网；内置常数/单位是现实参考（CODATA/IAU 等）。',
+      '算现实问题时，可自行搜索权威来源（地区物价、折算率、标准值、行业参数）核对或替代默认值；',
+      '用搜索来的数时注明来源与适用域——「网上看到的」不是精确值。',
+      '',
       buildBriefPlaybook({ changedConstants: changedConstants, customConstants: customConstantCount })
         + changedNote + tableNote,
     ].join('\n')
@@ -282,6 +286,9 @@ export function buildSystemPromptSection(): string {
     '- 单次调用尽量把表达式写完整，避免来回多次',
     '- 公式参数用 overrides 覆盖（架空世界改系数就靠这个）',
     '- 不确定能力边界时调 operation="help"' + changedNote + tableNote,
+    '',
+    '### 现实数据验证',
+    '本工具不联网；内置常数/单位是现实参考（CODATA/IAU 等）。算现实问题时，可自行搜索权威来源核对或替代默认值；用搜索来的数时注明来源与适用域。',
     '',
     buildPlaybook({
       workspace: workspaceName,
