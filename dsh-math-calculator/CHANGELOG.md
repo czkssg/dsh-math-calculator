@@ -2,6 +2,42 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.37.1] — 2026-11-21
+
+**声明打磨第二轮：核对「声明了但没做」**。
+
+### 核对结论
+
+- **op / 子命令**：`derivation` 29/29 已实现（PENDING 为空）；`topology` 实现 20 个动作（≥ help 声明）；
+- **schema 死键**：0（`customExpression` 已在 3.37.0 移除）；
+- **help 引用的参数名**：20 个全部在 schema（3 个 `partial/failed/succeeded` 是输出字段，非输入）；
+- **help 的 operation**：0 个假 operation。
+
+### 修复（文档说「未实现」但其实已做）
+
+- `docs/项目状态总结`、`docs/全量功能清单`：17 号（通用实体台账）/ 18 号（几何与地形）标「一行未实现」→
+  改为「已实现（topology entities/geometry，2026-11-21 复核）」；
+- `help` 的 topology 节：补 `action:"ship"/"building"` 简写与 `action:"rules"`（实现已有、help 未提）。
+## [3.37.0] — 2026-11-21
+
+**声明与实现对齐（第一轮打磨）**。
+
+### 修复（声明承诺 ≠ 实现）
+
+- **`topology` 顶层别名被丢弃**：schema 声明了 `area/massKg/speedKph/energyJ/energyPerKmJ/fromPoint/toPoint/obstacles/gridKm/safetyKm`，
+  但传 `topology:{...}` 时只读对象内部——现在顶层别名会合并进去。
+- **`units` 不带参数**：help 说「列出全部可用单位」，实际报 missing_params；现在真的列出**单位族概览**（469 条按量纲分组）。
+- **`customExpression`**：schema 有、代码从不读取（死键）→ 已从 schema 移除。
+- **`hierarchy` 顶层 `levels`**：与 topology 的 integer 类型冲突（hierarchy 要数组）→ 撤销合并，统一用 `hierarchy` 对象。
+
+### 文档
+
+- help 新增 **「参数总表 args」** 节：65 个此前从未在 help 出现的键集中列出；节数 65 → 66；
+- `docs/整合方案…` 的 53 operation → 64；`docs/随机数.md` 的「第 64 节」改为 `helpTopic:"random"` 写法。
+
+### 测试
+
+- 新增 `r88-declaration-align` 10 项（units 概览、topology 顶层、hierarchy 对象、死键移除、args 节）。
 ## [3.36.1] — 2026-11-21
 
 **提示层：不联网，但提醒 AI 可自行搜索现实数据验证**。

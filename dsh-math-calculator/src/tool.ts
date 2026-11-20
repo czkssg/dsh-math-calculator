@@ -185,7 +185,6 @@ const PARAMETER_SPEC = {
   formulas: { type: 'array', items: { type: 'json', description: '"kleiber" 或 {formula,overrides?,label?}' }, description: '批量调公式' },
   overrides: { type: 'object', additionalProperties: true, description: '覆盖公式参数' },
   query: { type: 'string', description: '检索词；"sys" 看体系链' },
-  customExpression: { type: 'string', description: '自定义公式表达式' },
   recurrence: { type: 'string', description: '递推式，如 "P*2"' },
   periods: { type: 'integer', description: '递推期数（默认 12，上限 5000）' },
   initial: { type: 'json', description: '初值' },

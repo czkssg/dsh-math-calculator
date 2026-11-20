@@ -1,6 +1,6 @@
 {
   "id": "dsh-math-calculator",
-  "version": "3.36.1",
+  "version": "3.37.1",
   "main": "lib/index.js",
   "description": "DSH 原生数学与架空世界推演插件：高精度计算、803 条公式与关系图、常数与星球推演、对账与设定库、实体拓扑。",
   "engines": {

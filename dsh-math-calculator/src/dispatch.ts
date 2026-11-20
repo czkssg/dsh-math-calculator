@@ -307,8 +307,16 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'derivation':
       return runDerivation(args, worldDeps)
 
-    case 'topology':
-      return runTopology((args['topology'] ?? args) as never)
+    case 'topology': {
+      const topologyBase = asRecord(args['topology'])
+      if (topologyBase === undefined) return runTopology(args as never)
+      /** 顶层别名并进 topology 对象（schema 声明了 area/massKg/fromPoint 等别名）。 */
+      const mergedTopology = { ...topologyBase }
+      for (const key of ['area', 'massKg', 'speedKph', 'energyJ', 'energyPerKmJ', 'fromPoint', 'toPoint', 'obstacles', 'gridKm', 'safetyKm']) {
+        if (mergedTopology[key] === undefined && args[key] !== undefined) mergedTopology[key] = args[key]
+      }
+      return runTopology(mergedTopology as never)
+    }
 
     case 'world-map': {
       const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false })
@@ -544,6 +552,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'hierarchy':
+      /** hierarchy 一律用对象（顶层 levels 是 topology 的 integer，类型冲突）。 */
       return runHierarchy(asRecord(args['hierarchy']) as never)
 
     case 'world_state': {
@@ -734,8 +743,23 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'units': {
       const from = typeof args['unitFrom'] === 'string' ? args['unitFrom'] : ''
       const to = typeof args['unitTo'] === 'string' ? args['unitTo'] : ''
+      /** 不带参数 → 单位族概览（help 承诺过；此前报错）。 */
       if (from === '') {
-        throw new CalcError('missing_params', 'units 需要 unitFrom（源单位）', '例如 {operation:"units", unitValue:30, unitFrom:"里", unitTo:"km"}；只给 unitFrom 会列出该单位信息。')
+        const data = dataOf<{ ALL_UNITS?: Array<Record<string, unknown>> }>('units', 'units.json', { ALL_UNITS: [] })
+        const all = data.ALL_UNITS ?? []
+        const families = new Map<string, string[]>()
+        for (const unit of all) {
+          const dimension = String(unit['dimension'] ?? 'unknown')
+          if (!families.has(dimension)) families.set(dimension, [])
+          families.get(dimension)!.push(String(unit['name'] ?? ''))
+        }
+        const sorted = [...families.entries()].sort((a, b) => b[1].length - a[1].length)
+        const lines = ['═══ 单位族概览（' + all.length + ' 条）═══', '']
+        for (const [dimension, names] of sorted.slice(0, 24)) {
+          lines.push('  ' + dimension.padEnd(18) + String(names.length).padEnd(6) + names.slice(0, 6).join(' / ') + (names.length > 6 ? ' …' : ''))
+        }
+        lines.push('', '  ★ 换算：unitValue + unitFrom + unitTo；只给 unitFrom（不给 unitTo）→ 看该单位信息。')
+        return { result: lines.join('\n'), value: { families: sorted.map(([dimension, names]) => ({ dimension, count: names.length, examples: names.slice(0, 6) })) } } as never
       }
       if (to === '') return toOutcome(describeUnit(buildEngine(), from))
       const value = typeof args['unitValue'] === 'number' ? args['unitValue'] : 1

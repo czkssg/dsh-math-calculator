@@ -244,7 +244,7 @@ world_state check 悬空引用 / 引用已废弃 / 同主题多版本
 上面只给流程与判据。**具体字段、参数、子命令清单在工具内**：
 
 ```
-{operation:"help"}                        能力目录（65 节带简介）
+{operation:"help"}                        能力目录（66 节带简介）
 {operation:"help", helpTopic:"world"}     星球参数字段表（20+ 个带默认值）
 {operation:"help", helpTopic:"evaluate"}  函数清单与语法
 {operation:"help", helpQuery:"账本对不上"} 按任务描述搜（不用记 key）

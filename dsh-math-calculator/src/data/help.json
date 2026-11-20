@@ -72,7 +72,7 @@
    "conversion",
    "单位表"
   ],
-  "body": "【单位换算】把「三里」「两丈」「五百斤」换成标准单位\n  units        例：unitValue=30, unitFrom=\"里\", unitTo=\"km\" → 15 km\n               不带单位参数 → 列出全部可用单位（分类计数 + 示例）\n               自创单位用 customUnits 覆盖：\n                 [{name:\"里\", dimension:\"length\", factor:576}] → 30 里 = 17.28 km\n               支持：中文古制（里/丈/尺/寸/步/亩/顷/斤/两/石/斗/刻/时辰/更）、\n                     英制（英里/英尺/磅/加仑/盎司/格令）、天文（AU/光年/秒差距）\n                     以及 32 个量纲的科学单位（电/光/核/化学计量）\n  terse:true   只回一行结果，保留适用域提示\n\n【输出单位策略】先归到**常用档**，再按需叠 SI 前缀 k/M/G/T/P/E/Z/Y/R/Q：\n  质量 t（→ kt/Mt/Gt/Tt…）｜ 长度 m/km（→ Mm/Gm/Tm…）\n  时间 s/min/h/day/year ｜ 功率/能量 W/J（→ kW/MW、kJ/MJ…）｜ 压强 Pa\n  例：1e12 g → 1 Mt（不是 1 Tg）；1e9 m → 1 Gm；1e12 W → 1 TW\n  ★ 整数一律完整输出（10^20+5 一位不少），批量显示另补千分位分组\n  ★ 你写了 to/换算目标时不会被改写，只有没写时才归位\n\n【单位歧义披露】1 t 会给注「公制吨 = 1000 kg，英制长吨请写 longton」；\n  30 里 会给注「市里=500m。古代差异极大：周制约 415m、秦汉约 415m、清制 576m」。\n  evaluate 里现在也能直接写 mph / kn / rpm / inHg / cal / gauss / slug / shortton。"
+  "body": "【单位换算】把「三里」「两丈」「五百斤」换成标准单位\n  units        例：unitValue=30, unitFrom=\"里\", unitTo=\"km\" → 15 km\n               不带单位参数 → 列出单位族概览（分类计数 + 示例）\n               自创单位用 customUnits 覆盖：\n                 [{name:\"里\", dimension:\"length\", factor:576}] → 30 里 = 17.28 km\n               支持：中文古制（里/丈/尺/寸/步/亩/顷/斤/两/石/斗/刻/时辰/更）、\n                     英制（英里/英尺/磅/加仑/盎司/格令）、天文（AU/光年/秒差距）\n                     以及 32 个量纲的科学单位（电/光/核/化学计量）\n  terse:true   只回一行结果，保留适用域提示\n\n【输出单位策略】先归到**常用档**，再按需叠 SI 前缀 k/M/G/T/P/E/Z/Y/R/Q：\n  质量 t（→ kt/Mt/Gt/Tt…）｜ 长度 m/km（→ Mm/Gm/Tm…）\n  时间 s/min/h/day/year ｜ 功率/能量 W/J（→ kW/MW、kJ/MJ…）｜ 压强 Pa\n  例：1e12 g → 1 Mt（不是 1 Tg）；1e9 m → 1 Gm；1e12 W → 1 TW\n  ★ 整数一律完整输出（10^20+5 一位不少），批量显示另补千分位分组\n  ★ 你写了 to/换算目标时不会被改写，只有没写时才归位\n\n【单位歧义披露】1 t 会给注「公制吨 = 1000 kg，英制长吨请写 longton」；\n  30 里 会给注「市里=500m。古代差异极大：周制约 415m、秦汉约 415m、清制 576m」。\n  evaluate 里现在也能直接写 mph / kn / rpm / inHg / cal / gauss / slug / shortton。"
  },
  {
   "key": "formula",
@@ -798,7 +798,7 @@
    "编制拓扑",
    "topology"
   ],
-  "body": "【拓扑】topology 一个 operation 覆盖空间 / 工程 / 编制三类，用 action 选：\n\n  空间  action:\"model\"    {nodes:[{id,lat,lon}], edges:[{from,to,distanceKm?}]}\n        action:\"route\"    最短路；mode：road/rail/sea/air（系数不同）\n        action:\"sightline\" 视线（眼高 1.7 m，含地球曲率）\n        action:\"reachable\" 预算内可达；action:\"logistics\" 疆域信息时延上限\n        action:\"avoid\"    面状绕障（绕山/绕湖/禁飞区）：fromPoint/toPoint + obstacles:[[[lon,lat],…]]\n                          （gridKm 栅格、safetyKm 安全间距、planetRadiusKm 架空星球半径）\n\n  工程  action:\"structure\" + kind：building / vehicle / space-vessel / space-habitat /\n        enclosure / greenhouse / closed-loop / megastructure / sponge / mechanism /\n        fluid-power / thermal / electric / fluid / gear-train（规则表驱动，见 docs）\n        ★ 液压功率、卡诺效率、线阻压降、雷诺数/沿程损失、多级传动比都在这里\n\n  编制  action:\"org\" + units:[{id,level,headcount,parent}]（不等比 / 跨级 / 兵种混合）\n\n  地形  action:\"terrain\" + kind：\"coastal\"/\"plain\"/\"plateau\"/\"mountain\"/\"valley\"/\"ocean\"/\"sea\"/\"ice\"/\n        volcano/gas/urban/hive/cave/sky/space；真空与气态不输出陆地气候量\n\n  存取  action:\"save\" / \"load\" / \"list\" / \"export\" / \"import\"；类型 action:\"entities\" / \"define\" / \"validate\"\n\n  ★ 体积/容量/限高交给 feasibility 的上限判据；拓扑只负责几何与连通。\n  ★ 脏图（重复 id / 悬空边 / 自环）会报「非法边：A→X」，不会崩成 internal。\n"
+  "body": "【拓扑】topology 一个 operation 覆盖空间 / 工程 / 编制三类，用 action 选：\n\n  空间  action:\"model\"    {nodes:[{id,lat,lon}], edges:[{from,to,distanceKm?}]}\n        action:\"route\"    最短路；mode：road/rail/sea/air（系数不同）\n        action:\"sightline\" 视线（眼高 1.7 m，含地球曲率）\n        action:\"reachable\" 预算内可达；action:\"logistics\" 疆域信息时延上限\n        action:\"avoid\"    面状绕障（绕山/绕湖/禁飞区）：fromPoint/toPoint + obstacles:[[[lon,lat],…]]\n                          （gridKm 栅格、safetyKm 安全间距、planetRadiusKm 架空星球半径）\n\n  工程  action:\"structure\" + kind：building / vehicle / space-vessel / space-habitat /\n        enclosure / greenhouse / closed-loop / megastructure / sponge / mechanism /\n        fluid-power / thermal / electric / fluid / gear-train（规则表驱动，见 docs）\n        （也接受 action:\"ship\" / \"building\" 作为 kind 简写）\n        ★ 液压功率、卡诺效率、线阻压降、雷诺数/沿程损失、多级传动比都在这里\n\n  编制  action:\"org\" + units:[{id,level,headcount,parent}]（不等比 / 跨级 / 兵种混合）\n        action:\"rules\" 看编制规则表（含容量/连续性/一致性判据）\n\n  地形  action:\"terrain\" + kind：\"coastal\"/\"plain\"/\"plateau\"/\"mountain\"/\"valley\"/\"ocean\"/\"sea\"/\"ice\"/\n        volcano/gas/urban/hive/cave/sky/space；真空与气态不输出陆地气候量\n\n  存取  action:\"save\" / \"load\" / \"list\" / \"export\" / \"import\"；类型 action:\"entities\" / \"define\" / \"validate\"\n\n  ★ 体积/容量/限高交给 feasibility 的上限判据；拓扑只负责几何与连通。\n  ★ 脏图（重复 id / 悬空边 / 自环）会报「非法边：A→X」，不会崩成 internal。\n"
  },
  {
   "key": "quick",
@@ -1282,6 +1282,19 @@
    "currency",
    "金钱",
    "符号"
+  ]
+ },
+ {
+  "key": "args",
+  "tier": "extra",
+  "weight": 1,
+  "title": "参数总表 args",
+  "summary": "所有参数键（含此前 help 未覆盖的 65 个）。",
+  "body": "【参数总表】以下键可直接写在调用顶层（与 schema 一一对应；共 65 个此前未在 help 出现的键）：\n\n  anchorValue：backSolve 目标值\n  ascii：world-map：输出 ASCII 缩略图（默认 true）\n  caloriesPerDay：world：人均食物能量 kcal/日（默认 2000，范围 1500–4000）\n  compactThreshold：data compact：行数阈值（默认 500）\n  compareFrom：compare 起始版本\n  compareTo：compare 目标版本\n  constantName：constants：要改的常数名\n  crossValues：chain：跨链取值 {链 id: {步号: 数值}}，给 crossFlow 声明的参数\n  customConstant：custom：自定义常数定义\n  customConstantName：custom：自定义常数名\n  customFormula：custom：自定义公式定义\n  dataJson：data import：JSON 记录数组\n  dataY：第二条数据序列\n  dayDefinition：world：一天的定义（恒星日/太阳日）\n  diffA：diff 版本 A\n  diffB：diff 版本 B\n  direction：inverse/forward（依赖方向）\n  energyJ：topology structure 的别名：载具可用能量 J\n  energyPerKmJ：topology structure 的别名：单位距离能耗 J/km\n  equation：solve 的别名（等同 expression，写等式）\n  equations：solve 的别名：多个方程\n  flipBase：扰动基线\n  flipClaim：翻转判据 id\n  flipEpsilon：扰动幅度\n  formulaGraph：输出公式-链结构图（公式 + 22 条链）\n  formulaId：formula-table：公式 id\n  galaxyBand：world：银河带方向\n  globalMeanK：气候：全球平均温度 K（默认 288）\n  greenhouseK：气候：温室增量 K（默认 33）\n  hasLiquid：world：有无液态溶剂（影响生命闸门）\n  humanUsableNpp：world：人类可占用的 NPP 比例（默认 0.1；陆地实际约 0.25）\n  inheritCheck：校验继承关系\n  initialPopulation：world（profile:full）/ world-build：初始人口\n  lightPollution：world：光污染等级（影响观星）\n  listConstraints：只列物理上限\n  lyapunov：Lyapunov 指数\n  mapSeed：world-build：地图种子\n  maxSpan：timeline_check 最大跨度（年）\n  meatFraction：world：肉食比例 0–1（默认 0.2；1 份肉要 10 份植物，10% 法则）\n  mineralDensity：world-map：矿产密度（默认 0.02）\n  moonDistance：world：卫星轨道距离（km）\n  moonMass：world：卫星质量（月球=1）\n  mountainScale：world-map：山脉强度（默认 1）\n  muPerPerson：world-build：人均耕地（亩，默认 15）\n  nameContains：data query：名称子串\n  nationCount：world-map：国家数（默认 8，Voronoi 分区）\n  newExpression：formula-table：新表达式\n  newParams：formula-table：新参数定义\n  observerKind：观测者类型\n  overlapAllowed：允许时间线重叠\n  preview：constants：只算不存\n  profile：world：profile:\"full\" 追加完整世界编排（承载力/人口/粮食/疆域/瓶颈）\n  riverCount：world-map：河流条数（默认 24）\n  solveFor：反解：给定目标值求这条公式的某个参数（如 solveFor:\"sigma\"）\n  solveRange：反解的数值搜索区间 {min,max}（符号解失败时用）\n  speedKph：topology structure 的别名：载具巡航速度 km/h\n  starClass：world：光谱型（如 G2V/K5V；主序星）\n  tableNames：已存在的表名\n  targetValue：反解的目标结果值\n  timelineFrom：时间轴起点 Gyr\n  timelineSteps：时间轴采样数\n  timelineTo：时间轴终点 Gyr\n  unitScales：单位缩放（derive units 子命令）\n  what：workspace export 的导出项：formulas/systems/help/units/constants/bodies/entities/world_state/all\n  y0：ode 的别名：单状态初值（等同 initial:{y:…}）",
+  "aliases": [
+   "参数",
+   "args",
+   "键名"
   ]
  }
 ]
