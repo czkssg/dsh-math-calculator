@@ -21,7 +21,7 @@ function assert(name, cond, detail) {
 console.log('-- 1. 自述 --')
 {
   const describe = service.describe()
-  assert('★ methods 22 个', describe.methods.length === 22 && describe.methods.includes('constants') && describe.methods.includes('worldState') && describe.methods.includes('data') && describe.methods.includes('entities') && describe.methods.includes('models'), JSON.stringify(describe.methods))
+  assert('★ methods 26 个', describe.methods.length === 26 && describe.methods.includes('constants') && describe.methods.includes('worldState') && describe.methods.includes('data') && describe.methods.includes('entities') && describe.methods.includes('models'), JSON.stringify(describe.methods))
 }
 console.log('-- 2. constants --')
 {

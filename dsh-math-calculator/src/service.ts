@@ -31,6 +31,8 @@ import { MIGRATED_OPERATIONS, dispatchNew } from './dispatch.js'
 import { buildEngine, createEngine, type Engine } from './core/engine.js'
 import { evaluateOne } from './features/numeric/evaluate.js'
 import { convertUnits, describeUnit } from './features/numeric/units.js'
+import { runChainNumeric, type ChainSystem } from './features/formulas/chain-run.js'
+import type { FormulaEntry } from './features/formulas/query.js'
 
 /** 服务名（cordis 服务键）。 */
 export const MATH_ENGINE_SERVICE = 'mathEngine'
@@ -101,6 +103,21 @@ export interface RegisteredEntitySpec {
   note?: string
 }
 
+/** 自定义链的一步。 */
+export interface RegisteredChainStep {
+  formula: string
+  /** 参数 ← 第几步（1 起）。 */
+  dataFlow?: Record<string, number>
+  note?: string
+}
+
+/** 命名空间级自定义公式链。 */
+export interface RegisteredChainSpec {
+  id: string
+  name?: string
+  steps: RegisteredChainStep[]
+}
+
 /** 命名空间级自定义公式。 */
 export interface RegisteredFormulaSpec {
   id: string
@@ -169,6 +186,14 @@ export interface MathEngineService {
   entities(action: string, options?: { namespace?: string; items?: RegisteredEntitySpec[]; name?: string }): EngineServiceResult
   /** 拓扑模型（命名空间级）：save/list/load/delete。 */
   models(action: string, options?: { namespace?: string; name?: string; data?: unknown }): EngineServiceResult
+  /** 注册命名空间级自定义公式链。 */
+  registerChains(namespace: string, chains: RegisteredChainSpec[]): RegisterUnitsResult
+  /** 列出命名空间的自定义链。 */
+  listChains(namespace?: string): ListUnitsResult
+  /** 注销命名空间的自定义链。 */
+  unregisterChains(namespace: string): { ok: boolean; removed?: boolean }
+  /** 执行链（自定义优先，否则内置 sys-*）。 */
+  chain(id: string, options?: { namespace?: string; initial?: Record<string, number> }): EngineServiceResult
 }
 
 /** 能力缺失类错误（可降级）。 */
@@ -339,6 +364,33 @@ function readCurrencies(): Array<{ code: string; name: string; symbol?: string; 
   return currencyCache
 }
 
+/** 内置公式与链（链执行用；懒加载一次）。 */
+let formulasCache: FormulaEntry[] | null = null
+let systemsCache: ChainSystem[] | null = null
+
+/** 读 formulas.json。 */
+function readFormulasData(): FormulaEntry[] {
+  if (formulasCache !== null) return formulasCache
+  try {
+    formulasCache = JSON.parse(readFileSync(join(HERE, '..', 'src', 'data', 'formulas.json'), 'utf8')) as FormulaEntry[]
+  } catch {
+    formulasCache = []
+  }
+  return formulasCache
+}
+
+/** 读 systems.json。 */
+function readSystemsData(): ChainSystem[] {
+  if (systemsCache !== null) return systemsCache
+  try {
+    const raw = JSON.parse(readFileSync(join(HERE, '..', 'src', 'data', 'systems.json'), 'utf8')) as ChainSystem[] | { systems?: ChainSystem[] }
+    systemsCache = Array.isArray(raw) ? raw : raw.systems ?? []
+  } catch {
+    systemsCache = []
+  }
+  return systemsCache
+}
+
 /**
  * 创建服务实例（纯工厂：测试可直接调用，不依赖 cordis 上下文）。
  *
@@ -348,7 +400,7 @@ export function createMathEngineService(): MathEngineService {
   const version = readVersion()
   const unitFamilies = readUnitFamilies()
   /** 命名空间 → 独立引擎、已注册单位/货币/公式。 */
-  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[]; currencies: RegisteredCurrencySpec[]; formulas: RegisteredFormulaSpec[]; world: Record<string, unknown>; entities: RegisteredEntitySpec[]; models: Record<string, unknown> }>()
+  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[]; currencies: RegisteredCurrencySpec[]; formulas: RegisteredFormulaSpec[]; world: Record<string, unknown>; entities: RegisteredEntitySpec[]; models: Record<string, unknown>; chains: RegisteredChainSpec[] }>()
 
   /** 取引擎：命名空间优先（不存在时回 undefined）。 */
   const engineOf = (namespace: string | undefined): Engine | undefined => {
@@ -374,7 +426,7 @@ export function createMathEngineService(): MathEngineService {
         operations: [...MIGRATED_OPERATIONS],
         unitFamilies,
         supportsCustomUnits: true,
-        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'constants', 'currency', 'worldState', 'data', 'entities', 'models', 'registerUnits', 'listUnits', 'unregisterUnits', 'registerCurrencies', 'listCurrencies', 'unregisterCurrencies', 'registerFormulas', 'listFormulas', 'unregisterFormulas'],
+        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'constants', 'currency', 'worldState', 'data', 'entities', 'models', 'chain', 'registerUnits', 'listUnits', 'unregisterUnits', 'registerCurrencies', 'listCurrencies', 'unregisterCurrencies', 'registerFormulas', 'listFormulas', 'unregisterFormulas', 'registerChains', 'listChains', 'unregisterChains'],
       }
     },
     evaluate(expression, options = {}) {
@@ -489,7 +541,7 @@ export function createMathEngineService(): MathEngineService {
     registerUnits(namespace, units) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '字母/数字/中文/下划线/连字符，1–40 字符。')
       if (!Array.isArray(units) || units.length === 0) return failRegister('missing_params', 'units 不能为空', '形如 [{name:"credit", factor:1, base:""}]。')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {}, chains: [] }
       const registered: string[] = []
       for (const spec of units) {
         const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
@@ -548,7 +600,7 @@ export function createMathEngineService(): MathEngineService {
     registerCurrencies(namespace, items) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
       if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {}, chains: [] }
       const registered: string[] = []
       const builtinCodes = new Set(readCurrencies().map((item) => item.code.toLowerCase()))
       for (const spec of items) {
@@ -590,7 +642,7 @@ export function createMathEngineService(): MathEngineService {
     registerFormulas(namespace, items) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
       if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {}, chains: [] }
       const registered: string[] = []
       for (const spec of items) {
         const id = typeof spec?.id === 'string' ? spec.id.trim() : ''
@@ -727,6 +779,103 @@ export function createMathEngineService(): MathEngineService {
         return { ok: true, value: { removed: true } }
       }
       return fail('unknown_argument', '不认识的 models 动作「' + act + '」', '可用：save / load / list / delete。')
+    },
+    registerChains(namespace, chains) {
+      if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
+      if (!Array.isArray(chains) || chains.length === 0) return failRegister('missing_params', 'chains 不能为空', '')
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {}, chains: [] }
+      const registered: string[] = []
+      const builtinChainIds = new Set(readSystemsData().map((item) => item.id))
+      const builtinFormulaIds = new Set(readFormulasData().map((item) => item.id))
+      for (const spec of chains) {
+        const id = typeof spec?.id === 'string' ? spec.id.trim() : ''
+        if (!/^[A-Za-z][A-Za-z0-9_-]{0,39}$/.test(id)) return failRegister('invalid_argument', '链 id 不合法：' + JSON.stringify(id), '字母开头，可含字母数字下划线连字符。')
+        if (builtinChainIds.has(id) || entry.chains.some((item) => item.id === id)) return failRegister('invalid_argument', '链 id「' + id + '」已存在（内置或已注册）', '不能覆盖内置链。')
+        const steps = Array.isArray(spec?.steps) ? spec.steps : []
+        if (steps.length === 0 || steps.length > 20) return failRegister('invalid_argument', '链「' + id + '」步数必须 1–20', '')
+        for (let index = 0; index < steps.length; index += 1) {
+          const step = steps[index]
+          const formula = typeof step?.formula === 'string' ? step.formula.trim() : ''
+          if (!builtinFormulaIds.has(formula) && !entry.formulas.some((item) => item.id === formula)) {
+            return failRegister('invalid_argument', '第 ' + (index + 1) + ' 步公式「' + formula + '」不存在', '先用 registerFormulas 注册，或用内置公式 id。')
+          }
+          for (const [param, fromStep] of Object.entries(step?.dataFlow ?? {})) {
+            if (typeof fromStep !== 'number' || !Number.isInteger(fromStep) || fromStep < 1 || fromStep >= index + 1) {
+              return failRegister('invalid_argument', '链「' + id + '」第 ' + (index + 1) + ' 步 dataFlow.' + param + ' 必须指向更早的步骤（1–' + index + '）', '')
+            }
+          }
+        }
+        entry.chains.push({
+          id,
+          ...(typeof spec.name === 'string' ? { name: spec.name } : {}),
+          steps: steps.map((step) => ({
+            formula: step.formula.trim(),
+            ...(step.dataFlow !== undefined ? { dataFlow: { ...step.dataFlow } } : {}),
+            ...(typeof step.note === 'string' ? { note: step.note } : {}),
+          })),
+        })
+        registered.push(id)
+      }
+      namespaces.set(namespace, entry)
+      return { ok: true, namespace, registered }
+    },
+    listChains(namespace) {
+      if (namespace !== undefined) {
+        const entry = namespaces.get(namespace)
+        return { ok: true, units: entry === undefined ? [] : [{ namespace, units: entry.chains as never }] }
+      }
+      return { ok: true, units: [...namespaces.entries()].map(([key, entry]) => ({ namespace: key, units: entry.chains as never })) }
+    },
+    unregisterChains(namespace) {
+      const entry = namespaces.get(namespace)
+      if (entry === undefined) return { ok: true, removed: false }
+      const had = entry.chains.length > 0
+      entry.chains = []
+      return { ok: true, removed: had }
+    },
+    chain(id, options = {}) {
+      if (typeof id !== 'string' || id.trim() === '') return fail('missing_params', 'chain 需要链 id', '')
+      if (options.namespace !== undefined && !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', '命名空间「' + options.namespace + '」未注册', '先 registerChains(namespace, chains)。')
+      }
+      const ns = options.namespace !== undefined ? namespaces.get(options.namespace) : undefined
+      const toChainSystem = (spec: RegisteredChainSpec): ChainSystem => ({
+        id: spec.id,
+        name: spec.name ?? spec.id,
+        steps: spec.steps.map((step) => ({
+          formula: step.formula,
+          ...(step.dataFlow !== undefined
+            ? { dataFlow: Object.fromEntries(Object.entries(step.dataFlow).map(([param, fromStep]) => [param, { fromStep }])) }
+            : {}),
+          ...(step.note !== undefined ? { note: step.note } : {}),
+        })),
+      })
+      const custom = ns?.chains.find((item) => item.id === id.trim() || item.name === id.trim())
+      const builtin = readSystemsData().find((item) => item.id === id.trim() || item.name === id.trim())
+      const systems: ChainSystem[] = [...readSystemsData(), ...(ns?.chains ?? []).map(toChainSystem)]
+      const system = custom !== undefined ? toChainSystem(custom) : builtin
+      if (system === undefined) {
+        return fail('unknown_formula', '没有 id 为「' + id.trim() + '」的链', '内置链：' + readSystemsData().slice(0, 8).map((item) => item.id).join('、') + '…；自定义用 listChains 看。')
+      }
+      const engine = ns?.engine ?? buildEngine()
+      const customFormulas: FormulaEntry[] = (ns?.formulas ?? []).map((item) => ({
+        id: item.id,
+        name: item.name ?? item.id,
+        expr: item.expr,
+        unit: item.unit ?? '',
+        params: Object.fromEntries(Object.entries(item.params ?? {}).map(([name, value]) => [name, { value }])),
+        desc: '',
+        cat: 'custom',
+        aliases: [],
+      })) as never
+      try {
+        const outcome = runChainNumeric([...readFormulasData(), ...customFormulas], systems, system.id, engine, options.initial ?? {}, undefined)
+        const value = outcome.value as { steps?: Array<Record<string, unknown>>; terminal?: Record<string, unknown>; linkedSteps?: number[] }
+        return { ok: true, value: { chain: system.id, steps: value.steps ?? [], terminal: value.terminal ?? null, linkedSteps: value.linkedSteps ?? [] } }
+      } catch (error) {
+        const type = (error as { type?: string }).type ?? 'internal'
+        return fail(type, error instanceof Error ? error.message : String(error), (error as { hint?: string }).hint)
+      }
     },
   }
 }

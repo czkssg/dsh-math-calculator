@@ -2,6 +2,30 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.36.0] — 2026-11-21
+
+**服务化最后一块：自定义公式链**。
+
+### 新增
+
+- `registerChains` / `listChains` / `unregisterChains` / `chain(id, {namespace, initial})`；
+- 命名空间隔离；步骤 1–20；`dataFlow` 只能指向更早步骤；
+- 步骤公式可用内置或命名空间自定义公式；`chain()` 自定义优先、否则内置 `sys-*`；
+- `describe().methods` 22 → 26。
+
+### 测试
+
+- 新增 `r87-chains` 18 项；`r81/r83/r85/r86` methods 断言同步 26；
+  全量 **146 套 / 3,319 项全绿**（`test-v3/test-report.json` 已刷新）。
+
+### 压测（链）
+
+| 项 | 结果 |
+|---|---|
+| 10 命名空间 × 50 链注册 | 1.35s |
+| 1000 次自定义链执行 | 5.3s（5.3ms/次） |
+| 50 并发链执行 | 50/50 |
+| 注销 10 ns 链 | 1ms，注销后 capability |
 ## [3.35.0] — 2026-11-20
 
 **功能盘点 + 补齐扩展接口（五组）**。
