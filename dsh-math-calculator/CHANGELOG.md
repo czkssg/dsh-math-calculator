@@ -2,6 +2,34 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.35.0] — 2026-11-20
+
+**功能盘点 + 补齐扩展接口（五组）**。
+
+### 新增
+
+- `constants()`：全部物理常数（只读标准值）；
+- `worldState(set/get/list/delete)`：命名空间级世界设定；
+- `data(put/get/query/stats)`：服务层数据层（当前工作区）；
+- `entities(register/list/unregister)`：命名空间级实体类型清单；
+- `models(save/load/list/delete)`：命名空间级拓扑模型；
+- `describe()` 方法数 17 → 22；新增 `docs/扩展接口清单.md`（功能盘点 + 为什么只读）。
+
+### 测试
+
+- 新增 `r86-extensions2` 20 项；`r81/r83/r85` methods 断言同步；
+  全量 **145 套 / 3,301 项全绿**（`test-v3/test-report.json` 已刷新）。
+
+### 压测（五组）
+
+| 项 | 结果 |
+|---|---|
+| 1000 次 worldState set/get | 5ms |
+| 1000 次 worldState list（每条 1000 项） | 647ms |
+| 10 ns × 100 实体注册 | 16ms |
+| 500 次 models save/load | 7ms |
+| 500 次 data put | 3.2s（6.4ms/条） |
+| 50 并发 worldState | 50/50 |
 ## [3.34.0] — 2026-11-20
 
 **mathEngine 扩展接口：命名空间级自定义货币 / 公式**。

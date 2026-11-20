@@ -94,6 +94,13 @@ export interface RegisteredCurrencySpec {
   note?: string
 }
 
+/** 命名空间级实体类型（topology 用，自由结构）。 */
+export interface RegisteredEntitySpec {
+  name: string
+  fields?: Record<string, unknown>
+  note?: string
+}
+
 /** 命名空间级自定义公式。 */
 export interface RegisteredFormulaSpec {
   id: string
@@ -152,6 +159,16 @@ export interface MathEngineService {
   listFormulas(namespace?: string): ListUnitsResult
   /** 注销命名空间的全部自定义公式。 */
   unregisterFormulas(namespace: string): { ok: boolean; removed?: boolean }
+  /** 全部物理常数（标准值）。 */
+  constants(): EngineServiceResult
+  /** 世界设定（命名空间级键值）：set/get/list/delete。 */
+  worldState(action: string, options?: { namespace?: string; key?: string; value?: unknown }): EngineServiceResult
+  /** 数据层（put/get/query/stats）——用当前工作区。 */
+  data(action: string, options?: { kind?: string; name?: string; payload?: unknown; id?: string; query?: string; nameContains?: string; tag?: string; limit?: number }): EngineServiceResult
+  /** 实体类型（命名空间级）：register/list/unregister。 */
+  entities(action: string, options?: { namespace?: string; items?: RegisteredEntitySpec[]; name?: string }): EngineServiceResult
+  /** 拓扑模型（命名空间级）：save/list/load/delete。 */
+  models(action: string, options?: { namespace?: string; name?: string; data?: unknown }): EngineServiceResult
 }
 
 /** 能力缺失类错误（可降级）。 */
@@ -331,7 +348,7 @@ export function createMathEngineService(): MathEngineService {
   const version = readVersion()
   const unitFamilies = readUnitFamilies()
   /** 命名空间 → 独立引擎、已注册单位/货币/公式。 */
-  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[]; currencies: RegisteredCurrencySpec[]; formulas: RegisteredFormulaSpec[] }>()
+  const namespaces = new Map<string, { engine: Engine; units: NamespaceUnit[]; currencies: RegisteredCurrencySpec[]; formulas: RegisteredFormulaSpec[]; world: Record<string, unknown>; entities: RegisteredEntitySpec[]; models: Record<string, unknown> }>()
 
   /** 取引擎：命名空间优先（不存在时回 undefined）。 */
   const engineOf = (namespace: string | undefined): Engine | undefined => {
@@ -357,7 +374,7 @@ export function createMathEngineService(): MathEngineService {
         operations: [...MIGRATED_OPERATIONS],
         unitFamilies,
         supportsCustomUnits: true,
-        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'currency', 'registerUnits', 'listUnits', 'unregisterUnits', 'registerCurrencies', 'listCurrencies', 'unregisterCurrencies', 'registerFormulas', 'listFormulas', 'unregisterFormulas'],
+        methods: ['describe', 'evaluate', 'convert', 'checkDimension', 'formula', 'interval', 'constant', 'constants', 'currency', 'worldState', 'data', 'entities', 'models', 'registerUnits', 'listUnits', 'unregisterUnits', 'registerCurrencies', 'listCurrencies', 'unregisterCurrencies', 'registerFormulas', 'listFormulas', 'unregisterFormulas'],
       }
     },
     evaluate(expression, options = {}) {
@@ -472,7 +489,7 @@ export function createMathEngineService(): MathEngineService {
     registerUnits(namespace, units) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '字母/数字/中文/下划线/连字符，1–40 字符。')
       if (!Array.isArray(units) || units.length === 0) return failRegister('missing_params', 'units 不能为空', '形如 [{name:"credit", factor:1, base:""}]。')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
       const registered: string[] = []
       for (const spec of units) {
         const name = typeof spec?.name === 'string' ? spec.name.trim() : ''
@@ -531,7 +548,7 @@ export function createMathEngineService(): MathEngineService {
     registerCurrencies(namespace, items) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
       if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
       const registered: string[] = []
       const builtinCodes = new Set(readCurrencies().map((item) => item.code.toLowerCase()))
       for (const spec of items) {
@@ -573,7 +590,7 @@ export function createMathEngineService(): MathEngineService {
     registerFormulas(namespace, items) {
       if (!isValidNamespace(namespace)) return failRegister('invalid_argument', 'namespace 名不合法', '')
       if (!Array.isArray(items) || items.length === 0) return failRegister('missing_params', 'items 不能为空', '')
-      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [] }
+      const entry = namespaces.get(namespace) ?? { engine: createEngine(), units: [], currencies: [], formulas: [], world: {}, entities: [], models: {} }
       const registered: string[] = []
       for (const spec of items) {
         const id = typeof spec?.id === 'string' ? spec.id.trim() : ''
@@ -612,6 +629,104 @@ export function createMathEngineService(): MathEngineService {
       const had = entry.formulas.length > 0
       entry.formulas = []
       return { ok: true, removed: had }
+    },
+    constants() {
+      return { ok: true, value: { constants: readConstants() } }
+    },
+    worldState(action, options = {}) {
+      const act = typeof action === 'string' && action.trim() !== '' ? action.trim().toLowerCase() : 'list'
+      if (options.namespace === undefined || !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', 'worldState 需要已注册的命名空间', '先 registerUnits(namespace, []) 或 registerCurrencies 建一个。')
+      }
+      const world = namespaces.get(options.namespace)!.world
+      if (act === 'set') {
+        const key = typeof options.key === 'string' ? options.key.trim() : ''
+        if (key === '') return fail('missing_params', 'worldState set 需要 key', '')
+        world[key] = options.value ?? null
+        return { ok: true, value: { key, value: world[key] } }
+      }
+      if (act === 'get') {
+        const key = typeof options.key === 'string' ? options.key.trim() : ''
+        if (!(key in world)) return fail('unknown_symbol', '世界设定里没有「' + key + '」', '先用 set 写入。')
+        return { ok: true, value: { key, value: world[key] } }
+      }
+      if (act === 'list') return { ok: true, value: { entries: Object.entries(world).map(([key, value]) => ({ key, value })) } }
+      if (act === 'delete') {
+        const key = typeof options.key === 'string' ? options.key.trim() : ''
+        if (!(key in world)) return { ok: true, value: { removed: false } }
+        delete world[key]
+        return { ok: true, value: { removed: true } }
+      }
+      return fail('unknown_argument', '不认识的 worldState 动作「' + act + '」', '可用：set / get / list / delete。')
+    },
+    data(action, options = {}) {
+      const args: Record<string, unknown> = {}
+      const put = (key: string, value: unknown): void => { if (value !== undefined) args[key] = value }
+      put('dataAction', typeof action === 'string' && action.trim() !== '' ? action.trim().toLowerCase() : 'stats')
+      put('kind', options.kind)
+      put('name', options.name)
+      put('payload', options.payload)
+      put('id', options.id)
+      put('query', options.query)
+      put('nameContains', options.nameContains)
+      put('tag', options.tag)
+      put('limit', options.limit)
+      return callDispatch('data', args)
+    },
+    entities(action, options = {}) {
+      const act = typeof action === 'string' && action.trim() !== '' ? action.trim().toLowerCase() : 'list'
+      if (options.namespace === undefined || !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', 'entities 需要已注册的命名空间', '')
+      }
+      const list = namespaces.get(options.namespace)!.entities
+      if (act === 'register') {
+        const items = Array.isArray(options.items) ? options.items : []
+        if (items.length === 0) return fail('missing_params', 'items 不能为空', '')
+        const registered: string[] = []
+        for (const item of items) {
+          const name = typeof item?.name === 'string' ? item.name.trim() : ''
+          if (!/^[A-Za-z\u4e00-\u9fa5][A-Za-z0-9\u4e00-\u9fa5_-]{0,39}$/.test(name)) return fail('invalid_argument', '实体名不合法：' + JSON.stringify(name), '字母/中文开头，1–40 字符。')
+          if (list.some((entry) => entry.name === name)) return fail('invalid_argument', '实体「' + name + '」已存在', '')
+          list.push({
+            name,
+            ...(item.fields !== undefined && typeof item.fields === 'object' ? { fields: item.fields as Record<string, unknown> } : {}),
+            ...(typeof item.note === 'string' ? { note: item.note } : {}),
+          })
+          registered.push(name)
+        }
+        return { ok: true, value: { namespace: options.namespace, registered } }
+      }
+      if (act === 'list') return { ok: true, value: { namespace: options.namespace, entities: [...list] } }
+      if (act === 'unregister') {
+        const had = list.length > 0
+        list.length = 0
+        return { ok: true, value: { removed: had } }
+      }
+      return fail('unknown_argument', '不认识的 entities 动作「' + act + '」', '可用：register / list / unregister。')
+    },
+    models(action, options = {}) {
+      const act = typeof action === 'string' && action.trim() !== '' ? action.trim().toLowerCase() : 'list'
+      if (options.namespace === undefined || !namespaces.has(options.namespace)) {
+        return fail('unknown_namespace', 'models 需要已注册的命名空间', '')
+      }
+      const store = namespaces.get(options.namespace)!.models
+      const name = typeof options.name === 'string' ? options.name.trim() : ''
+      if (act === 'save') {
+        if (name === '') return fail('missing_params', 'models save 需要 name', '')
+        store[name] = options.data ?? null
+        return { ok: true, value: { name, saved: true } }
+      }
+      if (act === 'load') {
+        if (!(name in store)) return fail('unknown_symbol', '没有名为「' + name + '」的模型', '')
+        return { ok: true, value: { name, data: store[name] } }
+      }
+      if (act === 'list') return { ok: true, value: { names: Object.keys(store) } }
+      if (act === 'delete') {
+        if (!(name in store)) return { ok: true, value: { removed: false } }
+        delete store[name]
+        return { ok: true, value: { removed: true } }
+      }
+      return fail('unknown_argument', '不认识的 models 动作「' + act + '」', '可用：save / load / list / delete。')
     },
   }
 }
