@@ -88,7 +88,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 | 想做什么 | op | 关键参数 |
 |---|---|---|
-| 真实地球历表 | `astro` | `action:"rise-set"（或 "sun" / "moon"）` + `date/lat/lon` |
+| 真实地球历表 | `astro` | `action:"rise-set"（或 "sun" / "moon"）` + `date/lat/lon`；**日照时长用当日 5 分钟高度扫描**（极昼 24h/极夜 0h，正午高度取当日最大值） |
 | 任意天体轨道 / 双星 / 行星系统 | `astro` | `action:"orbit"（或 "binary" / "system"）` |
 | 引力与相对论 | `astro` | `action:"gravity"（或 "relativity"）` + `massKg/radiusM` |
 | 历法推导 / 换算 / from-world | `astro` | `action:"calendar"（或 "calendar-convert" / "world-calendar"）` |
@@ -102,7 +102,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | 工作区变量 / 切换世界 / 导出 | `workspace` | `action2:"set"（或 "list" / "export" / "import"）` |
 | **自动入库** | 任意 op | 加 `saveAs:"记录名"` → 成功结果自动写进统一数据层（失败不入库） |
 | **数据检索（全文）** | `data` | `dataAction:"search", query:"关键词"`（minisearch + 中文分词）；`dataAction:"migrate"` 把旧 workspace/归档导入统一库（幂等） |
-| **全球地图（地形/地质/国家）** | `world-map` | ★`worldTopology:"sphere"`（球体，经度环绕——**跨 180° 经线不绕远路**）或 `"plane"`（天圆地方）；`mapDistance:{from,to}` 查两点实际距离（球体用大圆） | `{mapWidth,mapHeight,seed,seaLevel(陆地目标占比),mountainScale,riverCount,nationCount,mineralDensity,edits,ascii}` → 高度场/地形分类/河流/矿产/国家边界（Voronoi）+ ASCII 缩略图；`edits:[{x,y,height,seaLevel,nation}]` 可改地形到海陆分布、改国界 |
+| **全球地图（地形/地质/国家）** | `world-map` | ★`worldTopology:"sphere"`（球体，经度环绕——**跨 180° 经线不绕远路**）或 `"plane"`（天圆地方）；`mapDistance:{from,to}` 查两点实际距离（球体用大圆） | `{mapWidth,mapHeight,seed,seaLevel(陆地目标占比),mountainScale,riverCount,nationCount,mineralDensity,edits,ascii}` → 高度场/地形分类/河流/矿产/国家边界（Voronoi）+ **ASCII 地形图（ascii）与国界图（asciiBorders）**；`edits:[{x,y,height,seaLevel,nation,mineral}]` 可改地形/国界/矿产（mineral 1–3，0 清除）。★ **随机大陆，只作相对位置与距离校验，不作真实地球底图** |
 | **简化环流（简单流体）** | `world-map` + `climate:true` | 热成风 `u∝−(1/f)·∂T/∂y` + 三圈环流（Hadley/Ferrel/Polar）+ 水汽平流；地球校核：0–30° 东风 −14 m/s、30–60° 西风 +9 m/s、60–90° 东风 −8 m/s。**定常解，不是 CFD** |
 | **极宏观三机制** | `world-map` + `climate:true` | 季风（海陆热力差 → 降水 ±14%）、洋流（沿岸温度 ±1.5 K）、云（云量=f(降水) → 温度 ∓1–2 K）；粗到只剩几个常数，不是环流模型 |
 | **通用气候拟合** | `world-map` + `climate:true` | 地球标定的解析模型：`T(φ)=T_eq−ΔT·(1−cos^p φ)`（p 由地球 7 点最小二乘定标，残差 0.2 K）；换行星参数（`stellarFlux`/`greenhouseK`/`pressureAtm`/`rotationHours`/`obliquityDeg`/`landRatio`）自动缩放 |

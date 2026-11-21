@@ -1077,7 +1077,7 @@
    "天体数据",
    "天体查询"
   ],
-  "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope\"（或 sextant/clock/pendulum/shadow/calendar-drift）,precision}\n  ★ 太阳光度是常数 3.828e26 W（不是公式）；需要时用 evaluate 直接算，或看 solar_flux_at_1au 由光度推辐照度。"
+  "body": "【astro】action 二选一：\n  \"rise-set\" 日出日落/日照时长（date+lat+lon）\n  \"sun\" / \"moon\" 高度角与方位 / 月相与光照\n  \"orbit\" 任意天体轨道：elements:{a,e,i,omega,w,M0,centralMass} + years\n  \"binary\" 双星：{massA,massB,semiMajorAu}\n  \"system\" 行星系统：{starMass,planets:[{name,a,massEarth,radiusEarth,moons}]} → 希尔球/卫星可行域\n  \"gravity\" 引力：massKg+radiusM → 逃逸速度/圆轨道/潮汐/引力区间\n  \"relativity\" massKg → 史瓦西半径/ISCO/时间膨胀/红移\n  \"calendar\" 历法：rotationHours/orbitDays/obliquityDeg/moonCount → 年长/闰年/太阴月/季节\n  \"calendar-convert\" 日期↔年日：{year,dayOfYear} 或 {absoluteDay}\n  \"world-calendar\" 轨道+恒星 → 直接出历法\n  \"tech\" 观测→科技：{device:\"telescope\"（或 sextant/clock/pendulum/shadow/calendar-drift）,precision}\n  ★ 太阳光度是常数 3.828e26 W（不是公式）；需要时用 evaluate 直接算，或看 solar_flux_at_1au 由光度推辐照度。\n\n【日照时长】按当日太阳高度 5 分钟步长扫描（极昼 24h / 极夜 0h）；正午高度取当日最大值。\n  ★ 旧版 |set−rise| 在高纬/跨日会多出 24h（lat45 算出 39.62h），已修。"
  },
  {
   "key": "history",
@@ -1217,7 +1217,7 @@
    "气候层",
    "国家分布"
   ],
-  "body": "【全球地图】高度场 / 地形 / 河流 / 矿产 / 国家（+ 可选气候层）\n  {operation:\"world-map\", worldTopology:\"sphere\", mapWidth:360, mapHeight:180, seed:7}\n  · worldTopology：\"sphere\"（球体，跨 180° 经线不绕远路）/ \"plane\"（天圆地方）\n  · mapDistance:{from:{x,y},to:{x,y}} 查两点实际距离（球体用大圆）\n  · climate:true 叠加温度/降水/分区/可耕率；useMap 反算承载力\n  · edits:[{x,y,height,seaLevel,nation}] 改地形与国界\n  ★ 定常解不是 CFD；气候层是地球标定的解析模型（标可信度）。"
+  "body": "【全球地图】高度场 / 地形 / 河流 / 矿产 / 国家（+ 可选气候层）\n  {operation:\"world-map\", worldTopology:\"sphere\", mapWidth:360, mapHeight:180, seed:7}\n  · worldTopology：\"sphere\"（球体，跨 180° 经线不绕远路）/ \"plane\"（天圆地方）\n  · mapDistance:{from:{x,y},to:{x,y}} 查两点实际距离（球体用大圆）\n  · climate:true 叠加温度/降水/分区/可耕率；useMap 反算承载力\n  · edits:[{x,y,height,seaLevel,nation}] 改地形与国界\n  ★ 定常解不是 CFD；气候层是地球标定的解析模型（标可信度）。\n\n【编辑与绘图】\n  编辑 edits:[{x,y,height?,seaLevel?,nation?,mineral?}]（mineral 1–3 级，0 清除该格矿）\n  ★ ASCII（ascii）= 地形图；asciiBorders = 国家编号 + 边界（|）；borders.cells = 国界段数\n  ★ ASCII 是**随机生成的大陆**：只用于相对位置与距离校验，不是真实地球底图"
  },
  {
   "key": "audit",

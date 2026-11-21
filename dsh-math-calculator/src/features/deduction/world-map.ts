@@ -95,7 +95,7 @@ export interface WorldMapInput {
   /** 矿产密度（每格概率，默认 0.02）。 */
   mineralDensity?: number
   /** 编辑：改格点高度/海陆/国家。 */
-  edits?: Array<{ x: number; y: number; height?: number; seaLevel?: number; nation?: number }>
+  edits?: Array<{ x: number; y: number; height?: number; seaLevel?: number; nation?: number; mineral?: number }>
   /** 是否输出 ASCII 缩略图（默认 true）。 */
   ascii?: boolean
   /**
@@ -157,8 +157,12 @@ export interface WorldMapResult {
     mineralCount: number
     nationCount: number
   }
-  /** ASCII 缩略图（可选：不给这个键，而不是给 undefined）。 */
+  /** 国界统计（边界格数 / 国家数）。 */
+  borders?: { cells: number; nations: number }
+  /** ASCII 地形图（可选：不给这个键，而不是给 undefined）。 */
   ascii?: string
+  /** ASCII 国界图（数字=国家编号，| = 边界）。 */
+  asciiBorders?: string
   /** 世界拓扑。 */
   topology: 'sphere' | 'plane'
   /** 两点距离（给了 distance 才有）。 */
@@ -335,6 +339,19 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     }
   }
 
+  /** 矿产编辑：{x,y,mineral}——mineral>0 覆盖该格储量（1–3），0 清除。 */
+  for (const edit of input.edits ?? []) {
+    if (typeof edit.mineral !== 'number') continue
+    const index = minerals.findIndex((item) => item.x === edit.x && item.y === edit.y)
+    if (edit.mineral <= 0) {
+      if (index >= 0) minerals.splice(index, 1)
+      continue
+    }
+    const grade = Math.max(1, Math.min(3, Math.round(edit.mineral)))
+    if (index >= 0) minerals[index] = { ...minerals[index], grade }
+    else minerals.push({ x: edit.x, y: edit.y, kind: '自定', grade })
+  }
+
   /** 国家：Voronoi 分区（delaunay）。 */
   const nations: number[][] = Array.from({ length: height }, () => Array.from({ length: width }, () => -1))
   if (nationCount > 0) {
@@ -374,6 +391,19 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     if (typeof edit.nation === 'number') nations[edit.y][edit.x] = edit.nation
   }
 
+  /** 国界：相邻格归属不同记一段（球体按经度环绕）。 */
+  let borderCells = 0
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const own = nations[y][x]
+      if (own < 0) continue
+      const right = topology === 'sphere' ? nations[y][(x + 1) % width] : x + 1 < width ? nations[y][x + 1] : -1
+      const down = y + 1 < height ? nations[y + 1][x] : -1
+      if (right >= 0 && right !== own) borderCells += 1
+      if (down >= 0 && down !== own) borderCells += 1
+    }
+  }
+
   /** 统计。 */
   /** 面积加权（球体：高纬格实际面积按 cos lat 收缩）。 */
   let land = 0
@@ -405,7 +435,10 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     '山地 ' + (stats.mountainRatio * 100).toFixed(1) + '%、平原 ' + (stats.plainRatio * 100).toFixed(1) + '%',
     '河流 ' + rivers.length + ' 条（' + stats.riverCells + ' 格水道）、矿产 ' + minerals.length + ' 处',
     '国家 ' + stats.nationCount + ' 个（Voronoi 分区；河流/山脉可作自然边界）',
-    '编辑：edits 可改 height/seaLevel/nation（改地形到海陆分布）',
+    '编辑：edits 可改 height/seaLevel/nation/mineral（矿 1–3 级，0 清除）',
+    '国界 ' + borderCells + ' 段（相邻格归属不同处）',
+    '图例（ascii）：空白海洋 . 海岸 · 平原 : 丘陵 ^ 山地 # 高原 ~ 河谷；asciiBorders：数字=国家编号，| = 边界',
+    '★ ASCII 是随机生成的大陆：只用于相对位置与距离校验，不是真实地球底图。',
   ]
   /** 两点距离（给了 mapDistance 才有）——必须进文本，否则用户以为参数没生效。 */
   if (input.distance !== undefined) {
@@ -443,6 +476,7 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     rivers,
     minerals,
     stats,
+    borders: { cells: borderCells, nations: stats.nationCount },
     notes,
   }
   if (input.ascii !== false) {
@@ -458,8 +492,33 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
       }
       lines.push(line)
     }
+    /** 国界 ASCII（80×40）：数字=国家编号，| = 边界。 */
+    const stepXB = Math.max(1, Math.floor(width / 80))
+    const stepYB = Math.max(1, Math.floor(height / 40))
+    const borderLines: string[] = []
+    for (let y = 0; y < height; y += stepYB) {
+      let line = ''
+      for (let x = 0; x < width; x += stepXB) {
+        const own = nations[y][x]
+        if (own < 0) { line += ' '; continue }
+        let boundary = false
+        const yEnd = Math.min(y + stepYB, height)
+        const xEnd = Math.min(x + stepXB, width)
+        for (let yy = y; yy < yEnd && !boundary; yy += 1) {
+          for (let xx = x; xx < xEnd && !boundary; xx += 1) {
+            const n0 = nations[yy][xx]
+            if (n0 < 0) continue
+            const nr = topology === 'sphere' ? nations[yy][(xx + 1) % width] : xx + 1 < width ? nations[yy][xx + 1] : -1
+            const nd = yy + 1 < height ? nations[yy + 1][xx] : -1
+            if ((nr >= 0 && nr !== n0) || (nd >= 0 && nd !== n0)) boundary = true
+          }
+        }
+        line += boundary ? '|' : String(own % 10)
+      }
+      borderLines.push(line)
+    }
     /** 只在生成时才加这个键（undefined 会让宿主判「value is not lossless JSON」）。 */
-    return { ...result, ascii: lines.join('\n') }
+    return { ...result, ascii: lines.join('\n'), asciiBorders: borderLines.join('\n') }
   }
   return result
 }
