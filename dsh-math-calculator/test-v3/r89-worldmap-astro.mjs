@@ -22,13 +22,19 @@ const MAP = { operation: 'world-map', mapWidth: 200, mapHeight: 100, mapSeed: 7,
 console.log('-- 1. 地形图 / 国界图 --')
 {
   const out = await run(MAP)
-  assert('★ 地形 ASCII 可画', out.ok === true && typeof out.value?.ascii === 'string' && out.value.ascii.split('\n').length > 10, '')
+  assert('★ 精细 ASCII 地图（≥60 行、120 列）', out.ok === true && String(out.value?.ascii).split('\n').length >= 60 && String(out.value.ascii).split('\n')[1].length >= 100, '')
   const terrainChars = new Set(String(out.value?.ascii).replace(/\n/g, '').split(''))
   assert('★ 地形图含分层字符（海洋/平原/山地等）', terrainChars.size >= 5, Array.from(terrainChars).join(''))
   assert('★ 国界 ASCII 可画', typeof out.value?.asciiBorders === 'string' && out.value.asciiBorders.split('\n').length > 10, '')
   assert('★ 国界统计存在', typeof out.value?.borders?.cells === 'number' && out.value.borders.cells > 0 && out.value.borders.nations === 4, JSON.stringify(out.value?.borders))
   assert('★ 声明：随机大陆不作底图', String(out.value?.notes).includes('随机生成的大陆'), '')
   assert('图例在 notes 里', String(out.value?.notes).includes('图例'), '')
+  assert('★ ASCII 自带比例尺与图例', String(out.value?.ascii).includes('比例尺') && String(out.value?.ascii).includes('高度带'), '')
+  assert('★ 多尺度子图存在（首都/经济/国界）', Array.isArray(out.value?.focusMaps) && out.value.focusMaps.length >= 2 && out.value.focusMaps.some((f) => f.kind === 'capital'), String(out.value?.focusMaps?.length))
+  const focus = out.value?.focusMaps?.[0]
+  assert('★ 子图是全分辨率（1 字符=1 格）', focus !== undefined && focus.ascii.split('\n').length > 10, '')
+  const custom = await run({ ...MAP, focusRegions: [{ name: '北门', x: 100, y: 50, radius: 10, detail: 40 }] })
+  assert('★ focusRegions 自主编辑生效（替代自动检测）', custom.value?.focusMaps?.length === 1 && custom.value.focusMaps[0].kind === 'custom' && custom.value.focusMaps[0].name === '北门', JSON.stringify(custom.value?.focusMaps?.map((f) => f.name)))
 }
 console.log('-- 2. 编辑矿产 --')
 {

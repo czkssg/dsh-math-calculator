@@ -21,7 +21,7 @@
  * @module dsh-math-calculator/dispatch
  */
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runWorld, type WorldOpInput } from './features/deduction/world-op.js'
@@ -67,12 +67,13 @@ import { runCrosschecks, type CrosscheckItem } from './features/graph/crosscheck
 import { buildWorldProfile } from './features/deduction/world-build.js'
 import { generateWorldMap } from './features/deduction/world-map.js'
 import { describeTerrain } from './features/topology/terrain.js'
-import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords } from './features/data-store/store.js'
+import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords, recordId } from './features/data-store/store.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { runCurrency, type CurrencyFile } from './features/currency/currency.js'
+import { renderEarthMap, type EarthMapsFile } from './features/deduction/earth-maps.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
 import { checkConsistency } from './features/graph/consistency.js'
@@ -159,6 +160,27 @@ export const FACADE_GROUPS: Record<string, string[]> = {
  * @param rawArgs - 原始参数
  * @returns 结果；不认识返回 null（由调用方回落）
  */
+/**
+ * 把地图结果导出为文件（默认 $DSH_MATH_CALC_HOME/exports/）。
+ *
+ * @param result - 地图结果（ascii/notes/era）
+ * @param format - txt / md / json
+ * @param hint - 文件名提示（seed 或时期）
+ * @returns 绝对路径
+ */
+function exportMapFile(result: Record<string, unknown>, format: string, hint: string): string {
+  const base = process.env["DSH_MATH_CALC_HOME"] ?? "."
+  const dir = join(base, "exports")
+  mkdirSync(dir, { recursive: true })
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)
+  const file = join(dir, "map-" + hint.replace(/[^A-Za-z0-9_-]/g, "_") + "-" + stamp + "." + format)
+  const content =
+    format === "json"
+      ? JSON.stringify(result, null, 1)
+      : ["# 世界地图（" + hint + "）", "", String.fromCharCode(96,96,96), String(result["ascii"] ?? ""), String.fromCharCode(96,96,96), "", ...((result["notes"] as string[] | undefined) ?? [])].join("\n")
+  writeFileSync(file, content, "utf8")
+  return file
+}
 export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
   const args = normalizeArgs(rawArgs)
   /**
@@ -319,11 +341,69 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'world-map': {
-      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false })
+      /** 地图模型：save / load / list（存数据层，kind map-model）。 */
+      const modelAction = typeof args['mapModel'] === 'string' ? (args['mapModel'] as string).trim() : ''
+      const modelName = typeof args['modelName'] === 'string' ? (args['modelName'] as string).trim() : ''
+      if (modelAction === 'save') {
+        if (modelName === '') throw new CalcError('missing_params', 'mapModel 为 save 时需要 modelName', '例：{operation:"world-map", mapModel:"save", modelName:"北境地图", mapSeed:7}。')
+        const snapshot: Record<string, unknown> = {}
+        for (const key of ['mapSeed', 'mapWidth', 'mapHeight', 'seaLevel', 'mountainScale', 'riverCount', 'nationCount', 'mineralDensity', 'worldTopology', 'planetRadiusKm', 'earthEra', 'asciiWidth', 'asciiHeight', 'edits', 'climate']) {
+          if (args[key] !== undefined) snapshot[key] = args[key]
+        }
+        const record = putRecord({ kind: 'map-model', name: modelName, payload: snapshot })
+        return { result: '已保存地图模型「' + modelName + '」（' + record.id + '）。用 mapModel:"load" + modelName 重建。', value: { model: record } } as never
+      }
+      if (modelAction === 'load') {
+        if (modelName === '') throw new CalcError('missing_params', 'mapModel 为 load 时需要 modelName', '')
+        const record = getRecord(recordId('map-model', modelName))
+        if (record === null) throw new CalcError('unknown_symbol', '没有地图模型「' + modelName + '」', '用 mapModel:"list" 看已保存的。')
+        const restored = (record.payload ?? {}) as Record<string, unknown>
+        const rebuilt = dispatchNew('world-map', { ...restored })
+        return { result: '已加载地图模型「' + modelName + '」\n' + String(rebuilt?.result ?? ''), value: { ...((rebuilt?.value as Record<string, unknown> | undefined) ?? {}), model: modelName } } as never
+      }
+      if (modelAction === 'list') {
+        const records = queryRecords({ kind: 'map-model' })
+        const modelLines = ['═══ 地图模型（' + records.length + '）═══', '']
+        for (const record of records) modelLines.push('  ' + record.name + '（v' + record.version + '）')
+        if (records.length === 0) modelLines.push('  （空：用 mapModel:"save" + modelName 保存）')
+        return { result: modelLines.join('\n'), value: { models: records.map((item) => ({ name: item.name, version: item.version })) } } as never
+      }
+      if (modelAction !== '') throw new CalcError('unknown_argument', '不认识的 mapModel 动作「' + modelAction + '」', '可用：save / load / list。')
+      /** 预存真实地球（历史时期）：给 earthEra 时优先，否则走随机大陆。 */
+      if (typeof args['earthEra'] === 'string' && (args['earthEra'] as string).trim() !== '') {
+        const earthData = dataOf<EarthMapsFile>('earth-maps', 'earth-maps.json', { continents: [], erasData: {} })
+        const earth = renderEarthMap(earthData, {
+          era: args['earthEra'] as string,
+          width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined,
+          height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined,
+          asciiWidth: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined,
+        })
+        const earthValue = { era: earth.era, name: earth.name, powers: earth.powers, landRatio: earth.landRatio, ascii: earth.ascii }
+        const earthExport = typeof args['export'] === 'string' ? (args['export'] as string) : ''
+        if (earthExport === 'txt' || earthExport === 'md' || earthExport === 'json') {
+          const file = exportMapFile(earthValue as unknown as Record<string, unknown>, earthExport, String(earth.era))
+          return { result: earth.ascii + '\n\n已导出：' + file, value: { ...earthValue, exportPath: file } } as never
+        }
+        return { result: earth.ascii, value: earthValue } as never
+      }
+      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false, asciiWidth: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined, asciiHeight: typeof args['asciiHeight'] === 'number' ? (args['asciiHeight'] as number) : undefined, focusRegions: Array.isArray(args['focusRegions']) ? (args['focusRegions'] as Array<Record<string, unknown>>).map((region) => ({ ...(typeof region['name'] === 'string' ? { name: region['name'] } : {}), x: Number(region['x'] ?? 0), y: Number(region['y'] ?? 0), ...(region['radius'] !== undefined ? { radius: Number(region['radius']) } : {}), ...(region['detail'] !== undefined ? { detail: Number(region['detail']) } : {}) })) : undefined })
       const lines = ['═══ 全球地图（中等精度）═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       if (result.ascii !== undefined) lines.push('', result.ascii)
-      /** ascii / asciiBorders 都保留在 value（约 3 KB/张，程序画图要用）。 */
+      if (Array.isArray(result.focusMaps) && result.focusMaps.length > 0) {
+        lines.push('', '【局部精细（多尺度）】')
+        for (const focus of result.focusMaps) {
+          lines.push('', '· ' + focus.name + '（x=' + focus.x + ', y=' + focus.y + '）')
+          lines.push(focus.ascii)
+        }
+      }
+      const mapExport = typeof args['export'] === 'string' ? (args['export'] as string) : ''
+      if (mapExport === 'txt' || mapExport === 'md' || mapExport === 'json') {
+        const file = exportMapFile(result as unknown as Record<string, unknown>, mapExport, String(args['mapSeed'] ?? 'random'))
+        lines.push('', '已导出：' + file)
+        return { result: lines.join('\n'), value: { ...result, exportPath: file } } as never
+      }
+      /** ascii / asciiBorders / focusMaps 都保留在 value（程序画图要用）。 */
       return { result: lines.join('\n'), value: result } as never
     }
 

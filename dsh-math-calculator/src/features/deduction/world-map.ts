@@ -98,6 +98,12 @@ export interface WorldMapInput {
   edits?: Array<{ x: number; y: number; height?: number; seaLevel?: number; nation?: number; mineral?: number }>
   /** 是否输出 ASCII 缩略图（默认 true）。 */
   ascii?: boolean
+  /** ASCII 图宽度（默认 120；20–240）。 */
+  asciiWidth?: number
+  /** ASCII 图高度（默认 宽度/2；10–160）。 */
+  asciiHeight?: number
+  /** 自定义重点区域（自主编辑格子粗细）：x/y 网格坐标、radius 范围、detail 子图列数（越大越细）。 */
+  focusRegions?: Array<{ name?: string; x: number; y: number; radius?: number; detail?: number }>
   /**
    * 世界拓扑：
    * - `sphere`（默认）：球体星球——x 是经度（环绕），跨 180° 经线**不跨远路**；
@@ -163,6 +169,8 @@ export interface WorldMapResult {
   ascii?: string
   /** ASCII 国界图（数字=国家编号，| = 边界）。 */
   asciiBorders?: string
+  /** 多尺度：重点区域局部精细子图（首都/经济中心/国界密集）。 */
+  focusMaps?: Array<{ kind: string; name: string; x: number; y: number; ascii: string }>
   /** 世界拓扑。 */
   topology: 'sphere' | 'plane'
   /** 两点距离（给了 distance 才有）。 */
@@ -352,6 +360,8 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     else minerals.push({ x: edit.x, y: edit.y, kind: '自定', grade })
   }
 
+  /** 国家种子（首都候选，供多尺度精细子图用）。 */
+  let nationSeeds: Array<{ x: number; y: number }> = []
   /** 国家：Voronoi 分区（delaunay）。 */
   const nations: number[][] = Array.from({ length: height }, () => Array.from({ length: width }, () => -1))
   if (nationCount > 0) {
@@ -361,6 +371,7 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
       const y = rollInt(prng, 0, height - 1)
       if (isLand(x, y)) seeds.push({ x, y })
     }
+    nationSeeds = seeds
     if (seeds.length > 0) {
       const delaunay = Delaunay.from(seeds.map((point) => [point.x, point.y]))
       const voronoi = delaunay.voronoi([0, 0, width - 1, height - 1])
@@ -480,17 +491,138 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     notes,
   }
   if (input.ascii !== false) {
-    /** 缩略图：宽 80 列、按地形取字符。 */
-    const stepX = Math.max(1, Math.floor(width / 80))
-    const stepY = Math.max(1, Math.floor(height / 40))
+    /**
+     * 精细 ASCII 地图（默认 120×60）：
+     * 地形按高度分层（等高视觉）、河流、矿产、国界叠加；顶部比例尺与指北针，底部图例。
+     * 仍是纯文本（约 8 KB），不输出海量坐标。
+     */
+    const aw = Math.max(20, Math.min(240, Math.floor(input.asciiWidth ?? 120)))
+    const ah = Math.max(10, Math.min(160, Math.floor(input.asciiHeight ?? Math.round(aw / 2))))
+    const sx = width / aw
+    const sy = height / ah
+    const planetRadiusKm = input.planetRadiusKm ?? 6371
+    const kmPerCell = (2 * Math.PI * planetRadiusKm) / width
+    const mineralSet = new Set(minerals.map((item) => item.x + ',' + item.y))
+
+    /** 一格渲染：地形分层用高度细分，形成等高线视觉。 */
+    const renderCell = (gx: number, gy: number): string => {
+      const kind = terrain[gy][gx]
+      const value = heights[gy][gx]
+      if (kind === 'ocean') return value < 0.08 ? ' ' : value < 0.15 ? '~' : '≈'
+      if (kind === 'coast') return '.'
+      if (kind === 'plain') return value < 0.35 ? '·' : '-'
+      if (kind === 'hill') return value < 0.6 ? ':' : '+'
+      if (kind === 'mountain') return value < 0.78 ? '^' : '@'
+      if (kind === 'plateau') return value < 0.9 ? '#' : '%'
+      return '='
+    }
+
+    /** 粗格内采样：河流/矿产/国界。 */
+    const sampleCell = (gx: number, gy: number, stepX = sx, stepY = sy): { river: boolean; mineral: boolean; border: boolean } => {
+      const xEnd = Math.min(gx + Math.max(1, Math.ceil(stepX)), width)
+      const yEnd = Math.min(gy + Math.max(1, Math.ceil(stepY)), height)
+      let river = false
+      let mineral = false
+      let border = false
+      for (let yy = gy; yy < yEnd; yy += 1) {
+        for (let xx = gx; xx < xEnd; xx += 1) {
+          if (riverCells.has(xx + ',' + yy)) river = true
+          if (mineralSet.has(xx + ',' + yy)) mineral = true
+          const own = nations[yy][xx]
+          if (own < 0) continue
+          const nr = topology === 'sphere' ? nations[yy][(xx + 1) % width] : xx + 1 < width ? nations[yy][xx + 1] : -1
+          const nd = yy + 1 < height ? nations[yy + 1][xx] : -1
+          if ((nr >= 0 && nr !== own) || (nd >= 0 && nd !== own)) border = true
+        }
+      }
+      return { river, mineral, border }
+    }
+
     const lines: string[] = []
-    for (let y = 0; y < height; y += stepY) {
+    lines.push('N↑  比例尺：1 字符 ≈ ' + (kmPerCell * sx).toFixed(1) + ' km（网格格距 ' + kmPerCell.toFixed(1) + ' km）  |  网格 ' + width + '×' + height + '  |  ' + (topology === 'sphere' ? '球体（经度环绕）' : '平面'))
+    for (let ry = 0; ry < ah; ry += 1) {
+      const gy = Math.min(height - 1, Math.floor((ry + 0.5) * sy))
       let line = ''
-      for (let x = 0; x < width; x += stepX) {
-        const kind = terrain[y][x]
-        line += kind === 'ocean' ? ' ' : kind === 'coast' ? '.' : kind === 'plain' ? '·' : kind === 'hill' ? ':' : kind === 'mountain' ? '^' : kind === 'plateau' ? '#' : '~'
+      for (let rx = 0; rx < aw; rx += 1) {
+        const gx = Math.min(width - 1, Math.floor((rx + 0.5) * sx))
+        const flags = sampleCell(gx, gy)
+        let ch = renderCell(gx, gy)
+        if (flags.river) ch = '='
+        if (flags.mineral && !flags.border) ch = '*'
+        if (flags.border) ch = ch === '=' ? '+' : '|'
+        line += ch
       }
       lines.push(line)
+    }
+    lines.push('图例（字符=高度带，等高视觉）：· 平原 - 低地 : 丘陵 + 高地 ^ 山 @ 高峰 # 高原 % 极高原 = 河 * 矿 | 国界 ~ 浅海 ≈ 深海 . 海岸')
+
+    /** 多尺度：重点区域局部精细子图（首都 / 经济中心 / 国界密集）。 */
+    const focusMaps: Array<{ kind: string; name: string; x: number; y: number; ascii: string }> = []
+    const renderWindow = (cx: number, cy: number, radius: number, cols: number): string => {
+      const x0 = Math.max(0, cx - radius)
+      const y0 = Math.max(0, cy - radius)
+      const x1 = Math.min(width, cx + radius + 1)
+      const y1 = Math.min(height, cy + radius + 1)
+      const stepX = Math.max(1, Math.floor((x1 - x0) / cols))
+      const stepY = Math.max(1, Math.floor(stepX / 2))
+      const windowLines: string[] = []
+      for (let yy = y0; yy < y1; yy += stepY) {
+        let line = ''
+        for (let xx = x0; xx < x1; xx += stepX) {
+          const flags = sampleCell(xx, yy, 1, 1)
+          let ch = renderCell(xx, yy)
+          if (flags.river) ch = '='
+          if (flags.mineral && !flags.border) ch = '*'
+          if (flags.border) ch = ch === '=' ? '+' : '|'
+          line += ch
+        }
+        windowLines.push(line)
+      }
+      return windowLines.join('\n')
+    }
+    /** 窗口密度最高点（矿 / 国界）。 */
+    const densestCenter = (kind: 'mineral' | 'border', radius: number): { x: number; y: number } | null => {
+      const step = Math.max(2, Math.round(width / 40))
+      let best: { x: number; y: number; score: number } | null = null
+      for (let y = radius; y < height - radius; y += step) {
+        for (let x = radius; x < width - radius; x += step) {
+          let score = 0
+          for (let yy = y - radius; yy <= y + radius; yy += 1) {
+            for (let xx = Math.max(0, x - radius); xx <= Math.min(width - 1, x + radius); xx += 1) {
+              if (kind === 'mineral') {
+                if (mineralSet.has(xx + ',' + yy)) score += 1
+              } else {
+                const own = nations[yy][xx]
+                if (own < 0) continue
+                const nr = topology === 'sphere' ? nations[yy][(xx + 1) % width] : xx + 1 < width ? nations[yy][xx + 1] : -1
+                const nd = yy + 1 < height ? nations[yy + 1][xx] : -1
+                if ((nr >= 0 && nr !== own) || (nd >= 0 && nd !== own)) score += 1
+              }
+            }
+          }
+          if (best === null || score > best.score) best = { x, y, score }
+        }
+      }
+      return best === null || best.score === 0 ? null : { x: best.x, y: best.y }
+    }
+    /** 用户自定义重点区域优先（自主编辑格子粗细）；否则自动检测。 */
+    if (Array.isArray(input.focusRegions) && input.focusRegions.length > 0) {
+      for (const region of input.focusRegions) {
+        const cx = Math.max(0, Math.min(width - 1, Math.floor(region.x)))
+        const cy = Math.max(0, Math.min(height - 1, Math.floor(region.y)))
+        const radius = Math.max(2, Math.min(200, Math.floor(region.radius ?? Math.round(width / 24))))
+        const cols = Math.max(10, Math.min(160, Math.floor(region.detail ?? Math.min(60, aw))))
+        focusMaps.push({ kind: 'custom', name: region.name ?? '自定义区域', x: cx, y: cy, ascii: renderWindow(cx, cy, radius, cols) })
+      }
+    } else {
+      for (let index = 0; index < nationSeeds.length; index += 1) {
+        const seed = nationSeeds[index]
+        focusMaps.push({ kind: 'capital', name: '首都 ' + (index + 1), x: seed.x, y: seed.y, ascii: renderWindow(seed.x, seed.y, Math.max(8, Math.round(width / 24)), Math.min(60, aw)) })
+      }
+      const mineralCenter = densestCenter('mineral', Math.max(4, Math.round(width / 50)))
+      if (mineralCenter !== null) focusMaps.push({ kind: 'economy', name: '经济中心（矿密集）', x: mineralCenter.x, y: mineralCenter.y, ascii: renderWindow(mineralCenter.x, mineralCenter.y, Math.max(8, Math.round(width / 24)), Math.min(60, aw)) })
+      const borderCenter = densestCenter('border', Math.max(4, Math.round(width / 50)))
+      if (borderCenter !== null) focusMaps.push({ kind: 'border', name: '国界密集段', x: borderCenter.x, y: borderCenter.y, ascii: renderWindow(borderCenter.x, borderCenter.y, Math.max(8, Math.round(width / 24)), Math.min(60, aw)) })
     }
     /** 国界 ASCII（80×40）：数字=国家编号，| = 边界。 */
     const stepXB = Math.max(1, Math.floor(width / 80))
@@ -518,7 +650,7 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
       borderLines.push(line)
     }
     /** 只在生成时才加这个键（undefined 会让宿主判「value is not lossless JSON」）。 */
-    return { ...result, ascii: lines.join('\n'), asciiBorders: borderLines.join('\n') }
+    return { ...result, ascii: lines.join('\n'), asciiBorders: borderLines.join('\n'), ...(focusMaps.length > 0 ? { focusMaps } : {}) }
   }
   return result
 }
@@ -529,6 +661,7 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
  * @param nations - 归属网格
  * @returns 国家数
  */
+
 function seedsOfNations(nations: number[][]): number {
   const set = new Set<number>()
   for (const row of nations) for (const cell of row) if (cell >= 0) set.add(cell)
