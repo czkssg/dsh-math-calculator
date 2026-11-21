@@ -33,6 +33,10 @@ console.log('-- 1. 地形图 / 国界图 --')
   assert('★ 多尺度子图存在（首都/经济/国界）', Array.isArray(out.value?.focusMaps) && out.value.focusMaps.length >= 2 && out.value.focusMaps.some((f) => f.kind === 'capital'), String(out.value?.focusMaps?.length))
   const focus = out.value?.focusMaps?.[0]
   assert('★ 子图是全分辨率（1 字符=1 格）', focus !== undefined && focus.ascii.split('\n').length > 10, '')
+  const clim = await run({ ...MAP, climate: true })
+  assert('★ climate:true 文本给气候层', clim.ok === true && String(clim.result).includes('【气候层】'), String(clim.error?.message))
+  const badEdit = await run({ ...MAP, edits: [{ x: 7, y: 50.5 }] })
+  assert('★ edits 越界/小数报 invalid_argument（不静默）', badEdit.ok === false && badEdit.error?.type === 'invalid_argument', String(badEdit.error?.type))
   const custom = await run({ ...MAP, focusRegions: [{ name: '北门', x: 100, y: 50, radius: 10, detail: 40 }] })
   assert('★ focusRegions 自主编辑生效（替代自动检测）', custom.value?.focusMaps?.length === 1 && custom.value.focusMaps[0].kind === 'custom' && custom.value.focusMaps[0].name === '北门', JSON.stringify(custom.value?.focusMaps?.map((f) => f.name)))
 }

@@ -2,6 +2,33 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.43.2] — 2026-11-22
+
+**按《2026-11-22 工具与流程反馈》修三处**。
+
+### 修复
+
+- **`world-map` climate:true**：数据一直生成，但只放在 `value.climate`、文本里没写 → 用户以为没生成。
+  现在文本追加【气候层】（分区占比 / 可耕率 / 可耕面积）；
+- **`world-map` edits 越界/小数**：此前静默跳过，传经纬度（如 x=7,y=50.5）会得到 internal 或无声无息；
+  现在报 `invalid_argument` 并提示换算公式（x=(lon+180)/360×mapWidth，y=(90−lat)/180×mapHeight）；
+- **astro rise-set**：报告里的 32.92h 复测为旧 lib 所致——当前代码 1980-11-17 / 50.5N / 7E = **9.00h**（改前 32.92h），
+  已把「重启后复验」写进 help；
+
+### 测试
+
+- `r89` 扩到 20 项（climate 文本、edits 越界报错）；
+  全量 **150 套 / 3,369 项全绿**（`test-v3/test-report.json` 已刷新）。
+## [3.43.1] — 2026-11-22
+
+**help 文本更新（astro 复验 / world-map 图例与导出细节）**。
+
+### 文档
+
+- `help` 的 astro 节：补**字段与复验**——`dayLengthHours` / `noonAltitude` / `polar`，
+  给复验命令（lat45 · 2026-11-17 → 应得 9.58h，不是 32.9h），并注明「仍见 >24h 就先重启 DSH」；
+- `help` 的 world-map 节：补**地球时期线字图例**（`~` 海岸 / `|` 国界 / `:` 行政线 / `·` 未划归大陆）、
+  导出文件命名（`map-<seed 或时期>-<时间戳>.<txt|md|json>`）与 JSON 内容、`earthEra` 不生成 focusMaps 的说明。
 ## [3.43.0] — 2026-11-22
 
 **world-map：拓扑模型（地图模型）+ 地图导出**。

@@ -347,6 +347,13 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     }
   }
 
+  /** edits 坐标校验：必须网格整数索引（越界/小数报可读错误，不静默）。 */
+  for (const edit of input.edits ?? []) {
+    if (!Number.isInteger(edit.x) || !Number.isInteger(edit.y) || edit.x < 0 || edit.x >= width || edit.y < 0 || edit.y >= height) {
+      throw new CalcError('invalid_argument', 'edits 坐标必须是网格整数索引（0 ≤ x < ' + width + '，0 ≤ y < ' + height + '；收到 x=' + edit.x + ', y=' + edit.y + '）', '经纬度要先换算成网格：x = (lon+180)/360×mapWidth，y = (90−lat)/180×mapHeight。')
+    }
+  }
+
   /** 矿产编辑：{x,y,mineral}——mineral>0 覆盖该格储量（1–3），0 清除。 */
   for (const edit of input.edits ?? []) {
     if (typeof edit.mineral !== 'number') continue
