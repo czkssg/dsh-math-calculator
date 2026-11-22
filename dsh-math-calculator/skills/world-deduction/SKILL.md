@@ -88,7 +88,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 
 | 想做什么 | op | 关键参数 |
 |---|---|---|
-| 真实地球历表 | `astro` | `action:"rise-set"（或 "sun" / "moon"）` + `date/lat/lon`；**日照时长用当日 5 分钟高度扫描**（极昼 24h/极夜 0h，正午高度取当日最大值） |
+| 真实地球历表 | `astro` | `action:"rise-set"（或 "sun" / "moon"）` + `date/lat/lon`；**日照时长用当日 5 分钟高度扫描**（极昼 24h/极夜 0h，正午高度取当日最大值）；**按当地日切窗口**，时区按经度推算（每 15°=1h）或显式 timezoneMinutes（UTC+8=480） |
 | 任意天体轨道 / 双星 / 行星系统 | `astro` | `action:"orbit"（或 "binary" / "system"）` |
 | 引力与相对论 | `astro` | `action:"gravity"（或 "relativity"）` + `massKg/radiusM` |
 | 历法推导 / 换算 / from-world | `astro` | `action:"calendar"（或 "calendar-convert" / "world-calendar"）` |

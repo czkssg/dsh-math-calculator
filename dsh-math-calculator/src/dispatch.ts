@@ -603,8 +603,13 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return { result: lines.join('\n'), value: result } as never
     }
 
-    case 'astro':
-      return runAstro((args['astro'] ?? args) as never) as never
+    case 'astro': {
+      const astroBase = asRecord(args['astro'])
+      if (astroBase === undefined) return runAstro(args as never) as never
+      const mergedAstro = { ...astroBase }
+      if (mergedAstro['timezoneMinutes'] === undefined && typeof args['timezoneMinutes'] === 'number') mergedAstro['timezoneMinutes'] = args['timezoneMinutes']
+      return runAstro(mergedAstro as never) as never
+    }
 
     case 'document':
       return runDocument((args['document'] ?? args) as never) as never

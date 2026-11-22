@@ -389,6 +389,7 @@ const PARAMETER_SPEC = {
   asciiWidth: { type: 'number', description: 'world-map：ASCII 宽度（默认 120，20–240）' },
   asciiHeight: { type: 'number', description: 'world-map：ASCII 高度（默认 宽度/2，10–160）' },
   focusRegions: { type: 'json', description: 'world-map：自定义重点区域 [{name,x,y,radius,detail}]（detail=子图列数，越大越细；替代自动检测）' },
+  timezoneMinutes: { type: 'integer', description: 'astro rise-set：时区偏移分钟（UTC+8=480）；不给则按经度推算' },
   earthEra: { type: 'string', description: 'world-map：预存真实地球时期（1500/1800/1900/1945/2000）——简化轮廓，非精确测绘' },
   mapModel: { type: 'string', description: 'world-map：地图模型动作 save / load / list（配合 modelName）' },
   modelName: { type: 'string', description: 'world-map：模型名（save/load 用）' },

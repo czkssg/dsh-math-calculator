@@ -44,6 +44,19 @@ console.log('-- 3. 极昼/极夜与参数校验 --')
   assert('纬度越界 → invalid_argument', bad.ok === false && bad.error.type === 'invalid_argument', '')
 }
 
+console.log('-- 4. 时区（当地日切窗口）--')
+{
+  const beijing = await run({ operation: 'astro', astro: { action: 'rise-set', date: '2026-06-21T00:00:00Z', lat: 39.9, lon: 116.4 } })
+  assert('★ 北京按 UTC+8 切日（rise < set）', beijing.ok === true && beijing.value.rise < beijing.value.set, String(beijing.value?.rise) + ' / ' + String(beijing.value?.set))
+  assert('★ 时区按经度推出 480 分钟', beijing.value.timezoneMinutes === 480, String(beijing.value?.timezoneMinutes))
+  const ny = await run({ operation: 'astro', astro: { action: 'rise-set', date: '2026-06-21T00:00:00Z', lat: 40.7, lon: -74 } })
+  assert('★ 纽约时区为 −300 分钟', ny.value.timezoneMinutes === -300, String(ny.value?.timezoneMinutes))
+  const explicit = await run({ operation: 'astro', astro: { action: 'rise-set', date: '2026-06-21T00:00:00Z', lat: 39.9, lon: 116.4 }, timezoneMinutes: 480 })
+  assert('★ 顶层 timezoneMinutes 生效', explicit.ok === true && explicit.value.timezoneMinutes === 480, String(explicit.value?.timezoneMinutes))
+  const noon = await run({ operation: 'astro', astro: { action: 'rise-set', date: '2026-06-21T00:00:00Z', lat: 39.9, lon: 116.4 } })
+  assert('★ 正午高度合理（北京夏至 >70°）', noon.value.noonAltitude > 70, String(noon.value?.noonAltitude))
+}
+
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

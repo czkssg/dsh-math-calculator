@@ -21,6 +21,8 @@ import { CalcError } from '../../core/errors.js'
 export interface AstroInput {
   /** sun / rise-set / moon / position / orbit / binary。 */
   action?: string
+  /** rise-set：时区偏移（分钟，UTC+8 = 480）；不给则按经度推算（每 15° = 1 小时）。 */
+  timezoneMinutes?: number
   /** orbit：轨道根数 {a,e,i,omega,w,M0,centralMass,bodyMass}。 */
   elements?: Record<string, unknown>
   /** orbit：历元后时间（年）。 */
@@ -296,14 +298,24 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
   }
 
   if (action === 'rise-set') {
-    const dayStart = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
     /**
-     * ## 日照时长用「当日高度扫描」，不用 |set − rise|
+     * ## 按「当地日」切窗口（不是 UTC 日）
      *
-     * 旧实现从 dayStart−1 天起搜「首个日出」——在高纬/跨日会把**次日**的日出
-     * 取来，|set−rise| 直接多出 24 小时（实测 lat45 夏至算出 39.62h、冬至 32.78h）。
-     * 扫描当日每 5 分钟的太阳高度既无跨日问题，也顺带给出真正的「正午高度」
-     *（旧实现的 noon 用的是 UTC 12:00，不是当地正午）。
+     * 旧实现按 UTC 日切 24 小时窗口：经度不为 0 时，
+     * 当地 6-21 的日出可能落在 UTC 6-22（实测北京日出 20:46Z > 日落 11:46Z）。
+     * 现在用经度算当地偏移（每 15° = 1 小时），窗口与日照都按当地日。
+     */
+    const offsetMinutes = input.timezoneMinutes !== undefined
+      ? Math.max(-720, Math.min(840, Math.round(input.timezoneMinutes)))
+      : Math.round(lon / 15) * 60
+    /** 当地日 00:00 对应的 UTC 时刻。 */
+    const localY = date.getUTCFullYear()
+    const localM = date.getUTCMonth()
+    const localD = date.getUTCDate()
+    const dayStart = new Date(Date.UTC(localY, localM, localD) - offsetMinutes * 60000)
+    /**
+     * 日照时长用「当地日 5 分钟高度扫描」，不用 |set − rise|：
+     * 扫描既无跨日问题，也给出真正的「正午高度」。
      */
     const STEP_MIN = 5
     const steps = Math.round((24 * 60) / STEP_MIN)
@@ -318,19 +330,32 @@ export async function runAstro(input: AstroInput = {}): Promise<AstroOutcome> {
     }
     const dayLength = (lit / steps) * 24
     const polarKind = dayLength > 23.5 ? '极昼' : dayLength < 0.5 ? '极夜' : ''
-    /** 日出/日落时刻（当天窗口；极昼/极夜时可能为 null）。 */
+    /** 日出/日落：在当地日窗口内搜（找不到 = 极昼/极夜）。 */
+    const dayEnd = new Date(dayStart.getTime() + 86400000)
     const rise = A.SearchRiseSet(A.Body.Sun, observer, 1, dayStart, 1)
+    const riseInDay = rise !== null && rise.date.getTime() <= dayEnd.getTime() ? rise : null
     const set = A.SearchRiseSet(A.Body.Sun, observer, -1, dayStart, 1)
+    const setInDay = set !== null && set.date.getTime() <= dayEnd.getTime() ? set : null
+    /** 当地时刻文本（UTC + 偏移）。 */
+    const localText = (t: { date: Date } | null): string => {
+      if (t === null) return '无'
+      const local = new Date(t.date.getTime() + offsetMinutes * 60000)
+      const hh = String(local.getUTCHours()).padStart(2, '0')
+      const mm = String(local.getUTCMinutes()).padStart(2, '0')
+      return hh + ':' + mm + '（当地）'
+    }
+    const tzText = (offsetMinutes >= 0 ? 'UTC+' : 'UTC-') + Math.abs(offsetMinutes / 60).toFixed(offsetMinutes % 60 === 0 ? 0 : 1)
     lines.push('', '【日出日落】')
+    lines.push('  当地时区 ' + tzText + (input.timezoneMinutes !== undefined ? '（指定）' : '（按经度推算：每 15° = 1 小时）'))
     if (polarKind !== '') {
       lines.push('  ' + polarKind + '（这一天太阳不升/不落）；日照时长 ' + dayLength.toFixed(2) + ' 小时')
     } else {
-      lines.push('  日出 ' + (rise !== null ? rise.date.toISOString() : '无'))
-      lines.push('  日落 ' + (set !== null ? set.date.toISOString() : '无'))
+      lines.push('  日出 ' + localText(riseInDay) + (riseInDay !== null ? ' / ' + riseInDay.date.toISOString() : ''))
+      lines.push('  日落 ' + localText(setInDay) + (setInDay !== null ? ' / ' + setInDay.date.toISOString() : ''))
       lines.push('  日照时长 ' + dayLength.toFixed(2) + ' 小时')
     }
     lines.push('  正午太阳高度约 ' + maxAlt.toFixed(1) + '°')
-    return { result: lines.join('\n'), value: { lat, lon, date: date.toISOString(), rise: rise?.date.toISOString() ?? null, set: set?.date.toISOString() ?? null, dayLengthHours: dayLength, noonAltitude: maxAlt, polar: polarKind !== '' } }
+    return { result: lines.join('\n'), value: { lat, lon, date: date.toISOString(), timezoneMinutes: offsetMinutes, rise: riseInDay?.date.toISOString() ?? null, set: setInDay?.date.toISOString() ?? null, dayLengthHours: dayLength, noonAltitude: maxAlt, polar: polarKind !== '' } }
   }
 
   throw new CalcError('unknown_argument', '不认识的 astro 动作「' + action + '」', '可用：sun（太阳位置）/ rise-set（日出日落）/ moon（月相）/ position（同 sun）。')
