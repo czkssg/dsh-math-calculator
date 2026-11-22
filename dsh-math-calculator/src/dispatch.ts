@@ -77,6 +77,7 @@ import { renderEarthMap, type EarthMapsFile } from './features/deduction/earth-m
 import { renderMapSvg } from './features/deduction/map-svg.js'
 import { renderEarthNodeSvg, type BorderCountry } from './features/deduction/earth-node-svg.js'
 import { renderNodeTextMap, pickNode, type HistoryNode } from './features/deduction/earth-node-map.js'
+import { renderLayers, pickLayerNode, type LayerCountry, type WaterData, type TerrainRegion, type ElevationData } from './features/deduction/earth-layers.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
 import { checkConsistency } from './features/graph/consistency.js'
@@ -363,43 +364,21 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           const file = exportMapFile({ svg, ascii: svg }, 'svg', 'node-' + String(args['earthNode']))
           return { result: '矢量地图已导出：' + file + '（' + svg.length + ' 字节）', value: { svg, exportPath: file, node: String(args['earthNode']) } } as never
         }
-        const map = renderNodeTextMap(borders, node, {
+        /** 多层：powers / water / terrain / all（默认 all）。 */
+        const layerList = Array.isArray(args['layers']) ? (args['layers'] as unknown[]).map(String) : undefined
+        const water = dataOf<WaterData>('earth-water', 'earth-water.json', { rivers: [], lakes: [] })
+        const terrain = dataOf<TerrainRegion[]>('earth-terrain', 'earth-terrain.json', [])
+        const elevation = dataOf<ElevationData>('earth-elevation', 'earth-elevation.json', { peaks: [], regions: [] })
+        const layered = renderLayers(borders as unknown as LayerCountry[], pickLayerNode(nodes, String(args['earthNode'])), water, terrain, {
           width: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined,
           height: typeof args['asciiHeight'] === 'number' ? (args['asciiHeight'] as number) : undefined,
           viewBox: nodeView,
-        })
-        return { result: map.text, value: { node: String(args['earthNode']), name: node.name, sub: node.sub, cells: map.cells, powers: node.powers.map((power) => ({ name: power.name, color: power.color })) } } as never
+          ...(layerList !== undefined ? { layers: layerList } : {}),
+        }, elevation)
+        return { result: layered.text, value: { node: String(args['earthNode']), name: node.name, sub: node.sub, layers: layerList ?? ['all'], cells: layered.cells, powers: node.powers.map((power) => ({ name: power.name, color: power.color })) } } as never
       }
 
-      if (typeof args['earthNode'] === 'string' && (args['earthNode'] as string).trim() !== '') {
-        const borders = dataOf<BorderCountry[]>('earth-borders', 'earth-borders.json', [])
-        const nodeView = Array.isArray(args['viewBox']) && (args['viewBox'] as unknown[]).length === 4
-          ? (args['viewBox'] as number[]).map(Number) as [number, number, number, number]
-          : undefined
-        const nodeColors = asRecord(args['colorOverrides'])
-        const nodeCountries = asRecord(args['countryOverrides'])
-        const svg = renderEarthNodeSvg(borders, args['earthNode'] as string, {
-          width: typeof args['svgWidth'] === 'number' ? (args['svgWidth'] as number) : undefined,
-          viewBox: nodeView,
-          graticule: args['graticule'] !== false,
-          labels: args['svgLabels'] !== false,
-          ...(nodeColors !== undefined ? { colorOverrides: nodeColors as Record<string, string> } : {}),
-          ...(nodeCountries !== undefined ? { countryOverrides: nodeCountries as Record<string, string[]> } : {}),
-        })
-        const nodeFile = exportMapFile({ svg, ascii: svg }, 'svg', 'node-' + String(args['earthNode']))
-        const nodeInfo = [
-          '═══ 历史节点地图 · ' + String(args['earthNode']) + ' ═══',
-          '',
-          '  ' + svg.length + ' 字节 · 真实国界（Natural Earth 10m 简化）',
-          '  ' + (nodeView !== undefined ? '局部窗口 [' + nodeView.join(', ') + ']' : '全球视图'),
-          '  ★ 可编辑：colorOverrides 改色、countryOverrides 换国家（凭空造世界）、SVG 本身是文本',
-          '',
-          '已导出：' + nodeFile,
-        ].join(String.fromCharCode(10))
-        return { result: nodeInfo, value: { svg, exportPath: nodeFile, node: String(args['earthNode']) } } as never
-      }
-
-      /** 地图模型：save / load / list（存数据层，kind map-model）。 */
+            /** 地图模型：save / load / list（存数据层，kind map-model）。 */
       const modelAction = typeof args['mapModel'] === 'string' ? (args['mapModel'] as string).trim() : ''
       const modelName = typeof args['modelName'] === 'string' ? (args['modelName'] as string).trim() : ''
       if (modelAction === 'save') {

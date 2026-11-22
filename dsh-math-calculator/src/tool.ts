@@ -392,6 +392,7 @@ const PARAMETER_SPEC = {
   timezoneMinutes: { type: 'integer', description: 'astro rise-set：时区偏移分钟（UTC+8=480）；不给则按经度推算' },
   earthNode: { type: 'string', description: 'world-map：真实地球历史节点（medieval / pre-ww1 / pre-ww2 / cold-war）——按真实国界填充' },
   format: { type: 'string', description: 'world-map：earthNode 的输出格式；省略=文本地图（给 AI 读），传 svg 才出矢量（体积大）' },
+  layers: { type: 'json', description: 'world-map：文本图层——powers / water / terrain / elevation / all（默认 all）' },
   colorOverrides: { type: 'json', description: 'world-map：覆盖政权颜色，形如 {政权名: 颜色值}' },
   countryOverrides: { type: 'json', description: 'world-map：覆盖政权包含的国家 {政权名: [国家英文名]}（凭空换世界）' },
   earthEra: { type: 'string', description: 'world-map：预存真实地球时期（1500/1800/1900/1945/2000）——简化轮廓，非精确测绘' },
