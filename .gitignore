@@ -22,3 +22,15 @@ profiles/
 Thumbs.db
 .vscode/
 .idea/
+
+# ── 工作区整理（2026-11-22）──
+# 草稿副本；原始跟踪文件保留在根目录
+drafts/
+
+# ── 可再生产物（2026-11-22 整理）──
+dsh-math-calculator/preview/
+dsh-math-calculator/.dsh-math-calculator/
+dsh-math-calculator-legacy-backup-*/
+
+# ── 外部实践资料（不属于插件）──
+实践文档/
