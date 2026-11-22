@@ -74,6 +74,7 @@ import { tryUnitPipeline } from './core/unit-pipeline.js'
 import { queryFormulas, type FormulaEntry } from './features/formulas/query.js'
 import { runCurrency, type CurrencyFile } from './features/currency/currency.js'
 import { renderEarthMap, type EarthMapsFile } from './features/deduction/earth-maps.js'
+import { renderMapSvg } from './features/deduction/map-svg.js'
 import { evaluateSystem, type FormulaSystem } from './features/formulas/systems.js'
 import { analyzeDependency } from './features/graph/dependency.js'
 import { checkConsistency } from './features/graph/consistency.js'
@@ -405,6 +406,41 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         }
       }
       const mapExport = typeof args['export'] === 'string' ? (args['export'] as string) : ''
+      /** SVG：矢量地图（无限缩放、可编辑），支持 viewBox 局部放大。 */
+      if (mapExport === 'svg') {
+        const viewBox = Array.isArray(args['viewBox']) && (args['viewBox'] as unknown[]).length === 4
+          ? (args['viewBox'] as number[]).map(Number) as [number, number, number, number]
+          : undefined
+        const svg = renderMapSvg({
+          width: result.width,
+          height: result.height,
+          heights: result.heights,
+          land: result.heights.map((row, y) => row.map((_v, x) => result.terrain[y]?.[x] !== 'ocean')),
+          nations: result.nations,
+          rivers: result.rivers,
+          minerals: result.minerals,
+          kmPerCell: (2 * Math.PI * (typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : 6371)) / result.width,
+          /** 用实际海平面（分位数阈值）——色带靠它相对化，否则陆地会被画成海。 */
+          seaLevel: result.seaLevelUsed,
+        }, {
+          width: typeof args['svgWidth'] === 'number' ? (args['svgWidth'] as number) : undefined,
+          viewBox,
+          graticule: args['graticule'] !== false,
+          labels: args['svgLabels'] !== false,
+          minerals: args['svgMinerals'] !== false,
+        })
+        const svgFile = exportMapFile({ svg, ascii: svg, notes: ['世界地图 SVG（矢量）'] }, 'svg', String(args['mapSeed'] ?? 'random'))
+        const info = [
+          '═══ 世界地图 SVG（矢量）═══',
+          '',
+          '  画布 ' + svg.length + ' 字节｜网格 ' + result.width + '×' + result.height + '｜' + (viewBox !== undefined ? '视图窗口 [' + viewBox.join(', ') + ']（局部放大）' : '全图'),
+          '  要素：等高分层色带 + 等高线 + 河流 + 国界 + 矿产点 + 经纬网格 + 国家注记 + 比例尺 + 指北针',
+          '  ★ 矢量：任意放大不糊；SVG 可直接在浏览器/设计工具里改色与标注。',
+          '',
+          '已导出：' + svgFile,
+        ].join('\n')
+        return { result: info, value: { svg, exportPath: svgFile, width: result.width, height: result.height, viewBox: viewBox ?? null } } as never
+      }
       if (mapExport === 'txt' || mapExport === 'md' || mapExport === 'json') {
         const file = exportMapFile(result as unknown as Record<string, unknown>, mapExport, String(args['mapSeed'] ?? 'random'))
         lines.push('', '已导出：' + file)

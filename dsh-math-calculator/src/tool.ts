@@ -393,7 +393,12 @@ const PARAMETER_SPEC = {
   earthEra: { type: 'string', description: 'world-map：预存真实地球时期（1500/1800/1900/1945/2000）——简化轮廓，非精确测绘' },
   mapModel: { type: 'string', description: 'world-map：地图模型动作 save / load / list（配合 modelName）' },
   modelName: { type: 'string', description: 'world-map：模型名（save/load 用）' },
-  export: { type: 'string', description: 'world-map：导出格式 txt / md / json（写到 $DSH_MATH_CALC_HOME/exports/）' },
+  export: { type: 'string', description: 'world-map：导出格式 txt / md / json / svg（写到 $DSH_MATH_CALC_HOME/exports/）' },
+  svgWidth: { type: 'number', description: 'world-map SVG：画布宽 px（默认 1200，200–4000）' },
+  viewBox: { type: 'json', description: 'world-map SVG：视图窗口 [x0,y0,x1,y1]（网格坐标）——用于局部放大' },
+  graticule: { type: 'boolean', description: 'world-map SVG：是否画经纬网格（默认 true）' },
+  svgLabels: { type: 'boolean', description: 'world-map SVG：是否画国家注记与比例尺（默认 true）' },
+  svgMinerals: { type: 'boolean', description: 'world-map SVG：是否画矿产点（默认 true）' },
   helpQuery: { type: 'string', description: 'help：按任务搜索' },
   preview: { type: 'boolean', description: 'constants：只算不存' },
   /** 复合子对象（各自带完整内部结构）。 */

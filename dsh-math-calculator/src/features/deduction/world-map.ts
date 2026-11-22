@@ -154,6 +154,8 @@ export interface WorldMapResult {
   rivers: Array<Array<{ x: number; y: number }>>
   /** 矿产。 */
   minerals: MineralDeposit[]
+  /** 实际海平面（分位数阈值）：色带/等值线靠它相对化。 */
+  seaLevelUsed?: number
   /** 统计。 */
   stats: {
     landRatio: number
@@ -422,6 +424,7 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     }
   }
 
+  /** 实际海平面（分位数阈值）——供渲染层相对化色带。 */
   /** 统计。 */
   /** 面积加权（球体：高纬格实际面积按 cos lat 收缩）。 */
   let land = 0
@@ -494,6 +497,8 @@ export function generateWorldMap(input: WorldMapInput = {}): WorldMapResult {
     rivers,
     minerals,
     stats,
+    /** 实际海平面（分位数阈值）：SVG/色带靠它相对化。 */
+    seaLevelUsed: effectiveSea,
     borders: { cells: borderCells, nations: stats.nationCount },
     notes,
   }

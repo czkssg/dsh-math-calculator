@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.45.0] — 2026-11-22
+
+**world-map：SVG 矢量地图（精细 + 可缩放 + 可编辑）**。
+
+### 新增
+
+- `export:"svg"`：输出**矢量**世界地图（不是马赛克 ASCII）；
+- 要素：等高分层色带 + 等高线（marching squares）+ 河流 + 国界 + 矿产点 + 经纬网格 + 国家注记 + 比例尺 + 指北针；
+- **局部放大** `viewBox:[x0,y0,x1,y1]` + `svgWidth`（画布宽 200–4000）；
+- 开关 `graticule` / `svgLabels` / `svgMinerals`；
+- 新模块 `src/features/deduction/map-svg.ts`（纯手写，无新依赖）。
+
+### 修复（关键）
+
+- **色带按相对高度分档**：初版用绝对 0–1 阈值，而实际海平面是**分位数**（本例 0.647），
+  导致大片陆地落进「海」色带——渲染出来是噪声图不是地图。现在统一换算「高于海平面多少」。
+
+### 验证
+
+- 400×200 网格 → SVG 约 750 KB，352 ms；`viewBox` 局部放大 387 KB；
+- 新增 `r92-map-svg` 15 项（结构、相对色带、要素开关、viewBox、编辑后重渲）；
+  全量 **151 套 / 3,389 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.44.0] — 2026-11-22
 
 **astro rise-set：按当地日切窗口（时区）**。
