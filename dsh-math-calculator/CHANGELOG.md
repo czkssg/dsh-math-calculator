@@ -2,6 +2,29 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.46.0] — 2026-11-22
+
+**真实地球历史节点：文本地图（给 AI 读）+ 按真实国界光栅化**。
+
+### 新增
+
+- `world-map` 的 `earthNode:"medieval" / "pre-ww1" / "pre-ww2" / "cold-war"`：
+  **默认输出字符网格文本地图**（每格 1 字符，数字=政权编号 + 经纬度坐标尺 + 格数统计）；
+- 数据源换成 **Natural Earth 10m 真实国界**（258 国，`earth-borders.json` 668 KB），
+  按国家多边形**实时光栅化**——不再用半透明圆近似；
+- 体积 **约 5 KB/张**（同内容 SVG 要 ~1 MB）；`format:"svg"` 才出矢量；
+- 局部放大 `viewBox:[lon0,lat0,lon1,lat1]`；
+- 节点以**历史事件**命名（中世纪盛期/一战前夕/二战前夕/冷战），不用公元年份。
+
+### 说明
+
+- 地图读者是 AI：文本网格比百万像素的 SVG 更省 token 也更好推理；
+- 移除 15 个未被引用的预存 SVG（2.9 MB 死数据）。
+
+### 测试
+
+- 新增 `r93-earth-node-text` 14 项（文本地图、坐标尺、四节点、局部放大、矢量可选、未知节点）；
+  全量 **152 套 / 3,403 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.45.0] — 2026-11-22
 
 **world-map：SVG 矢量地图（精细 + 可缩放 + 可编辑）**。

@@ -1,0 +1,905 @@
+{
+ "medieval": {
+  "name": "中世纪盛期",
+  "sub": "十字军与宋",
+  "powers": [
+   {
+    "name": "宋",
+    "color": "#d35400",
+    "countries": [
+     "China"
+    ]
+   },
+   {
+    "name": "神圣罗马",
+    "color": "#8e44ad",
+    "countries": [
+     "Germany",
+     "Austria",
+     "Czechia",
+     "Switzerland",
+     "Italy",
+     "Netherlands",
+     "Belgium"
+    ]
+   },
+   {
+    "name": "法兰西",
+    "color": "#2980b9",
+    "countries": [
+     "France"
+    ]
+   },
+   {
+    "name": "英格兰",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom"
+    ]
+   },
+   {
+    "name": "拜占庭",
+    "color": "#16a085",
+    "countries": [
+     "Greece",
+     "Turkey",
+     "Bulgaria",
+     "Albania",
+     "North Macedonia"
+    ]
+   },
+   {
+    "name": "基辅罗斯",
+    "color": "#27ae60",
+    "countries": [
+     "Ukraine",
+     "Belarus"
+    ]
+   },
+   {
+    "name": "塞尔柱",
+    "color": "#c0392b",
+    "countries": [
+     "Iran",
+     "Iraq",
+     "Turkmenistan",
+     "Uzbekistan",
+     "Azerbaijan",
+     "Afghanistan"
+    ]
+   },
+   {
+    "name": "朱罗",
+    "color": "#f1c40f",
+    "countries": [
+     "India",
+     "Sri Lanka"
+    ]
+   },
+   {
+    "name": "玛雅",
+    "color": "#7f8c8d",
+    "countries": [
+     "Mexico",
+     "Guatemala",
+     "Belize",
+     "Honduras"
+    ]
+   }
+  ]
+ },
+ "age-of-discovery": {
+  "name": "大航海时代",
+  "sub": "哥伦布之后",
+  "powers": [
+   {
+    "name": "明",
+    "color": "#c0392b",
+    "countries": [
+     "China"
+    ]
+   },
+   {
+    "name": "奥斯曼",
+    "color": "#27ae60",
+    "countries": [
+     "Turkey",
+     "Greece",
+     "Bulgaria",
+     "Syria",
+     "Iraq",
+     "Egypt",
+     "Libya",
+     "Algeria",
+     "Tunisia",
+     "Israel",
+     "Jordan",
+     "Lebanon",
+     "Saudi Arabia"
+    ]
+   },
+   {
+    "name": "神圣罗马",
+    "color": "#8e44ad",
+    "countries": [
+     "Germany",
+     "Austria",
+     "Czechia",
+     "Switzerland",
+     "Italy",
+     "Netherlands",
+     "Belgium"
+    ]
+   },
+   {
+    "name": "法兰西",
+    "color": "#2980b9",
+    "countries": [
+     "France"
+    ]
+   },
+   {
+    "name": "英格兰",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "Ireland"
+    ]
+   },
+   {
+    "name": "西班牙",
+    "color": "#f1c40f",
+    "countries": [
+     "Spain",
+     "Portugal"
+    ]
+   },
+   {
+    "name": "俄罗斯",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus"
+    ]
+   },
+   {
+    "name": "印加",
+    "color": "#d35400",
+    "countries": [
+     "Peru",
+     "Bolivia",
+     "Ecuador",
+     "Chile"
+    ]
+   },
+   {
+    "name": "阿兹特克",
+    "color": "#7f8c8d",
+    "countries": [
+     "Mexico"
+    ]
+   }
+  ]
+ },
+ "industrial": {
+  "name": "工业革命",
+  "sub": "蒸汽与铁路",
+  "powers": [
+   {
+    "name": "清",
+    "color": "#c0392b",
+    "countries": [
+     "China",
+     "Mongolia"
+    ]
+   },
+   {
+    "name": "英国",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "Ireland",
+     "India",
+     "Australia",
+     "Canada",
+     "New Zealand",
+     "South Africa"
+    ]
+   },
+   {
+    "name": "法兰西",
+    "color": "#2980b9",
+    "countries": [
+     "France",
+     "Vietnam",
+     "Laos",
+     "Cambodia",
+     "Algeria"
+    ]
+   },
+   {
+    "name": "俄罗斯帝国",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Finland",
+     "Poland",
+     "Georgia",
+     "Armenia",
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan"
+    ]
+   },
+   {
+    "name": "奥斯曼",
+    "color": "#27ae60",
+    "countries": [
+     "Turkey",
+     "Greece",
+     "Bulgaria",
+     "Syria",
+     "Iraq",
+     "Lebanon",
+     "Israel",
+     "Jordan",
+     "Saudi Arabia",
+     "Egypt",
+     "Libya"
+    ]
+   },
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America"
+    ]
+   },
+   {
+    "name": "普鲁士",
+    "color": "#7f8c8d",
+    "countries": [
+     "Germany"
+    ]
+   },
+   {
+    "name": "奥匈",
+    "color": "#f1c40f",
+    "countries": [
+     "Austria",
+     "Hungary",
+     "Czechia",
+     "Slovakia",
+     "Croatia",
+     "Slovenia",
+     "Romania"
+    ]
+   },
+   {
+    "name": "日本",
+    "color": "#d35400",
+    "countries": [
+     "Japan"
+    ]
+   }
+  ]
+ },
+ "pre-ww1": {
+  "name": "一战前夕",
+  "sub": "同盟国 vs 协约国",
+  "powers": [
+   {
+    "name": "德意志帝国",
+    "color": "#7f8c8d",
+    "countries": [
+     "Germany"
+    ]
+   },
+   {
+    "name": "奥匈帝国",
+    "color": "#f1c40f",
+    "countries": [
+     "Austria",
+     "Hungary",
+     "Czechia",
+     "Slovakia",
+     "Croatia",
+     "Slovenia",
+     "Bosnia and Herzegovina"
+    ]
+   },
+   {
+    "name": "奥斯曼",
+    "color": "#27ae60",
+    "countries": [
+     "Turkey",
+     "Syria",
+     "Iraq",
+     "Lebanon",
+     "Israel",
+     "Jordan",
+     "Saudi Arabia"
+    ]
+   },
+   {
+    "name": "俄罗斯帝国",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Finland",
+     "Poland",
+     "Georgia",
+     "Armenia",
+     "Kazakhstan"
+    ]
+   },
+   {
+    "name": "法兰西",
+    "color": "#2980b9",
+    "countries": [
+     "France",
+     "Vietnam",
+     "Laos",
+     "Cambodia",
+     "Algeria",
+     "Morocco",
+     "Tunisia"
+    ]
+   },
+   {
+    "name": "英国",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "Ireland",
+     "India",
+     "Pakistan",
+     "Bangladesh",
+     "Myanmar",
+     "Australia",
+     "Canada",
+     "New Zealand",
+     "South Africa",
+     "Egypt",
+     "Nigeria",
+     "Kenya"
+    ]
+   },
+   {
+    "name": "意大利",
+    "color": "#e74c3c",
+    "countries": [
+     "Italy",
+     "Libya",
+     "Somalia",
+     "Eritrea"
+    ]
+   },
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "Philippines"
+    ]
+   },
+   {
+    "name": "中华民国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "Mongolia"
+    ]
+   },
+   {
+    "name": "日本",
+    "color": "#c0392b",
+    "countries": [
+     "Japan",
+     "South Korea",
+     "North Korea",
+     "Taiwan"
+    ]
+   }
+  ]
+ },
+ "post-ww1": {
+  "name": "一战之后",
+  "sub": "凡尔赛体系",
+  "powers": [
+   {
+    "name": "英国",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "India",
+     "Pakistan",
+     "Bangladesh",
+     "Myanmar",
+     "Australia",
+     "Canada",
+     "New Zealand",
+     "South Africa",
+     "Egypt",
+     "Iraq",
+     "Israel",
+     "Jordan"
+    ]
+   },
+   {
+    "name": "法国",
+    "color": "#2980b9",
+    "countries": [
+     "France",
+     "Vietnam",
+     "Laos",
+     "Cambodia",
+     "Algeria",
+     "Morocco",
+     "Tunisia",
+     "Syria",
+     "Lebanon"
+    ]
+   },
+   {
+    "name": "意大利",
+    "color": "#e74c3c",
+    "countries": [
+     "Italy",
+     "Libya",
+     "Somalia"
+    ]
+   },
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "Philippines"
+    ]
+   },
+   {
+    "name": "日本",
+    "color": "#c0392b",
+    "countries": [
+     "Japan",
+     "South Korea",
+     "North Korea",
+     "Taiwan"
+    ]
+   },
+   {
+    "name": "苏联",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Georgia",
+     "Armenia",
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan",
+     "Turkmenistan"
+    ]
+   },
+   {
+    "name": "魏玛德国",
+    "color": "#7f8c8d",
+    "countries": [
+     "Germany"
+    ]
+   },
+   {
+    "name": "中国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "Mongolia"
+    ]
+   },
+   {
+    "name": "波兰",
+    "color": "#f1c40f",
+    "countries": [
+     "Poland"
+    ]
+   }
+  ]
+ },
+ "pre-ww2": {
+  "name": "二战前夕",
+  "sub": "轴心国崛起",
+  "powers": [
+   {
+    "name": "纳粹德国",
+    "color": "#7f8c8d",
+    "countries": [
+     "Germany",
+     "Austria",
+     "Czechia"
+    ]
+   },
+   {
+    "name": "意大利",
+    "color": "#e74c3c",
+    "countries": [
+     "Italy",
+     "Libya",
+     "Albania",
+     "Somalia",
+     "Eritrea"
+    ]
+   },
+   {
+    "name": "日本",
+    "color": "#c0392b",
+    "countries": [
+     "Japan",
+     "South Korea",
+     "North Korea",
+     "Taiwan"
+    ]
+   },
+   {
+    "name": "苏联",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Georgia",
+     "Armenia",
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan",
+     "Turkmenistan"
+    ]
+   },
+   {
+    "name": "英国",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "India",
+     "Pakistan",
+     "Bangladesh",
+     "Myanmar",
+     "Australia",
+     "Canada",
+     "New Zealand",
+     "South Africa",
+     "Egypt",
+     "Iraq",
+     "Israel",
+     "Jordan"
+    ]
+   },
+   {
+    "name": "法国",
+    "color": "#2980b9",
+    "countries": [
+     "France",
+     "Vietnam",
+     "Laos",
+     "Cambodia",
+     "Algeria",
+     "Morocco",
+     "Tunisia",
+     "Syria",
+     "Lebanon"
+    ]
+   },
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "Philippines"
+    ]
+   },
+   {
+    "name": "中国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "Mongolia"
+    ]
+   },
+   {
+    "name": "波兰",
+    "color": "#f1c40f",
+    "countries": [
+     "Poland"
+    ]
+   }
+  ]
+ },
+ "post-ww2": {
+  "name": "二战之后",
+  "sub": "冷战起点",
+  "powers": [
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "Philippines",
+     "Japan",
+     "South Korea"
+    ]
+   },
+   {
+    "name": "苏联",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Georgia",
+     "Armenia",
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan",
+     "Turkmenistan",
+     "Poland",
+     "Romania",
+     "Hungary",
+     "Bulgaria",
+     "Czechia",
+     "Slovakia"
+    ]
+   },
+   {
+    "name": "英国",
+    "color": "#e67e22",
+    "countries": [
+     "United Kingdom",
+     "India",
+     "Pakistan",
+     "Myanmar",
+     "Australia",
+     "Canada",
+     "New Zealand",
+     "South Africa",
+     "Egypt",
+     "Iraq",
+     "Israel",
+     "Jordan",
+     "Nigeria",
+     "Kenya"
+    ]
+   },
+   {
+    "name": "法国",
+    "color": "#2980b9",
+    "countries": [
+     "France",
+     "Vietnam",
+     "Laos",
+     "Cambodia",
+     "Algeria",
+     "Morocco",
+     "Tunisia"
+    ]
+   },
+   {
+    "name": "中国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "Mongolia",
+     "North Korea"
+    ]
+   },
+   {
+    "name": "德国（占领）",
+    "color": "#7f8c8d",
+    "countries": [
+     "Germany"
+    ]
+   },
+   {
+    "name": "印度",
+    "color": "#f39c12",
+    "countries": [
+     "India",
+     "Pakistan",
+     "Bangladesh"
+    ]
+   }
+  ]
+ },
+ "cold-war": {
+  "name": "冷战",
+  "sub": "两极对峙",
+  "powers": [
+   {
+    "name": "美国/北约",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "United Kingdom",
+     "France",
+     "Germany",
+     "Italy",
+     "Spain",
+     "Portugal",
+     "Netherlands",
+     "Belgium",
+     "Luxembourg",
+     "Denmark",
+     "Norway",
+     "Greece",
+     "Turkey",
+     "Canada",
+     "Japan",
+     "South Korea",
+     "Philippines"
+    ]
+   },
+   {
+    "name": "苏联/华约",
+    "color": "#c0392b",
+    "countries": [
+     "Russia",
+     "Ukraine",
+     "Belarus",
+     "Poland",
+     "Romania",
+     "Hungary",
+     "Bulgaria",
+     "Czechia",
+     "Slovakia",
+     "Georgia",
+     "Armenia",
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan",
+     "Mongolia"
+    ]
+   },
+   {
+    "name": "中国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "North Korea",
+     "Vietnam"
+    ]
+   },
+   {
+    "name": "不结盟（印度）",
+    "color": "#f39c12",
+    "countries": [
+     "India",
+     "Egypt",
+     "Indonesia",
+     "Pakistan",
+     "Bangladesh",
+     "Sri Lanka"
+    ]
+   },
+   {
+    "name": "非洲独立潮",
+    "color": "#27ae60",
+    "countries": [
+     "Nigeria",
+     "Kenya",
+     "Tanzania",
+     "Ghana",
+     "Ethiopia",
+     "South Africa",
+     "Angola",
+     "Mozambique",
+     "Zambia",
+     "Zimbabwe"
+    ]
+   }
+  ]
+ },
+ "post-cold-war": {
+  "name": "冷战后",
+  "sub": "多极化",
+  "powers": [
+   {
+    "name": "美国",
+    "color": "#8e44ad",
+    "countries": [
+     "United States of America",
+     "United Kingdom",
+     "Canada",
+     "Australia",
+     "New Zealand",
+     "Japan",
+     "South Korea"
+    ]
+   },
+   {
+    "name": "欧盟（核心）",
+    "color": "#2980b9",
+    "countries": [
+     "Germany",
+     "France",
+     "Italy",
+     "Spain",
+     "Portugal",
+     "Netherlands",
+     "Belgium",
+     "Luxembourg",
+     "Austria",
+     "Denmark",
+     "Sweden",
+     "Finland",
+     "Poland",
+     "Czechia",
+     "Greece",
+     "Ireland"
+    ]
+   },
+   {
+    "name": "俄罗斯",
+    "color": "#16a085",
+    "countries": [
+     "Russia",
+     "Belarus",
+     "Kazakhstan",
+     "Armenia",
+     "Ukraine"
+    ]
+   },
+   {
+    "name": "中国",
+    "color": "#d35400",
+    "countries": [
+     "China",
+     "North Korea",
+     "Laos",
+     "Cambodia"
+    ]
+   },
+   {
+    "name": "印度",
+    "color": "#f39c12",
+    "countries": [
+     "India",
+     "Bangladesh",
+     "Sri Lanka",
+     "Bhutan",
+     "Nepal"
+    ]
+   },
+   {
+    "name": "巴西",
+    "color": "#27ae60",
+    "countries": [
+     "Brazil",
+     "Argentina",
+     "Chile",
+     "Peru",
+     "Colombia",
+     "Venezuela"
+    ]
+   },
+   {
+    "name": "非洲联盟",
+    "color": "#e67e22",
+    "countries": [
+     "Nigeria",
+     "Egypt",
+     "South Africa",
+     "Kenya",
+     "Ethiopia",
+     "Algeria",
+     "Morocco",
+     "Tanzania"
+    ]
+   }
+  ]
+ }
+}
