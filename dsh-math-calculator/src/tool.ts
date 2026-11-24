@@ -604,7 +604,14 @@ function stripUndefined(value: unknown): unknown {
 const BATCH_LIMIT = 50
 
 /** 批量条目可继承的外层参数：只继承「显示/计算」默认值，避免 expression 之类污染每条。 */
-const BATCH_INHERITED_KEYS = ['precision', 'displayPrecision'] as const
+/**
+ * `calls` 条目继承的外层参数。
+ *
+ * 修复 2026-11-25 反馈 P0：此前只继承 precision/displayPrecision，
+ * 外层 variables 丢了 → 批量算账全部报 unknown_symbol。现在 variables 也继承，
+ * 且条目自带的变量会覆盖外层同名（层级：条目 > 外层）。
+ */
+const BATCH_INHERITED_KEYS = ['precision', 'displayPrecision', 'variables'] as const
 
 /**
  * 执行一次 `calls` 批量。
@@ -677,6 +684,8 @@ async function runBatchCalls(
   for (const key of BATCH_INHERITED_KEYS) {
     if (outer[key] !== undefined) inherited[key] = outer[key]
   }
+  /** 外层 variables 对象：条目自带变量时按合并（条目优先），不整块覆盖。 */
+  const outerVariables = outer['variables'] !== null && typeof outer['variables'] === 'object' && !Array.isArray(outer['variables']) ? (outer['variables'] as Record<string, unknown>) : undefined
 
   const records: Array<Record<string, unknown>> = []
   let succeeded = 0
@@ -722,6 +731,11 @@ async function runBatchCalls(
       continue
     }
     const merged = { ...inherited, ...item }
+    /** variables 逐键合并：条目优先（否则条目再传一个变量就丢掉外层的其余变量）。 */
+    if (outerVariables !== undefined) {
+      const itemVariables = item['variables'] !== null && typeof item['variables'] === 'object' && !Array.isArray(item['variables']) ? (item['variables'] as Record<string, unknown>) : undefined
+      merged['variables'] = itemVariables !== undefined ? { ...outerVariables, ...itemVariables } : { ...outerVariables }
+    }
     let one: MathResult
     try {
       one = await self(merged, ctx)

@@ -2,6 +2,34 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.48.0] — 2026-11-25
+
+**修复《2026-11-25 数学工具问题》四个问题**。
+
+### P0-1 `calls` 不继承 `variables`
+
+- 根因：`BATCH_INHERITED_KEYS` 只含 precision/displayPrecision；
+- 现在 `variables` 也继承，且**逐键合并**（条目同名覆盖、其余保留）。
+
+### P0-2 `useWorkspaceVariables` 不生效
+
+- 根因：`evaluate` 只读 `variables` 参数，从不读工作区；
+- 现在作用域为 **工作区变量 ← 调用参数**（参数优先），且只有该工作区开关为真时才读。
+
+### P1-3 复合表达式 BigNumber 溢出
+
+- 根因：JS number 与 BigNumber 混算产生 17 位有效数字，转回时抛错；
+- 修复：变量注入前统一转 BigNumber（`toBigNumberScope`）；
+- `(A/B - C/D)/(A/B)*100` 现已得 `23.94578313253012`。
+
+### P2-4 错误类型
+
+- 新增 `not_found`（工作区/记录不存在），不再借用 `unknown_symbol`。
+
+### 测试
+
+- 新增 `r95-feedback-1125` 10 项（三档修复 + not_found）；
+  全量 **154 套 / 3,425 项全绿**（`test-v3/test-report.json` 已刷新）。
 ## [3.47.0] — 2026-11-22
 
 **多层文本地图：政权 / 水系 / 地形 / 海拔分带**。

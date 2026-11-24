@@ -68,6 +68,8 @@ import { buildWorldProfile } from './features/deduction/world-build.js'
 import { generateWorldMap } from './features/deduction/world-map.js'
 import { describeTerrain } from './features/topology/terrain.js'
 import { migrateLegacy, queryRecordsCached, putRecord, getRecord, queryRecords, lineage, storeStats, exportRecords, importRecords, readRecordsCached, compact, getRecordVersion, searchRecords, recordId } from './features/data-store/store.js'
+import { loadWorkspaceFile } from './io/workspace-store.js'
+import { currentWorkspace } from './features/workspace.js'
 import { runAstro } from './features/deduction/astro.js'
 import { runDocument } from './features/document/pdf.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -776,7 +778,20 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
        * - precision 是引擎级（BigNumber 固定 64），按调用改不了——
        *   显式给了就提示一句，不再回退老入口。
        */
-      const scope = asRecord(args['variables'])
+      /**
+       * 变量作用域：调用参数优先，其次工作区变量（若该工作区开了 useWorkspaceVariables）。
+       * 修复 2026-11-25 反馈 P0：此前只读 variables，工作区变量存了也算不出。
+       */
+      const callerScope = asRecord(args['variables']) ?? {}
+      let workspaceScope: Record<string, number> = {}
+      try {
+        const wsName = typeof args['workspace'] === 'string' && (args['workspace'] as string).trim() !== '' ? (args['workspace'] as string).trim() : currentWorkspace()
+        const ws = loadWorkspaceFile(wsName)
+        if (ws.useWorkspaceVariables === true && ws.variables !== undefined) workspaceScope = ws.variables
+      } catch {
+        /* 工作区读不到就当没有 */
+      }
+      const scope = { ...workspaceScope, ...callerScope }
       const options = {
         terse: args['terse'] === true,
         displayPrecision: displayPrecisionOf(args),

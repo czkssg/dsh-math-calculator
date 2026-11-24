@@ -290,6 +290,29 @@ export function formatScalar(
  * @param options - 选项
  * @returns 结果
  */
+/**
+ * 把 scope 里的 JS number 转成引擎的 BigNumber。
+ *
+ * 修复 2026-11-25 反馈 P1：JS number 与 BigNumber 混算会产生 17 位有效数字，
+ * 转回时抛「>15 significant digits」。入口统一转 BigNumber 即可。
+ *
+ * @param engine - 引擎
+ * @param scope - 原作用域
+ * @returns 转换后的作用域
+ */
+function coerceScopeToBigNumber(engine: Engine, scope: Record<string, unknown>): Record<string, unknown> {
+  const math = engine.math as unknown as { bignumber?: (value: number) => unknown }
+  if (typeof math.bignumber !== 'function') return scope
+  for (const [key, value] of Object.entries(scope)) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
+    try {
+      scope[key] = math.bignumber(value)
+    } catch {
+      /* 转换失败原样保留 */
+    }
+  }
+  return scope
+}
 export function evaluateOne(
   engine: Engine,
   expression: string,
@@ -300,8 +323,22 @@ export function evaluateOne(
   let raw: unknown
   /** 非现代单位被桥接时的提示（`里/时辰` → SI）。 */
   let bridgedNote: string | undefined
+  /**
+   * 变量注入前统一转 BigNumber。
+   *
+   * 修复 2026-11-25 反馈 P1：JS number 与 BigNumber 混算时，
+   * 中间结果会有 17 位有效数字，转回 BigNumber 时抛
+   * 「Cannot implicitly convert a number with >15 significant digits」。
+   * 在入口把数字变量转成 BigNumber，混算就不会退化成 JS 数字。
+   */
+  /**
+   * 注意：**原地**把数字转 BigNumber，返回同一个对象。
+   * 不能返回新对象——`expressions` 批量靠共享 scope 让「前一条赋值对后一条可见」
+   *（`u=5` → `u*3=15`），换新对象会把这个语义切断（r62 回归）。
+   */
+  const scoped = scope === undefined ? undefined : coerceScopeToBigNumber(engine, scope)
   try {
-    raw = engine.evaluate(expression, scope)
+    raw = engine.evaluate(expression, scoped)
   } catch (error) {
     /**
      * 复合单位兜底：mathjs 不认 `kg/m³` 这类写法时，交给 UCUM（NLM 实现）。

@@ -61,6 +61,11 @@ export type ErrorType =
   | 'no_solution'
   | 'non_finite'
   | 'syntax'
+  /**
+   * 目标实体不存在（工作区/记录/模型等）——与 `unknown_symbol`（表达式里的符号）区分。
+   * 2026-11-25 反馈：工作区不存在却报 unknown_symbol，语义不准。
+   */
+  | 'not_found'
   | 'internal'
 
 /**

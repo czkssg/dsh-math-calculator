@@ -154,7 +154,7 @@ export function runWorkspace(input: WorkspaceInput | undefined, dir: string = wo
 
   if (action === 'switch') {
     if (!listWorkspaceFiles(dir).includes(target)) {
-      throw new CalcError('unknown_symbol', '工作区「' + target + '」不存在', '已有：' + (listWorkspaceFiles(dir).join('、') || '（无）') + '。先用 create 建一个。')
+      throw new CalcError('not_found', '工作区「' + target + '」不存在', '已有：' + (listWorkspaceFiles(dir).join('、') || '（无）') + '。先用 create 建一个。')
     }
     current = target
     const data = loadWorkspaceFile(target, dir)
