@@ -289,18 +289,31 @@
  },
  "pre-ww1": {
   "name": "一战前夕",
-  "sub": "同盟国 vs 协约国",
+  "sub": "同盟国 vs 协约国（1914）",
   "powers": [
    {
     "name": "德意志帝国",
-    "color": "#7f8c8d",
+    "color": "#9b8ec4",
     "countries": [
-     "Germany"
+     "Germany",
+     "Poland",
+     "Namibia",
+     "Tanzania",
+     "Cameroon",
+     "Togo",
+     "Burundi",
+     "Rwanda",
+     "Papua New Guinea",
+     "Palau",
+     "Marshall Is.",
+     "Micronesia",
+     "Nauru",
+     "Samoa"
     ]
    },
    {
     "name": "奥匈帝国",
-    "color": "#f1c40f",
+    "color": "#f5d6a8",
     "countries": [
      "Austria",
      "Hungary",
@@ -308,39 +321,34 @@
      "Slovakia",
      "Croatia",
      "Slovenia",
-     "Bosnia and Herzegovina"
-    ]
-   },
-   {
-    "name": "奥斯曼",
-    "color": "#27ae60",
-    "countries": [
-     "Turkey",
-     "Syria",
-     "Iraq",
-     "Lebanon",
-     "Israel",
-     "Jordan",
-     "Saudi Arabia"
+     "Bosnia and Herz."
     ]
    },
    {
     "name": "俄罗斯帝国",
-    "color": "#16a085",
+    "color": "#e8e4c0",
     "countries": [
      "Russia",
      "Ukraine",
      "Belarus",
      "Finland",
-     "Poland",
      "Georgia",
      "Armenia",
-     "Kazakhstan"
+     "Azerbaijan",
+     "Kazakhstan",
+     "Uzbekistan",
+     "Turkmenistan",
+     "Moldova",
+     "Lithuania",
+     "Latvia",
+     "Estonia",
+     "Kyrgyzstan",
+     "Tajikistan"
     ]
    },
    {
     "name": "法兰西",
-    "color": "#2980b9",
+    "color": "#f0e8a8",
     "countries": [
      "France",
      "Vietnam",
@@ -348,12 +356,27 @@
      "Cambodia",
      "Algeria",
      "Morocco",
-     "Tunisia"
+     "Tunisia",
+     "Mauritania",
+     "Mali",
+     "Niger",
+     "Chad",
+     "Senegal",
+     "Guinea",
+     "Côte d'Ivoire",
+     "Burkina Faso",
+     "Benin",
+     "Gabon",
+     "Congo",
+     "Dem. Rep. Congo",
+     "Madagascar",
+     "Djibouti",
+     "Central African Rep."
     ]
    },
    {
     "name": "英国",
-    "color": "#e67e22",
+    "color": "#ef9a9a",
     "countries": [
      "United Kingdom",
      "Ireland",
@@ -366,13 +389,38 @@
      "New Zealand",
      "South Africa",
      "Egypt",
+     "Sudan",
      "Nigeria",
-     "Kenya"
+     "Ghana",
+     "Kenya",
+     "Uganda",
+     "Zambia",
+     "Zimbabwe",
+     "Botswana",
+     "Malawi",
+     "Sierra Leone",
+     "Gambia",
+     "Somaliland",
+     "Cyprus",
+     "Malta",
+     "Sri Lanka",
+     "Malaysia",
+     "Singapore",
+     "Brunei",
+     "Yemen",
+     "Iraq",
+     "Israel",
+     "Jordan",
+     "Kuwait",
+     "Qatar",
+     "United Arab Emirates",
+     "Oman",
+     "Bahrain"
     ]
    },
    {
     "name": "意大利",
-    "color": "#e74c3c",
+    "color": "#c8e6c9",
     "countries": [
      "Italy",
      "Libya",
@@ -381,29 +429,193 @@
     ]
    },
    {
+    "name": "奥斯曼",
+    "color": "#b39ddb",
+    "countries": [
+     "Turkey",
+     "Syria",
+     "Lebanon",
+     "Saudi Arabia"
+    ]
+   },
+   {
+    "name": "塞尔维亚",
+    "color": "#ffcc80",
+    "countries": [
+     "Serbia",
+     "Kosovo",
+     "North Macedonia"
+    ]
+   },
+   {
+    "name": "保加利亚",
+    "color": "#a5d6a7",
+    "countries": [
+     "Bulgaria"
+    ]
+   },
+   {
+    "name": "罗马尼亚",
+    "color": "#80cbc4",
+    "countries": [
+     "Romania"
+    ]
+   },
+   {
+    "name": "希腊",
+    "color": "#b3e5fc",
+    "countries": [
+     "Greece",
+     "Albania"
+    ]
+   },
+   {
+    "name": "荷兰",
+    "color": "#fff59d",
+    "countries": [
+     "Netherlands",
+     "Indonesia",
+     "Suriname"
+    ]
+   },
+   {
+    "name": "比利时",
+    "color": "#d7ccc8",
+    "countries": [
+     "Belgium"
+    ]
+   },
+   {
+    "name": "丹麦",
+    "color": "#ffab91",
+    "countries": [
+     "Denmark",
+     "Iceland",
+     "Greenland"
+    ]
+   },
+   {
+    "name": "瑞典",
+    "color": "#ffccbc",
+    "countries": [
+     "Sweden"
+    ]
+   },
+   {
+    "name": "挪威",
+    "color": "#c5e1a5",
+    "countries": [
+     "Norway"
+    ]
+   },
+   {
+    "name": "瑞士",
+    "color": "#e6ee9c",
+    "countries": [
+     "Switzerland"
+    ]
+   },
+   {
+    "name": "西班牙",
+    "color": "#ce93d8",
+    "countries": [
+     "Spain",
+     "W. Sahara",
+     "Eq. Guinea"
+    ]
+   },
+   {
+    "name": "葡萄牙",
+    "color": "#bcaaa4",
+    "countries": [
+     "Portugal",
+     "Angola",
+     "Mozambique",
+     "Guinea-Bissau",
+     "Cabo Verde",
+     "São Tomé and Principe",
+     "Timor-Leste"
+    ]
+   },
+   {
     "name": "美国",
-    "color": "#8e44ad",
+    "color": "#90caf9",
     "countries": [
      "United States of America",
-     "Philippines"
+     "Philippines",
+     "Puerto Rico",
+     "Cuba",
+     "Panama"
     ]
    },
    {
     "name": "中华民国",
-    "color": "#d35400",
+    "color": "#ffb74d",
     "countries": [
      "China",
-     "Mongolia"
+     "Mongolia",
+     "Taiwan"
     ]
    },
    {
     "name": "日本",
-    "color": "#c0392b",
+    "color": "#ef9a9a",
     "countries": [
      "Japan",
      "South Korea",
-     "North Korea",
-     "Taiwan"
+     "North Korea"
+    ]
+   },
+   {
+    "name": "波斯",
+    "color": "#aed581",
+    "countries": [
+     "Iran"
+    ]
+   },
+   {
+    "name": "暹罗",
+    "color": "#ffe082",
+    "countries": [
+     "Thailand"
+    ]
+   },
+   {
+    "name": "阿富汗",
+    "color": "#b0bec5",
+    "countries": [
+     "Afghanistan"
+    ]
+   },
+   {
+    "name": "埃塞俄比亚",
+    "color": "#8bc34a",
+    "countries": [
+     "Ethiopia"
+    ]
+   },
+   {
+    "name": "拉丁美洲（独立）",
+    "color": "#cfd8dc",
+    "countries": [
+     "Mexico",
+     "Guatemala",
+     "Honduras",
+     "El Salvador",
+     "Nicaragua",
+     "Costa Rica",
+     "Colombia",
+     "Venezuela",
+     "Ecuador",
+     "Peru",
+     "Bolivia",
+     "Chile",
+     "Argentina",
+     "Uruguay",
+     "Paraguay",
+     "Brazil",
+     "Haiti",
+     "Dominican Rep."
     ]
    }
   ]

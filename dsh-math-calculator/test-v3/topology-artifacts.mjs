@@ -39,7 +39,8 @@ console.log('-- 1. 拓扑模型：save/list/load --')
   const load = await run({ operation: 'topology', topology: { action: 'load', modelKey: '北境军' } })
   assert('★ 载入模型（2 节点 1 边）', load.ok === true && load.value.nodes.length === 2 && load.value.edges.length === 1, JSON.stringify(load.value).slice(0, 100))
   const missing = await run({ operation: 'topology', topology: { action: 'load', modelKey: '不存在' } })
-  assert('未知模型 → unknown_symbol', missing.ok === false && missing.error?.type === 'unknown_symbol', '')
+  /** 2026-11-25：模型不存在改报 not_found（不再借 unknown_symbol）。 */
+  assert('未知模型 → not_found', missing.ok === false && missing.error?.type === 'not_found', '')
 }
 
 console.log('-- 2. 模型导出/导入（路径在工作区）--')

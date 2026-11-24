@@ -28,6 +28,7 @@ import { analyzeLogistics } from './logistics.js'
 import { resolveAssessment, type AssessmentRule } from './engineering.js'
 import { getRecord, putRecord, queryRecords } from '../data-store/store.js'
 import assessmentRules from '../../data/topology-assessments.json' with { type: 'json' }
+import topologyTemplates from '../../data/topology-templates.json' with { type: 'json' }
 
 /** 耦合规则表（数据驱动；新增类型只改 JSON + 注册 calculator）。 */
 const ASSESSMENT_RULES = (assessmentRules as { rules: AssessmentRule[] }).rules
@@ -349,11 +350,46 @@ function runShipTopology(input: TopologyOpInput): TopologyOpOutcome {
  * @returns 结果
  * @throws {CalcError} 参数缺失/未知动作
  */
+/** 内置拓扑模板缓存。 */
+let templateCache: { templates: Record<string, { name: string; description: string; nodes: unknown[]; edges: unknown[] }> } | null = null
+
+function loadTemplates(): Record<string, { name: string; description: string; nodes: unknown[]; edges: unknown[] }> {
+  if (templateCache !== null) return templateCache.templates
+  /** 走 JSON import（构建期打包，运行期无需读盘）。 */
+  const raw = topologyTemplates as unknown as { templates?: Record<string, { name: string; description: string; nodes: unknown[]; edges: unknown[] }> }
+  templateCache = { templates: raw.templates ?? {} }
+  return templateCache.templates
+}
+
+/** 取内置模板。 */
+function builtinTemplate(key: string): { name: string; description: string; nodes: unknown[]; edges: unknown[] } | null {
+  const all = loadTemplates()
+  return all[key] ?? null
+}
+
+/** 内置模板键列表。 */
+function builtinTemplateKeys(): string[] {
+  return Object.keys(loadTemplates())
+}
+
+/** 内置模板摘要。 */
+function listBuiltinTemplates(): Array<{ key: string; name: string; description: string; nodes: number; edges: number }> {
+  return Object.entries(loadTemplates()).map(([key, value]) => ({ key, name: value.name, description: value.description, nodes: value.nodes.length, edges: value.edges.length }))
+}
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
-  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'avoid', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'export', 'import', 'logistics'])
+  const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'avoid', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'templates', 'export', 'import', 'logistics'])
   /** 示例清单：`action:"examples"`，或拼错动作时也给清单（反馈：107 次猜参数失败）。 */
   if (action === 'examples' || action === 'help' || !KNOWN_ACTIONS.has(action)) return renderExamples()
+  /** 内置模板列表（template 键名无前缀）。 */
+  if (action === 'templates') {
+    const list = listBuiltinTemplates()
+    const lines = ['═══ 内置拓扑模板（' + list.length + '）═══', '']
+    for (const item of list) lines.push('  ' + item.key.padEnd(20) + item.name + '　' + item.nodes + ' 节点 / ' + item.edges + ' 边', '    ' + item.description)
+    lines.push('', '  ★ 用 {topology:{action:"load", modelKey:"<键>"}} 直接载入（无需先 save）。')
+    return { result: lines.join('\n'), value: { templates: list } }
+  }
+
   if (action === 'save') {
     const key = typeof input.modelKey === 'string' && input.modelKey.trim() !== '' ? input.modelKey.trim() : ''
     if (key === '') throw new CalcError('missing_params', 'save 需要 modelKey（模型名）', '例如 {topology:{action:"save", modelKey:"北境军", nodes:[…], edges:[…]}}。')
@@ -370,9 +406,14 @@ export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
     const workspace = currentWorkspace()
     const record = getRecord('model:' + key)
     const model = (record?.payload ?? undefined) as { nodes?: unknown; edges?: unknown; savedAt?: string } | undefined
+    /** 数据层没有 → 回退内置模板（预存拓扑，免 save 直接用）。 */
     if (model === undefined) {
+      const tpl = builtinTemplate(key)
+      if (tpl !== null) {
+        return { result: '✓ 已载入内置拓扑模板「' + tpl.name + '」（' + tpl.nodes.length + ' 节点，' + tpl.edges.length + ' 边）\n  ' + tpl.description + '\n  ★ 模板是只读的；要改就 save 成自己的模型。', value: { modelKey: key, nodes: tpl.nodes, edges: tpl.edges, workspace, template: true } }
+      }
       const known = queryRecords({ kind: 'model' }).map((row) => row.name)
-      throw new CalcError('unknown_symbol', '工作区「' + workspace + '」里没有模型「' + key + '」', '已有：' + (known.join('、') || '（无）'))
+      throw new CalcError('not_found', '工作区「' + workspace + '」里没有模型「' + key + '」', '已保存：' + (known.join('、') || '（无）') + '；内置模板：' + builtinTemplateKeys().join('、') + '。')
     }
     return { result: '✓ 已载入拓扑模型「' + key + '」（' + ((model.nodes as unknown[])?.length ?? 0) + ' 节点，' + ((model.edges as unknown[])?.length ?? 0) + ' 边，保存于 ' + (model.savedAt ?? '未知') + '）', value: { modelKey: key, nodes: model.nodes, edges: model.edges, workspace } }
   }
