@@ -65,5 +65,29 @@ console.log('-- 4. 非通用入口不提示（不越权）--')
   const advice = adviceOf(out)
   assert('★ solve 本身不给「换 operation」建议', !advice.includes('看起来是**方程**'), '')
 }
+console.log('-- 5. 决策树优先级（第一个命中就赢）--')
+{
+  /** 方程组优先于单方程。 */
+  const sys = adviceOf(await run({ operation: 'evaluate', expression: 'x+y=5, x-y=1' }))
+  assert('★ 多方程 → system（不是 solve）', targetOf(sys) === 'system', targetOf(sys))
+  /** 特征值优先于一般矩阵。 */
+  const eig = adviceOf(await run({ operation: 'evaluate', expression: '求这个矩阵的特征值' }))
+  assert('★ 特征值 → eigen（不是 matrix）', targetOf(eig) === 'eigen', targetOf(eig))
+  /** 回归优先于描述统计。 */
+  const reg = adviceOf(await run({ operation: 'evaluate', expression: '帮我做数据回归拟合' }))
+  assert('★ 回归 → regression（不是 stats）', targetOf(reg) === 'regression', targetOf(reg))
+  /** 地图优先于拓扑。 */
+  const map = adviceOf(await run({ operation: 'evaluate', expression: '这个地图上的地形和国界' }))
+  assert('★ 地图 → world-map（不是 topology）', targetOf(map) === 'world-map', targetOf(map))
+}
+console.log('-- 6. 拿不准就静默（宁缺勿滥）--')
+{
+  for (const text of ['嗯', '这个', '看看', '你好']) {
+    const advice = adviceOf(await run({ operation: 'evaluate', expression: text }))
+    const noisy = advice.includes('看起来是**') || advice.includes('这像是**')
+    assert('★ 静默：' + text, !noisy, advice.slice(0, 60))
+  }
+}
+
 console.log('\n通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const item of fails) console.log('  - ' + item); process.exitCode = 1 }

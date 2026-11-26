@@ -301,18 +301,29 @@ export function buildSystemPromptSection(): string {
 }
 
 /**
- * 意图路由：从「调用方式 + 内容」判断是不是用错了 operation。
+ * 意图路由（照 ask-matt 的「决策树」范式重做）。
  *
- * ## 为什么需要它
+ * ## 为什么不是关键词平铺
  *
- * 64 个 operation 里，模型最常犯的不是「算错」，而是「用错入口」：
- *   · 把方程塞给 evaluate（`x^2-4=0`）→ 应当 solve
- *   · 想算命却直接 evaluate 硬凑 → 应当 formula 调现成公式
- *   · 问「账对不对」却用 evaluate → 应当 balance / consistency / ledger
- *   · 问「能不能造出来」却用 evaluate → 应当 feasibility
+ * 初版是 12 条平铺 `if`：谁先写谁先赢，规则之间会互相抢。
+ * ask-matt 的做法是**有序的判断题**——「第一个 yes 就赢」，
+ * 每一问都排除一类情况，越靠前的问越能一刀切干净。
  *
- * 旧版 `suggestOperation` 只有 5 条规则**且从未被调用**（死代码）。
- * 现在覆盖高频场景，并在每次 evaluate 结果里以 notice 形式给出。
+ * 所以这里改成 5 层树：
+ *
+ * ```
+ * ① 该不该提示？（通用入口 + 有内容 + 不像纯算式）  —— 否就静默
+ * ② 是「本来就有专门入口」的疑问句吗？（方程/微积分/线代/统计）
+ * ③ 是「描述性需求」吗？（账目/可造性/世界/地图/天文/拓扑/单位）
+ * ④ 是「要一个具体数」吗？（→ formula，859 条）
+ * ⑤ 都否 → 静默（宁可不说，也不误伤）
+ * ```
+ *
+ * ## 与 ask-matt 的对应
+ *
+ * - 树而非清单：先排除，再定位；
+ * - 「第一个 yes 赢」：命中即返回，不继续匹配；
+ * - **宁缺勿滥**：拿不准就静默（ask-matt 的 Standalone 同理，不强行归类）。
  *
  * @param text - 表达式或输入文本
  * @param operation - 实际用的 operation
@@ -320,65 +331,70 @@ export function buildSystemPromptSection(): string {
  */
 export function suggestOperation(text: string, operation: string): string | undefined {
   const raw = text.trim()
-  if (raw === '') return undefined
-  /** 只在「疑似用错」时提示：evaluate / calc 是通用入口，问题主要出在这。 */
+
+  /** ① 门：只在通用入口、且确实有内容时才评估。 */
   const isGeneric = operation === 'evaluate' || operation === 'calc' || operation === 'auto'
   if (!isGeneric) return undefined
-  /** 纯数字/纯运算符的式子不提示（避免噪音）。 */
-  const looksLikeFormula = /^[\d\s+\-*/^().,%eE]+$/.test(raw)
+  if (raw === '') return undefined
+  /** 纯算式（只有数字与运算符）一律不打扰——它本来就没走错门。 */
+  const pureArithmetic = /^[\d\s+\-*/^().,%eE]+$/.test(raw)
+  if (pureArithmetic) return undefined
 
-  /** 1) 方程：含等号但不像赋值。 */
-  if (/(?<![<>=!])=(?!=)/.test(raw) && !/^[a-zA-Z_]\w*\s*=/.test(raw)) {
-    return '表达式含等号，看起来是**方程**。用 operation:"solve"（多方程用 equations 数组，或逗号分隔）。'
+  const has = (pattern: RegExp): boolean => pattern.test(raw)
+  /** 中文字符数：>0 说明是自然语言描述，不是算式。 */
+  const cjkCount = (raw.match(/[\u4e00-\u9fa5]/g) ?? []).length
+  const eqCount = (raw.match(/(?<![<>=!])=(?!=)/g) ?? []).length
+  const identifiers = new Set((raw.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? []).filter((t) => !/^(sin|cos|tan|log|ln|exp|sqrt|abs|pi|e|min|max)$/i.test(t)))
+
+  /** ② 层一：有专门入口的「数学问题」。 */
+  /** ②a 方程组优先于单方程（多等号 + 多未知数）。 */
+  if (eqCount >= 2 && identifiers.size >= 2) {
+    return '看起来是**方程组**。用 operation:"system"（equations 数组 + variables），比逐条 solve 更稳。'
   }
-  /** 2) 方程组（多个等号 / 且 多个未知数）。 */
-  const unknownCount = new Set((raw.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? []).filter((t) => !/^(sin|cos|tan|log|ln|exp|sqrt|abs|pi|e)$/i.test(t))).size
-  if ((raw.match(/(?<![<>=!])=(?!=)/g) ?? []).length >= 2 && unknownCount >= 2) {
-    return '看起来是**方程组**。用 operation:"system"（equations 数组 + variables 列表）比逐条 solve 更稳。'
+  /** ②b 单方程：含等号但不是 a=1 这种赋值。 */
+  if (eqCount >= 1 && !/^[a-zA-Z_]\w*\s*=\s*[\d.]+$/.test(raw)) {
+    return '表达式含等号，看起来是**方程**。用 operation:"solve"（多方程用 equations 数组）。'
   }
-  /** 3) 微积分。 */
-  if (/求导|导数|微分|derivative|d\/dx/i.test(raw)) return '看起来要**求导**。用 operation:"derivative" + expression + variable。'
-  if (/积分|integral|∫|原函数/i.test(raw)) return '看起来要**积分**。用 operation:"integral"（定积分给 from/to）。'
-  if (/化简|展开|simplify|expand/i.test(raw)) return '看起来要**代数化简/展开**。用 operation:"simplify" 或 "expand"。'
-  if (/因式|解多项式|求根|roots/i.test(raw)) return '看起来要**求根**。用 operation:"roots"（给多项式系数）。'
-  /** 4) 线代。 */
-  if (/特征值|特征向量|eigen/i.test(raw)) return '看起来是**特征值**问题。用 operation:"eigen" + matrix。'
-  if (/矩阵|行列式|det|逆矩阵|转置|matrix/i.test(raw)) return '看起来是**矩阵运算**。用 operation:"matrix"（op: mul/det/inv/transpose）。'
-  /** 5) 统计。 */
-  if (/平均值|中位数|标准差|方差|分布|概率|均值|统计|mean|median|std|variance/i.test(raw)) {
-    return '看起来是**统计**需求。用 operation:"stats"（描述统计）或 "dist"（分布：normal/binomial/poisson…）。'
+  /** ②c 微积分三分：导数 / 积分 / 代数变形。 */
+  if (has(/求导|导数|微分|derivative|d\/dx/i)) return '看起来要**求导**。用 operation:"derivative" + expression + variable。'
+  if (has(/积分|integral|∫|原函数/i)) return '看起来要**积分**。用 operation:"integral"（定积分给 from/to）。'
+  if (has(/化简|展开|simplify|expand/i)) return '看起来要**代数化简/展开**。用 operation:"simplify" 或 "expand"。'
+  if (has(/因式|求根|roots/i)) return '看起来要**求根**。用 operation:"roots"（给多项式系数）。'
+  /** ②d 线代：特征值优先于一般矩阵运算。 */
+  if (has(/特征值|特征向量|eigen/i)) return '看起来是**特征值**问题。用 operation:"eigen" + matrix。'
+  if (has(/矩阵|行列式|det|逆矩阵|转置|matrix/i)) return '看起来是**矩阵运算**。用 operation:"matrix"（op: mul/det/inv/transpose）。'
+  /** ②e 统计：回归优先于描述统计（更像「分析」而非「汇总」）。 */
+  if (has(/回归|拟合|趋势|regression|fit/i)) return '看起来要**回归/拟合**。用 operation:"regression"（degree 定阶数）。'
+  if (has(/平均值|中位数|标准差|方差|分布|概率|均值|统计|mean|median|std|variance/i)) {
+    return '看起来是**统计**需求。用 operation:"stats"（描述统计）或 "dist"（分布）。'
   }
-  if (/回归|拟合|趋势|regression|fit/i.test(raw)) return '看起来要**回归/拟合**。用 operation:"regression"（degree 定阶数）。'
-  /** 6) 对账类（写作/经营推演高频）。 */
-  if (/对账|账目|收支|平衡|闭合|入账|结余|亏|盈利|利润/i.test(raw)) {
+
+  /** ③ 层二：描述性需求（自然语言为主）。 */
+  /** ③a 账目类（写作/经营推演最高频）。 */
+  if (has(/对账|账目|收支|平衡|闭合|入账|结余|亏|盈利|利润/i)) {
     return '看起来是**账目核对**。用 operation:"balance"（收支闭合）或 "ledger"（分项占比）；跨表冲突用 "consistency"。'
   }
-  /** 7) 可造性。 */
-  if (/能不能造|可行性|造得出来|够不够|上限|物理极限|feasib/i.test(raw)) {
-    return '看起来是**可行性判定**。用 operation:"feasibility"（给约束 id）或 "quick_feasible"（一句话判定）。'
+  /** ③b 可造性。 */
+  if (has(/能不能造|可行性|造得出来|够不够|物理极限|feasib/i)) {
+    return '看起来是**可行性判定**。用 operation:"feasibility"（约束 id）或 "quick_feasible"（一句话判定）。'
   }
-  /** 8) 世界推演。 */
-  if (/星球|行星|重力|气候|昼夜|季节|宜居|逃逸速度|轨道/i.test(raw)) {
+  /** ③c 世界推演。 */
+  if (has(/星球|行星|重力|气候|昼夜|季节|宜居|逃逸速度|轨道/i)) {
     return '看起来是**世界观推演**。用 operation:"world"（星球参数）或 "formula"（现成公式，参数可覆盖）。'
   }
-  /** 9) 单位。 */
-  if (/换算|转换|多少(米|公里|斤|吨|升|度|尺|里)|换(成|算)/.test(raw) && /[\u4e00-\u9fa5]/.test(raw)) {
-    return '看起来是**单位换算**。用 operation:"units"（unitFrom + unitTo）；物理量带单位直接 evaluate 也能算。'
+  /** ③d 地图/拓扑：地图优先（更具体）。 */
+  if (has(/地图|国界|地形|矿产|等高/i)) return '看起来要**地图**。用 operation:"world-map"（earthNode 取真实历史节点，layers 选层）。'
+  if (has(/最短路|路径|视线|可达|咽喉|割点|连通/i)) return '看起来是**拓扑分析**。用 operation:"topology"（action: route / sightline / reachable）。'
+  /** ③e 天文/单位：都是「换算/查表」类。 */
+  if (has(/日出|日落|月相|昼长|历法|闰年/i)) return '看起来是**天文历表**。用 operation:"astro"（action: rise-set / moon / calendar）。'
+  if (has(/换算|转换|换(成|算)/) && cjkCount > 0) {
+    return '看起来是**单位换算**。用 operation:"units"（unitFrom + unitTo）；物理量带单位直接 evaluate 也行。'
   }
-  /** 10) 时间/拓扑/地图。 */
-  if (/日出|日落|月相|昼长|历法|闰年/i.test(raw)) return '看起来是**天文历表**。用 operation:"astro"（action: rise-set / moon / calendar）。'
-  if (/最短路|路径|视线|可达|咽喉|割点|连通/i.test(raw)) return '看起来是**拓扑分析**。用 operation:"topology"（action: route / sightline / reachable）。'
-  if (/地图|国界|地形|矿产|等高/i.test(raw)) return '看起来要**地图**。用 operation:"world-map"（earthNode 取真实历史节点，layers 选层）。'
-  /** 11) 公式库：描述性需求（含中文且不像算式）。 */
-  if (!looksLikeFormula && /[\u4e00-\u9fa5]{3,}/.test(raw) && /算|求|得多少|是多少|多大/.test(raw)) {
+
+  /** ④ 层三：要一个具体数（还没指明用哪个公式）。 */
+  if (cjkCount >= 3 && has(/算|求|得多少|是多少|多大|多少/)) {
     return '这像是**要一个具体数值**。先试 operation:"formula"（' + FORMULA_COUNT + ' 条现成公式，参数覆盖即可）；找不到再用 help 搜。'
   }
-  /**
-   * 12) 有意图但没内容（「我要求一下这个数」）：不猜，直接要参数。
-   * 这类输入如果一路走到 evaluate，只会得到一句 Syntax error，白跑一次。
-   */
-  if (/^[\u4e00-\u9fa5，。！？、\s]+$/.test(raw)) {
-    return '这句里没有可算的东西。请给出**具体式子**（如 "(80/25-101/41.5)/(80/25)*100"）、或说明要哪个 operation（help 看目录）。'
-  }
+  /** ⑤ 拿不准：静默（宁可不说，也不误伤）。 */
   return undefined
 }
