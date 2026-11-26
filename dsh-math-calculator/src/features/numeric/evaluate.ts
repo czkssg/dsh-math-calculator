@@ -285,6 +285,15 @@ function detectSuspectDivisionChain(expression: string, resultText: string): str
  * @param text - 形如 `1e-44 foe` 或 `1000 m^2 / s^2`
  * @returns true = 应归约
  */
+/**
+ * 已知会被 mathjs 拿去代换的「具名单一单位」中文名。
+ *
+ * `5 m/s` 的结果单位会被换成 `日行里快`（速度维度里注册最晚的那个），
+ * 于是显示成 `288.018 日行里快`。同类还有压强、能量等维度。
+ * 判据要认这些名字，光认 `cz` 代号不够。
+ */
+const SUBSTITUTED_CJK_UNITS = ['日行里快', '驿马日行', '日行里', '一天走里']
+
 function isObscureUnitText(text: string): boolean {
   /**
    * ## 判据必须是「白名单式的已知冷门」，不能是「不在常见集里」
@@ -296,11 +305,13 @@ function isObscureUnitText(text: string): boolean {
    * 所以只看**已知会误导的 mathjs 内部代号**：
    *   foe（超新星能量）、raddose（吸收剂量）——这两个是实测出来的。
    */
-  const OBSCURE = ['foe', 'raddose', 'rad_dose', 'radabsorbed']
+  const OBSCURE = ['foe', 'raddose', 'rad_dose', 'radabsorbed', 'czxxl', 'cznvc']
   const matched = /^-?[\d.]+(?:e[+-]?\d+)?\s+(.+)$/i.exec(text.trim())
   if (matched === null) return false
   const unitPart = matched[1]
-  return OBSCURE.some((name) => unitPart.includes(name))
+  if (OBSCURE.some((name) => unitPart.includes(name))) return true
+  /** 中文具名单位被代换（`288.018 日行里快`）也算可疑。 */
+  return SUBSTITUTED_CJK_UNITS.some((name) => unitPart.includes(name))
 }
 
 /**
@@ -378,6 +389,14 @@ export function formatScalar(
      * 判据：结果单位名**不在常见 SI/工程单位集里**时才归约。
      */
     const textRaw = String(value)
+    /**
+     * ⚠ **必须在 restoreCjkUnitNames 之前判断**（2026-11-26 修）。
+     *
+     * 顺序反了会漏掉中文合成名：`5 m/s` 的单位被 mathjs 换成 `czxxl`，
+     * 先做 restore 就变成了「日行里快」——那已经不是 `cz` 形态，判据认不出，
+     * 结果 `5 m/s` 显示成 `288.018 日行里快`（数值其实是 5 m/s，只是单位被代换）。
+     * 实测：发布包验证时才发现 result 与 value 不一致。
+     */
     let text = isObscureUnitText(textRaw) ? (siReduce(value) ?? textRaw) : textRaw
     text = restoreCjkUnitNames(text)
     text = restoreSanitizedUnitNames(text)

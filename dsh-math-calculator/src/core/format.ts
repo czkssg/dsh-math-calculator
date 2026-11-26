@@ -328,19 +328,21 @@ function normalizeDisplayedUnit(text: string, unit: any): string {
    * 合成名形态：`cz` + 3 位小写字母（如 `czxxl`、`cznvc`），来自中文单位内部编码。
    * 用户通过 registerUnits 注册的 `zli` 不是这种形态，必须原样返回（r82 抓过）。
    */
-  const isSynthetic = /^cz[a-z]{3}$/.test(shown)
-  if (!isSynthetic) return text
   /**
-   * ⚠ 合成名（`cz` 开头，中文单位的内部代号）与中文单位都不能归位——
-   * `1 zli` 是「里」，归位成 `m` 会让读者以为工具把单位换掉了（实测被 r82 抓出）。
-   * 中文单位是用户明确写的，必须原样显示。
+   * ## 两种要归位的情况（其余一律原样）
+   *
+   * ① mathjs 内部合成名：`cz` + 3 位小写字母（`czxxl`=日行里快）；
+   * ② 被 mathjs 拿去代换的具名中文单位（`5 m/s` 会显示成 `288.018 日行里快`）。
+   *
+   * ⚠ 但**用户自己写的中文单位**（`里`、`担`、`时辰`）绝不能动——
+   * 那是他明确要的单位，改掉会让人以为工具换了单位（`r82` 抓过 `1 zli` 被判成 `m`）。
+   * 判据差别在于：代换只发生在「复合单位的结果」上，用户写的则是输入里原本就有。
    */
-  if (/^[\u4e00-\u9fa5]/.test(shown) || /[\u4e00-\u9fa5]/.test(shown)) return text
-  /**
-   * `cz` 开头的合成名（中文单位内部代号，如 `czxxl`=日行里快）也要归位；
-   * 那是工具内部名，读者看不懂。
-   * 但**用户真写了中文单位**时不能动（上面那条已挡住中文串）。
-   */
+  const SYNTHETIC = /^cz[a-z]{3}$/
+  const SUBSTITUTED = ['日行里快', '驿马日行', '日行里', '一天走里']
+  const isSynthetic = SYNTHETIC.test(shown)
+  const isSubstituted = SUBSTITUTED.some((name) => shown.includes(name))
+  if (!isSynthetic && !isSubstituted) return text
   const key = dims.join(',')
   const expected = STANDARD_DIMENSION_UNITS[key]
   if (expected === undefined) return topLevelObscureCheck(text, unit)
@@ -362,7 +364,7 @@ function topLevelObscureCheck(text: string, unit: any): string {
 }
 
 /** 会迷惑读者的内部代号（mathjs 拿它们当同量纲首选）。 */
-const OBSCURE_UNITS = ['raddose', 'rad_dose', 'radabsorbed']
+const OBSCURE_UNITS = ['raddose', 'rad_dose', 'radabsorbed', 'czxxl', 'cznvc', '日行里快', '驿马日行']
 
 /**
  * 把冷门内部单位替换成 SI 基准组合（只在这几个代号出现时）。
