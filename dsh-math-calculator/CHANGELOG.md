@@ -2,6 +2,31 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.55.0] — 2026-11-26
+
+**参数读取模块接线完成：5 个函数全部有真实调用方。**
+
+### 背景
+
+3.53.0 引入 `src/core/args.ts` 时只接入了 `num`/`str`，`bool`/`rec`/`strList` 三个**一直没有调用方**（code-review 判为 Speculative Generality）。本次补完：
+
+| 函数 | 替代的重复写法 | 接入处数 |
+|---|---|---|
+| `rec` | `asRecord(args['x'])`（与 `rec` 完全同构的第二份实现） | **29** |
+| `bool` | `args['x'] === true` / `!== false` | **21** |
+| `strList` | `Array.isArray(args['x']) ? (args['x'] as unknown[]).map(String)` | **5** |
+
+`asRecord(args[..])` 从 30 处降到 1 处（只剩函数自身定义）。
+
+### 语义差异（唯一一处，是改进）
+
+`strList` 跳过数组里的 `null`/`undefined`，旧写法会产出字符串 `"null"`——那作为标签毫无意义。已写进 `r99` 锁住。
+
+### 测试
+
+- `r99-args-module` 从 33 项扩到 **41 项**：新增「五个函数都有真实调用方」与「`asRecord` 已收敛」的接线断言；
+- 全量 **159 套 / 3,542 项全绿**。
+
 ## [3.54.0] — 2026-11-26
 
 **用真实架空世界观材料（1106 万字）做压力检验，修掉 3 类单位缺陷。**

@@ -69,5 +69,24 @@ console.log('-- 6. 与旧写法的等价性（抽样）--')
   /** 唯一差异：num 额外拒绝 NaN/Infinity（旧的会漏过去） */
   assert('★ num 比旧写法更严：NaN 被拦住', Number.isNaN(old({ x: NaN }, 'x')) && num({ x: NaN }, 'x') === undefined, '')
 }
+console.log('-- 7. 接线验证：五个函数都有真实调用方 --')
+{
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(join(root, 'src/dispatch.ts'), 'utf8')
+  for (const name of ['num', 'str', 'bool', 'rec', 'strList']) {
+    const used = src.split(name + '(args').length - 1
+    assert('★ ' + name + ' 已被 dispatch 使用（' + used + ' 处）', used > 0, String(used))
+  }
+  /** 旧的重复手段应基本清零。 */
+  const asRecordOnArgs = src.split('asRecord(args[').length - 1
+  assert('★ asRecord(args[..]) 已收敛（≤2 处）', asRecordOnArgs <= 2, String(asRecordOnArgs))
+}
+console.log('-- 8. strList 语义（含 null 的差异是改进）--')
+{
+  assert('★ 数组转字符串', JSON.stringify(strList({ a: [1, 2] }, 'a')) === '["1","2"]', '')
+  /** 旧写法会把 null 变成字符串 "null"，那是无意义标签；strList 跳过。 */
+  assert('★ 跳过 null（旧写法会产出 "null"）', JSON.stringify(strList({ a: ['x', null, 'y'] }, 'a')) === '["x","y"]', '')
+}
+
 console.log('\n通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const item of fails) console.log('  - ' + item); process.exitCode = 1 }

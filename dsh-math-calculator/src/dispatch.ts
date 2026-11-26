@@ -22,7 +22,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { num, str, bool, rec } from './core/args.js'
+import { num, str, bool, rec, strList } from './core/args.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runWorld, type WorldOpInput } from './features/deduction/world-op.js'
@@ -255,7 +255,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'world': {
       /** 合并：profile:"full" 追加完整世界编排（原 world-build）。 */
       if (args['profile'] === 'full') {
-        const built = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: args['useMap'] === true, mapSeed: num(args, 'mapSeed') })
+        const built = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: bool(args, 'useMap') === true, mapSeed: num(args, 'mapSeed') })
         const base = dispatchNew('world', { ...args, profile: undefined }) as { result?: string; value?: unknown } | null
         const lines = [String(base?.result ?? ''), '', '═══ 完整世界画像（profile:full）═══', '']
         for (const note of built.notes) lines.push('  ' + note)
@@ -269,7 +269,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
        * 输出一份「正常」的气候——作者以为地形生效了。
        * 局地气候本身由 topology/terrain 计算，world 只做行星级。
        */
-      const terrainInput = asRecord(args['terrain'])
+      const terrainInput = rec(args, 'terrain')
       const kind = terrainInput?.['kind']
       if (kind !== undefined) {
         const KINDS = ['coastal', 'plain', 'plateau', 'mountain', 'valley', 'desert', 'forest', 'tundra', 'island', 'lake', 'ocean', 'sea', 'ice', 'volcano', 'gas', 'urban', 'hive', 'cave', 'sky', 'space']
@@ -344,7 +344,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return runDerivation(args, worldDeps)
 
     case 'topology': {
-      const topologyBase = asRecord(args['topology'])
+      const topologyBase = rec(args, 'topology')
       if (topologyBase === undefined) return runTopology(args as never)
       /** 顶层别名并进 topology 对象（schema 声明了 area/massKg/fromPoint 等别名）。 */
       const mergedTopology = { ...topologyBase }
@@ -368,14 +368,14 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           const svg = renderEarthNodeSvg(borders, args['earthNode'] as string, {
             width: num(args, 'svgWidth'),
             viewBox: nodeView,
-            graticule: args['graticule'] !== false,
-            labels: args['svgLabels'] !== false,
+            graticule: bool(args, 'graticule') !== false,
+            labels: bool(args, 'svgLabels') !== false,
           })
           const file = exportMapFile({ svg, ascii: svg }, 'svg', 'node-' + String(args['earthNode']))
           return { result: '矢量地图已导出：' + file + '（' + svg.length + ' 字节）', value: { svg, exportPath: file, node: String(args['earthNode']) } } as never
         }
         /** 多层：powers / water / terrain / all（默认 all）。 */
-        const layerList = Array.isArray(args['layers']) ? (args['layers'] as unknown[]).map(String) : undefined
+        const layerList = strList(args, 'layers')
         const water = dataOf<WaterData>('earth-water', 'earth-water.json', { rivers: [], lakes: [] })
         const terrain = dataOf<TerrainRegion[]>('earth-terrain', 'earth-terrain.json', [])
         const elevation = dataOf<ElevationData>('earth-elevation', 'earth-elevation.json', { peaks: [], regions: [] })
@@ -433,7 +433,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         }
         return { result: earth.ascii, value: earthValue } as never
       }
-      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: num(args, 'planetRadiusKm'), distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: num(args, 'mapWidth'), height: num(args, 'mapHeight'), seed: num(args, 'mapSeed') ?? num(args, 'seed'), seaLevel: num(args, 'seaLevel'), mountainScale: num(args, 'mountainScale'), riverCount: num(args, 'riverCount'), nationCount: num(args, 'nationCount'), mineralDensity: num(args, 'mineralDensity'), edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: num(args, 'globalMeanK'), greenhouseK: num(args, 'greenhouseK'), ascii: args['ascii'] !== false, asciiWidth: num(args, 'asciiWidth'), asciiHeight: num(args, 'asciiHeight'), focusRegions: Array.isArray(args['focusRegions']) ? (args['focusRegions'] as Array<Record<string, unknown>>).map((region) => ({ ...(typeof region['name'] === 'string' ? { name: region['name'] } : {}), x: Number(region['x'] ?? 0), y: Number(region['y'] ?? 0), ...(region['radius'] !== undefined ? { radius: Number(region['radius']) } : {}), ...(region['detail'] !== undefined ? { detail: Number(region['detail']) } : {}) })) : undefined })
+      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: num(args, 'planetRadiusKm'), distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: num(args, 'mapWidth'), height: num(args, 'mapHeight'), seed: num(args, 'mapSeed') ?? num(args, 'seed'), seaLevel: num(args, 'seaLevel'), mountainScale: num(args, 'mountainScale'), riverCount: num(args, 'riverCount'), nationCount: num(args, 'nationCount'), mineralDensity: num(args, 'mineralDensity'), edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: bool(args, 'climate') === true, globalMeanK: num(args, 'globalMeanK'), greenhouseK: num(args, 'greenhouseK'), ascii: bool(args, 'ascii') !== false, asciiWidth: num(args, 'asciiWidth'), asciiHeight: num(args, 'asciiHeight'), focusRegions: Array.isArray(args['focusRegions']) ? (args['focusRegions'] as Array<Record<string, unknown>>).map((region) => ({ ...(typeof region['name'] === 'string' ? { name: region['name'] } : {}), x: Number(region['x'] ?? 0), y: Number(region['y'] ?? 0), ...(region['radius'] !== undefined ? { radius: Number(region['radius']) } : {}), ...(region['detail'] !== undefined ? { detail: Number(region['detail']) } : {}) })) : undefined })
       const lines = ['═══ 全球地图（中等精度）═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       /** 气候层：value 里有，文本也要给（否则用户以为没生成）。 */
@@ -471,9 +471,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         }, {
           width: num(args, 'svgWidth'),
           viewBox,
-          graticule: args['graticule'] !== false,
-          labels: args['svgLabels'] !== false,
-          minerals: args['svgMinerals'] !== false,
+          graticule: bool(args, 'graticule') !== false,
+          labels: bool(args, 'svgLabels') !== false,
+          minerals: bool(args, 'svgMinerals') !== false,
         })
         const svgFile = exportMapFile({ svg, ascii: svg, notes: ['世界地图 SVG（矢量）'] }, 'svg', String(args['mapSeed'] ?? 'random'))
         const info = [
@@ -497,7 +497,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'world-build': {
-      const result = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: args['useMap'] === true, mapSeed: num(args, 'mapSeed') })
+      const result = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: bool(args, 'useMap') === true, mapSeed: num(args, 'mapSeed') })
       const lines = ['═══ 完整世界画像 ═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       lines.push('', '  ★ 瓶颈：' + result.bottleneck)
@@ -538,7 +538,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'optimize': {
-      const result = optimize({ objective: str(args, 'objective'), opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
+      const result = optimize({ objective: str(args, 'objective'), opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: strList(args, 'integers') })
       /** 无可行解不是「算不出」，是「约束互相冲突」——按反馈给 no_solution 错误体。 */
       if (!result.feasible) throw new CalcError('no_solution', '线性规划无可行解：约束互相冲突（如某资源上限低于最低需求）', '检查 constraints 的 min 是否大于 max；放宽或删除冲突约束。')
       const lines = ['═══ 线性规划（有解）═══']
@@ -550,7 +550,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       /** 统一数据层：put/get/query/lineage/stats/export/import。 */
       const action = str(args, 'dataAction') ?? (typeof args['action'] === 'string' ? (args['action'] as string) : 'stats')
       if (action === 'put') {
-        const record = putRecord({ kind: String(args['kind'] ?? 'note'), name: String(args['name'] ?? ''), tags: Array.isArray(args['tags']) ? (args['tags'] as unknown[]).map(String) : [], refs: Array.isArray(args['refs']) ? (args['refs'] as unknown[]).map(String) : [], payload: args['payload'] })
+        const record = putRecord({ kind: String(args['kind'] ?? 'note'), name: String(args['name'] ?? ''), tags: strList(args, 'tags') ?? [], refs: strList(args, 'refs') ?? [], payload: args['payload'] })
         return { result: '已写入 ' + record.id + '（v' + record.version + '）', value: record } as never
       }
       if (action === 'get') {
@@ -665,7 +665,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       const formulas = dataOf<Array<Record<string, unknown>>>('formulas', 'formulas.json', [])
       const target = str(args, 'target') ?? ''
       if (target.trim() === '') throw new CalcError('missing_params', 'backtrace 需要 target（目标描述）', '例如 {operation:"backtrace", target:"这座窑一天烧多少煤"}。')
-      const given = Array.isArray(args['given']) ? (args['given'] as unknown[]).map(String) : []
+      const given = strList(args, 'given') ?? []
       const chainFile = dataOf<{ chains?: unknown[] }>('modelChains', 'model-chains.json', { chains: [] })
       const chains = Array.isArray(chainFile) ? chainFile : (chainFile.chains ?? [])
       const result = backtrace(formulas as never, target, { maxDepth: num(args, 'maxDepth') ?? 2, given, modelChains: chains as never[] })
@@ -686,7 +686,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'astro': {
-      const astroBase = asRecord(args['astro'])
+      const astroBase = rec(args, 'astro')
       if (astroBase === undefined) return runAstro(args as never) as never
       const mergedAstro = { ...astroBase }
       if (mergedAstro['timezoneMinutes'] === undefined && typeof args['timezoneMinutes'] === 'number') mergedAstro['timezoneMinutes'] = args['timezoneMinutes']
@@ -713,23 +713,23 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'feasibility':
       /** 合并：quick:true 走快速判定（原 quick_feasible）。 */
-      if (args['quick'] === true) {
+      if (bool(args, 'quick') === true) {
         const input = asRecord(args['quickFeasible'] ?? args['feasibility']) ?? {}
-        return runQuickFeasible({ ...input, world: asRecord(args['world']) })
+        return runQuickFeasible({ ...input, world: rec(args, 'world') })
       }
       return runFeasibility(args as never)
 
     case 'quick_feasible': {
-      const input = asRecord(args['quickFeasible']) ?? {}
-      return runQuickFeasible({ ...input, world: asRecord(args['world']) })
+      const input = rec(args, 'quickFeasible') ?? {}
+      return runQuickFeasible({ ...input, world: rec(args, 'world') })
     }
 
     case 'hierarchy':
       /** hierarchy 一律用对象（顶层 levels 是 topology 的 integer，类型冲突）。 */
-      return runHierarchy(asRecord(args['hierarchy']) as never)
+      return runHierarchy(rec(args, 'hierarchy') as never)
 
     case 'world_state': {
-      const input = asRecord(args['world_state']) ?? {}
+      const input = rec(args, 'world_state') ?? {}
       const workspace = typeof input['workspace'] === 'string' && input['workspace'].trim() !== '' ? input['workspace'].trim() : 'default'
       const book = loadStateBook(workspace)
       const outcome = runWorldState(input as never, book)
@@ -738,20 +738,20 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'chain':
-      return runChain(asRecord(args['chain']) as never)
+      return runChain(rec(args, 'chain') as never)
 
     case 'threshold':
-      return classifyThreshold(asRecord(args['threshold']) as never)
+      return classifyThreshold(rec(args, 'threshold') as never)
 
     case 'scaling':
-      return judgeScaling(asRecord(args['scaling']) as never)
+      return judgeScaling(rec(args, 'scaling') as never)
 
     case 'anchor':
-      return lookupAnchor(asRecord(args['anchor']) as never)
+      return lookupAnchor(rec(args, 'anchor') as never)
 
     case 'extract_numbers':
       return runExtractNumbers(typeof args['text'] === 'string' ? args['text'] : '', {
-        ...(args['keepNoise'] === true ? { keepNoise: true } : {}),
+        ...(bool(args, 'keepNoise') === true ? { keepNoise: true } : {}),
         ...(typeof args['limit'] === 'number' ? { limit: args['limit'] } : {}),
       })
 
@@ -762,17 +762,17 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'timeline_check':
-      return runTimelineCheck({ events: args['events'] as never, maxSpan: args['maxSpan'] as never, overlapAllowed: args['overlapAllowed'] === true })
+      return runTimelineCheck({ events: args['events'] as never, maxSpan: args['maxSpan'] as never, overlapAllowed: bool(args, 'overlapAllowed') === true })
 
     // ── 数值计算（features/numeric）──
     case 'random': {
-      const traitsRaw = asRecord(args['randomTraits'])
+      const traitsRaw = rec(args, 'randomTraits')
       return toOutcome(runRandom({
         randomSeed: typeof args['randomSeed'] === 'string' ? args['randomSeed'] : undefined,
         count: typeof args['count'] === 'number' ? args['count'] : undefined,
         min: typeof args['min'] === 'number' ? args['min'] : undefined,
         max: typeof args['max'] === 'number' ? args['max'] : undefined,
-        integer: args['integer'] === true,
+        integer: bool(args, 'integer') === true,
         randomActors: Array.isArray(args['randomActors']) ? (args['randomActors'] as string[]) : undefined,
         randomTraits: traitsRaw as never,
         algorithm: args['algorithm'] === 'lcg' ? 'lcg' : undefined,
@@ -790,7 +790,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
        * 变量作用域：调用参数优先，其次工作区变量（若该工作区开了 useWorkspaceVariables）。
        * 修复 2026-11-25 反馈 P0：此前只读 variables，工作区变量存了也算不出。
        */
-      const callerScope = asRecord(args['variables']) ?? {}
+      const callerScope = rec(args, 'variables') ?? {}
       let workspaceScope: Record<string, number> = {}
       try {
         const wsName = typeof args['workspace'] === 'string' && (args['workspace'] as string).trim() !== '' ? (args['workspace'] as string).trim() : currentWorkspace()
@@ -801,7 +801,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       }
       const scope = { ...workspaceScope, ...callerScope }
       const options = {
-        terse: args['terse'] === true,
+        terse: bool(args, 'terse') === true,
         displayPrecision: displayPrecisionOf(args),
         ...(typeof args['precision'] === 'number' ? { precision: args['precision'] } : {}),
       } as never
@@ -898,7 +898,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       return toOutcome(regression(args['data'], args['dataY'], typeof args['degree'] === 'number' ? args['degree'] : 1))
 
     case 'ode': {
-      const initial = asRecord(args['initial'])
+      const initial = rec(args, 'initial')
       if (initial === undefined) {
         throw new CalcError('missing_params', 'ode 需要 initial（状态初值）', '例如 {operation:"ode", expression:"dy/dt = -y", initial:{y:1}, from:0, to:1}。')
       }
@@ -916,7 +916,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'recurrence': {
-      const initial = asRecord(args['initial'])
+      const initial = rec(args, 'initial')
       if (initial === undefined) {
         throw new CalcError('missing_params', 'recurrence 需要 initial（初值）', '例如 {operation:"recurrence", recurrence:"P*1.02", initial:{P:100}, periods:10}。')
       }
@@ -949,7 +949,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       }
       if (to === '') return toOutcome(describeUnit(buildEngine(), from))
       const value = typeof args['unitValue'] === 'number' ? args['unitValue'] : 1
-      return toOutcome(convertUnits(buildEngine(), value, from, to, args['terse'] === true, displayPrecisionOf(args)))
+      return toOutcome(convertUnits(buildEngine(), value, from, to, bool(args, 'terse') === true, displayPrecisionOf(args)))
     }
 
     case 'currency': {
@@ -1011,19 +1011,19 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       if (query === 'chain') {
         const chainId = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : '')
         if (chainId === '') throw new CalcError('missing_params', 'chain 需要 formulaFocus（链 id，如 sys-material）', '可查：' + formulaSystems().map((item) => item.id).join('、'))
-        if (args['initial'] !== undefined && asRecord(args['initial']) === undefined) {
+        if (args['initial'] !== undefined && rec(args, 'initial') === undefined) {
           throw new CalcError('invalid_argument', 'initial 必须是对象 {参数名: 数值}', '例如 initial:{b:0.2, h:0.4}。')
         }
-        const initialRaw = asRecord(args['initial']) ?? asRecord(args['params']) ?? {}
+        const initialRaw = rec(args, 'initial') ?? rec(args, 'params') ?? {}
         const badInitial = Object.entries(initialRaw).filter(([, value]) => typeof value !== 'number' || !Number.isFinite(value))
         if (badInitial.length > 0) {
           throw new CalcError('invalid_argument', 'initial 的值必须是有限数：' + badInitial.slice(0, 3).map(([key]) => key).join('、'), '字符串「abc」这类值不会被当成数字；改成数值。')
         }
-        return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations(), (asRecord(args['crossValues']) ?? {}) as never))
+        return toOutcome(runChainNumeric(formulaEntries(), formulaSystems() as never, chainId, buildEngine(), initialRaw as never, relations(), (rec(args, 'crossValues') ?? {}) as never))
       }
 
       /** 相邻公式：query="neighbors" + formulaFocus / formula。 */
-      if (query === 'neighbors' || args['neighbors'] === true) {
+      if (query === 'neighbors' || bool(args, 'neighbors') === true) {
         const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['formula'] === 'string' ? args['formula'] : '')
         if (focus === '') {
           throw new CalcError('missing_params', 'neighbors 需要 formulaFocus（公式 id）', '例如 {operation:"formulas", query:"neighbors", formulaFocus:"ideal_gas"}。')
@@ -1056,7 +1056,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           throw new CalcError('unknown_formula', (error as Error).message, '用 formulas query 查公式 id；常数名可查 c、G、h、kB、e_charge 等。')
         }
       }
-      if (query === 'graph' || args['formulaGraph'] === true) {
+      if (query === 'graph' || bool(args, 'formulaGraph') === true) {
         const focus = typeof args['formulaFocus'] === 'string' ? args['formulaFocus'] : (typeof args['traceTarget'] === 'string' ? args['traceTarget'] : undefined)
         return toOutcome(runFormulaGraph(entries, formulaSystems(), focus))
       }
@@ -1070,7 +1070,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         if (system === undefined) {
           throw new CalcError('unknown_symbol', '没有 id 为 "' + query + '" 的体系链', '可查：' + formulaSystems().map((item) => item.id).join('、'))
         }
-        const initialRaw = asRecord(args['initial']) ?? {}
+        const initialRaw = rec(args, 'initial') ?? {}
         const initial: Record<string, number> = {}
         for (const [key, value] of Object.entries(initialRaw)) {
           if (typeof value === 'number' && Number.isFinite(value)) initial[key] = value
@@ -1086,14 +1086,14 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         throw new CalcError('missing_params', 'formula 需要 formula（公式 id 或名称）', '例如 {operation:"formula", formula:"ideal_gas", params:{n:1,T:300}}；用 formulas query 查可用的公式。')
       }
       /** params 传成数组/字符串时会被 asRecord 丢掉，报「缺参」会误导。 */
-      if (args['params'] !== undefined && asRecord(args['params']) === undefined && asRecord(args['overrides']) === undefined) {
+      if (args['params'] !== undefined && rec(args, 'params') === undefined && rec(args, 'overrides') === undefined) {
         throw new CalcError('invalid_argument', 'params 必须是对象（{参数名: 数值}）', '例如 params:{m:2, v:3}；收到 ' + (Array.isArray(args['params']) ? '数组' : typeof args['params']) + '。')
       }
       /** 反解：{formula:"ideal_strength", solveFor:"sigma", targetValue:1e8, params:{E:...}} */
       if (typeof args['solveFor'] === 'string' && args['solveFor'].trim() !== '') {
-        const rangeRaw = asRecord(args['solveRange'])
+        const rangeRaw = rec(args, 'solveRange')
         const range = rangeRaw !== undefined && typeof rangeRaw['min'] === 'number' && typeof rangeRaw['max'] === 'number' ? { min: rangeRaw['min'] as number, max: rangeRaw['max'] as number } : undefined
-        const paramsRaw = asRecord(args['params'])
+        const paramsRaw = rec(args, 'params')
         const params: Record<string, number> = {}
         for (const [key, value] of Object.entries(paramsRaw ?? {})) if (typeof value === 'number' && Number.isFinite(value)) params[key] = value
         return toOutcome(
@@ -1118,15 +1118,15 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
        *
        * params 与 overrides 等价（老调用方写 overrides，新调用方写 params）。
        */
-      const values = asRecord(args['params']) ?? asRecord(args['overrides']) ?? {}
+      const values = rec(args, 'params') ?? rec(args, 'overrides') ?? {}
       const call = callFormula(formulaEntries(), id, buildEngine(), values, relations(), {
         displayPrecision: displayPrecisionOf(args),
-        terse: args['terse'] === true,
+        terse: bool(args, 'terse') === true,
       })
       const neighborLine = call.neighbors.length > 0 ? '相邻公式：' + call.neighbors.slice(0, 4).map((hit) => hit.id + '（' + hit.reason + '）').join('；') : ''
       /** 公式网上下文：调用时顺带给上下游（可用 webContext:false 关掉）。 */
       let web: ReturnType<typeof webContextOf> | undefined
-      if (args['webContext'] !== false) {
+      if (bool(args, 'webContext') !== false) {
         const webData = dataOf<FormulaWeb>('formulaWeb', 'formula-web.json', { constants: [], constantEdges: [], formulaEdges: [] })
         if (webData.formulaEdges.length > 0) web = webContextOf(webData, formulaEntries(), entry.id)
       }
@@ -1157,7 +1157,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     // ── 历史包袱较轻的五个 op（第 8 步最后一批）──
     case 'constants':
-      return runConstants({ constants: args['constants'] as never, preview: args['preview'] === true, workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined })
+      return runConstants({ constants: args['constants'] as never, preview: bool(args, 'preview') === true, workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined })
 
     case 'quantities':
       return runQuantities({ constants: args['constants'] as never, constantName: typeof args['constantName'] === 'string' ? args['constantName'] : undefined })
@@ -1194,8 +1194,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         workspace: typeof args['workspace'] === 'string' ? args['workspace'] : undefined,
         constants: args['constants'] as never,
         workspaceVariables: args['workspaceVariables'] as never,
-        useWorkspaceVariables: args['useWorkspaceVariables'] === true,
-        world: asRecord(args['world']),
+        useWorkspaceVariables: bool(args, 'useWorkspaceVariables') === true,
+        world: rec(args, 'world'),
         what: typeof args['what'] === 'string' ? args['what'] : undefined,
       })
 
@@ -1242,7 +1242,7 @@ function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
   }
 
   /** world：嵌套 world 对象合并到顶层（显式顶层优先）。 */
-  const worldObject = asRecord(args['world'])
+  const worldObject = rec(args, 'world')
   if (worldObject !== undefined) {
     for (const [key, value] of Object.entries(worldObject)) if (args[key] === undefined) args[key] = value
   }
