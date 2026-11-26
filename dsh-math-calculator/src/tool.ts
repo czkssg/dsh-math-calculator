@@ -16,7 +16,7 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { TOOL_DESCRIPTION } from './awareness.js'
+import { TOOL_DESCRIPTION, suggestOperation } from './awareness.js'
 import { dispatchNew, MIGRATED_OPERATIONS } from './dispatch.js'
 import { toJsonValue } from './core/format.js'
 import { tryUnitPipeline } from './core/unit-pipeline.js'
@@ -501,7 +501,13 @@ const baseTool = defineTool({
             precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
             value: toJsonValue(migrated.value) as JsonValue,
             ...(() => {
-              const merged = [clampNotice, migrated.notice].filter((item): item is string => typeof item === 'string' && item !== '')
+              /**
+               * 意图路由提示：只在「通用入口 + 内容像别的需求」时出现。
+               * 修复：`suggestOperation` 之前是死代码，从未被调用。
+               */
+              const routing = suggestOperation(typeof args['expression'] === 'string' ? (args['expression'] as string) : '', resolvedOperation)
+              const routeNotice = routing !== undefined ? '【可能用错入口】' + routing : undefined
+              const merged = [clampNotice, migrated.notice, routeNotice].filter((item): item is string => typeof item === 'string' && item !== '')
               return merged.length > 0 ? { notice: merged.join('\n') } : {}
             })(),
           } satisfies MathResult
@@ -555,14 +561,24 @@ const baseTool = defineTool({
       /** 语法错误不能当 internal：mathjs 的 Value expected / Unexpected 都是输入问题。 */
       const syntaxLike = /value expected|syntax error|unexpected|unexpected end of expression|parenthesis/i.test(rawMessage)
       const translated = direct ?? (errorTranslator !== null ? errorTranslator(error, 'internal', typeof args['expression'] === 'string' ? (args['expression'] as string) : '') : null)
-      const type = translated?.type ?? (syntaxLike ? 'syntax' : 'internal')
+      const baseType = translated?.type ?? (syntaxLike ? 'syntax' : 'internal')
       const message = translated?.message ?? (error instanceof Error ? error.message : String(error))
-      const hint = translated?.hint
+      /**
+       * 意图路由（错误路径）：
+       * `x^2-4=0` 这类「其实是方程」的输入会抛 internal/syntax，
+       * 旧版只给原始报错，模型看不出「该换 operation」。这里补一条可执行建议。
+       */
+      const routing = suggestOperation(expressionText, operation)
+      /** 「= 被当赋值」这类靠猜的报错，改判成 invalid_argument（输入问题，不是工具 bug）。 */
+      const assignLike = /invalid left hand side of assignment|unexpected end of expression/i.test(message)
+      const type = baseType === 'internal' && (routing !== undefined || assignLike) ? 'invalid_argument' : baseType
+      const routeHint = routing ?? (assignLike ? '看起来像方程但 evaluate 把 = 当赋值了，用 operation:"solve"。' : undefined)
+      const hint = routeHint !== undefined ? (translated?.hint !== undefined ? translated.hint + ' ｜ ' + routeHint : routeHint) : translated?.hint
       return {
         ok: false,
         operation,
-        input: typeof args['expression'] === 'string' ? (args['expression'] as string) : '',
-        result: '错误[' + type + ']: ' + message,
+        input: expressionText,
+        result: '错误[' + type + ']: ' + message + (routeHint !== undefined ? '\n提示：' + routeHint : ''),
         precision: typeof args['precision'] === 'number' ? (args['precision'] as number) : 64,
         error: { type, message, ...(hint !== undefined ? { hint } : {}) },
       } satisfies MathResult
