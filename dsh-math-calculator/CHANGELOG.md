@@ -2,6 +2,36 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.53.1] — 2026-11-26
+
+**修复：复合单位被显示成冷门单位**（`1 J/g` → `1e+5 raddose`）。
+
+### 问题
+
+mathjs 对复合单位的结果会挑**同量纲里最冷门的一个**显示：
+
+- `1 J/g` / `1 J/kg` → `1e+5 raddose` / `100 raddose`（吸收剂量内部代号）
+- `1 N*m` → `1e-44 foe`（超新星能量单位）
+
+数值都对，但读者看不懂，而且看起来像把量纲搞错了。这个问题在写架空世界观时最容易被误判成「工具算错了」。
+
+### 修复
+
+- 新增判据 `isObscureUnitText()`：**只认已知会误导的内部代号**（`foe` / `raddose` / `rad_dose` / `radabsorbed`）；
+- 命中时才归约到 SI 基准（`1000 m^2 / s^2`），其余一律原样；
+- 同步修 `result` 与 `value` 两条显示路径（`features/numeric/evaluate.ts` + `core/format.ts`）。
+
+### 走过的两条弯路（记录下来避免重犯）
+
+1. **一开始想「一律归约到 SI」**——实测把 `10 hp to kW` 变成 `(kg m^2)/s^3`、`5 cm to inch` 变成 `0.05 m`，把用户明确要的单位冲掉了，**比原问题更糟**；
+2. **改成「不在常见单位集里就归约」**——`1 kg → 0.02 担` 里的「担」被判冷门，强行改成 `1 kg`，被 `unit-pipeline` 抓出。中文单位/时代单位/自设单位都不能当冷门。
+
+最终判据必须是**白名单式的已知代号**，不能用「不在常见集」这种否定式。
+
+### 测试
+
+- 全量 **158 套 / 3,521 项全绿**（`unit-pipeline` 19 项、`units-*` 各套均未受影响）。
+
 ## [3.53.0] — 2026-11-25
 
 **架构深化：参数读取模块**（improve-codebase-architecture 的 Top recommendation）。

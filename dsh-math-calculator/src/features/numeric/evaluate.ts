@@ -214,6 +214,75 @@ function unwrapNumeric(value: unknown): { n: number; bigText: string | null } {
  * @param engine - 引擎（用于还原自设单位名）
  * @returns 显示串与附带信息
  */
+/** SI 基准量纲顺序（与 units.ts 的 DIM_ORDER 一致）。 */
+const SI_DIMS: Array<{ base: string }> = [
+  { base: 'kg' }, { base: 'm' }, { base: 's' }, { base: 'A' }, { base: 'K' }, { base: 'mol' }, { base: 'cd' },
+]
+
+/**
+ * 常见单位名白名单（出现这些就认为显示正常，不归约）。
+ *
+ * 注意：这是**显示判据**，不是换算白名单——表外的单位照样能换算，
+ * 只是显示时会被换成 SI 基准组合。
+ */
+const COMMON_UNIT_WORDS = [
+  'kg', 'g', 'mg', 't', 'm', 'cm', 'mm', 'km', 'inch', 'ft', 'mile', 'yd',
+  's', 'ms', 'min', 'h', 'day', 'year', 'A', 'K', 'mol', 'cd', 'Hz',
+  'N', 'J', 'kJ', 'MJ', 'GJ', 'W', 'kW', 'MW', 'GW', 'hp', 'Pa', 'kPa', 'MPa', 'GPa',
+  'C', 'V', 'F', 'H', 'S', 'T', 'Wb', 'Gy', 'Sv', 'Bq', 'kat', 'lm', 'lx',
+  'kWh', 'MWh', 'L', 'mL', 'bar', 'atm', 'psi', 'degC', 'degF',
+]
+
+/**
+ * 判断显示文本是否用了冷门单位。
+ *
+ * @param text - 形如 `1e-44 foe` 或 `1000 m^2 / s^2`
+ * @returns true = 应归约
+ */
+function isObscureUnitText(text: string): boolean {
+  /**
+   * ## 判据必须是「白名单式的已知冷门」，不能是「不在常见集里」
+   *
+   * 反例（实测踩到）：`1 kg → 0.02 担` 里的「担」不在常见集 → 被判冷门 →
+   * 强行归约成 `1 kg`，把用户要的「担」冲掉了。
+   * 中文单位、时代单位、自设单位都不该被当成冷门。
+   *
+   * 所以只看**已知会误导的 mathjs 内部代号**：
+   *   foe（超新星能量）、raddose（吸收剂量）——这两个是实测出来的。
+   */
+  const OBSCURE = ['foe', 'raddose', 'rad_dose', 'radabsorbed']
+  const matched = /^-?[\d.]+(?:e[+-]?\d+)?\s+(.+)$/i.exec(text.trim())
+  if (matched === null) return false
+  const unitPart = matched[1]
+  return OBSCURE.some((name) => unitPart.includes(name))
+}
+
+/**
+ * 把 mathjs Unit 归约成 SI 基准组合的文本。
+ *
+ * 目的：避免 mathjs 用「同量纲的冷门单位」显示（如 `J/g` → `raddose`）。
+ *
+ * @param value - mathjs Unit
+ * @returns 归约后的文本；拆不出时 null（调用方退回原写法）
+ */
+function siReduce(value: unknown): string | null {
+  const unit = value as { dimensions?: number[]; to?: (target: string) => unknown }
+  const dims = unit.dimensions
+  if (!Array.isArray(dims) || typeof unit.to !== 'function') return null
+  const parts: string[] = []
+  for (let i = 0; i < Math.min(SI_DIMS.length, dims.length); i += 1) {
+    const power = dims[i]
+    if (power === 0) continue
+    parts.push(SI_DIMS[i].base + (power === 1 ? '' : '^' + power))
+  }
+  if (parts.length === 0) return null
+  try {
+    return String(unit.to(parts.join('*')))
+  } catch {
+    return null
+  }
+}
+
 export function formatScalar(
   value: unknown,
   options: EvaluateOptions,
@@ -229,7 +298,30 @@ export function formatScalar(
   /** ② 带单位（mathjs Unit）。 */
   const anyValue = value as { isUnit?: boolean }
   if (anyValue.isUnit === true) {
-    let text = String(value)
+    /**
+     * ## 单位归约到 SI 基准（2026-11-25 修）
+     *
+     * mathjs 显示单位时会挑一个**同量纲的已注册单位**，于是 `1 J/g` 被显示成
+     * `1e+5 raddose`（吸收剂量的内部代号）——数值对，但读者看不懂，
+     * 而且看起来像工具把量纲搞错了。
+     *
+     * 这里先尝试拆成 SI 基准组合（`J/g` → `m^2/s^2` 量纲），拆得出就用它；
+     * 拆不出（无量纲/自定义单位）再退回原字符串。
+     */
+    /**
+     * ## 只在「显示成冷门单位」时才归约（保守修复）
+     *
+     * mathjs 对复合单位的结果会挑**同量纲里最冷门的一个**显示：
+     *   `1 J/g` → `1e+5 raddose`（吸收剂量内部代号）
+     *   `1 N*m` → `1e-44 foe`（超新星能量单位）
+     * 数值都对，但读者看不懂，且看起来像量纲搞错了。
+     *
+     * ⚠ 不能「一律归约到 SI」——那会把 `10 hp to kW` 变成 `(kg m^2)/s^3`，
+     * 把用户明确要的单位冲掉（实测过，比原问题更糟）。
+     * 判据：结果单位名**不在常见 SI/工程单位集里**时才归约。
+     */
+    const textRaw = String(value)
+    let text = isObscureUnitText(textRaw) ? (siReduce(value) ?? textRaw) : textRaw
     text = restoreCjkUnitNames(text)
     text = restoreSanitizedUnitNames(text)
     text = restoreCustomUnitNames(text, engine.customUnits)

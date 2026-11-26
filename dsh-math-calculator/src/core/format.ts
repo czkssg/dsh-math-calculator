@@ -279,6 +279,48 @@ export function restoreCustomUnitNames(
  * @param value - 任意结果
  * @returns 可安全 JSON 化的值
  */
+/** SI 基准量纲顺序。 */
+const SI_BASE_ORDER = ['kg', 'm', 's', 'A', 'K', 'mol', 'cd']
+
+/** 会迷惑读者的内部代号（mathjs 拿它们当同量纲首选）。 */
+const OBSCURE_UNITS = ['raddose', 'rad_dose', 'radabsorbed']
+
+/**
+ * 把冷门内部单位替换成 SI 基准组合（只在这几个代号出现时）。
+ *
+ * @param text - 原始显示文本
+ * @param unit - mathjs Unit（用于取 dimensions 做归约）
+ * @returns 替换后的文本；不含冷门代号时原样返回
+ */
+function replaceObscureUnit(text: string, unit: any): string {
+  if (!OBSCURE_UNITS.some((name) => text.includes(name))) return text
+  const reduced = reduceUnitToSi(unit)
+  return reduced ?? text
+}
+
+/**
+ * 把 mathjs Unit 归约成 SI 基准组合。
+ *
+ * @param unit - mathjs Unit
+ * @returns 归约文本；拆不出时 null
+ */
+function reduceUnitToSi(unit: any): string | null {
+  const dims = unit?.dimensions
+  if (!Array.isArray(dims) || typeof unit.to !== 'function') return null
+  const parts: string[] = []
+  for (let i = 0; i < Math.min(SI_BASE_ORDER.length, dims.length); i += 1) {
+    const power = dims[i]
+    if (power === 0) continue
+    parts.push(SI_BASE_ORDER[i] + (power === 1 ? '' : '^' + power))
+  }
+  if (parts.length === 0) return null
+  try {
+    return String(unit.to(parts.join('*')))
+  } catch {
+    return null
+  }
+}
+
 export function toJsonValue(value: unknown): unknown {
   if (value === null || value === undefined) return value
   const t = typeof value
@@ -292,7 +334,22 @@ export function toJsonValue(value: unknown): unknown {
     return Number.isFinite(n) ? n : String(any.toString())
   }
   /** mathjs Unit（中文单位名还原成人话）。 */
-  if (any.isUnit === true) return restoreCjkUnitNames(String(any.toString()))
+  if (any.isUnit === true) {
+    /**
+     * ## 只在「显示成冷门内部单位」时才改写（保守修复）
+     *
+     * mathjs 会选择同量纲里的**某个**已注册单位来显示：
+     * `1 J/kg` 与 `1 J/g` 都是「比能」量纲，却都显示成 `raddose`（吸收剂量的内部代号）。
+     * 数值正确，但读者看不懂，且看起来像把量纲搞错了。
+     *
+     * ⚠ 不能用「全部归约到 SI」——那会把 `10 hp to kW` 变成 `(kg m^2)/s^3`，
+     * 把用户明确要的单位冲掉（实测过，比原问题更糟）。
+     * 所以只在这几个内部代号出现时替换，其余一律原样。
+     */
+    const raw = String(any.toString())
+    const replaced = replaceObscureUnit(raw, any)
+    return restoreCjkUnitNames(replaced)
+  }
   /** mathjs Matrix。 */
   if (typeof any.toArray === 'function') return toJsonValue(any.toArray())
   if (Array.isArray(value)) return value.map(toJsonValue)
