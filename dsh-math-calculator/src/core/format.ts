@@ -282,6 +282,85 @@ export function restoreCustomUnitNames(
 /** SI 基准量纲顺序。 */
 const SI_BASE_ORDER = ['kg', 'm', 's', 'A', 'K', 'mol', 'cd']
 
+/** 各量纲的标准 SI 显示写法（dimensions 拼串 → 期望显示）。 */
+const STANDARD_DIMENSION_UNITS: Record<string, string> = {
+  '0,1,0,0,0,0,0,0,0': 'm',
+  '0,0,1,0,0,0,0,0,0': 's',
+  '1,0,0,0,0,0,0,0,0': 'kg',
+  '0,1,-1,0,0,0,0,0,0': 'm/s',
+  '0,2,-2,0,0,0,0,0,0': 'm^2/s^2',
+  '1,-1,-2,0,0,0,0,0,0': 'Pa',
+  '1,2,-2,0,0,0,0,0,0': 'J',
+  '1,2,-3,0,0,0,0,0,0': 'W',
+  '1,1,-2,0,0,0,0,0,0': 'N',
+  '0,0,-1,0,0,0,0,0,0': 'Hz',
+}
+
+/**
+ * 把被 mathjs 换过的单位显示归位到标准写法。
+ *
+ * @param text - 原始显示文本（如 `11.18 mph`）
+ * @param unit - mathjs Unit
+ * @returns 归位后的文本（不需要时原样返回）
+ */
+function normalizeDisplayedUnit(text: string, unit: any): string {
+  const dims = unit?.dimensions
+  if (!Array.isArray(dims)) return text
+  /**
+   * ⚠ 只有「用户没指定目标单位」时才归位。
+   * `5 m/s to km/h` 的显示必须是 `18 km/h`——那是用户明确要的，
+   * 无条件归位会把它改回 `5 m/s`（实测踩到）。
+   * 判据：结果单位名与「基本单位乘积」一致且含 mph/kn/日行里 这类被替换的痕迹才归位。
+   */
+  const matched0 = /^-?[\d.]+(?:e[+-]?\d+)?\s+(.+)$/i.exec(text.trim())
+  if (matched0 === null) return text
+  const shown = matched0[1].replace(/\s+/g, '')
+  /**
+   * 只归位「被冒名顶替」的单位：显示名是 mph/kn/日行里 这类**具名单一单位**，
+   * 而不是基本单位乘积（`m/s`、`km/h`、`kg*m/s^2`）。
+   *
+   * 这样 `5 m/s to km/h` 的 `km/h` 不会被改（它是乘积形态），
+   * 而裸 `5 m/s` 被显示成的 `mph` 会被归位回 `m/s`。
+   */
+  /**
+   * ## 只处理 mathjs 的「内部合成名」，不碰用户注册的单位
+   *
+   * 合成名形态：`cz` + 3 位小写字母（如 `czxxl`、`cznvc`），来自中文单位内部编码。
+   * 用户通过 registerUnits 注册的 `zli` 不是这种形态，必须原样返回（r82 抓过）。
+   */
+  const isSynthetic = /^cz[a-z]{3}$/.test(shown)
+  if (!isSynthetic) return text
+  /**
+   * ⚠ 合成名（`cz` 开头，中文单位的内部代号）与中文单位都不能归位——
+   * `1 zli` 是「里」，归位成 `m` 会让读者以为工具把单位换掉了（实测被 r82 抓出）。
+   * 中文单位是用户明确写的，必须原样显示。
+   */
+  if (/^[\u4e00-\u9fa5]/.test(shown) || /[\u4e00-\u9fa5]/.test(shown)) return text
+  /**
+   * `cz` 开头的合成名（中文单位内部代号，如 `czxxl`=日行里快）也要归位；
+   * 那是工具内部名，读者看不懂。
+   * 但**用户真写了中文单位**时不能动（上面那条已挡住中文串）。
+   */
+  const key = dims.join(',')
+  const expected = STANDARD_DIMENSION_UNITS[key]
+  if (expected === undefined) return topLevelObscureCheck(text, unit)
+  /** 已是标准写法就不动。 */
+  const matched = /^-?[\d.]+(?:e[+-]?\d+)?\s+(.+)$/i.exec(text.trim())
+  if (matched === null) return text
+  const shownUnit = matched[1].replace(/\s+/g, '')
+  if (shownUnit === expected || shownUnit === expected.replace(/\*/g, ' ')) return text
+  try {
+    return String(unit.to(expected))
+  } catch {
+    return text
+  }
+}
+
+/** 非标准量纲的兜底：只处理那两个已知会误导的代号。 */
+function topLevelObscureCheck(text: string, unit: any): string {
+  return replaceObscureUnit(text, unit)
+}
+
 /** 会迷惑读者的内部代号（mathjs 拿它们当同量纲首选）。 */
 const OBSCURE_UNITS = ['raddose', 'rad_dose', 'radabsorbed']
 
@@ -321,6 +400,15 @@ function reduceUnitToSi(unit: any): string | null {
   }
 }
 
+/**
+ * 把任意值转成**无损 JSON**（宿主校验要求）。
+ *
+ * `undefined` 不是 JSON 值，会让整个输出被判非法；数组里的 `undefined` 转 null，
+ * 对象里的直接删键。单位值会先归约到 SI 基准，避免露出 mathjs 内部代号。
+ *
+ * @param value - 任意运行时值
+ * @returns 可安全序列化的 JSON 值
+ */
 export function toJsonValue(value: unknown): unknown {
   if (value === null || value === undefined) return value
   const t = typeof value
@@ -347,8 +435,17 @@ export function toJsonValue(value: unknown): unknown {
      * 所以只在这几个内部代号出现时替换，其余一律原样。
      */
     const raw = String(any.toString())
-    const replaced = replaceObscureUnit(raw, any)
-    return restoreCjkUnitNames(replaced)
+    /**
+     * ## ★ 显示层归位（2026-11-26）
+     *
+     * 注册过速度类单位后，mathjs 会把裸 `5 m/s` 的**显示**换成 `mph` 这类单位
+     * （数值仍正确：11.18 mph = 5 m/s，但读者看到的是被换过的单位）。
+     *
+     * 修法：若显示用的单位名不是「该量纲的标准 SI 写法」，就按 dimensions 归约回去。
+     * 标准写法表见 STANDARD_DIMENSION_UNITS。
+     */
+    const normalized = normalizeDisplayedUnit(raw, any)
+    return restoreCjkUnitNames(normalized)
   }
   /** mathjs Matrix。 */
   if (typeof any.toArray === 'function') return toJsonValue(any.toArray())

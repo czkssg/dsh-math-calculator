@@ -188,6 +188,13 @@ function exportMapFile(result: Record<string, unknown>, format: string, hint: st
   writeFileSync(file, content, "utf8")
   return file
 }
+/**
+ * 新实现分发入口（64 个 operation）。
+ *
+ * @param operation - operation 名（已归一）
+ * @param rawArgs - 原始参数袋
+ * @returns 处理结果；不属于新实现时 null（交给老入口）
+ */
 export function dispatchNew(operation: string, rawArgs: Record<string, unknown>): DispatchOutcome | null {
   const args = normalizeArgs(rawArgs)
   /**

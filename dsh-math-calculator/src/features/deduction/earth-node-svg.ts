@@ -50,6 +50,12 @@ export interface HistoryNode {
   powers: NodePower[]
 }
 
+/**
+ * 历史节点：真实地球在若干历史时点的政权格局。
+ *
+ * 每项把「现代国界」按史实归并到当时的政权（如 `pre-ww1` 的 27 个政权）。
+ * ⚠ 边界仍是现代国界近似，不是当年测绘的真实界线。
+ */
 export const HISTORY_NODES: Record<string, HistoryNode> = {
   medieval: { name: '中世纪盛期', sub: '十字军与宋', powers: [
     { name: '宋', color: '#d35400', countries: ['China'] },

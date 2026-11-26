@@ -234,6 +234,52 @@ const COMMON_UNIT_WORDS = [
 ]
 
 /**
+ * 检测「除号链可能该加括号」的情况。
+ *
+ * ## 判据（三条同时满足才提示）
+ *
+ * 1. 表达式里有 **≥2 个除号**，且没有括号把它们分组；
+ * 2. 结果单位里出现**负指数**（`kg^-2`、`s^-2`、`m^-6`）——同量纲相除本该约掉；
+ * 3. 不是纯数字运算（纯数字的左结合是用户想要的）。
+ *
+ * ## 为什么不直接改语义
+ *
+ * `6/2/3 = 1` 是对的（左结合是数学约定）。替用户改成 `6/(2/3)` 会算错。
+ * 所以只提示，不改结果。
+ *
+ * @param expression - 原始表达式
+ * @param resultText - 格式化后的结果
+ * @returns 提示文本；不该提示时 null
+ */
+function detectSuspectDivisionChain(expression: string, resultText: string): string | null {
+  /** 只看带单位的式子（纯数字不提示）。 */
+  if (!/[a-zA-Z\u4e00-\u9fa5]/.test(expression)) return null
+  /** 除号计数（含 `/` 与 `÷`）。 */
+  const slashes = (expression.match(/[/÷]/g) ?? []).length
+  if (slashes < 2) return null
+  /** 已有括号分组就不提示（用户已经明确意图）。 */
+  if (/\([^()]*[/÷][^()]*\)\s*[/÷]/.test(expression) || /[/÷]\s*\(/.test(expression)) return null
+  /** 结果必须有负指数才提示。 */
+  if (!/\^-[\d]/.test(resultText)) return null
+  /**
+   * 给出建议写法。
+   *
+   * ⚠ 不能按 `/` 无脑拆 —— `30 MJ/kg / 16 MJ/kg` 拆成 `(30 MJ) / (kg) / …` 是错的，
+   * 那等于「30 兆焦 ÷ 千克 ÷ 16 兆焦 ÷ 千克」，跟原式一样没解决。
+   * 正确做法：只有**恰好两个除号**（形如 `a / b / c`）时给出 `(a) / (b) / (c)` 才对；
+   * 四个除号的 `a/b / c/d` 要的其实是 `(a/b) / (c/d)`，分界点无从自动判定，
+   * 所以只在「两段」时给具体写法，否则只讲原则。
+   */
+  const segments = expression.split(/\s*[/÷]\s*/).map((part) => part.trim()).filter((part) => part !== '')
+  const suggested = segments.length === 2
+    ? '(' + segments[0] + ') / (' + segments[1] + ')'
+    : null
+  const base = '除号链按**从左到右**计算（数学约定），所以 `' + expression + '` 得到 ' + resultText + '。'
+  if (suggested !== null) return base + '若你想要同量纲相除（无量纲结果），请写：`' + suggested + '`。'
+  return base + '同量纲相除本应约掉单位；如果你想要的是「（分子）/（分母）」，请把两边各自括起来，例如 `(30 MJ/kg) / (16 MJ/kg)`。'
+}
+
+/**
  * 判断显示文本是否用了冷门单位。
  *
  * @param text - 形如 `1e-44 foe` 或 `1000 m^2 / s^2`
@@ -283,6 +329,17 @@ function siReduce(value: unknown): string | null {
   }
 }
 
+/**
+ * 格式化标量/单位值给读者看。
+ *
+ * 单位值会归约掉 mathjs 的内部代号（`raddose`、`foe`、`czxxl`），
+ * 但**用户明确写的单位**（`km/h`、`担`、`里`）一律保留。
+ *
+ * @param value - 求值结果
+ * @param options - 显示精度等选项
+ * @param engine - mathjs 引擎（取自定义单位）
+ * @returns 文本、量级标注与中文读数
+ */
 export function formatScalar(
   value: unknown,
   options: EvaluateOptions,
@@ -405,6 +462,15 @@ function coerceScopeToBigNumber(engine: Engine, scope: Record<string, unknown>):
   }
   return scope
 }
+/**
+ * 求值单个表达式（含单位管道与兼容桥）。
+ *
+ * @param expression - 表达式
+ * @param options - 精度/显示/复数等选项
+ * @param engine - mathjs 引擎
+ * @param toolContext - 工具上下文（可为空）
+ * @returns 结果、提示与错误；出错时抛出 CalcError
+ */
 export function evaluateOne(
   engine: Engine,
   expression: string,
@@ -564,6 +630,18 @@ export function evaluateOne(
   const truncatedToZero =
     options.displayPrecision === 0 && Number.isFinite(unwrapped.n) && (unwrapped.n as number) !== 0 && Math.round(unwrapped.n as number) === 0
   const notices: string[] = []
+  /**
+   * ## 除法链可疑提示（2026-11-26）
+   *
+   * `30 MJ/kg / 16 MJ/kg` 在 mathjs 里按左结合算成 `((30·MJ)/kg)/16·MJ/kg`，
+   * 结果是 `1.875 kg^-2` 而不是 `1.875`。纯数字 `6/2/3` 也是左结合（=1），
+   * **这符合数学约定**，所以不能替用户改语义。
+   *
+   * 但用户写复合单位时几乎总想要 `(a/b)/(c/d)`。所以：
+   * 只在「结果带负指数 + 表达式里有未加括号的多级除号」时给提示。
+   */
+  const suspectDivision = detectSuspectDivisionChain(expression, formatted.text)
+  if (suspectDivision !== null) notices.push(suspectDivision)
   if (overflow) notices.push('表达式或结果涉及超过当前计算精度 ' + precision + ' 位的量——末位可能不可信；需要精确请显式传更高的 precision（上限 64），或改写表达式。')
   if (truncatedToZero) notices.push('按 displayPrecision:0 显示整数，原值 ' + String(unwrapped.n) + ' 非零但被截成 0；需要小数位请传 displayPrecision:≥1。')
   if (bridgedNote !== undefined) notices.push(bridgedNote)

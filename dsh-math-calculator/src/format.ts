@@ -379,6 +379,43 @@ export function formatValue(
  * 把 mathjs 的任意返回值转成可 JSON 化的值。
  * Matrix / Complex / Unit / Fraction / BigNumber / Range / ResultSet 分别处理。
  */
+/** SI 基准量纲顺序。 */
+const SI_BASES = ['kg', 'm', 's', 'A', 'K', 'mol', 'cd']
+
+/**
+ * 把 mathjs Unit 归约成 SI 基准组合（避免冷门同量纲单位显示）。
+ *
+ * @param value - mathjs Unit
+ * @returns 归约文本；拆不出时 null
+ */
+function reduceUnitToSi(value: any): string | null {
+  const dims = value?.dimensions
+  if (!Array.isArray(dims) || typeof value.to !== 'function') return null
+  const parts: string[] = []
+  for (let i = 0; i < Math.min(SI_BASES.length, dims.length); i += 1) {
+    const power = dims[i]
+    if (power === 0) continue
+    parts.push(SI_BASES[i] + (power === 1 ? '' : '^' + power))
+  }
+  if (parts.length === 0) return null
+  try {
+    return String(value.to(parts.join('*')))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 把任意值转成**无损 JSON**（宿主校验要求）。
+ *
+ * `undefined` 不是 JSON 值，会让整个输出被判非法：数组里的转 null，对象里的删键。
+ * 单位值会先归约到 SI 基准，避免露出 mathjs 内部代号（`raddose`、`foe`、`czxxl`）。
+ *
+ * @param value - 任意运行时值
+ * @param depth - 递归深度（防环）
+ * @param seen - 已访问对象（防环）
+ * @returns 可安全序列化的 JSON 值
+ */
 export function toJsonValue(value: any, depth = 0, seen = new Set<unknown>()): JsonValue {
   if (value === null || value === undefined) return null
 
@@ -421,7 +458,15 @@ export function toJsonValue(value: any, depth = 0, seen = new Set<unknown>()): J
         text: String(value),
       }
     }
-    if (object.isUnit) return String(value)
+    if (object.isUnit) {
+      /**
+       * 单位值：先尝试归约到 SI 基准，避免 mathjs 用「同量纲冷门单位」显示。
+       * 例：`1 J/g` 原生显示成 `1e+5 raddose`（吸收剂量内部代号）——
+       * 数值对但读者看不懂，看起来像量纲搞错了。归约后是 `1000 m^2 / s^2`。
+       */
+      const reduced = reduceUnitToSi(value)
+      return reduced ?? String(value)
+    }
     if (object.isFraction || object.isBigNumber) return String(value)
     if (object.isResultSet && Array.isArray(object.entries)) {
       const entries = object.entries

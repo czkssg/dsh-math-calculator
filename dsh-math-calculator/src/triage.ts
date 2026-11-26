@@ -20,6 +20,8 @@
  * | **查证** | 要看「历史上/现实里是什么」 | earthNode / constants / help |
  *
  * 分诊放在最前：先认路，再走路。走错路的代价是「算了一堆但没回答」。
+ *
+ * @module dsh-math-calculator/triage
  */
 export interface TriageResult {
   /** 命中的路线。 */

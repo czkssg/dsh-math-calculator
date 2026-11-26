@@ -376,6 +376,15 @@ function builtinTemplateKeys(): string[] {
 function listBuiltinTemplates(): Array<{ key: string; name: string; description: string; nodes: number; edges: number }> {
   return Object.entries(loadTemplates()).map(([key, value]) => ({ key, name: value.name, description: value.description, nodes: value.nodes.length, edges: value.edges.length }))
 }
+/**
+ * 拓扑 operation 的总入口。
+ *
+ * 按 `action` 分发到 model / route / sightline / reachable / avoid / structure /
+ * rules / org / terrain / ship / logistics / templates / save / load 等子命令。
+ *
+ * @param input - 拓扑参数
+ * @returns 文本结果与结构化 value
+ */
 export function runTopology(input: TopologyOpInput = {}): TopologyOpOutcome {
   const action = typeof input.action === 'string' && input.action.trim() !== '' ? input.action.trim() : 'model'
   const KNOWN_ACTIONS = new Set(['model', 'route', 'sightline', 'reachable', 'avoid', 'structure', 'rules', 'org', 'terrain', 'ship', 'building', 'entities', 'define', 'validate', 'save', 'load', 'list', 'templates', 'export', 'import', 'logistics'])
