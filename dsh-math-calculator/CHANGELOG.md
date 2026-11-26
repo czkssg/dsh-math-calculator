@@ -2,6 +2,40 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [3.53.0] — 2026-11-25
+
+**架构深化：参数读取模块**（improve-codebase-architecture 的 Top recommendation）。
+
+### 问题（实测）
+
+`dispatch.ts` 1436 行、最近 40 次提交改 16 次，其中 `typeof args[...]` 重复 **151 处**；第 428 行一行内联 14 个参数、2588 字符。这是典型的**浅接口**——每个调用点都要懂「怎么判类型、怎么断言、缺省写什么」。
+
+### 新增 `src/core/args.ts`（深模块）
+
+接口 5 个方法，每个一行：`num` / `str` / `bool` / `rec` / `strList`。
+
+藏在实现里的知识：
+
+- `num` 拒绝 NaN/Infinity（旧的判法会漏过去，污染下游并让 JSON 变 null）；
+- `str` 统一 trim 并把空串归一成 undefined（消除空串与 undefined 两种空）；
+- `bool` 只认真 boolean（不把字符串 true 当真）；
+- `rec` 拒绝数组与 null。
+
+### 替换
+
+- `dispatch.ts` 151 处 → 81 处（替换 70 处等价写法）；剩余是「中间夹函数调用」的复杂变体，手改风险高于收益，保留。
+
+### 替换中发现并修掉的 2 个真实 bug
+
+1. **`data get` 运算符优先级**：`??` 与三目混用被解析成 `(x ?? a) ? b : c`，导致 id 变成 `note:undefined`；已加括号；
+2. **`data search` keyword 逻辑**：query 与 nameContains 的合并写法冗余且优先级可疑，已简化。
+
+> 这两条由 `data-store`（23 项）与 `data-store-advanced`（12 项）抓出——正是「接口即测试面」的价值。
+
+### 测试
+
+- 新增 `r99-args-module` **33 项**（含与旧写法的逐例等价性对照）；
+- 全量 **158 套 / 3,521 项全绿**。
 ## [3.52.0] — 2026-11-25
 
 **任务分诊：先认路，再走路**（ask-matt 的 flow 范式落到数学插件）。

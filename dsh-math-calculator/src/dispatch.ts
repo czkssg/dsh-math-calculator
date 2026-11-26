@@ -22,6 +22,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { num, str, bool, rec } from './core/args.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runWorld, type WorldOpInput } from './features/deduction/world-op.js'
@@ -205,7 +206,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
    */
   const group = FACADE_GROUPS[operation]
   if (group !== undefined) {
-    const inner = typeof args['op'] === 'string' ? (args['op'] as string) : ''
+    const inner = str(args, 'op') ?? ''
     if (inner === '') {
       /** 门面免 op：按参数推断默认子命令（calc→evaluate/solve；derive→derivation/world）。 */
       let inferred = ''
@@ -247,7 +248,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'world': {
       /** 合并：profile:"full" 追加完整世界编排（原 world-build）。 */
       if (args['profile'] === 'full') {
-        const built = buildWorldProfile({ planetMass: typeof args['planetMass'] === 'number' ? (args['planetMass'] as number) : undefined, planetRadius: typeof args['planetRadius'] === 'number' ? (args['planetRadius'] as number) : undefined, orbitAU: typeof args['orbitAU'] === 'number' ? (args['orbitAU'] as number) : undefined, starMass: typeof args['starMass'] === 'number' ? (args['starMass'] as number) : undefined, rotationHours: typeof args['rotationHours'] === 'number' ? (args['rotationHours'] as number) : undefined, obliquityDeg: typeof args['obliquityDeg'] === 'number' ? (args['obliquityDeg'] as number) : undefined, initialPopulation: typeof args['initialPopulation'] === 'number' ? (args['initialPopulation'] as number) : undefined, muPerPerson: typeof args['muPerPerson'] === 'number' ? (args['muPerPerson'] as number) : undefined, useMap: args['useMap'] === true, mapSeed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : undefined })
+        const built = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: args['useMap'] === true, mapSeed: num(args, 'mapSeed') })
         const base = dispatchNew('world', { ...args, profile: undefined }) as { result?: string; value?: unknown } | null
         const lines = [String(base?.result ?? ''), '', '═══ 完整世界画像（profile:full）═══', '']
         for (const note of built.notes) lines.push('  ' + note)
@@ -358,7 +359,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         /** 只有显式要 svg 时才生成矢量（体积大）。 */
         if (args['format'] === 'svg') {
           const svg = renderEarthNodeSvg(borders, args['earthNode'] as string, {
-            width: typeof args['svgWidth'] === 'number' ? (args['svgWidth'] as number) : undefined,
+            width: num(args, 'svgWidth'),
             viewBox: nodeView,
             graticule: args['graticule'] !== false,
             labels: args['svgLabels'] !== false,
@@ -372,8 +373,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         const terrain = dataOf<TerrainRegion[]>('earth-terrain', 'earth-terrain.json', [])
         const elevation = dataOf<ElevationData>('earth-elevation', 'earth-elevation.json', { peaks: [], regions: [] })
         const layered = renderLayers(borders as unknown as LayerCountry[], pickLayerNode(nodes, String(args['earthNode'])), water, terrain, {
-          width: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined,
-          height: typeof args['asciiHeight'] === 'number' ? (args['asciiHeight'] as number) : undefined,
+          width: num(args, 'asciiWidth'),
+          height: num(args, 'asciiHeight'),
           viewBox: nodeView,
           ...(layerList !== undefined ? { layers: layerList } : {}),
         }, elevation)
@@ -413,19 +414,19 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         const earthData = dataOf<EarthMapsFile>('earth-maps', 'earth-maps.json', { continents: [], erasData: {} })
         const earth = renderEarthMap(earthData, {
           era: args['earthEra'] as string,
-          width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined,
-          height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined,
-          asciiWidth: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined,
+          width: num(args, 'mapWidth'),
+          height: num(args, 'mapHeight'),
+          asciiWidth: num(args, 'asciiWidth'),
         })
         const earthValue = { era: earth.era, name: earth.name, powers: earth.powers, landRatio: earth.landRatio, ascii: earth.ascii }
-        const earthExport = typeof args['export'] === 'string' ? (args['export'] as string) : ''
+        const earthExport = str(args, 'export') ?? ''
         if (earthExport === 'txt' || earthExport === 'md' || earthExport === 'json') {
           const file = exportMapFile(earthValue as unknown as Record<string, unknown>, earthExport, String(earth.era))
           return { result: earth.ascii + '\n\n已导出：' + file, value: { ...earthValue, exportPath: file } } as never
         }
         return { result: earth.ascii, value: earthValue } as never
       }
-      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : undefined, distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: typeof args['mapWidth'] === 'number' ? (args['mapWidth'] as number) : undefined, height: typeof args['mapHeight'] === 'number' ? (args['mapHeight'] as number) : undefined, seed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined, seaLevel: typeof args['seaLevel'] === 'number' ? (args['seaLevel'] as number) : undefined, mountainScale: typeof args['mountainScale'] === 'number' ? (args['mountainScale'] as number) : undefined, riverCount: typeof args['riverCount'] === 'number' ? (args['riverCount'] as number) : undefined, nationCount: typeof args['nationCount'] === 'number' ? (args['nationCount'] as number) : undefined, mineralDensity: typeof args['mineralDensity'] === 'number' ? (args['mineralDensity'] as number) : undefined, edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: typeof args['globalMeanK'] === 'number' ? (args['globalMeanK'] as number) : undefined, greenhouseK: typeof args['greenhouseK'] === 'number' ? (args['greenhouseK'] as number) : undefined, ascii: args['ascii'] !== false, asciiWidth: typeof args['asciiWidth'] === 'number' ? (args['asciiWidth'] as number) : undefined, asciiHeight: typeof args['asciiHeight'] === 'number' ? (args['asciiHeight'] as number) : undefined, focusRegions: Array.isArray(args['focusRegions']) ? (args['focusRegions'] as Array<Record<string, unknown>>).map((region) => ({ ...(typeof region['name'] === 'string' ? { name: region['name'] } : {}), x: Number(region['x'] ?? 0), y: Number(region['y'] ?? 0), ...(region['radius'] !== undefined ? { radius: Number(region['radius']) } : {}), ...(region['detail'] !== undefined ? { detail: Number(region['detail']) } : {}) })) : undefined })
+      const result = generateWorldMap({ topology: args['worldTopology'] === 'plane' ? 'plane' : 'sphere', planetRadiusKm: num(args, 'planetRadiusKm'), distance: args['mapDistance'] !== undefined ? (args['mapDistance'] as { from: { x: number; y: number }; to: { x: number; y: number } }) : undefined, width: num(args, 'mapWidth'), height: num(args, 'mapHeight'), seed: num(args, 'mapSeed') ?? num(args, 'seed'), seaLevel: num(args, 'seaLevel'), mountainScale: num(args, 'mountainScale'), riverCount: num(args, 'riverCount'), nationCount: num(args, 'nationCount'), mineralDensity: num(args, 'mineralDensity'), edits: Array.isArray(args['edits']) ? (args['edits'] as Array<Record<string, unknown>>).map((edit) => ({ x: Number(edit['x'] ?? 0), y: Number(edit['y'] ?? 0), ...(edit['height'] !== undefined ? { height: Number(edit['height']) } : {}), ...(edit['seaLevel'] !== undefined ? { seaLevel: Number(edit['seaLevel']) } : {}), ...(edit['nation'] !== undefined ? { nation: Number(edit['nation']) } : {}), ...(edit['mineral'] !== undefined ? { mineral: Number(edit['mineral']) } : {}) })) : undefined, climate: args['climate'] === true, globalMeanK: num(args, 'globalMeanK'), greenhouseK: num(args, 'greenhouseK'), ascii: args['ascii'] !== false, asciiWidth: num(args, 'asciiWidth'), asciiHeight: num(args, 'asciiHeight'), focusRegions: Array.isArray(args['focusRegions']) ? (args['focusRegions'] as Array<Record<string, unknown>>).map((region) => ({ ...(typeof region['name'] === 'string' ? { name: region['name'] } : {}), x: Number(region['x'] ?? 0), y: Number(region['y'] ?? 0), ...(region['radius'] !== undefined ? { radius: Number(region['radius']) } : {}), ...(region['detail'] !== undefined ? { detail: Number(region['detail']) } : {}) })) : undefined })
       const lines = ['═══ 全球地图（中等精度）═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       /** 气候层：value 里有，文本也要给（否则用户以为没生成）。 */
@@ -443,7 +444,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           lines.push(focus.ascii)
         }
       }
-      const mapExport = typeof args['export'] === 'string' ? (args['export'] as string) : ''
+      const mapExport = str(args, 'export') ?? ''
       /** SVG：矢量地图（无限缩放、可编辑），支持 viewBox 局部放大。 */
       if (mapExport === 'svg') {
         const viewBox = Array.isArray(args['viewBox']) && (args['viewBox'] as unknown[]).length === 4
@@ -457,11 +458,11 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           nations: result.nations,
           rivers: result.rivers,
           minerals: result.minerals,
-          kmPerCell: (2 * Math.PI * (typeof args['planetRadiusKm'] === 'number' ? (args['planetRadiusKm'] as number) : 6371)) / result.width,
+          kmPerCell: (2 * Math.PI * (num(args, 'planetRadiusKm') ?? 6371)) / result.width,
           /** 用实际海平面（分位数阈值）——色带靠它相对化，否则陆地会被画成海。 */
           seaLevel: result.seaLevelUsed,
         }, {
-          width: typeof args['svgWidth'] === 'number' ? (args['svgWidth'] as number) : undefined,
+          width: num(args, 'svgWidth'),
           viewBox,
           graticule: args['graticule'] !== false,
           labels: args['svgLabels'] !== false,
@@ -489,7 +490,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'world-build': {
-      const result = buildWorldProfile({ planetMass: typeof args['planetMass'] === 'number' ? (args['planetMass'] as number) : undefined, planetRadius: typeof args['planetRadius'] === 'number' ? (args['planetRadius'] as number) : undefined, orbitAU: typeof args['orbitAU'] === 'number' ? (args['orbitAU'] as number) : undefined, starMass: typeof args['starMass'] === 'number' ? (args['starMass'] as number) : undefined, rotationHours: typeof args['rotationHours'] === 'number' ? (args['rotationHours'] as number) : undefined, obliquityDeg: typeof args['obliquityDeg'] === 'number' ? (args['obliquityDeg'] as number) : undefined, initialPopulation: typeof args['initialPopulation'] === 'number' ? (args['initialPopulation'] as number) : undefined, muPerPerson: typeof args['muPerPerson'] === 'number' ? (args['muPerPerson'] as number) : undefined, useMap: args['useMap'] === true, mapSeed: typeof args['mapSeed'] === 'number' ? (args['mapSeed'] as number) : undefined })
+      const result = buildWorldProfile({ planetMass: num(args, 'planetMass'), planetRadius: num(args, 'planetRadius'), orbitAU: num(args, 'orbitAU'), starMass: num(args, 'starMass'), rotationHours: num(args, 'rotationHours'), obliquityDeg: num(args, 'obliquityDeg'), initialPopulation: num(args, 'initialPopulation'), muPerPerson: num(args, 'muPerPerson'), useMap: args['useMap'] === true, mapSeed: num(args, 'mapSeed') })
       const lines = ['═══ 完整世界画像 ═══', '']
       for (const note of result.notes) lines.push('  ' + note)
       lines.push('', '  ★ 瓶颈：' + result.bottleneck)
@@ -500,7 +501,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       /** 跨模块对账：按 crosschecks.json 跑两侧并比对。 */
       const file = dataOf<{ checks?: CrosscheckItem[] }>('crosschecks', 'crosschecks.json', { checks: [] })
       const items = Array.isArray(file) ? (file as unknown as CrosscheckItem[]) : (file.checks ?? [])
-      const only = typeof args['checkId'] === 'string' ? (args['checkId'] as string) : ''
+      const only = str(args, 'checkId') ?? ''
       const selected = only === '' ? items : items.filter((item) => item.id === only)
       const results = runCrosschecks(selected, (op, params) => {
         const outcome = dispatchNew(op, params as Record<string, unknown>)
@@ -518,7 +519,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'simulate': {
-      const result = simulateSystemDynamics({ stocks: (args['stocks'] ?? {}) as never, flows: (args['flows'] ?? {}) as never, dt: typeof args['dt'] === 'number' ? (args['dt'] as number) : undefined, steps: typeof args['simSteps'] === 'number' ? (args['simSteps'] as number) : undefined })
+      const result = simulateSystemDynamics({ stocks: (args['stocks'] ?? {}) as never, flows: (args['flows'] ?? {}) as never, dt: num(args, 'dt'), steps: num(args, 'simSteps') })
       const lines = ['═══ 系统动力学（存量/流量）═══', '']
       for (const [name, points] of Object.entries(result.series)) {
         const peak = result.peaks[name]
@@ -530,7 +531,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     }
 
     case 'optimize': {
-      const result = optimize({ objective: typeof args['objective'] === 'string' ? (args['objective'] as string) : undefined, opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
+      const result = optimize({ objective: str(args, 'objective'), opType: args['opType'] === 'min' ? 'min' : 'max', constraints: (args['constraints'] ?? {}) as never, variables: (args['lpVariables'] ?? {}) as never, integers: Array.isArray(args['integers']) ? (args['integers'] as unknown[]).map(String) : undefined })
       /** 无可行解不是「算不出」，是「约束互相冲突」——按反馈给 no_solution 错误体。 */
       if (!result.feasible) throw new CalcError('no_solution', '线性规划无可行解：约束互相冲突（如某资源上限低于最低需求）', '检查 constraints 的 min 是否大于 max；放宽或删除冲突约束。')
       const lines = ['═══ 线性规划（有解）═══']
@@ -540,33 +541,33 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'data': {
       /** 统一数据层：put/get/query/lineage/stats/export/import。 */
-      const action = typeof args['dataAction'] === 'string' ? (args['dataAction'] as string) : (typeof args['action'] === 'string' ? (args['action'] as string) : 'stats')
+      const action = str(args, 'dataAction') ?? (typeof args['action'] === 'string' ? (args['action'] as string) : 'stats')
       if (action === 'put') {
         const record = putRecord({ kind: String(args['kind'] ?? 'note'), name: String(args['name'] ?? ''), tags: Array.isArray(args['tags']) ? (args['tags'] as unknown[]).map(String) : [], refs: Array.isArray(args['refs']) ? (args['refs'] as unknown[]).map(String) : [], payload: args['payload'] })
         return { result: '已写入 ' + record.id + '（v' + record.version + '）', value: record } as never
       }
       if (action === 'get') {
-        const id = typeof args['id'] === 'string' ? (args['id'] as string) : typeof args['name'] === 'string' ? String(args['kind'] ?? 'note') + ':' + String(args['name']) : ''
+        const id = str(args, 'id') ?? (str(args, 'name') !== undefined ? String(args['kind'] ?? 'note') + ':' + String(str(args, 'name')) : '')
         /** 带 dataVersion 时取历史版本（借鉴双时态库）。 */
         const record = typeof args['dataVersion'] === 'number' ? getRecordVersion(id, args['dataVersion'] as number) : getRecord(id)
         return { result: record === null ? '没有这条记录：' + id : JSON.stringify(record, null, 1), value: { record } } as never
       }
       if (action === 'search') {
         /** search 的别名：nameContains 也能当关键词（schema 两个都收）。 */
-        const keyword = typeof args['query'] === 'string' && (args['query'] as string).trim() !== '' ? (args['query'] as string) : typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : ''
-        const hits = searchRecords(keyword, typeof args['limit'] === 'number' ? (args['limit'] as number) : 10)
+        const keyword = str(args, 'query') ?? str(args, 'nameContains') ?? ''
+        const hits = searchRecords(keyword, num(args, 'limit') ?? 10)
         const lines = ['═══ 数据检索「' + keyword + '」（' + hits.length + ' 条）═══']
         for (const hit of hits) lines.push('  ' + hit.record.id + '  [' + hit.record.kind + ']  分数 ' + hit.score.toFixed(2))
         return { result: lines.join('\n'), value: { keyword, hits: hits.map((h) => ({ id: h.record.id, score: h.score })) } } as never
       }
       if (action === 'query') {
-        const rows = queryRecordsCached({ kind: typeof args['kind'] === 'string' ? (args['kind'] as string) : undefined, tag: typeof args['tag'] === 'string' ? (args['tag'] as string) : undefined, nameContains: typeof args['nameContains'] === 'string' ? (args['nameContains'] as string) : undefined, refsTo: typeof args['refsTo'] === 'string' ? (args['refsTo'] as string) : undefined })
+        const rows = queryRecordsCached({ kind: str(args, 'kind'), tag: str(args, 'tag'), nameContains: str(args, 'nameContains'), refsTo: str(args, 'refsTo') })
         const lines = ['═══ 数据查询（' + rows.length + ' 条）═══']
         for (const row of rows.slice(0, 50)) lines.push('  ' + row.id + '  v' + row.version + '  [' + row.kind + ']  ' + (row.tags.length > 0 ? row.tags.join('/') : '-'))
         return { result: lines.join('\n'), value: { count: rows.length, records: rows.map((r) => ({ id: r.id, kind: r.kind, name: r.name, version: r.version, tags: r.tags, refs: r.refs })) } } as never
       }
       if (action === 'lineage') {
-        const id = typeof args['id'] === 'string' ? (args['id'] as string) : ''
+        const id = str(args, 'id') ?? ''
         const result = lineage(id)
         const lines = ['═══ 血缘：' + id + ' ═══']
         lines.push('  上游（它引用的）：' + (result.upstream.length > 0 ? result.upstream.map((r) => r.id).join('、') : '无'))
@@ -586,7 +587,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         return { result: '迁移完成：workspace ' + result['workspace'] + ' 条，归档 ' + result['archive'] + ' 条，跳过 ' + result['skipped'] + ' 条（已存在）', value: result } as never
       }
       if (action === 'compact') {
-        const result = compact(typeof args['compactThreshold'] === 'number' ? (args['compactThreshold'] as number) : undefined)
+        const result = compact(num(args, 'compactThreshold'))
         return { result: result.compacted ? '已压缩：' + result.before + ' 行 → ' + result.after + ' 行（旧档 .bak）' : '未到阈值，未压缩（' + result.before + ' 行）', value: result } as never
       }
       const stats = storeStats()
@@ -606,7 +607,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
       if (Array.isArray(variant['edges'])) variantInput['edges'] = toEdges(variant['edges'])
       if (typeof variant['steps'] === 'number') variantInput['steps'] = variant['steps']
       if (typeof variant['seed'] === 'number') variantInput['seed'] = variant['seed']
-      const result = runDiverge({ base: baseInput, variant: variantInput as never, threshold: typeof args['threshold'] === 'number' ? (args['threshold'] as number) : undefined })
+      const result = runDiverge({ base: baseInput, variant: variantInput as never, threshold: num(args, 'threshold') })
       const lines = ['═══ 分支推演（两条时间线）═══', '']
       lines.push('  分歧年：' + (result.divergingYear === null ? '无（改动不足）' : '第 ' + result.divergingYear + ' 年'))
       lines.push('  终局最强：base=' + result.baseLeader + ' / variant=' + result.variantLeader)
@@ -619,7 +620,7 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'conflict': {
       const actors = Array.isArray(args['actors']) ? (args['actors'] as Array<Record<string, unknown>>).map((a) => ({ id: String(a['id'] ?? ''), wealth: Number(a['wealth'] ?? 0) })) : []
       const edges = Array.isArray(args['edges']) ? (args['edges'] as Array<Record<string, unknown>>).map((e) => ({ from: String(e['from'] ?? ''), to: String(e['to'] ?? '') })) : []
-      const result = runConflict({ actors, edges, steps: typeof args['steps'] === 'number' ? (args['steps'] as number) : undefined, seed: typeof args['seed'] === 'number' ? (args['seed'] as number) : undefined })
+      const result = runConflict({ actors, edges, steps: num(args, 'steps'), seed: num(args, 'seed') })
       const lines = ['═══ 冲突/贡赋模拟 ═══', '']
       lines.push('  最终排序：' + result.ranking.map((r, i) => (i + 1) + '. ' + r.id + '(' + r.wealth.toFixed(0) + ')').join('  '))
       lines.push('  战争 ' + result.wars + ' 次，付贡 ' + result.tributes + ' 次')
@@ -642,8 +643,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
         events = sim.events
         simulation = { events: sim.events.length, finalHhi: sim.concentration[sim.concentration.length - 1].hhi }
       }
-      const result = buildEpochs({ series, events, minEpochYears: typeof args['minEpochYears'] === 'number' ? (args['minEpochYears'] as number) : undefined, threshold: typeof args['historyThreshold'] === 'number' ? (args['historyThreshold'] as number) : undefined, smoothing: typeof args['smoothing'] === 'number' ? (args['smoothing'] as number) : undefined })
-      const crises = detectCrises(series, { dropRatio: typeof args['crisisDrop'] === 'number' ? (args['crisisDrop'] as number) : 0.2 })
+      const result = buildEpochs({ series, events, minEpochYears: num(args, 'minEpochYears'), threshold: num(args, 'historyThreshold'), smoothing: num(args, 'smoothing') })
+      const crises = detectCrises(series, { dropRatio: num(args, 'crisisDrop') ?? 0.2 })
       const lines = ['═══ 历史纪元划分 ═══', '']
       if (simulation !== null) lines.push('  [模拟] 冲突事件 ' + simulation['events'] + ' 次，末态集中度 ' + Number(simulation['finalHhi']).toFixed(2), '')
       for (const epoch of result.epochs) lines.push('  ' + epoch.startYear + ' — ' + epoch.endYear + ' 年：' + epoch.turn + '（' + epoch.events.map((e) => e.label).join('、') + '）')
@@ -655,12 +656,12 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
 
     case 'backtrace': {
       const formulas = dataOf<Array<Record<string, unknown>>>('formulas', 'formulas.json', [])
-      const target = typeof args['target'] === 'string' ? (args['target'] as string) : ''
+      const target = str(args, 'target') ?? ''
       if (target.trim() === '') throw new CalcError('missing_params', 'backtrace 需要 target（目标描述）', '例如 {operation:"backtrace", target:"这座窑一天烧多少煤"}。')
       const given = Array.isArray(args['given']) ? (args['given'] as unknown[]).map(String) : []
       const chainFile = dataOf<{ chains?: unknown[] }>('modelChains', 'model-chains.json', { chains: [] })
       const chains = Array.isArray(chainFile) ? chainFile : (chainFile.chains ?? [])
-      const result = backtrace(formulas as never, target, { maxDepth: typeof args['maxDepth'] === 'number' ? (args['maxDepth'] as number) : 2, given, modelChains: chains as never[] })
+      const result = backtrace(formulas as never, target, { maxDepth: num(args, 'maxDepth') ?? 2, given, modelChains: chains as never[] })
       const lines = ['═══ 目标回溯：' + target + ' ═══', '']
       if (result.modelChain !== undefined) {
         lines.push('  ★ 模型链：' + result.modelChain.label)
@@ -947,9 +948,9 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
     case 'currency': {
       const file = dataOf<CurrencyFile>('currencies', 'currencies.json', { currencies: [] })
       return toOutcome(runCurrency(file, {
-        action: typeof args['currencyAction'] === 'string' ? (args['currencyAction'] as string) : undefined,
-        kind: typeof args['currencyKind'] === 'string' ? (args['currencyKind'] as string) : undefined,
-        code: typeof args['currencyCode'] === 'string' ? (args['currencyCode'] as string) : undefined,
+        action: str(args, 'currencyAction'),
+        kind: str(args, 'currencyKind'),
+        code: str(args, 'currencyCode'),
       }))
     }
 
@@ -1249,7 +1250,7 @@ function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
      * 以前硬编码成 P，于是表达式里的 a 没定义 → unknown_symbol）。
      */
     const stateMatch = /d\s*([A-Za-z_][A-Za-z0-9_]*)\s*\/\s*dt/.exec(expression)
-    const recurrenceText = typeof args['recurrence'] === 'string' ? (args['recurrence'] as string) : ''
+    const recurrenceText = str(args, 'recurrence') ?? ''
     const recurrenceSymbol = /[A-Za-z_][A-Za-z0-9_]*/.exec(recurrenceText.replace(/[0-9]+(?:\.[0-9]+)?/g, ''))?.[0]
     const stateName = stateMatch !== null
       ? stateMatch[1]
