@@ -910,7 +910,8 @@ export function dispatchNew(operation: string, rawArgs: Record<string, unknown>)
           typeof args['from'] === 'number' ? args['from'] : 0,
           typeof args['to'] === 'number' ? args['to'] : 1,
           typeof args['steps'] === 'number' ? args['steps'] : 1000,
-          typeof args['samples'] === 'number' ? args['samples'] : 11,
+          typeof args['samples'] === 'number' ? args['samples'] : 24,
+          Array.isArray(args['at']) ? (args['at'] as number[]) : undefined,
         ),
       )
     }

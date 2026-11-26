@@ -30,9 +30,24 @@
  */
 
 import rk4 from 'ode-rk4'
+import { all, create } from 'mathjs'
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
 import { fmtNumber, FMT } from '../../core/format.js'
+
+/**
+ * 浮点求值实例（ODE 专用）。
+ *
+ * ## 为什么不用 `Engine`
+ *
+ * RK4 主循环本身就是浮点运算，而 `Engine` 走 BigNumber：
+ * 每一步、每个状态都要一次 BigNumber 求值。2000 步 × 4 阶 × 3 状态
+ * （SIR）= 2.4 万次，实测 **29 秒**；换成浮点实例并预编译表达式后 < 1 秒。
+ *
+ * 数值上不损失：RK4 的截断误差远大于 15 位有效数字，BigNumber 在这条路径上
+ * 没有收益，只会把「能算」变成「算不完」。
+ */
+const floatMath = create(all, { number: 'number', precision: 64 })
 
 /** ODE 结果。 */
 export interface OdeOutcome {
@@ -41,21 +56,79 @@ export interface OdeOutcome {
   notice?: string
 }
 
-/** 解析 `dy/dt = -0.5*y` 形态。 */
-function parseOde(expression: string): { derivative: string; variable: string } {
-  const slashForm = /^d([A-Za-z])\s*\/\s*d([A-Za-z])\s*=\s*(.+)$/.exec(expression.trim())
-  if (slashForm !== null) {
-    return { variable: slashForm[2], derivative: slashForm[3] }
+/** 解析后的方程组。 */
+interface ParsedOde {
+  /** 自变量名（`t`，或 `dy/dx` 里的 `x`）。 */
+  variable: string
+  /** 状态名 → 导数右端表达式。 */
+  derivatives: Record<string, string>
+}
+
+/**
+ * 解析一条或多条一阶导数方程。
+ *
+ * ## 支持四种写法（都是 help 里承诺过的）
+ *
+ * ```
+ *   dy/dt = -0.5*y              单状态、斜杠形式
+ *   y' = -0.5*y                 单状态、撇号形式
+ *   S'=-k1*S*I; I'=k1*S*I-k2*I  多状态、分号分隔（help 的写法）
+ *   dS/dt=..., dI/dt=...        多状态、逗号分隔（早期文档的写法）
+ * ```
+ *
+ * **2026-11-27 修复**：此前正则带 `^...$` 只认第一条，
+ * 右端贪婪吃掉后面所有方程，于是多状态永远"发散"（每个状态都在求同一个导数）。
+ * 现在按「条目起点」切分，而不是按分隔符切分——右端可能含
+ * `min(a, b)` 这类函数参数逗号，简单 split 会切坏。
+ *
+ * @param expression - 方程串
+ * @returns 自变量与各状态的导数
+ * @throws {CalcError} 缺等号、右端为空、同一状态重复定义、变量不一致
+ */
+function parseOde(expression: string): ParsedOde {
+  const source = expression.trim()
+  if (source === '') {
+    throw new CalcError('syntax', 'ode 需要 expression（方程）', '例如 `dy/dt = -0.5*y`。')
   }
-  const primeForm = /^([A-Za-z])\s*'\s*=\s*(.+)$/.exec(expression.trim())
-  if (primeForm !== null) {
-    return { variable: 't', derivative: primeForm[2] }
+  /** 条目起点：d<状态>/d<变量>= 或 <状态>'= */
+  const marker = /\b(?:d([A-Za-z][A-Za-z0-9_]*)\s*\/\s*d([A-Za-z][A-Za-z0-9_]*)|([A-Za-z][A-Za-z0-9_]*)\s*')\s*=/g
+  const entries: Array<{ start: number; body: number; state: string; variable?: string }> = []
+  for (let match = marker.exec(source); match !== null; match = marker.exec(source)) {
+    entries.push({
+      start: match.index,
+      body: marker.lastIndex,
+      state: match[1] ?? match[3] ?? '',
+      variable: match[2] ?? undefined,
+    })
   }
-  throw new CalcError(
-    'syntax',
-    '方程 "' + expression + '" 缺少等号，应为 dy/dt = ... 形式',
-    '例如 `dy/dt = -0.5*y` 或 `y\' = -0.5*y`。',
-  )
+  if (entries.length === 0) {
+    throw new CalcError(
+      'syntax',
+      '方程 "' + source + '" 缺少等号，应为 dy/dt = ... 形式',
+      "例如 `dy/dt = -0.5*y` 或 `y' = -0.5*y`。",
+    )
+  }
+  const derivatives: Record<string, string> = {}
+  const variables = new Set<string>()
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index]
+    if (entry === undefined) continue
+    const next = entries[index + 1]
+    const end = next !== undefined ? next.start : source.length
+    const rhs = source.slice(entry.body, end).replace(/[;,]$/, '').trim().replace(/[;,]$/, '')
+    if (rhs === '') {
+      throw new CalcError('syntax', '状态「' + entry.state + '」的方程缺右端表达式', '等号右边不能为空。')
+    }
+    if (derivatives[entry.state] !== undefined) {
+      throw new CalcError('syntax', '状态「' + entry.state + '」定义了两次', '每个状态只能有一条一阶导数方程。')
+    }
+    derivatives[entry.state] = rhs
+    if (entry.variable !== undefined) variables.add(entry.variable)
+  }
+  if (variables.size > 1) {
+    throw new CalcError('syntax', '多条方程的导数变量不一致：' + [...variables].join(' / '), '同一个方程组必须对同一个变量求导。')
+  }
+  return { variable: [...variables][0] ?? 't', derivatives }
 }
 
 /**
@@ -77,9 +150,10 @@ export function solveOde(
   from: number,
   to: number,
   steps = 1000,
-  samples = 11,
+  samples = 24,
+  at?: number[],
 ): OdeOutcome {
-  const { derivative, variable } = parseOde(expression)
+  const { variable, derivatives } = parseOde(expression)
 
   const stateNames = Object.keys(initial).filter((k) => k !== variable)
   if (stateNames.length === 0) {
@@ -87,6 +161,24 @@ export function solveOde(
       'missing_params',
       'initial 里要有状态变量（如 {y: 100}）',
       '方程 `dy/dt = ...` 需要 y 的初值。',
+    )
+  }
+  /** 方程出现但没给初值 → 明确报缺哪个，不能默认 0 静默算出另一条曲线。 */
+  const missingInitial = Object.keys(derivatives).filter((name) => initial[name] === undefined)
+  if (missingInitial.length > 0) {
+    throw new CalcError(
+      'missing_params',
+      'initial 缺状态「' + missingInitial.join('、') + '」的初值',
+      '方程里的每个状态都要在 initial 里给初值，例如 {S:999, I:1, R:0}。',
+    )
+  }
+  /** 给了初值却没有对应方程 → 同样是错的（不会自己演化）。 */
+  const missingEquation = stateNames.filter((name) => derivatives[name] === undefined)
+  if (missingEquation.length > 0) {
+    throw new CalcError(
+      'syntax',
+      '状态「' + missingEquation.join('、') + '」没有对应的一阶导数方程',
+      '每条状态都要写一条方程，例如 d' + missingEquation[0] + "/dt = ...。",
     )
   }
   if (to <= from) {
@@ -119,8 +211,13 @@ export function solveOde(
     for (let i = 0; i < stateNames.length; i += 1) scope[stateNames[i]] = clamp(y[i])
 
     for (let i = 0; i < stateNames.length; i += 1) {
+      const compiledExpression = compiled[i]
+      if (compiledExpression === undefined) {
+        dydt[i] = NaN
+        continue
+      }
       try {
-        const v = Number(engine.evaluate(derivative, scope))
+        const v = Number(compiledExpression.evaluate(scope))
         dydt[i] = Number.isFinite(v) ? v : NaN
         /** 刚性信号：只看第一个状态变量（多变量时等价性足够）。 */
         if (i === 0 && Number.isFinite(v)) {
@@ -132,6 +229,16 @@ export function solveOde(
       }
     }
   }
+
+  /** 预编译各状态的导数：每步只求值、不重新解析。 */
+  const compiled = stateNames.map((name) => {
+    const rightSide = derivatives[name] as string
+    try {
+      return floatMath.compile(rightSide)
+    } catch {
+      throw new CalcError('syntax', '方程「' + name + '」的右端无法解析：' + rightSide, '检查括号、函数名与运算符。')
+    }
+  })
 
   const y0 = stateNames.map((name) => Number(initial[name]))
   const integrator = rk4(y0, derivFn, from, h)
@@ -146,6 +253,21 @@ export function solveOde(
   record(from, integrator.y as number[])
 
   const sampleEvery = Math.max(1, Math.floor(steps / samples))
+  /** 每步跟踪极值：不受采样密度影响，能回答「第几步达峰、峰值多少」。 */
+  const extrema: Record<string, { max: number; maxT: number; min: number; minT: number }> = {}
+  for (let i = 0; i < stateNames.length; i += 1) {
+    const name = stateNames[i]
+    if (name === undefined) continue
+    const start = y0[i] as number
+    extrema[name] = { max: start, maxT: from, min: start, minT: from }
+  }
+  /** 请求的精确时点（`at`）：不在步上就线性插值，保证「第 3 周」对得上。 */
+  const requested = Array.isArray(at)
+    ? [...new Set(at.filter((value) => Number.isFinite(value) && value >= from && value <= to))].sort((left, right) => left - right)
+    : []
+  const atPoints: Array<{ t: number; values: Record<string, number> }> = []
+  let nextAt = 0
+  let previous: { t: number; y: number[] } = { t: from, y: y0.slice() }
   let diverged = false
 
   for (let step = 1; step <= steps; step += 1) {
@@ -155,8 +277,36 @@ export function solveOde(
       diverged = true
       break
     }
+    const currentT = integrator.t as number
+    for (let i = 0; i < stateNames.length; i += 1) {
+      const value = y[i] as number
+      const slot = extrema[stateNames[i] as string]
+      if (slot === undefined) continue
+      if (value > slot.max) {
+        slot.max = value
+        slot.maxT = currentT
+      }
+      if (value < slot.min) {
+        slot.min = value
+        slot.minT = currentT
+      }
+    }
+    while (nextAt < requested.length && (requested[nextAt] as number) <= currentT) {
+      const target = requested[nextAt] as number
+      const span = currentT - previous.t
+      const ratio = span > 0 ? (target - previous.t) / span : 0
+      const values: Record<string, number> = {}
+      for (let i = 0; i < stateNames.length; i += 1) {
+        const before = previous.y[i] as number
+        const after = y[i] as number
+        values[stateNames[i] as string] = before + (after - before) * ratio
+      }
+      atPoints.push({ t: target, values })
+      nextAt += 1
+    }
+    previous = { t: currentT, y: y.slice() }
     if (step % sampleEvery === 0 || step === steps) {
-      record(integrator.t as number, y)
+      record(currentT, y)
     }
   }
 
@@ -196,6 +346,8 @@ export function solveOde(
       steps,
       points: points.map((p) => ({ t: p.t, ...p.values })),
       final: points[points.length - 1]?.values ?? {},
+      extrema,
+      at: atPoints.map((p) => ({ t: p.t, ...p.values })),
     },
     notice,
   }
