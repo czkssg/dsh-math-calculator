@@ -106,6 +106,31 @@ console.log('-- 5. 波速 vs 一维 Fisher—KPP 数值解 --')
   assert('PDE 实测前沿速度 ≈ 2√(D·r)（相对差 < 10%）', Math.abs(measured - predicted) / predicted < 0.1, '实测 ' + measured.toFixed(3) + ' / 预测 ' + predicted.toFixed(3))
 }
 
+console.log('-- 6. 谣言传遍时间：反解（solveRange）--')
+{
+  const r = await run({ operation: 'formula', formula: 'information_propagation', params: { N: 100000, k: 0.1 }, solveFor: 't', targetValue: 90000, solveRange: { min: 0, max: 1000 } })
+  const solved = r.ok === true && Array.isArray(r.value.solutions) && r.value.solutions.length > 0
+  assert('10 万人、k=0.1、传遍 90% → 可反解', solved, r.ok ? '无解' : r.error && r.error.message)
+  if (solved) {
+    assert('t ≈ ln(10)/k = 23.026 天', near(r.value.solutions[0], Math.log(10) / 0.1, 1e-3), String(r.value.solutions[0]))
+  }
+  const noRange = await run({ operation: 'formula', formula: 'information_propagation', params: { N: 100000, k: 0.1 }, solveFor: 't', targetValue: 90000 })
+  const text = noRange.ok === true ? String(noRange.result) : String((noRange.error && noRange.error.message) || '')
+  assert('无区间时的提示写 solveRange（不是 range，会误导）', text.includes('solveRange'), text.slice(0, 120))
+}
+
+console.log('-- 7. 技术扩散与饥荒链：已有能力直接串起来 --')
+{
+  const tech = await run({ operation: 'formula', formula: 'diffusion_s_curve', params: { rate: 0.3, t: 30, t_mid: 20 } })
+  assert('技术普及：30 年、半程 20 年 → 95.3%', tech.ok === true && near(tech.value.result, 0.9526, 1e-3), tech.ok ? String(tech.value.result) : '')
+  const gap = await run({ operation: 'formula', formula: 'calorie_gap_ratio', params: { requirement: 1000, available: 700 } })
+  assert('饥荒缺口 = 30%', gap.ok === true && near(gap.value.result, 0.3, 1e-9), gap.ok ? String(gap.value.result) : '')
+  const survive = await run({ operation: 'formula', formula: 'starvation_survival_time', params: { body_fat_mass: 15, energy_per_kg_fat: 32200, utilization: 0.8, daily_deficit: 8000 } })
+  assert('体脂 15kg、日缺口 8000kJ → 约 48 天', survive.ok === true && near(survive.value.result, 48.3, 0.5), survive.ok ? String(survive.value.result) : '')
+  const death = await run({ operation: 'formula', formula: 'famine_excess_mortality', params: { baseline_death_rate: 0.035, severity_factor: 8, gap_ratio: 0.3 } })
+  assert('缺口 30% → 超额死亡率 6.0%', death.ok === true && near(death.value.result, 0.0602, 1e-3), death.ok ? String(death.value.result) : '')
+}
+
 console.log('')
 console.log('通过 ' + pass + '，失败 ' + fails.length)
 if (fails.length > 0) { for (const f of fails) console.log('  · ' + f); process.exitCode = 1 }

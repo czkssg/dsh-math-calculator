@@ -237,7 +237,7 @@ export function solveFor(input: SolveForInput, formulas: FormulaEntry[]): SolveF
   if (solutions.length === 0) {
     lines.push('  ✗ 没有找到实数解。')
     if (parsed.complex.length > 0) lines.push('  符号解只有复数解：' + parsed.complex.join('，') + '（这通常意味着给定参数下无实数解）')
-    if (!numericUsed && input.range === undefined) lines.push('  可给 range:{min,max} 让它在区间内做数值搜索。')
+    if (!numericUsed && input.range === undefined) lines.push('  可给 solveRange:{min,max} 让它在区间内做数值搜索。')
     lines.push('', '  ★ 不返回「看起来像答案」的数：符号解为空、数值也没找到时，这里就是没有解。')
     return { result: lines.join('\n'), value: { formula: entry.id, target, value: input.value, solutions: [], complex: parsed.complex, verified: [] }, ...(parsed.complex.length > 0 ? { notice: '只有复数解' } : {}) }
   }
