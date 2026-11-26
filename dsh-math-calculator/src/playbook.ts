@@ -391,6 +391,14 @@ export function buildBriefPlaybook(state: {
   out.push('· 等价单位自动换算（`m/s^2`≈`N/kg`）；查链条 `formulas query="sys:..."`')
   out.push('· ⚠ 链条是**主题分组**不是依赖，顺序你自己判断')
   out.push('')
+  /**
+   * 分诊：先认路，再走路（借 ask-matt）。
+   * 只写三行——brief 档字数紧，且这只是「提醒存在这条路」，具体判断在 triage().
+   */
+  out.push('**先分诊，再动手**（别把一句话的问题套进 11 步推演）')
+  out.push('· 直答（单点数）→ evaluate/units/formula；对账（对不对）→ balance/consistency；推演（会怎样）→ derivation；查证（现实里是什么）→ world-map/constants')
+  out.push('· 拿不准就不套流程，先问清；**流程是给需要它的题用的，不是标配**')
+  out.push('')
   out.push('**世界推演：底座算数，你判断表达。**')
   out.push('- 算：`derivation`（pipeline/backSolve/dead/observer/chaos）；写：结语叙事你生成')
   out.push('- 硬约束如实说；叙事选择不反驳只讲代价；算不出的别编，标待定')

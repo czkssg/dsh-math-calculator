@@ -84,6 +84,7 @@ whenToUse: 用户提到世界观、架空设定、推演、星球参数、重力
 | **常数联动** | constants | 改基础旋钮会自动重算派生量（hbar/R/mu0/sigma/alpha_fs/g/Lsun…）；不带参调用看「→ 派生」；调和办法见 docs/常数关系网.md |
 | **随机数/行为映射** | random | randomSeed + count/min/max/integer；或 randomActors + randomTraits（子流，顺序无关） || **货币符号库** | currency | list/get（中文名/符号/缩写；不做汇率与购买力） |
 | **入口路由** | （自动） | 用 evaluate 算别的需求时，结果里会提示该换哪个 operation（solve/topology/balance…） |
+| **先分诊** | （自动） | 直答/对账/推演/查证四条路；直答跳过全部 11 步，推演才走完整流程 |
 
 ### astro：天文与历法
 
