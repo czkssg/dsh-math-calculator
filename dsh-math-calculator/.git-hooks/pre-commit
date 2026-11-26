@@ -1,0 +1,44 @@
+#!/bin/bash
+# 提交前守卫（2026-11-26 加，依据 /retro 的自动化检查建议）。
+#
+# ## 为什么要有它
+#
+# 仓库早就有 typecheck / doccheck / preflight 三个检查，
+# 但**没有一个在提交时自动跑**——全靠人记得。结果：
+#   · 4 次 git add 漏文件（engine.ts 被遗忘）
+#   · 3 次 doccheck 失败（插代码挤掉 JSDoc，事后才补）
+#   · 版本号三处不同步的风险
+# 这些都是机械性错误，钩子能在**写坏当场**拦住，不必跑完 10 分钟全量才发现。
+#
+# ## 为什么不含全量测试
+#
+# test:report 要 10 分钟，放进 commit 会让人习惯性 --no-verify（等于没钩子）。
+# 全量留给发版前手动跑；这里只跑秒级的三项。
+
+set -e
+cd "$(git rev-parse --show-toplevel)/dsh-math-calculator" 2>/dev/null || cd "$(git rev-parse --show-toplevel)"
+
+echo "[pre-commit] typecheck..."
+npm run --silent typecheck || {
+  echo ""
+  echo "✗ 类型检查失败——提交已阻止。修好再提交。"
+  exit 1
+}
+
+echo "[pre-commit] doccheck（注释覆盖 + 块注释安全）..."
+npm run --silent doccheck || {
+  echo ""
+  echo "✗ 注释检查失败——提交已阻止。"
+  echo "  提示：插入代码时容易挤掉原有 JSDoc；注释里写 `*/` 会提前闭合块注释。"
+  exit 1
+}
+
+echo "[pre-commit] preflight（版本三处一致）..."
+npm run --silent preflight || {
+  echo ""
+  echo "✗ 自检失败——提交已阻止。"
+  echo "  提示：package.json / dsh.plugin.json / package-lock.json 的版本必须一致。"
+  exit 1
+}
+
+echo "[pre-commit] ✓ 三项通过（全量测试请手动跑 npm run test:report）"

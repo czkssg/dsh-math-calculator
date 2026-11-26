@@ -87,7 +87,54 @@ export function auditDocs(root) {
     missingHeaders,
     missingModules,
     missingExports,
+    unsafeComments: collectUnsafeComments(root, files),
   }
+}
+
+/**
+ * 找出「块注释提前闭合」的文件。
+ *
+ * ## 为什么需要
+ *
+ * AGENTS.md 的「已知的坑」第一条就是它：在注释里写「星号紧跟斜杠」这两个字符，
+ * 会提前闭合块注释，**整段编译失败**，而且报错行号通常不等于出错位置。
+ * 这条规则一直只写在文档里，没有确定性检查——开发这个检查时自己又踩了三次。
+ *
+ * ## 判据
+ *
+ * 逐行扫描块注释：闭合符之后若还有非空白、且不是代码声明的正文，
+ * 说明它提前闭合了，判为可疑。行尾正常闭合放行。
+ *
+ * @param root - src 根目录
+ * @param files - 待检查文件绝对路径
+ * @returns 可疑位置列表
+ */
+function collectUnsafeComments(root, files) {
+  const out = []
+  for (const file of files) {
+    const rel = relative(root, file).replace(/\\/g, '/')
+    const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+    let inBlock = false
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i]
+      if (!inBlock) {
+        const open = line.indexOf('/**')
+        if (open < 0) continue
+        inBlock = true
+        const rest = line.slice(open + 3)
+        if (rest.indexOf('*/') >= 0) inBlock = false
+        continue
+      }
+      const closeAt = line.indexOf('*/')
+      if (closeAt < 0) continue
+      const after = line.slice(closeAt + 2).trim()
+      /** 行尾闭合、或后面直接跟声明，都是正常的。 */
+      const normal = after === '' || /^(export|const|function|type|interface|class|let|var|import|if|for|while|return|\/\/)/.test(after)
+      if (!normal) out.push(rel + ':' + (i + 1) + ' 块注释提前闭合（闭合符后还有正文）：' + line.trim().slice(0, 60))
+      inBlock = false
+    }
+  }
+  return out
 }
 
 /** 直接运行时打印报告。 */
@@ -105,8 +152,10 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '
     for (const item of result.missingHeaders) console.log('  [header] ' + item)
     for (const item of result.missingModules) console.log('  [@module] ' + item)
     for (const item of result.missingExports.slice(0, 20)) console.log('  [export] ' + item)
+    console.log(`  可疑块注释：${result.unsafeComments.length}`)
+    for (const item of result.unsafeComments) console.log('  [unsafe] ' + item)
   }
-  const failed = result.missingHeaders.length + result.missingModules.length + result.missingExports.length
+  const failed = result.missingHeaders.length + result.missingModules.length + result.missingExports.length + result.unsafeComments.length
   if (failed > 0) {
     console.log('\n✗ 有未注释的代码，请先补注释。')
     process.exitCode = 1
