@@ -63,8 +63,18 @@ console.log('-- 1. 结构完整性（665 条）--')
 
 console.log('-- 2. 可执行式：parse + 符号声明 --')
 {
-  const executable = formulas.filter((f) => f.executable !== false)
-  assert('可执行式 ≥ 800 条', executable.length >= 800, String(executable.length))
+  /**
+   * 2026-11-27：gini/hhi/shannon_entropy/simpson_diversity 已实现数组求值，
+   * 但它们的 expr 仍是**排版符号**（含 `Σᵢ`），mathjs 解析不了。
+   * 它们的正确性由 r101-array-formulas 用**定义性质**守护（完全平均→0 等），
+   * 所以这里把 parse 检查限定在「表达式型」公式上。
+   */
+  const ARRAY_IDS = new Set(['gini', 'hhi', 'shannon_entropy', 'simpson_diversity'])
+  const executable = formulas.filter((f) => f.executable !== false && !ARRAY_IDS.has(f.id))
+  assert('可执行式（表达式型）≥ 800 条', executable.length >= 800, String(executable.length))
+  /** 数组型公式也必须可执行，只是不走 parse。 */
+  const arrayExec = formulas.filter((f) => ARRAY_IDS.has(f.id) && f.executable !== false)
+  assert('★ 4 条数组型公式已可执行', arrayExec.length === 4, String(arrayExec.length))
   const unparsable = []
   const unknown = new Map()
   for (const formula of executable) {
@@ -94,19 +104,19 @@ console.log('-- 2. 可执行式：parse + 符号声明 --')
   assert('★ 没有未声明的符号（除常数）', unknown.size === 0, JSON.stringify([...unknown.entries()]))
 }
 
-console.log('-- 3. 展示式：显式标记 + 明确报错 --')
+console.log('-- 3. 展示式：应为零残留（原 4 条已实现）--')
 {
+  /**
+   * 2026-11-27 变更：原来这里断言「4 条展示式被标记」，
+   * 但那 4 条（gini/hhi/shannon_entropy/simpson_diversity）已实现数组求值，
+   * 全库不再有展示式——断言反过来守护：**不许再出现**不可执行的公式。
+   */
   const display = formulas.filter((f) => f.executable === false).map((f) => f.id)
-  assert('★ 4 条展示式被标记', JSON.stringify(display.sort()) === JSON.stringify(['gini', 'hhi', 'shannon_entropy', 'simpson_diversity']), JSON.stringify(display))
-  const entry = formulas.find((f) => f.id === 'gini')
-  let error = null
-  try {
-    evaluateMod.evaluateFormula(engineMod.buildEngine(), entry, {}, 8, true)
-  } catch (thrown) {
-    error = thrown
-  }
-  assert('★ 求值展示式 → invalid_argument（不是语法错）', error?.type === 'invalid_argument', String(error?.message).slice(0, 60))
-  assert('hint 说清「展示式」', String(error?.hint ?? '').includes('展示式'), String(error?.hint ?? '').slice(0, 50))
+  assert('★ 无展示式残留（原 4 条已可算）', display.length === 0, display.join(', '))
+  /** 数组型公式传给 evaluateFormula 能算出数（不是报错）。 */
+  const engine = engineMod.buildEngine()
+  const out = evaluateMod.evaluateFormula(engine, formulas.find((f) => f.id === 'hhi'), { s: [0.25, 0.25, 0.25, 0.25] }, 8, true)
+  assert('★ 数组型公式经 evaluateFormula 可算', out.result.includes('0.25'), out.result)
 }
 
 console.log('-- 4. 可执行式的求值冒烟（选 20 条有全默认值的）--')

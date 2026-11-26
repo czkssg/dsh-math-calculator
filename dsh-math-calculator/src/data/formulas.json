@@ -4825,12 +4825,11 @@
    }
   },
   "unit": "无量纲",
-  "desc": "分组数据的梯形法近似。小样本建议直接用 operation=\"stats\" 取分位数后手工积分。",
+  "desc": "分组数据的梯形法近似。小样本建议直接用 operation=\"stats\" 取分位数后手工积分。（2026-11-27：已实现数组求值，传数组参数可直接算）",
   "keys": [
    "gini",
    "基尼"
   ],
-  "executable": false,
   "sources": [
    {
     "type": "textbook",
@@ -4860,13 +4859,12 @@
    }
   },
   "unit": "无量纲",
-  "desc": "市场集中度。HHI>0.25 视为高度集中。",
+  "desc": "市场集中度。HHI>0.25 视为高度集中。（2026-11-27：已实现数组求值，传数组参数可直接算）",
   "keys": [
    "hhi",
    "集中度",
    "垄断"
   ],
-  "executable": false,
   "sources": [
    {
     "type": "textbook",
@@ -4903,13 +4901,12 @@
    }
   },
   "unit": "bit",
-  "desc": "H = -Σp·log_base(p)。信息量/多样性度量。",
+  "desc": "H = -Σp·log_base(p)。信息量/多样性度量。（2026-11-27：已实现数组求值，传数组参数可直接算）",
   "keys": [
    "entropy",
    "熵",
    "香农"
   ],
-  "executable": false,
   "sources": [
    {
     "type": "journal",
@@ -4939,12 +4936,11 @@
    }
   },
   "unit": "无量纲",
-  "desc": "D = 1 - Σp²。生态/语言多样性。",
+  "desc": "D = 1 - Σp²。生态/语言多样性。（2026-11-27：已实现数组求值，传数组参数可直接算）",
   "keys": [
    "simpson",
    "多样性"
   ],
-  "executable": false,
   "output": "多样性指数"
  },
  {

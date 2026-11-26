@@ -23,6 +23,7 @@
 
 import type { Engine } from '../../core/engine.js'
 import { CalcError } from '../../core/errors.js'
+import { evaluateArrayFormulaById } from './array-formulas.js'
 import { toUcum, validateUcumUnit } from '../../core/ucum.js'
 import { fmtNumber, FMT, trimDecimal } from '../../core/format.js'
 import type { FormulaEntry } from './query.js'
@@ -44,6 +45,31 @@ export interface FormulaOutcome {
  * @param terse - 精简输出
  * @returns 结果
  */
+
+/**
+ * 数组型公式结果的显示文本。
+ *
+ * @param value - 数值
+ * @returns 最多 8 位小数的文本
+ */
+function formatArrayResult(value: number): string {
+  if (!Number.isFinite(value)) return String(value)
+  return String(Math.round(value * 1e8) / 1e8)
+}
+
+/**
+ * 求一条公式。
+ *
+ * 数组型公式（gini/hhi/shannon_entropy/simpson_diversity）先走内置算法，
+ * 不看表达式——它们的 expr 含排版符号，mathjs 解析不了，但数学定义明确。
+ *
+ * @param engine - 引擎
+ * @param entry - 公式条目
+ * @param overrides - 参数覆盖（数组型公式传数组）
+ * @param displayPrecision - 显示精度
+ * @param terse - 精简输出
+ * @returns 结果文本与结构化 value
+ */
 export function evaluateFormula(
   engine: Engine,
   entry: FormulaEntry,
@@ -58,6 +84,22 @@ export function evaluateFormula(
    * 排版符号，mathjs 解析不了。它们是给检索与帮助看的展示式，
    * 调用求值时应明确说「不可求值」，而不是把语法错误甩给调用方。
    */
+  /**
+   * ## 数组型公式：先看能不能用内置算法算（2026-11-27 加）
+   *
+   * 有 4 条公式要**遍历数组**：gini / hhi / shannon_entropy / simpson_diversity。
+   * 它们此前标 executable:false 是因为表达式含 `Σᵢ`、`log_base` 这类排版符号，
+   * mathjs 解析不了——但数学定义本身完全明确，属于「能算却没算」。
+   *
+   * 现在走内置算法（不看表达式），算得出就直接返回；算不出再落回展示式报错。
+   */
+  const arrayValue = evaluateArrayFormulaById(entry.id, overrides)
+  if (arrayValue !== null) {
+    return {
+      result: entry.name + ' = ' + formatArrayResult(arrayValue) + (entry.unit !== undefined && entry.unit !== '无量纲' ? ' ' + entry.unit : ''),
+      value: { answer: arrayValue, formula: entry.id, inputs: overrides, substituted: String(entry.expr ?? '') },
+    }
+  }
   if (entry.executable === false) {
     throw new CalcError(
       'invalid_argument',

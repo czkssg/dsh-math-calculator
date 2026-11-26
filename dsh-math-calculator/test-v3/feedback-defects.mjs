@@ -145,10 +145,24 @@ console.log('-- 7. 阶段 1：适用域 / solve 语义 / recurrence 差额 / 批
   assert('★ T4-25 批量量纲错只失败那条', batch.ok === true && batch.value?.succeeded === 1 && batch.value?.failed === 1, JSON.stringify(batch.value))
 }
 
-console.log('-- 8. 阶段 1 抽测（1.6）：展示式 / 未知量 / 地球标定 --')
+console.log('-- 8. 阶段 1 抽测（1.6）：公式可执行性 / 未知量 / 地球标定 --')
 {
-  const display = await run({ operation: 'formula', formula: 'gini' })
-  assert('★ 展示式先报「展示式」（不再报缺参）', display.ok === false && display.error?.type === 'invalid_argument' && String(display.error.message).includes('展示式'), JSON.stringify(display.error))
+  /**
+   * 2026-11-27 变更：原来这里断言「gini 报展示式」。
+   * 但 gini / hhi / shannon_entropy / simpson_diversity 已实现数组求值，
+   * 全库不再有「展示式」公式——所以改成正向守护：**所有公式都必须可执行**。
+   *
+   * 这保留了原断言的价值（一旦有人再塞进不可执行的公式，立刻红），
+   * 且测的是需求（能算），不是实现的当前形态。
+   */
+  const { readFileSync } = await import('node:fs')
+  const raw = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'formulas.json'), 'utf8'))
+  const all = raw.formulas ?? raw
+  const nonExec = all.filter((x) => x.executable === false)
+  assert('★ 所有公式都可执行（无展示式残留）', nonExec.length === 0, nonExec.map((x) => x.id).join(', '))
+  /** 数组型公式传数组能算出数（不是报错）。 */
+  const hhi = await run({ operation: 'formula', formula: 'hhi', overrides: { s: [0.25, 0.25, 0.25, 0.25] } })
+  assert('★ 数组型公式可真算（hhi 四家均分=0.25）', hhi.ok === true && String(hhi.result).includes('0.25'), String(hhi.result))
 
   const unknown = await run({ operation: 'custom', customAction: 'check', expression: 'xyz' })
   assert('★ 量纲检查未知量 → unknown_symbol', unknown.ok === false && unknown.error?.type === 'unknown_symbol', JSON.stringify(unknown.error))

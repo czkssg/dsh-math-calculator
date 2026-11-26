@@ -26,6 +26,7 @@
  */
 
 import { CalcError } from '../../core/errors.js'
+import { ARRAY_FORMULA_IDS, evaluateArrayFormulaById } from './array-formulas.js'
 import { fmtNumber, FMT } from '../../core/format.js'
 import type { Engine } from '../../core/engine.js'
 import { evaluateFormula } from './evaluate.js'
@@ -105,6 +106,24 @@ export function compileFormula(entry: FormulaEntry, engine: Engine, index?: Rela
     unit: entry.unit,
     params,
     call: (values = {}, options = {}): FormulaCallResult => {
+      /**
+       * 数组型公式先走内置算法（2026-11-27 加）。
+       *
+       * gini / hhi / shannon_entropy / simpson_diversity 的表达式含排版符号
+       * （`Σᵢ`、`log_base`），mathjs 解析不了，但它们要遍历数组，
+       * 数学定义完全明确——以前一律当「展示式」拒绝，属于能算却没算。
+       */
+      const arrayValue = evaluateArrayFormulaById(entry.id, values)
+      if (arrayValue !== null) {
+        const unitText = entry.unit !== undefined && entry.unit !== '无量纲' ? ' ' + entry.unit : ''
+        return {
+          result: entry.name + ' = ' + String(Math.round(arrayValue * 1e8) / 1e8) + unitText,
+          value: { answer: arrayValue, formula: entry.id, inputs: values },
+          substituted: {},
+          missing: [],
+          neighbors: [],
+        }
+      }
       /** 展示式不能调用（先于参数检查，否则会先报「缺参数」误导）。 */
       if (entry.executable === false) {
         throw new CalcError(
@@ -274,7 +293,8 @@ export function compileAll(
 ): Map<string, FormulaFunction> {
   const map = new Map<string, FormulaFunction>()
   for (const entry of formulas) {
-    if (entry.executable === false) continue
+    /** 数组型公式要进函数表（它们现在能算了）；其余展示式仍跳过。 */
+    if (entry.executable === false && !ARRAY_FORMULA_IDS.has(entry.id)) continue
     map.set(entry.id, compileFormula(entry, engine, index))
   }
   return map

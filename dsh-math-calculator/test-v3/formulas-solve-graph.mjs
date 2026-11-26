@@ -53,8 +53,17 @@ console.log('-- 3. 参数与错误路径 --')
   const badTarget = await run({ operation: 'formula', formula: 'circle_area', solveFor: 'z', targetValue: 1 })
   assert('未知参数 → unknown_symbol', badTarget.ok === false && badTarget.error?.type === 'unknown_symbol', JSON.stringify(badTarget.error))
 
-  const display = await run({ operation: 'formula', formula: 'gini', solveFor: 'n', targetValue: 1 })
-  assert('★ 展示式不能反解 → invalid_argument', display.ok === false && display.error?.type === 'invalid_argument', JSON.stringify(display.error))
+  /**
+   * 2026-11-27 变更：gini 不再是展示式（已实现数组求值）。
+   * 但它是**数组型**公式，expr 含排版符号，无法符号反解。
+   * 有价值的守护是：**反解不许瞎编答案**——要么明确报错，要么明说「没有解」。
+   * （项目原则：不返回看起来像答案的数。）
+   */
+  const display = await run({ operation: 'formula', formula: 'gini', solveFor: 'y', targetValue: 0.4 })
+  const honest =
+    (display.ok === false && (display.error?.type === 'invalid_argument' || display.error?.type === 'unknown_symbol')) ||
+    (display.ok === true && (String(display.result).includes('没有找到实数解') || String(display.result).includes('没有解')))
+  assert('★ 数组型公式反解不瞎编（明确报错或明说无解）', honest, String(display.result ?? display.error?.message).slice(0, 80))
 }
 
 console.log('-- 4. 公式-链结构图 --')
