@@ -26365,6 +26365,122 @@
   "output": "更替生育率"
  },
  {
+  "id": "birth_interval",
+  "cat": "social/demography",
+  "name": "生育间隔（多久生一个）",
+  "expr": "gestation_months + postpartum_amenorrhea_months + 1 / fecundability",
+  "params": {
+   "gestation_months": {
+    "value": 9,
+    "desc": "妊娠期（月；人类约 9）",
+    "quantity": "时间"
+   },
+   "postpartum_amenorrhea_months": {
+    "value": 12,
+    "desc": "产后闭经（月；哺乳期不排卵，6~24，哺乳越久越长）",
+    "quantity": "时间"
+   },
+   "fecundability": {
+    "value": 0.2,
+    "desc": "每月受孕概率（25 岁约 0.2；35 岁约 0.1；0~1）",
+    "quantity": "概率"
+   }
+  },
+  "unit": "月（两次生育的间隔）",
+  "desc": "T = 妊娠期 + 产后闭经 + 1/每月受孕概率。**「这个村多久生一个孩子」—— 生育的时间尺度。**★ 三段含义（Bongaarts 生育分解框架）：① 妊娠约 9 月；② 产后闭经（哺乳期不排卵）6~24 月 —— **这是自然生育率的主要调节器**：哺乳越久，间隔越长，生得越少；③ 等待受孕 1/fecundability，25 岁约 0.2/月 → 平均 5 月。★ 默认：9 + 12 + 5 = **26 月 ≈ 2.2 年**；延长哺乳到 24 月 → 38 月（3.2 年）。★ 为什么重要：**生育间隔决定人口能不涨** —— 育龄 30 年、间隔 2.2 年 → 生物学上限约 13 个孩子；间隔 4 年 → 只有 7 个。★ 与 tfr_replacement 分工：那条管「要生多少才不缩」，本条管「能生多快」。⚠ 这是**自然生育**（无避孕）；有避孕时实际间隔由意愿决定，本式给的是生物学下限。⚠ fecundability 随年龄下降（35 岁约 0.1），单一常数会低估高龄。★ 实测对照：0.2 → 26 月；闭经 24 → 38 月。",
+  "keys": [
+   "生育间隔",
+   "生几个",
+   "哺乳",
+   "产后",
+   "birth interval",
+   "fertility"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "social",
+   "medicine"
+  ],
+  "output": "生育间隔月数"
+ },
+ {
+  "id": "generation_length",
+  "cat": "social/demography",
+  "name": "世代长度（两代人差多少岁）",
+  "expr": "marriage_age + (birth_interval_months / 12) * (children - 1) / 2",
+  "params": {
+   "marriage_age": {
+    "value": null,
+    "desc": "初婚年龄（岁；传统社会 16~20，现代社会 26~32）",
+    "quantity": "年龄"
+   },
+   "birth_interval_months": {
+    "value": null,
+    "desc": "生育间隔（月；用 birth_interval 算，典型 26~40）",
+    "quantity": "时间"
+   },
+   "children": {
+    "value": null,
+    "desc": "平均子女数（个；≥1）",
+    "quantity": "人数"
+   }
+  },
+  "unit": "岁（母亲平均生育年龄 / 世代长度）",
+  "desc": "L = 初婚年龄 + (生育间隔/12) × (子女数−1)/2。**「两代人差多少岁」—— 决定这个社会多久换一代人。**★ 含义：母亲在第一个与最后一个孩子之间的中点年龄。★ 数字：初婚 20、间隔 2.2 年、8 孩 → **27.6 岁**（传统社会典型）；初婚 28、间隔 3 年、2 孩 → 29.5 岁（晚婚少生，世代反而更长）。★ 为什么它重要：**世代长度 × 代数 = 历史深度**。「传了十代」在 27.6 岁时是 276 年，在 20 岁时只有 200 年 —— 写族谱/王朝年表时这差 76 年。★ 与 epidemic_generation_interval 区分：那条是疫情一代传一代（天），本条是人口一代（年）。⚠ 子女数为 1 时本式退化为初婚年龄（合理）；子女数 0 无意义。⚠ 不含非婚生育与再婚。★ 实测对照：20 + 2.2×7/2 = 27.6；children=1 → 20。",
+  "keys": [
+   "世代长度",
+   "一代",
+   "族谱",
+   "初婚年龄",
+   "generation length"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "social"
+  ],
+  "output": "世代长度"
+ },
+ {
+  "id": "household_size",
+  "cat": "social/demography",
+  "name": "户规模（一户几口人）",
+  "expr": "adults + children_alive + elderly",
+  "params": {
+   "adults": {
+    "value": null,
+    "desc": "成年人数（含户主与配偶）",
+    "quantity": "人数"
+   },
+   "children_alive": {
+    "value": null,
+    "desc": "存活子女数（= 生育数 × 存活率，用 survival_to_age 算）",
+    "quantity": "人数"
+   },
+   "elderly": {
+    "value": 0,
+    "desc": "需赡养老人数（默认 0；有老人时填）",
+    "quantity": "人数"
+   }
+  },
+  "unit": "人（户规模）",
+  "desc": "户规模 = 成年人数 + 存活子女数 + 需赡养老人数。**「一户几口人吃饭」—— 最基础的一个数，却常被写错。**★ 前工业社会典型 **5~8 人**：夫妇 + 4~5 个存活子女 + 老人。★ 为什么不能想当然：**高婴儿死亡率下「生 6 个」不等于「养大 6 个」** —— 用 survival_to_age 先算存活率再进本式，才是真实户规模。★ 世界观用法：征兵（一户几个成年男丁）、赋税（按户还是按口）、粮食（几口人吃多少）。★ 与 survival_to_age / birth_interval 配合：存活子女数 = 生育数 × 存活率。⚠ 这是**账**不是预测：三个数都该由设定给；多代同堂/分家习俗会大幅改变结果。⚠ 不含仆役与雇工（若算「户」另计）。★ 实测对照：2+4+1 = 7；不给老人 → 6。",
+  "keys": [
+   "户规模",
+   "几口人",
+   "家庭",
+   "征兵",
+   "household"
+  ],
+  "frequency": "medium",
+  "layer": "derived",
+  "domains": [
+   "social"
+  ],
+  "output": "户规模人数"
+ },
+ {
   "id": "clustering_coefficient",
   "cat": "social/network",
   "name": "聚集系数（「朋友的朋友也是朋友」有多普遍）",
