@@ -294,6 +294,7 @@ const STANDARD_DIMENSION_UNITS: Record<string, string> = {
   '1,2,-3,0,0,0,0,0,0': 'W',
   '1,1,-2,0,0,0,0,0,0': 'N',
   '0,0,-1,0,0,0,0,0,0': 'Hz',
+  '0,3,-1,0,0,0,0,0,0': 'm^3/s',
 }
 
 /**
@@ -303,7 +304,7 @@ const STANDARD_DIMENSION_UNITS: Record<string, string> = {
  * @param unit - mathjs Unit
  * @returns 归位后的文本（不需要时原样返回）
  */
-function normalizeDisplayedUnit(text: string, unit: any): string {
+export function normalizeDisplayedUnit(text: string, unit: any): string {
   const dims = unit?.dimensions
   if (!Array.isArray(dims)) return text
   /**
@@ -340,9 +341,20 @@ function normalizeDisplayedUnit(text: string, unit: any): string {
    */
   const SYNTHETIC = /^cz[a-z]{3}$/
   const SUBSTITUTED = ['日行里快', '驿马日行', '日行里', '一天走里']
+  /**
+   * ## mathjs 还会挑这些「冷门但有量纲」的英文单位（2026-11-27 复核发现）
+   *
+   * 之前只认 cz 合成名与中文代换，漏了同量纲的其他冷门单一名：
+   * `1 kg*m/s^2` → `tonf`、`1 J/s` → `erg_per_s`、`1 N/m^2` → `Ba`、`1 m^3/s` → `cfm`。
+   * 数值都对，但读者看不懂——与 1.4/1.5 是同一个坑的第三次复发。
+   *
+   * 用**精确名白名单**（不用 includes，避免误伤 Ba 之外的词）。
+   */
+  const OBSCURE_NAMES = ['tonf', 'erg_per_s', 'ergpers', 'Ba', 'cfm', 'raddose', 'rad_dose', 'radabsorbed']
   const isSynthetic = SYNTHETIC.test(shown)
   const isSubstituted = SUBSTITUTED.some((name) => shown.includes(name))
-  if (!isSynthetic && !isSubstituted) return text
+  const isObscure = OBSCURE_NAMES.includes(shown)
+  if (!isSynthetic && !isSubstituted && !isObscure) return text
   const key = dims.join(',')
   const expected = STANDARD_DIMENSION_UNITS[key]
   if (expected === undefined) return topLevelObscureCheck(text, unit)

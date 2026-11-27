@@ -54,6 +54,7 @@ import {
   toJsonValue,
   restoreCjkUnitNames,
   restoreCustomUnitNames,
+  normalizeDisplayedUnit,
 } from '../../core/format.js'
 
 /** 求值结果。 */
@@ -214,25 +215,6 @@ function unwrapNumeric(value: unknown): { n: number; bigText: string | null } {
  * @param engine - 引擎（用于还原自设单位名）
  * @returns 显示串与附带信息
  */
-/** SI 基准量纲顺序（与 units.ts 的 DIM_ORDER 一致）。 */
-const SI_DIMS: Array<{ base: string }> = [
-  { base: 'kg' }, { base: 'm' }, { base: 's' }, { base: 'A' }, { base: 'K' }, { base: 'mol' }, { base: 'cd' },
-]
-
-/**
- * 常见单位名白名单（出现这些就认为显示正常，不归约）。
- *
- * 注意：这是**显示判据**，不是换算白名单——表外的单位照样能换算，
- * 只是显示时会被换成 SI 基准组合。
- */
-const COMMON_UNIT_WORDS = [
-  'kg', 'g', 'mg', 't', 'm', 'cm', 'mm', 'km', 'inch', 'ft', 'mile', 'yd',
-  's', 'ms', 'min', 'h', 'day', 'year', 'A', 'K', 'mol', 'cd', 'Hz',
-  'N', 'J', 'kJ', 'MJ', 'GJ', 'W', 'kW', 'MW', 'GW', 'hp', 'Pa', 'kPa', 'MPa', 'GPa',
-  'C', 'V', 'F', 'H', 'S', 'T', 'Wb', 'Gy', 'Sv', 'Bq', 'kat', 'lm', 'lx',
-  'kWh', 'MWh', 'L', 'mL', 'bar', 'atm', 'psi', 'degC', 'degF',
-]
-
 /**
  * 检测「除号链可能该加括号」的情况。
  *
@@ -285,61 +267,6 @@ function detectSuspectDivisionChain(expression: string, resultText: string): str
  * @param text - 形如 `1e-44 foe` 或 `1000 m^2 / s^2`
  * @returns true = 应归约
  */
-/**
- * 已知会被 mathjs 拿去代换的「具名单一单位」中文名。
- *
- * `5 m/s` 的结果单位会被换成 `日行里快`（速度维度里注册最晚的那个），
- * 于是显示成 `288.018 日行里快`。同类还有压强、能量等维度。
- * 判据要认这些名字，光认 `cz` 代号不够。
- */
-const SUBSTITUTED_CJK_UNITS = ['日行里快', '驿马日行', '日行里', '一天走里']
-
-function isObscureUnitText(text: string): boolean {
-  /**
-   * ## 判据必须是「白名单式的已知冷门」，不能是「不在常见集里」
-   *
-   * 反例（实测踩到）：`1 kg → 0.02 担` 里的「担」不在常见集 → 被判冷门 →
-   * 强行归约成 `1 kg`，把用户要的「担」冲掉了。
-   * 中文单位、时代单位、自设单位都不该被当成冷门。
-   *
-   * 所以只看**已知会误导的 mathjs 内部代号**：
-   *   foe（超新星能量）、raddose（吸收剂量）——这两个是实测出来的。
-   */
-  const OBSCURE = ['foe', 'raddose', 'rad_dose', 'radabsorbed', 'czxxl', 'cznvc']
-  const matched = /^-?[\d.]+(?:e[+-]?\d+)?\s+(.+)$/i.exec(text.trim())
-  if (matched === null) return false
-  const unitPart = matched[1]
-  if (OBSCURE.some((name) => unitPart.includes(name))) return true
-  /** 中文具名单位被代换（`288.018 日行里快`）也算可疑。 */
-  return SUBSTITUTED_CJK_UNITS.some((name) => unitPart.includes(name))
-}
-
-/**
- * 把 mathjs Unit 归约成 SI 基准组合的文本。
- *
- * 目的：避免 mathjs 用「同量纲的冷门单位」显示（如 `J/g` → `raddose`）。
- *
- * @param value - mathjs Unit
- * @returns 归约后的文本；拆不出时 null（调用方退回原写法）
- */
-function siReduce(value: unknown): string | null {
-  const unit = value as { dimensions?: number[]; to?: (target: string) => unknown }
-  const dims = unit.dimensions
-  if (!Array.isArray(dims) || typeof unit.to !== 'function') return null
-  const parts: string[] = []
-  for (let i = 0; i < Math.min(SI_DIMS.length, dims.length); i += 1) {
-    const power = dims[i]
-    if (power === 0) continue
-    parts.push(SI_DIMS[i].base + (power === 1 ? '' : '^' + power))
-  }
-  if (parts.length === 0) return null
-  try {
-    return String(unit.to(parts.join('*')))
-  } catch {
-    return null
-  }
-}
-
 /**
  * 格式化标量/单位值给读者看。
  *
@@ -397,7 +324,17 @@ export function formatScalar(
      * 结果 `5 m/s` 显示成 `288.018 日行里快`（数值其实是 5 m/s，只是单位被代换）。
      * 实测：发布包验证时才发现 result 与 value 不一致。
      */
-    let text = isObscureUnitText(textRaw) ? (siReduce(value) ?? textRaw) : textRaw
+    /**
+     * ## 与 `toJsonValue` 共用同一个归约算法（2026-11-27 修）
+     *
+     * 此前 result 路径自己维护一套白名单（`isObscureUnitText`），
+     * 与 value 路径（format.ts 的 `normalizeDisplayedUnit`）**各修各的**——
+     * 于是出现「value 显示 1 N、result 显示 0.00010197 tonf」这种不一致。
+     * 这正是踩坑表 1.5「只修一条等于没修」的翻版。
+     *
+     * 现在两条路径都走 `normalizeDisplayedUnit`：同一份判据、同一张标准写法表。
+     */
+    let text = normalizeDisplayedUnit(textRaw, value)
     text = restoreCjkUnitNames(text)
     text = restoreSanitizedUnitNames(text)
     text = restoreCustomUnitNames(text, engine.customUnits)
@@ -607,6 +544,25 @@ export function evaluateOne(
     }
     throw new CalcError('non_finite', '复数结果含非有限分量（表达式：' + expression + '）', '检查实部/虚部是否溢出。')
   }
+  /**
+   * ## Unit 的 magnitude 也要查（2026-11-27 修）
+   *
+   * 裸数字的 Infinity 会被上面的分支拦住，但**带单位的 Infinity 不会**：
+   * `1 m / 0 s` 返回 magnitude 为 Infinity 的 Unit，一路显示成 `Infinity 日行里快`。
+   * 这是「数值对/显示对」之外的真缺陷——结果根本不是可用的数。
+   */
+  if (typeof raw === 'object' && raw !== null && 'isUnit' in (raw as object)) {
+    const unitValue = raw as { toNumber?: () => number }
+    const magnitude = typeof unitValue.toNumber === 'function' ? Number(unitValue.toNumber()) : NaN
+    if (!Number.isFinite(magnitude)) {
+      throw new CalcError(
+        'non_finite',
+        '结果不是有限数（表达式：' + expression + '）',
+        '常见原因：除以 0（如 1 m / 0 s）、数值溢出。检查分母与函数定义域。',
+      )
+    }
+  }
+
   const unwrapped = unwrapNumeric(raw)
   if (typeof raw === 'object' && raw !== null && !('isUnit' in (raw as object))) {
     if (!Number.isFinite(unwrapped.n)) {
