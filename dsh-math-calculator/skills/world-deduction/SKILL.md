@@ -159,7 +159,7 @@ world           星球参数 → 体感画像（重力/昼夜/气候/天空/生�
   ↓ brief:true 时只给 296 字符摘要（省 93%）
 derivation      接着往下推：敏感度/结论翻转/逆推校准/相图
   ↓ 29 个子命令
-formula         要具体数值时调公式（867 条，params/overrides 改参数；solveFor 可反解）
+formula         要具体数值时调公式（870 条，params/overrides 改参数；solveFor 可反解）
   ↓ query:"sys" 可看 22 条推演链怎么连
 ```
 

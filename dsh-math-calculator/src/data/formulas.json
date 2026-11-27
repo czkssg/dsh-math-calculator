@@ -29555,6 +29555,109 @@
   "output": "空间蔓延速度"
  },
  {
+  "id": "infection_to_outcome",
+  "cat": "social/epidemiology",
+  "name": "感染后第几天出结果",
+  "expr": "incubation_period + illness_duration",
+  "params": {
+   "incubation_period": {
+    "value": null,
+    "desc": "潜伏期（天；暴露到出现症状。流感 2、麻疹 10~12、天花 7~17、肺鼠疫 2~6）",
+    "quantity": "时间"
+   },
+   "illness_duration": {
+    "value": null,
+    "desc": "病程（天；症状到康复或死亡。流感 7、天花 14~21、肺鼠疫 3~5）",
+    "quantity": "时间"
+   }
+  },
+  "unit": "天（从感染到结局：康复或死亡）",
+  "desc": "T = 潜伏期 + 病程。**「染上之后，第几天见分晓」—— 个体病程的时间轴。**★ 与 epidemic_generation_interval 区分：那条是「一代传一代」（传播代际，含传染期），本条是「一个人从感染到结局」。★ 数字：天花 12 + 18 = **30 天**（这就是隔离期要长的原因——**潜伏期内人没症状但可能已经能传**）；流感 2 + 7 = 9 天；肺鼠疫 2~6 + 3~5 ≈ **5~11 天**（快得来不及反应，所以鼠疫一出现就是灾难）。★ 世界观用法：写「城里第几天开始死人」——从首批感染算起，加本条就是第一批死亡的时间。★ 三段衔接：潜伏期（无症状）→ 病程（有症状，可能传染）→ 结局（康复/死亡）。⚠ 潜伏期与病程**按病种差异极大**，必须查表给参数，不要用「一个通用值」。⚠ 潜伏期内是否传染因病而异（流感有、SARS 少）；本式只管时间，不管传染性。★ 实测对照：天花 30 天、流感 9 天。",
+  "keys": [
+   "病程",
+   "潜伏期",
+   "几天死",
+   "出结果",
+   "incubation",
+   "disease"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "social",
+   "medicine"
+  ],
+  "output": "感染到结局天数"
+ },
+ {
+  "id": "deaths_from_cases",
+  "cat": "social/epidemiology",
+  "name": "这些病例里会死多少",
+  "expr": "cases * case_fatality_rate",
+  "params": {
+   "cases": {
+    "value": null,
+    "desc": "病例数（确诊或估计的感染人数）",
+    "quantity": "人数"
+   },
+   "case_fatality_rate": {
+    "value": null,
+    "desc": "病死率 CFR（0~1；流感 0.001、麻疹 0.002、天花 0.3、肺鼠疫 0.6~0.9）",
+    "quantity": "比例"
+   }
+  },
+  "unit": "人（死亡数）",
+  "desc": "死亡 = 病例数 × 病死率。**「这一千个病人里，最后死几个」—— 最直接的死亡换算。**★ CFR 按病种查表，差异是**两个数量级**：流感 0.1%、麻疹 0.2%、天花 30%、肺鼠疫 60~90%。**同一个「一万人感染」，流感死 10 个、天花死 3000 个。**★ 为什么容易错：很多人把「病死率」和「死亡率（占总人口）」混为一谈 —— 前者分母是**病例**，后者分母是**总人口**。★ 世界观用法：配合 sir_equilibrium 的最终感染比例 × 人口 = 病例，再 × CFR = 死亡总数。★ 与 cases_from_deaths 互为反式：本条是「已知病例估死亡」，那条是「已知死亡估病例」。⚠ CFR 是「病死率」不是「死亡率」；分母是病例数。⚠ 医疗条件会大幅改变 CFR（同一病，有抗生素 vs 没有，差几倍到几十倍）。★ 实测对照：1000 × 0.3 = 300；100000 × 0.001 = 100。",
+  "keys": [
+   "病死率",
+   "CFR",
+   "死多少",
+   "病例",
+   "case fatality"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "social",
+   "medicine"
+  ],
+  "output": "死亡人数"
+ },
+ {
+  "id": "cases_from_deaths",
+  "cat": "social/epidemiology",
+  "name": "死一个，实际感染多少",
+  "expr": "deaths / case_fatality_rate",
+  "params": {
+   "deaths": {
+    "value": null,
+    "desc": "报告死亡数（例）",
+    "quantity": "人数"
+   },
+   "case_fatality_rate": {
+    "value": null,
+    "desc": "病死率 CFR（0~1；必须 >0）",
+    "quantity": "比例"
+   }
+  },
+  "unit": "人（估计的病例数）",
+  "desc": "病例数 = 死亡数 / 病死率。**「死了一个人，实际多少人感染」—— 病死率越低，冰山越大。**★ 这是最容易被忽略的反推：报告 1 例死亡、CFR 0.1%（流感级）→ 实际约 **1000 人感染**；CFR 1% → 100 人；CFR 30%（天花）→ 只要 3 人。★ 为什么重要：**低病死率的病，死亡数是最不可靠的指标** —— 死亡少不代表病例少，可能只是没数到。★ 世界观用法：设定里「城里死了 50 人」，若这场病 CFR 1%，那是 5000 人感染 —— 整座城的医疗已经过载。★ 与 deaths_from_cases 互为反式。⚠ 分母 CFR 必须 >0；CFR=0 无意义（不会死人）。⚠ 依赖死亡登记完整：古代/战乱中死亡漏报严重，反推会低估病例。★ 实测对照：1 / 0.001 = 1000；10 / 0.3 ≈ 33。",
+  "keys": [
+   "反推",
+   "实际感染",
+   "冰山",
+   "死亡数",
+   "cases from deaths"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "social",
+   "medicine"
+  ],
+  "output": "估计病例数"
+ },
+ {
   "id": "herd_immunity_fraction",
   "cat": "social/epidemiology",
   "name": "群体免疫门槛（要多少人免疫才拦得住）",
