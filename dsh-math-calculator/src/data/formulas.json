@@ -9383,6 +9383,126 @@
   "output": "损耗率"
  },
  {
+  "id": "hemorrhage_survival_time",
+  "cat": "military/combat",
+  "name": "失血还能撑多久",
+  "expr": "body_mass * blood_volume_per_kg * lethal_fraction / bleeding_rate",
+  "params": {
+   "body_mass": {
+    "value": null,
+    "desc": "体重 kg（成人 60~80；儿童 15~40）",
+    "quantity": "质量",
+    "dimension": {
+     "M": 1
+    }
+   },
+   "blood_volume_per_kg": {
+    "value": 70,
+    "desc": "每公斤血容量 ml/kg（成人约 70；儿童略高）",
+    "quantity": "比容"
+   },
+   "lethal_fraction": {
+    "value": 0.5,
+    "desc": "致死失血比例（0.5 = 失血达总血容量一半；30% 失代偿、40% 休克，可改 0.4 看休克时间）",
+    "quantity": "比例"
+   },
+   "bleeding_rate": {
+    "value": null,
+    "desc": "失血速率 ml/min（大动脉 200~500，动脉 100~200，静脉 10~50；止血带可压到 1/10）",
+    "quantity": "流量"
+   }
+  },
+  "unit": "分钟（从受伤到失血致死）",
+  "desc": "t = 体重 × 70 ml/kg × 致死比例 / 失血速率。**「这个伤兵还能撑多久」—— 决定救不救得回来。**★ 这是**纯生理学**，不依赖任何历史统计：成人血容量约 70 ml/kg，失血 30% 开始失代偿、40% 休克、50% 死亡。★ 数字：70kg、动脉破裂 200 ml/min → **12 分钟**；同一个人静脉 30 ml/min → **82 分钟** —— 这就是止血带的全部价值：把速率压到 1/10，时间就多 10 倍。★ 为什么体重重要：体重翻倍 = 血容量翻倍 = 多撑一倍时间；同一处伤，壮汉比孩子多一倍。★ 世界观用法：判断「前线到救护所要多久」—— 若后送需 60 分钟，则失血速率必须低于 70×70×0.5/60 ≈ 41 ml/min 才救得回。★ 与 deaths_with_dow 分工：本条管「个体能不能活到救治」，那条管「群体最后死多少」。⚠ 假设匀速持续失血；实际会随血压下降变慢（未计入）。⚠ 未计入休克、失温与感染；大出血真实致死可能更快。★ 实测对照：70kg、100ml/min → 24.5 分钟；速率减半 → 49 分钟；体重翻倍 → 49 分钟。",
+  "keys": [
+   "失血",
+   "战伤",
+   "止血",
+   "救护",
+   "出血",
+   "hemorrhage"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "military",
+   "medicine"
+  ],
+  "output": "失血存活时间"
+ },
+ {
+  "id": "casualty_breakdown",
+  "cat": "military/combat",
+  "name": "伤亡拆分（多少阵亡）",
+  "expr": "total_losses * kia_share",
+  "params": {
+   "total_losses": {
+    "value": null,
+    "desc": "伤亡总数（人；含阵亡、负伤、失踪）",
+    "quantity": "人数"
+   },
+   "kia_share": {
+    "value": null,
+    "desc": "阵亡占比（0~1；冷兵器约 0.2~0.3，火器 0.25~0.4；= 1/(1+伤死比)）",
+    "quantity": "比例"
+   }
+  },
+  "unit": "人（阵亡数 KIA）",
+  "desc": "KIA = 伤亡总数 × 阵亡占比。**「这 1000 个倒下的人里，多少是死的」—— 战报最常混的一笔账。**★ 关键：**伤亡 ≠ 死亡**。伤亡（casualties）含阵亡（KIA）、负伤（WIA）、失踪（MIA）；很多设定把「伤亡」直接当「死」写，数字会错 3~4 倍。★ 阵亡占比的历史量级：冷兵器约 0.2~0.3（伤多亡少），火器时代 0.25~0.4，精确火力偏高。**建议由调用方按时代给，不要用一个通用值糊过去。**★ 与 deaths_with_dow 配合：KIA 只是一半，另一半是伤员里的伤后死亡。★ 世界观用法：写「一场会战伤亡三千」时，先拆成阵亡约 750、伤约 2250，再决定其中多少死在担架上。⚠ 本式是换算，不是预测：占比必须来自你的设定或史料。⚠ 失踪（MIA）另计，不在本式里。★ 实测对照：1000 × 0.25 = 250；1000 × 0.4 = 400。",
+  "keys": [
+   "伤亡",
+   "阵亡",
+   "KIA",
+   "战报",
+   "casualty"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "military"
+  ],
+  "output": "阵亡人数"
+ },
+ {
+  "id": "deaths_with_dow",
+  "cat": "military/combat",
+  "name": "含伤后死亡的总死亡",
+  "expr": "kia + wounded * dow_rate",
+  "params": {
+   "kia": {
+    "value": null,
+    "desc": "阵亡数（当场死亡）",
+    "quantity": "人数"
+   },
+   "wounded": {
+    "value": null,
+    "desc": "伤员数（负伤送下火线）",
+    "quantity": "人数"
+   },
+   "dow_rate": {
+    "value": null,
+    "desc": "伤后死亡率 DOW（0~1；无野战外科 0.3、近代 0.1~0.2、有前线输血后 <0.05）",
+    "quantity": "比例"
+   }
+  },
+  "unit": "人（死亡总数）",
+  "desc": "总死亡 = KIA + WIA × DOW 率。**「伤兵里还有多少会死」—— 决定这场仗到底多惨的是这一项。**★ 为什么单算这一项：阵亡是当场死的，伤后死亡（died of wounds）是在担架、救护所、战地医院里死的 —— 叙事上完全不同（后者有名字、有告别、有时间）。★ DOW 率的量级：无野战外科的古代战场可到 0.3；近代战场 0.1~0.2；有前线输血与快速后送后降到 0.05 以下。**同样由调用方按时代给。**★ 数字：阵亡 250、伤 750、DOW 0.15 → 总死亡 362.5（比只算阵亡多 45%）；DOW 0.3 → 475（几乎翻倍）。★ 世界观用法：写「战地医院」时，这里的差额就是医院的死亡名单。★ 边界：DOW=0 时总死亡 = 阵亡数（理想医疗）；DOW 不可能为负。⚠ 未计战后伤残与感染迟发死亡。★ 实测对照：250 + 750×0.15 = 362.5；250 + 750×0.3 = 475。",
+  "keys": [
+   "伤后死亡",
+   "DOW",
+   "总死亡",
+   "战地医院",
+   "death"
+  ],
+  "frequency": "high",
+  "layer": "derived",
+  "domains": [
+   "military",
+   "medicine"
+  ],
+  "output": "总死亡人数"
+ },
+ {
   "id": "projectile_energy",
   "cat": "military/combat",
   "name": "弹丸动能",

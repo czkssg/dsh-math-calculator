@@ -382,13 +382,27 @@ export function solveRecurrence(
   const rows: Array<Record<string, number>> = [{ ...state }]
   let overflow = false
 
+  /**
+   * 预编译递推式并走浮点实例。
+   *
+   * 与 ODE 同因：`Engine` 走 BigNumber，而浮点递推的中间结果必然超过 15 位有效数字
+   * （如 `D*(1+0.02)-5` 第 30 期会撞上限），BigNumber 直接抛
+   * 「Cannot implicitly convert a number with >15 significant digits」。
+   * 递推本身就是浮点迭代，换浮点实例既正确又快。
+   */
+  let compiled: { evaluate: (scope: Record<string, number>) => unknown }
+  try {
+    compiled = floatMath.compile(recurrence)
+  } catch {
+    throw new CalcError('syntax', '递推式无法解析：' + recurrence, '检查括号、函数名与运算符。')
+  }
+
   for (let period = 1; period <= periods; period += 1) {
-    /** 同 ODE：BigNumber 拒绝 >15 位 number。 */
     const scope: Record<string, number> = {}
-    for (const name of names) scope[name] = Number(state[name].toPrecision(15))
+    for (const name of names) scope[name] = Number(state[name])
     const next: Record<string, number> = {}
     for (const name of names) {
-      const v = Number(engine.evaluate(recurrence, scope))
+      const v = Number(compiled.evaluate(scope))
       if (!Number.isFinite(v)) {
         throw new CalcError(
           'non_finite',
