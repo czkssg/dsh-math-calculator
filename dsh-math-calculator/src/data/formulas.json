@@ -26481,6 +26481,88 @@
   "output": "户规模人数"
  },
  {
+  "id": "era_year_convert",
+  "cat": "social/calendar",
+  "name": "跨历法年份换算（A 历法某年 = B 历法哪年）",
+  "expr": "(source_year - source_epoch) * (target_days_per_year / source_days_per_year) + target_epoch",
+  "params": {
+   "source_year": {
+    "value": null,
+    "desc": "源历法的年份",
+    "quantity": "年份"
+   },
+   "source_epoch": {
+    "value": 0,
+    "desc": "源历法的纪元起点（该历法的「第 0 年」对应什么）",
+    "quantity": "年份"
+   },
+   "source_days_per_year": {
+    "value": 365.25,
+    "desc": "源历法每年天数（366 = 纯太阳历近似、360 = 十二宫式；必须 >0）",
+    "quantity": "时间"
+   },
+   "target_epoch": {
+    "value": 0,
+    "desc": "目标历法的纪元起点",
+    "quantity": "年份"
+   },
+   "target_days_per_year": {
+    "value": 365.25,
+    "desc": "目标历法每年天数（必须 >0）",
+    "quantity": "时间"
+   }
+  },
+  "unit": "年（目标历法的年份）",
+  "desc": "目标年 = (源年 − 源纪元) × (目标年长/源年长) + 目标纪元。**「A 历法某某年，等于 B 历法哪一年」—— 多纪年世界的换算式。**★ 两历法年长相同 → 退化为**平移**（最常见）；年长不同 → 按**比例**。★ 例：源历 360 天/年、纪元 0，目标历 365.25 天/年、纪元 1000，源年 100 → 100×365.25/360+1000 = **1101.46**。★ 为什么需要它：架空世界常有两套历法（教会历 vs 王朝历、本地历 vs 帝国历），写「某年发生某事」时两套年份对不上，手算极易错。★ 与 calendar-convert 分工：那条是**同一历法内**「某年第几天 ↔ 绝对天数」；本条是**两套历法之间**的年份映射。⚠ **只适用线性历法**（每年固定天数）。带闰年/不规则插值的历法（如真实公历）不能用本式——那需要规则表，请用 astro 的 calendar-convert 或专门的历法库。⚠ 源年长为 0 无定义。★ 实测对照：同长平移 100→1100；360→365.25 时 100→1101.46。",
+  "keys": [
+   "历法换算",
+   "纪元",
+   "多纪年",
+   "年份换算",
+   "era",
+   "calendar"
+  ],
+  "frequency": "medium",
+  "layer": "derived",
+  "domains": [
+   "social"
+  ],
+  "output": "目标历法年份"
+ },
+ {
+  "id": "regnal_year_to_absolute",
+  "cat": "social/calendar",
+  "name": "年号换算（某年号第几年是哪一年）",
+  "expr": "reign_start_year + regnal_year - 1",
+  "params": {
+   "reign_start_year": {
+    "value": null,
+    "desc": "年号起始的绝对年（该年号第 1 年对应的年份）",
+    "quantity": "年份"
+   },
+   "regnal_year": {
+    "value": null,
+    "desc": "年号内的第几年（从 1 起）",
+    "quantity": "年份"
+   }
+  },
+  "unit": "年（绝对年）",
+  "desc": "绝对年 = 年号起始年 + 第几年 − 1。**「某某二十三年，是哪一年」—— 年号换算的唯一公式。**★ 关键是那个 **−1**：年号第 1 年就是起始年本身，不是「起始年 + 1」。这是最常见的差一错误。★ 例：年号起于 1644，第 3 年 → **1646**（不是 1647）。★ 世界观用法：写「王朝纪年」时，读者按绝对年对时间线，作者按年号写 —— 本条把两者对齐。★ 反向（绝对年 → 年号第几年）= 绝对年 − 起始年 + 1，可自行移项。⚠ `reign_start_year` 是**第 1 年**对应的绝对年；若你手上是「登基年」，通常登基次年为第 1 年，需先 +1。⚠ 改元当年的「双年号」不处理（一年跨两个年号的特殊情形）。★ 实测对照：1644 + 3 − 1 = 1646；第 1 年 → 1644。",
+  "keys": [
+   "年号",
+   "纪年",
+   "第几年",
+   "改元",
+   "regnal"
+  ],
+  "frequency": "medium",
+  "layer": "derived",
+  "domains": [
+    "social"
+  ],
+  "output": "绝对年"
+ },
+ {
   "id": "clustering_coefficient",
   "cat": "social/network",
   "name": "聚集系数（「朋友的朋友也是朋友」有多普遍）",
